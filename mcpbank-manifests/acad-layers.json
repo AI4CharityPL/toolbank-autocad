@@ -1,0 +1,252 @@
+{
+    "id":  "acad-layers",
+    "name":  "acad-layers",
+    "description":  "AutoCAD layer (LayerTableRecord) management: create, rename, delete and list layers; query and set per-layer state (color by ACI or RGB, linetype, lineweight, plot style, plottable, frozen, locked, on/off, transparency); pick the current layer; bulk move entities between layers; and basic layer-state save / restore via AutoCAD\u0027s layer state manager. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+    "transport":  {
+                      "type":  "stdio",
+                      "command":  "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-layers.cmd",
+                      "args":  [
+
+                               ],
+                      "env":  {
+
+                              }
+                  },
+    "lazy_mode":  true,
+    "tags":  [
+                 "autocad",
+                 "cad",
+                 "color",
+                 "create",
+                 "current",
+                 "delete",
+                 "dwg",
+                 "get",
+                 "layer",
+                 "layers",
+                 "linetype",
+                 "lineweight",
+                 "list",
+                 "purge",
+                 "rename",
+                 "restore",
+                 "save",
+                 "set",
+                 "state",
+                 "states",
+                 "unused"
+             ],
+    "intent_examples":  [
+                            "add new layer",
+                            "apply layer state",
+                            "change layer name",
+                            "checkpoint layer visibility",
+                            "color of layer",
+                            "create layer",
+                            "delete layer",
+                            "describe layer",
+                            "dodaj warstwe",
+                            "drop layer",
+                            "freeze layer",
+                            "get layer info",
+                            "grubosc warstwy",
+                            "info o warstwie",
+                            "kolor warstwy rgb",
+                            "layer linetype",
+                            "layer lineweight in mm",
+                            "linia przerywana na warstwie",
+                            "list all layers",
+                            "list las",
+                            "list layer states",
+                            "load las",
+                            "lock layer",
+                            "make layer current",
+                            "new layer with color",
+                            "pokaz warstwe",
+                            "przemianuj warstwe",
+                            "przywroc stan warstw",
+                            "purge layers",
+                            "purge unused layers",
+                            "remove empty layers",
+                            "remove layer",
+                            "rename layer",
+                            "rename layer to",
+                            "restore layer state",
+                            "save las",
+                            "save layer state",
+                            "set current layer",
+                            "set layer color",
+                            "set layer linetype",
+                            "set layer lineweight",
+                            "show layer details",
+                            "show layers",
+                            "show saved layer states",
+                            "skasuj warstwe",
+                            "stworz warstwe",
+                            "switch active layer",
+                            "thaw layer",
+                            "ustaw biezaca warstwe",
+                            "ustaw kolor warstwy",
+                            "ustaw linetype warstwy",
+                            "usun warstwe",
+                            "warstwa grubosc",
+                            "wczytaj zapisany stan warstw",
+                            "what layers exist",
+                            "wszystkie warstwy",
+                            "wszystkie zapisane stany warstw",
+                            "wybierz warstwe biezaca",
+                            "wyczysc nieuzywane warstwy",
+                            "wyczysc warstwy",
+                            "wylacz warstwe",
+                            "wylistuj stany warstw",
+                            "wylistuj warstwy",
+                            "zamroz warstwe",
+                            "zapisz konfiguracje warstw",
+                            "zapisz stan warstw",
+                            "zmien grubosc linii warstwy",
+                            "zmien kolor warstwy",
+                            "zmien nazwe warstwy",
+                            "zmien typ linii warstwy"
+                        ],
+    "tools_summary":  [
+                          {
+                              "name":  "create_layer",
+                              "description":  "Create a new layer. Accepts color (RGB or ACI), linetype name, lineweight in mm, plottable flag and description.",
+                              "tags":  [
+                                           "create",
+                                           "layer"
+                                       ]
+                          },
+                          {
+                              "name":  "delete_layer",
+                              "description":  "Delete a layer (only if no entities reference it). Layer 0 and Defpoints cannot be deleted.",
+                              "tags":  [
+                                           "delete",
+                                           "layer"
+                                       ]
+                          },
+                          {
+                              "name":  "get_layer",
+                              "description":  "Get full descriptor of one layer by name.",
+                              "tags":  [
+                                           "get",
+                                           "layer"
+                                       ]
+                          },
+                          {
+                              "name":  "list_layer_states",
+                              "description":  "List every saved named layer state in the active drawing.",
+                              "tags":  [
+                                           "list",
+                                           "layer",
+                                           "states"
+                                       ]
+                          },
+                          {
+                              "name":  "list_layers",
+                              "description":  "List every layer in the active drawing with color, linetype, lineweight, plottable/frozen/locked/off flags, plus the current layer name.",
+                              "tags":  [
+                                           "list",
+                                           "layers"
+                                       ]
+                          },
+                          {
+                              "name":  "purge_unused_layers",
+                              "description":  "Purge every layer that has no entity references and is not protected (0 / Defpoints / current). Returns number of layers removed.",
+                              "tags":  [
+                                           "purge",
+                                           "unused",
+                                           "layers"
+                                       ]
+                          },
+                          {
+                              "name":  "rename_layer",
+                              "description":  "Rename a layer. Layer 0 cannot be renamed; new name must be a valid AutoCAD symbol name.",
+                              "tags":  [
+                                           "rename",
+                                           "layer"
+                                       ]
+                          },
+                          {
+                              "name":  "restore_layer_state",
+                              "description":  "Restore a previously saved named layer state.",
+                              "tags":  [
+                                           "restore",
+                                           "layer",
+                                           "state"
+                                       ]
+                          },
+                          {
+                              "name":  "save_layer_state",
+                              "description":  "Save the current visibility/lock/color/linetype state of every layer under a named layer state (LAS).",
+                              "tags":  [
+                                           "save",
+                                           "layer",
+                                           "state"
+                                       ]
+                          },
+                          {
+                              "name":  "set_current_layer",
+                              "description":  "Set the active (\"current\") layer; subsequent draw operations default to this layer.",
+                              "tags":  [
+                                           "set",
+                                           "current",
+                                           "layer"
+                                       ]
+                          },
+                          {
+                              "name":  "set_layer_color",
+                              "description":  "Set a layer\u0027s color (true RGB or ACI 1..255).",
+                              "tags":  [
+                                           "set",
+                                           "layer",
+                                           "color"
+                                       ]
+                          },
+                          {
+                              "name":  "set_layer_linetype",
+                              "description":  "Set a layer\u0027s linetype (must already be loaded; returns LayerNotFound if linetype is missing).",
+                              "tags":  [
+                                           "set",
+                                           "layer",
+                                           "linetype"
+                                       ]
+                          },
+                          {
+                              "name":  "set_layer_lineweight",
+                              "description":  "Set a layer\u0027s lineweight in millimeters; snaps to nearest standard AutoCAD value (e.g. 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm).",
+                              "tags":  [
+                                           "set",
+                                           "layer",
+                                           "lineweight"
+                                       ]
+                          },
+                          {
+                              "name":  "set_layer_state",
+                              "description":  "Toggle one or more layer state flags: frozen, locked, off, plottable. null = leave unchanged. Cannot freeze the current layer.",
+                              "tags":  [
+                                           "set",
+                                           "layer",
+                                           "state"
+                                       ]
+                          }
+                      ],
+    "metadata":  {
+                     "category":  "layers",
+                     "tool_count_target":  14,
+                     "requires_plugin":  true,
+                     "supported_acad_versions":  [
+                                                     "2020",
+                                                     "2021",
+                                                     "2022",
+                                                     "2023",
+                                                     "2024",
+                                                     "2025"
+                                                 ],
+                     "supported_lt":  false,
+                     "owner":  "MCP Nexus AutoCAD",
+                     "version":  "0.1.0",
+                     "phase":  "phase3_annotations_blocks",
+                     "last_regenerated_utc":  "2026-04-22T12:37:17.2705513Z"
+                 }
+}

@@ -1,0 +1,21 @@
+id: civil.parcel.on-c-prop
+name: Property / parcel boundaries belong on C-PROP
+discipline: civil
+severity: error
+description: |
+  Per rule 38 §9 parcel boundaries (PHANTOM2 linetype) live on layer
+  C-PROP. Migrating from legacy 'PROPERTY' / 'LOT' / 'PARCEL' / 'BNDY'
+  layers preserves the boundary geometry but pins it to the canonical
+  layer, which the office plot style expects.
+
+  Pairs with `acad-civil.draw_parcel`, which always places parcels on
+  C-PROP.
+scope:
+  entity_types: [Polyline, Line]
+  layer_pattern: "^(PROPERTY|PROPERTY[-_]?LINE|LOT|PARCEL|BNDY|BOUNDARY|C[-_]?BNDY|C[-_]?PROPERTY|C[-_]?LOT)$"
+checks:
+  - { type: layer_equals, value: C-PROP }
+fix:
+  type: move_to_layer
+  layer: C-PROP
+  create_if_missing: true

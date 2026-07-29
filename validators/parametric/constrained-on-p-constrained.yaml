@@ -1,0 +1,19 @@
+id: parametric.profile.on-p-constrained
+name: Constrained profiles belong on P-CONSTRAINED
+discipline: parametric
+severity: warning
+description: |
+  Per rule 42 §9 fully constrained profile curves (ready for hatch / massing)
+  live on P-CONSTRAINED (ACI 5, heavier lineweight). Keeping them on P-SKETCH
+  breaks the office freeze workflow.
+
+  Enforcement is layer hygiene only — the solver state is checked in AutoCAD.
+scope:
+  entity_types: [Line, Polyline, Arc, Circle]
+  layer_pattern: "^(PROFILE|PROFIL|CONSTR(AINED)?|P[-_]?CONSTR)$"
+checks:
+  - { type: layer_equals, value: P-CONSTRAINED }
+fix:
+  type: move_to_layer
+  layer: P-CONSTRAINED
+  create_if_missing: true

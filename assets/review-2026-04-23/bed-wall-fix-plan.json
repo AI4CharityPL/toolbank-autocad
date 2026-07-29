@@ -1,0 +1,183 @@
+{
+  "task": "Phase C-Equip: move beds inside rooms",
+  "plan": [
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "24A"
+        ],
+        "from": {
+          "x": 67600.0,
+          "y": 31700.0,
+          "z": 0
+        },
+        "to": {
+          "x": 62000.0,
+          "y": 33000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "24D"
+        ],
+        "from": {
+          "x": 67600.0,
+          "y": 43300.0,
+          "z": 0
+        },
+        "to": {
+          "x": 62500.0,
+          "y": 42000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "252"
+        ],
+        "from": {
+          "x": 49600.0,
+          "y": 12500.0,
+          "z": 0
+        },
+        "to": {
+          "x": 49600.0,
+          "y": 14550.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "253"
+        ],
+        "from": {
+          "x": 52100.0,
+          "y": 12500.0,
+          "z": 0
+        },
+        "to": {
+          "x": 52100.0,
+          "y": 14550.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "256"
+        ],
+        "from": {
+          "x": 67100.0,
+          "y": 21500.0,
+          "z": 0
+        },
+        "to": {
+          "x": 64375.0,
+          "y": 24000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "259"
+        ],
+        "from": {
+          "x": 67100.0,
+          "y": 26000.0,
+          "z": 0
+        },
+        "to": {
+          "x": 64375.0,
+          "y": 24000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "25C"
+        ],
+        "from": {
+          "x": 67600.0,
+          "y": 30300.0,
+          "z": 0
+        },
+        "to": {
+          "x": 62000.0,
+          "y": 33000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "25F"
+        ],
+        "from": {
+          "x": 67600.0,
+          "y": 44700.0,
+          "z": 0
+        },
+        "to": {
+          "x": 62500.0,
+          "y": 42000.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "266"
+        ],
+        "from": {
+          "x": 68750.0,
+          "y": 16500.0,
+          "z": 0
+        },
+        "to": {
+          "x": 70250.0,
+          "y": 16500.0,
+          "z": 0
+        }
+      }
+    },
+    {
+      "category": "files",
+      "tool": "acad.files.save_document_as",
+      "args": {
+        "path": "C:\\Users\\DELL\\Dev\\autocad-mcp\\assets\\Rysunek4_AFTER_BED_FIX.dwg"
+      }
+    }
+  ]
+}

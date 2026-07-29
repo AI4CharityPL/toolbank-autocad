@@ -1,0 +1,224 @@
+{
+    "id":  "acad-annotations",
+    "name":  "acad-annotations",
+    "description":  "AutoCAD text and annotation entities: single-line DBText, multi-line MText with inline formatting, leaders and multi-leaders (MLeader) with text or block content, basic Tables built from row/column data, points with point styles, and text style management. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+    "transport":  {
+                      "type":  "stdio",
+                      "command":  "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-annotations.cmd",
+                      "args":  [
+
+                               ],
+                      "env":  {
+
+                              }
+                  },
+    "lazy_mode":  true,
+    "tags":  [
+                 "add",
+                 "annotations",
+                 "autocad",
+                 "block",
+                 "cad",
+                 "cell",
+                 "create",
+                 "current",
+                 "dbtext",
+                 "delete",
+                 "dwg",
+                 "list",
+                 "mleader",
+                 "mtext",
+                 "set",
+                 "style",
+                 "styles",
+                 "table",
+                 "text",
+                 "update"
+             ],
+    "intent_examples":  [
+                            "add multileader text",
+                            "add multileader with block",
+                            "add multiline text",
+                            "add single line text",
+                            "add table",
+                            "callout with block",
+                            "callout with text",
+                            "create table from data",
+                            "create text style",
+                            "delete text style",
+                            "dodaj dtext",
+                            "dodaj mleader z blokiem",
+                            "dodaj mleader z tekstem",
+                            "dodaj mtext",
+                            "dodaj tabele",
+                            "dodaj tekst",
+                            "dodaj textstyle",
+                            "dodaj wynos",
+                            "drop textstyle",
+                            "edit multiline text",
+                            "edit single line text",
+                            "edit table cell",
+                            "list text styles",
+                            "make textstyle current",
+                            "make ttf style",
+                            "new text style",
+                            "place dbtext",
+                            "place mleader block",
+                            "place mleader with text",
+                            "place mtext",
+                            "popraw mtext",
+                            "popraw napis",
+                            "remove text style",
+                            "set current text style",
+                            "set dbtext text",
+                            "set mtext text",
+                            "set table cell text",
+                            "show all textstyles",
+                            "skasuj textstyle",
+                            "stworz styl tekstu",
+                            "switch active textstyle",
+                            "tabela rxc",
+                            "table cell update",
+                            "update dbtext content",
+                            "update mtext content",
+                            "ustaw aktualny styl tekstu",
+                            "ustaw komorke tabeli",
+                            "usun styl tekstu",
+                            "what text styles exist",
+                            "wrapped text block",
+                            "wstaw napis dtext",
+                            "wstaw tabele",
+                            "wstaw tekst wieloliniowy",
+                            "wszystkie style tekstu",
+                            "wybierz styl tekstu",
+                            "wylistuj style tekstu",
+                            "wynos z blokiem",
+                            "zmien komorke",
+                            "zmien mtext",
+                            "zmien tekst dtext"
+                        ],
+    "tools_summary":  [
+                          {
+                              "name":  "add_dbtext",
+                              "description":  "Add a single-line text entity (DBText / DTEXT) at the given position. Height defaults to 2.5 mm; alignment is one of Left, Center, Right, Middle, BaseLeft, BaseCenter, BaseRight, TopLeft, TopCenter, TopRight, BottomLeft, BottomCenter, BottomRight.",
+                              "tags":  [
+                                           "add",
+                                           "dbtext"
+                                       ]
+                          },
+                          {
+                              "name":  "add_mleader_block",
+                              "description":  "Add a multi-leader (MLeader) whose content is a block reference (e.g. detail bubble). The block must already be defined in the drawing.",
+                              "tags":  [
+                                           "add",
+                                           "mleader",
+                                           "block"
+                                       ]
+                          },
+                          {
+                              "name":  "add_mleader_text",
+                              "description":  "Add a multi-leader (MLeader) with MText content. Single segment from arrowTip to textPosition; the dogleg between the leader and the text block is enabled by default.",
+                              "tags":  [
+                                           "add",
+                                           "mleader",
+                                           "text"
+                                       ]
+                          },
+                          {
+                              "name":  "add_mtext",
+                              "description":  "Add a multi-line text (MText) entity at the given position. widthFactor=0 disables word-wrap (auto width); attachmentPoint is e.g. TopLeft / MiddleCenter / BottomRight (defaults to TopLeft). Inline MText formatting codes are passed through (\\\\Pnewline, \\\\Lunderline, \\\\C2red).",
+                              "tags":  [
+                                           "add",
+                                           "mtext"
+                                       ]
+                          },
+                          {
+                              "name":  "add_table",
+                              "description":  "Insert an AutoCAD Table at the given position with rows × cols cells. Optional 2D data array fills cell text top-to-bottom, left-to-right. rowHeight/colWidth are in current units.",
+                              "tags":  [
+                                           "add",
+                                           "table"
+                                       ]
+                          },
+                          {
+                              "name":  "create_text_style",
+                              "description":  "Create a new text style (TextStyleTableRecord) by name with the given font (.shx or TTF face name). height=0 makes the style annotative-friendly (text height set per-entity).",
+                              "tags":  [
+                                           "create",
+                                           "text",
+                                           "style"
+                                       ]
+                          },
+                          {
+                              "name":  "delete_text_style",
+                              "description":  "Delete a text style by name. Standard cannot be deleted; the style must be unused (no DBText/MText/Dim references).",
+                              "tags":  [
+                                           "delete",
+                                           "text",
+                                           "style"
+                                       ]
+                          },
+                          {
+                              "name":  "list_text_styles",
+                              "description":  "List every text style defined in the active drawing plus the current style name.",
+                              "tags":  [
+                                           "list",
+                                           "text",
+                                           "styles"
+                                       ]
+                          },
+                          {
+                              "name":  "set_current_text_style",
+                              "description":  "Set the active text style for new DBText / MText entities; subsequent text creation defaults to it.",
+                              "tags":  [
+                                           "set",
+                                           "current",
+                                           "text",
+                                           "style"
+                                       ]
+                          },
+                          {
+                              "name":  "set_table_cell",
+                              "description":  "Set the text content of a single Table cell by (row, col), 0-based.",
+                              "tags":  [
+                                           "set",
+                                           "table",
+                                           "cell"
+                                       ]
+                          },
+                          {
+                              "name":  "update_dbtext",
+                              "description":  "Replace the contents of an existing DBText entity by handle.",
+                              "tags":  [
+                                           "update",
+                                           "dbtext"
+                                       ]
+                          },
+                          {
+                              "name":  "update_mtext",
+                              "description":  "Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written.",
+                              "tags":  [
+                                           "update",
+                                           "mtext"
+                                       ]
+                          }
+                      ],
+    "metadata":  {
+                     "category":  "annotations",
+                     "tool_count_target":  12,
+                     "requires_plugin":  true,
+                     "supported_acad_versions":  [
+                                                     "2020",
+                                                     "2021",
+                                                     "2022",
+                                                     "2023",
+                                                     "2024",
+                                                     "2025"
+                                                 ],
+                     "supported_lt":  false,
+                     "owner":  "MCP Nexus AutoCAD",
+                     "version":  "0.1.0",
+                     "phase":  "phase3_annotations_blocks",
+                     "last_regenerated_utc":  "2026-04-22T12:37:13.6977566Z"
+                 }
+}

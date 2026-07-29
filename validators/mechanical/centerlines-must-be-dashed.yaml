@@ -1,0 +1,22 @@
+id: mech.centerlines.must-be-dashed
+name: Centre-lines must use the CENTER linetype
+discipline: mechanical
+severity: error
+description: |
+  Mechanical drafting per ISO 128 requires centre-lines to use a long-dash /
+  short-dash linetype (CENTER, CENTER2 or CENTERX2). Solid centre-lines look
+  identical to outlines and cause manufacturing tolerance misreads.
+references:
+  - https://www.iso.org/standard/65302.html
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(M[-_]?CENTER(LINE)?S?|ME[-_]?CENTER)$"
+checks:
+  - type: any_of
+    checks:
+      - { type: linetype_equals, value: CENTER }
+      - { type: linetype_equals, value: CENTER2 }
+      - { type: linetype_equals, value: CENTERX2 }
+fix:
+  type: set_linetype
+  value: CENTER

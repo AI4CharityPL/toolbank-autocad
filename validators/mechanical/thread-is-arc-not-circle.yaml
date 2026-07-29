@@ -1,0 +1,18 @@
+id: mech.thread.arc-not-circle
+name: Thread representation uses an Arc, not a full Circle
+discipline: mechanical
+severity: warning
+description: |
+  ISO 6410-1 thread representation shows the minor diameter as a 3/4 arc
+  (≈270°), never as a closed circle. Drawings with a full Circle on
+  layer ME-THREAD silently read as plain turned diameters and break the
+  manufacturing reading convention.
+
+  This rule uses the AcDb runtime class (AcDbArc vs AcDbCircle) instead of
+  the DXF type, so anonymous sub-entities inside dynamic blocks still
+  resolve correctly (rule 34 §5).
+scope:
+  entity_types: [Circle]
+  layer_pattern: "^(M[-_]?THREAD|ME[-_]?THREAD)$"
+checks:
+  - { type: entity_class_equals, value: AcDbArc }

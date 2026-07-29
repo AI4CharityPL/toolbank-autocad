@@ -1,0 +1,26 @@
+id: arch.walls.on-walls-layer
+name: Wall faces must live on A-WALL (AIA-style)
+discipline: architectural
+severity: error
+description: |
+  Per rule 36 §11 (the AIA-style architectural layer key shipped with
+  acad-architecture) every visible wall face — modelled as Line or Polyline —
+  must sit on layer 'A-WALL'. Common offenders are legacy 'WALLS' / 'WALL' /
+  'M-WALL' layers from older drawings. The fix migrates them in place.
+
+  This rule pairs with `acad-architecture.draw_wall` and
+  `acad-architecture.draw_walls_chain`, both of which place faces on A-WALL by
+  default. Centrelines belong on A-WALL-CTRL — see rule
+  arch.walls.centerline-on-a-wall-ctrl.
+references:
+  - https://docs.example.com/CAD-001#walls
+  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(WALL|WALLS|M[-_]?WALL|WALLS_NEW|A[-_]?WALL[-_]?(NEW|OLD)?)$"
+checks:
+  - { type: layer_equals, value: A-WALL }
+fix:
+  type: move_to_layer
+  layer: A-WALL
+  create_if_missing: true

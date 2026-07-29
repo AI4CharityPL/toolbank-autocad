@@ -1,0 +1,19 @@
+id: civil.topo.spot-on-c-topo-spot
+name: Spot-elevation marks belong on C-TOPO-SPOT
+discipline: civil
+severity: warning
+description: |
+  Per rule 38 §5 + §9 spot-elevation crosses + their signed labels live on
+  layer C-TOPO-SPOT. Misfiled spots end up hidden when a draftsman freezes
+  topo layers selectively before plotting.
+
+  Pairs with `acad-civil.place_spot_elevation`.
+scope:
+  entity_types: [Line, DBText, MText]
+  layer_pattern: "^(SPOT[-_]?ELEV(ATION)?|RZEDNA|RZEDNE|TOPO[-_]?SPOT|C[-_]?SPOT)$"
+checks:
+  - { type: layer_equals, value: C-TOPO-SPOT }
+fix:
+  type: move_to_layer
+  layer: C-TOPO-SPOT
+  create_if_missing: true

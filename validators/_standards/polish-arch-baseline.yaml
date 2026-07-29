@@ -1,0 +1,18 @@
+id: polish-arch-baseline
+name: Polish architectural-office baseline
+description: |
+  Office CAD-001 baseline for architectural drawings: ISO hygiene plus the
+  AIA-style architectural layer key shipped with acad-architecture (rule 36
+  §11) — wall faces on A-WALL, wall centrelines on A-WALL-CTRL, structural
+  columns on S-COLS — title-block presence, door-tag attribute, and wall
+  segment minimum length.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.text.min-height
+  - arch.walls.on-walls-layer
+  - arch.walls.centerline-on-a-wall-ctrl
+  - arch.columns.on-s-cols-layer
+  - arch.titleblock.must-be-defined
+  - arch.doors.must-have-room-tag
+  - arch.walls.min-length

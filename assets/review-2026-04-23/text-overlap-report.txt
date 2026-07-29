@@ -1,0 +1,49 @@
+﻿# audit: 5e77dffc-1115-4177-901d-59226b975cb3.txt
+# scanned 150 text entities across 45 layers
+  A-AREA-IDEN: 53
+  S-GRID-IDEN: 38
+  A-ANNO-NOTE: 24
+  A-ANNO-TEXT: 17
+  A-ANNO-TTLB: 12
+  A-ANNO-SYMB-EGRS: 5
+  A-ANNO-SYMB: 1
+
+# labels with bbox: 150
+
+# bbox-overlapping label pairs: 8
+
+## top 30 overlap clusters:
+
+--- cluster 1: 2 labels around (38397,-3979) ---
+  hnd=  285 lyr=A-ANNO-SYMB-EGRS h=   300 pos=(38093,-3908) sz=(3814x816)  txt='EG-01 | WEJSCIE GLOWNE'
+  hnd=   EA lyr=S-GRID-IDEN     h=   700 pos=(38701,-4050) sz=(597x700)  txt='F'
+
+--- cluster 2: 2 labels around (38545,29442) ---
+  hnd=  244 lyr=A-ANNO-NOTE     h=   350 pos=(37100,28892) sz=(5799x2217)  txt='PATIO WEWNETRZNE | 12 x 18 m = 216 m┬▓ | zielen izolacyjna, drzewo | + l─Öczeniowy daylight shaft'
+  hnd=  13D lyr=A-ANNO-TEXT     h=   2.5 pos=(39989,29992) sz=(22x15)  txt='DZIEDZINIEC | BIOPHILIC | 12 x 18 m | 216 m2'
+
+--- cluster 3: 2 labels around (55458,3647) ---
+  hnd=  19E lyr=A-AREA-IDEN     h=   350 pos=(55416,3234) sz=(7168x1531)  txt='B-102 | WJAZD KARETEK / VESTIBULE | 80 m┬▓'
+  hnd=  4E2 lyr=A-ANNO-NOTE     h=   180 pos=(55500,4060) sz=(7080x240)  txt='SOR AUTO-DOOR 2x1500 mmariera hermetyczna'
+
+--- cluster 4: 2 labels around (53336,23587) ---
+  hnd=  1A5 lyr=A-AREA-IDEN     h=   300 pos=(53490,23443) sz=(1770x1313)  txt='B-302 | LAB POC | 34 m┬▓'
+  hnd=  280 lyr=A-ANNO-NOTE     h=   180 pos=(53183,23730) sz=(2035x539)  txt='LAB POC bench | biochem/gazy/INR'
+
+--- cluster 5: 2 labels around (68362,11358) ---
+  hnd=  1B3 lyr=A-ANNO-TEXT     h=   250 pos=(69355,11348) sz=(6289x304)  txt='B-510 KORYTARZ STERYLNY  b=3,0 m'
+  hnd=  242 lyr=A-ANNO-NOTE     h=   200 pos=(67368,11369) sz=(10264x262)  txt='SKYLIGHT N-LIGHT  13,0 x 2,0 m  U=1,1  nad korytarzem sterylnym (orientacja N)'
+
+--- cluster 6: 2 labels around (70051,32773) ---
+  hnd=  262 lyr=A-ANNO-NOTE     h=   200 pos=(69365,33202) sz=(6270x596)  txt='Ôľí lozko szpitalne 2,2 x 1,0 m | Ôľ» headwall med gas OÔéé/NÔééO/Air/Vac + panel elektr.'
+  hnd=  1B6 lyr=A-AREA-IDEN     h=   300 pos=(70736,32343) sz=(3528x1313)  txt='B-602 | POKOJ 1-osobowy | 30 m┬▓'
+
+--- cluster 7: 2 labels around (68608,37359) ---
+  hnd=  1BF lyr=A-ANNO-TEXT     h=   250 pos=(68691,37336) sz=(7618x328)  txt='KORYTARZ ODDZIALOWY  b=3,0 m (WT ┬ž 242)'
+  hnd=  27D lyr=A-ANNO-NOTE     h=   180 pos=(68524,37382) sz=(7952x236)  txt='NURSES STATION - 14,0 m (point-of-care + storage + pneumatic tube)'
+
+--- cluster 8: 2 labels around (50008,29618) ---
+  hnd=  1C2 lyr=A-ANNO-TEXT     h=   250 pos=(51716,29836) sz=(9568x328)  txt='KORYTARZ MIEDZYSTREFOWY (przez drzwi p.poz. REI 60)'
+  hnd=  4A4 lyr=A-ANNO-NOTE     h=   180 pos=(48300,29400) sz=(4020x600)  txt='DRZWI PPO┼╗ REI 60 2x1,4m | self-closing EN 14637'
+
+# labels inventory saved: C:\Users\DELL\Dev\autocad-mcp\assets\review-2026-04-23\labels-inventory.json

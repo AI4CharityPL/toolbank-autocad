@@ -1,0 +1,23 @@
+id: civil.road.centerline-must-be-dashed
+name: Road centrelines must use the CENTER linetype
+discipline: civil
+severity: error
+description: |
+  Per rule 38 §6 the road horizontal alignment uses the CENTER linetype
+  (or CENTER2 / CENTERX2 for dense / sparse variants). Solid centrelines
+  read identical to edge of pavement and ruin the plan hierarchy.
+
+  Pairs with `acad-civil.draw_alignment_tangent` / `draw_alignment_curve`,
+  which inherit CENTER from layer C-ROAD-CNTR.
+scope:
+  entity_types: [Line, Polyline, Arc]
+  layer_pattern: "^C[-_]?ROAD[-_]?CNTR$"
+checks:
+  - type: any_of
+    checks:
+      - { type: linetype_equals, value: CENTER }
+      - { type: linetype_equals, value: CENTER2 }
+      - { type: linetype_equals, value: CENTERX2 }
+fix:
+  type: set_linetype
+  value: CENTER

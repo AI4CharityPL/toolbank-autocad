@@ -1,0 +1,20 @@
+id: elec.wire.on-e-wire-layer
+name: Signal/control wires belong on E-WIRE family
+discipline: electrical
+severity: warning
+description: |
+  Per rule 39 §11 wires live on one of three layers depending on duty:
+  E-WIRE (signal, default), E-WIRE-PWR (power rails), or E-WIRE-CTRL
+  (low-voltage control). Catches lines drawn on legacy 'WIRES' / 'WIRE' /
+  'PRZEWOD' layers that need to migrate to E-WIRE.
+
+  Pairs with `acad-electrical.draw_wire`.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(WIRE|WIRES|PRZEWOD|PRZEWODY|E[-_]?WIRE)$"
+checks:
+  - { type: layer_equals, value: E-WIRE }
+fix:
+  type: move_to_layer
+  layer: E-WIRE
+  create_if_missing: true

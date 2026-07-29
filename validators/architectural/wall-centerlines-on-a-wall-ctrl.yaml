@@ -1,0 +1,25 @@
+id: arch.walls.centerline-on-a-wall-ctrl
+name: Wall centrelines must live on A-WALL-CTRL with CENTER linetype
+discipline: architectural
+severity: warning
+description: |
+  Per rule 36 §1 every wall is a centreline + two faces. The centreline is the
+  authoritative axis used by downstream tools (mitre cleanup, wall area
+  takeoff, schedule extraction). It MUST sit on layer 'A-WALL-CTRL', which
+  acad-architecture.ensure_architectural_layers creates with linetype CENTER
+  so centrelines are visually distinct from faces.
+
+  This rule scopes to common centreline-naming variants ('CENTERLINE',
+  'CENTER', 'AXIS') so that legacy drawings can be migrated automatically.
+references:
+  - .cursor/rules/36-architecture-domain-traps.mdc#1-a-wall-is-not-a-single-line
+  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(CENTERLINE|CENTER|AXIS|WALL[-_]?CTRL|WALL[-_]?CL|A[-_]?WALL[-_]?CL|A[-_]?WALL[-_]?CENTER)$"
+checks:
+  - { type: layer_equals, value: A-WALL-CTRL }
+fix:
+  type: move_to_layer
+  layer: A-WALL-CTRL
+  create_if_missing: true

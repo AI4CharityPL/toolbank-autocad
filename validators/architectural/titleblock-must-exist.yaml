@@ -1,0 +1,11 @@
+id: arch.titleblock.must-be-defined
+name: Sheet title block must be defined
+discipline: architectural
+severity: error
+description: |
+  Every architectural deliverable must carry the office title-block block
+  definition (TITLEBLOCK_A1) so that paper-space layouts can place it
+  consistently. Drawings that PURGE the title block silently lose project
+  metadata (project no., revision, sheet name).
+checks:
+  - { type: block_must_be_defined, name: TITLEBLOCK_A1 }

@@ -1,0 +1,21 @@
+id: elec.symbol.on-e-symbol-layer
+name: Schematic symbols belong on E-SYMBOL
+discipline: electrical
+severity: warning
+description: |
+  Per rule 39 §11 the bodies of resistors, contacts, coils, and other symbol
+  primitives live on layer E-SYMBOL (ACI 7, 0.30 mm Continuous). Mixing
+  symbols onto E-WIRE or E-LBL-* breaks layer-state hide/freeze workflows
+  and prints with the wrong lineweight.
+
+  Pairs with `acad-electrical.place_resistor`, `place_contact_no`,
+  `place_contact_nc`, and `place_coil`, all of which default to E-SYMBOL.
+scope:
+  entity_types: [Line, Polyline, Arc, Circle]
+  layer_pattern: "^(SYMBOL|SYMBOLS|E[-_]?SYM|E[-_]?SYMBOL)$"
+checks:
+  - { type: layer_equals, value: E-SYMBOL }
+fix:
+  type: move_to_layer
+  layer: E-SYMBOL
+  create_if_missing: true

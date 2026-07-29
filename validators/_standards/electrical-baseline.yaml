@@ -1,0 +1,29 @@
+id: electrical-baseline
+name: Electrical-schematic baseline (IEC + JIC hybrid)
+description: |
+  Minimum hygiene for an electrical-schematic / ladder-logic deliverable
+  produced with the acad-electrical category. Builds on the general ISO
+  hygiene rules and adds the five electrical traps covered by paired
+  validators today (rule 39 §11 + §13):
+
+  - schematic symbols on E-SYMBOL;
+  - signal/control wires on E-WIRE family;
+  - power rails on E-WIRE-PWR;
+  - rung-number labels on E-LBL-RUNG;
+  - device tags on E-LBL-DEV.
+
+  IEC 81346 prefix-letter validation (rule 39 §6) is enforced AT-WRITE-TIME
+  by `acad-electrical.place_device_tag` itself, and the IEC/ANSI symbol
+  style is policed by tool defaults. Post-hoc YAML validators for prefix
+  format and for missing junction dots (rule 39 §3) will land once the
+  engine grows a `text_matches_regex` and a `polyline_endpoints_share`
+  check primitive.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.text.min-height
+  - elec.symbol.on-e-symbol-layer
+  - elec.wire.on-e-wire-layer
+  - elec.wire.power-on-e-wire-pwr
+  - elec.rung.label-on-e-lbl-rung
+  - elec.tag.device-on-e-lbl-dev

@@ -1,0 +1,34 @@
+---
+description: Backwards-compatibility rules for Shared/Contracts.cs and the pipe protocol. Read before changing any DTO.
+alwaysApply: true
+---
+
+# No breaking changes to contracts
+
+Once a DTO in `AcadMcp.Shared` or a pipe message version is shipped to a build, it is **frozen**. Multiple Backend processes from possibly-different builds may talk to one Plugin (or vice versa). Breaking the wire = system meltdown.
+
+## Hard rules
+
+1. **Adding fields:** allowed only as `init`-only optional properties with `[JsonPropertyName]` and a sensible default. Never required.
+2. **Renaming fields:** **forbidden**. If you must rename, add a new field, deprecate the old, keep both serialized for at least 2 minor versions.
+3. **Changing types:** forbidden. To change `int → long`, add a new field `<name>Long` and deprecate.
+4. **Removing fields:** forbidden until at least 2 minor versions of `Obsolete` warning + grep across `Categories/` confirms zero use.
+5. **Changing enum values:** forbidden. Append new values at the end. Never reorder.
+6. **Tool name changes:** forbidden once the tool is in a manifest pushed to MCPBank. Add new tool, deprecate old. Old continues to work, returns `deprecation_warning` field.
+
+## Versioning
+
+- `AcadMcp.Shared` follows SemVer. Major bump = breaking - requires user-facing migration script.
+- Pipe protocol carries `protocolVersion` in handshake. Plugin advertises supported range; Backend negotiates highest mutual version.
+- `ToolResponse<T>` carries `apiVersion` field so older Backends can detect newer responses gracefully.
+
+## Deprecation flow
+
+1. Mark with `[Obsolete("Use X instead, will be removed in vY")]`
+2. Add to `docs/deprecations.md` with deprecation date and removal target
+3. Source generator emits warning that's recorded in CI logs
+4. Removal only after 2+ minor version cycles AND zero usage in `Categories/`
+
+## When in doubt
+
+Do NOT touch `Contracts.cs`. Add a new contract instead. Aging out old ones is cheap; breaking running plugins is catastrophic.

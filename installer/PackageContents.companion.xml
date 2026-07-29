@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0"
+                    AppVersion="${VERSION}"
+                    Name="AutoCAD AI Assistant"
+                    Description="Wbudowany asystent AI dla AutoCAD - czat, zliczanie elementow, raporty"
+                    Author="AutoCAD MCP Megasystem"
+                    ProductType="Application"
+                    AutodeskProduct="AutoCAD">
+  <CompanyDetails Name="AutoCAD MCP Megasystem" Url="" Email="" />
+  <Components Description="In-app AI assistant + AutoCAD tool host">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25" />
+    <ComponentEntry AppName="AcadMcpCompanion"
+                    Version="${VERSION}"
+                    ModuleName="./Contents/AcadMcp.Companion.Host.dll"
+                    AppDescription="WPF chat palette (command ACADAI)"
+                    LoadOnAutoCADStartup="True" />
+    <ComponentEntry AppName="AcadMcpToolHost"
+                    Version="${VERSION}"
+                    ModuleName="./Contents/AcadMcp.Plugin.dll"
+                    AppDescription="AutoCAD tool host used by the assistant"
+                    LoadOnAutoCADStartup="True" />
+  </Components>
+</ApplicationPackage>

@@ -1,0 +1,43 @@
+{
+  "persona": "senior-architect-reviewer",
+  "rule": "60-architectural-fidelity",
+  "phase": "D11",
+  "endpoint": "/v1/architect-review",
+  "describe_image_alias": true,
+  "recommended_provider": {
+    "provider": "google",
+    "model": "gemini-3.1-pro-preview",
+    "released": "2026-02-19",
+    "thinking_level": "high",
+    "reason": "April 2026 frontier vision model; leads MMMU-Pro 75.1, Video-MME 78.2, DocVQA 95.7."
+  },
+  "alternative_providers": [
+    { "provider": "anthropic", "model": "claude-opus-4-6", "note": "Strong reasoning, slightly weaker vision in April 2026 benchmarks." },
+    { "provider": "openai",    "model": "gpt-5.4",         "note": "Solid generalist; acceptable fallback." }
+  ],
+  "threshold_policy": [
+    { "min": 0.0,  "max": 9.9,   "verdict": "concept-sketch",         "export_ok": false },
+    { "min": 10.0, "max": 13.9,  "verdict": "technical-study",        "export_ok": false },
+    { "min": 14.0, "max": 15.9,  "verdict": "executive-with-remark",  "export_ok": true,  "requires_remark": true },
+    { "min": 16.0, "max": 17.0,  "verdict": "full-wykonawczy",        "export_ok": true }
+  ],
+  "criteria": [
+    { "id":  1, "label": "hatching",          "axis": "Material expression",   "fix_tool": "acad.hatches.apply_material_preset_by_point" },
+    { "id":  2, "label": "furniture",         "axis": "Interior furnishing",   "fix_tool": "acad.furniture.populate_room" },
+    { "id":  3, "label": "plumbing",          "axis": "Sanitary fixtures",     "fix_tool": "acad.plumbing.populate_bathroom" },
+    { "id":  4, "label": "doors",             "axis": "Door quality",          "fix_tool": "acad.openings.insert_door" },
+    { "id":  5, "label": "windows",           "axis": "Window quality",        "fix_tool": "acad.openings.insert_window" },
+    { "id":  6, "label": "verticals",         "axis": "Vertical circulation",  "fix_tool": "acad.verticals.insert_stair" },
+    { "id":  7, "label": "grid",              "axis": "Structural grid",       "fix_tool": "acad.grids.draw_grid_from_spacings" },
+    { "id":  8, "label": "dimensions",        "axis": "Dimensioning",          "fix_tool": "acad.dimensions.dim_chain_linear" },
+    { "id":  9, "label": "schedules",         "axis": "Schedules",             "fix_tool": "acad.schedules.generate_door_schedule" },
+    { "id": 10, "label": "callouts",          "axis": "Callouts",              "fix_tool": "acad.callouts.insert_title_block" },
+    { "id": 11, "label": "sections",          "axis": "Section lines",         "fix_tool": "acad.sections.insert_section_line" },
+    { "id": 12, "label": "lineweight",        "axis": "Plot style",            "fix_tool": "acad.plotstyles.apply_plotstyle_to_layout" },
+    { "id": 13, "label": "finishes-legend",   "axis": "Finishes legend",       "fix_tool": "acad.schedules.generate_finish_legend" },
+    { "id": 14, "label": "orientation-scale", "axis": "Orientation + scale",   "fix_tool": "acad.callouts.insert_north_arrow" },
+    { "id": 15, "label": "reflected-ceiling", "axis": "Reflected ceiling plan","fix_tool": "acad.layouts.new_layout" },
+    { "id": 16, "label": "details",           "axis": "Jamb / sill / lintel",  "fix_tool": "acad.blocks.library_register" },
+    { "id": 17, "label": "room-program",      "axis": "Room program fidelity", "fix_tool": "acad.schedules.list_room_labels" }
+  ]
+}

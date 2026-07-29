@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>AcadMcp.Companion.Agent</RootNamespace>
+    <AssemblyName>AcadMcp.Companion.Agent</AssemblyName>
+    <Description>Provider-agnostic chat agent: OpenAI/Anthropic/Gemini providers, tool-calling loop over the AutoCAD tool bank, multimodal input, BYOK key storage and report flows.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcadMcp.Companion.Mcp\AcadMcp.Companion.Mcp.csproj" />
+  </ItemGroup>
+
+</Project>

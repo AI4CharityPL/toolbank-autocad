@@ -1,0 +1,21 @@
+id: mech.centerlines.on-me-center-layer
+name: Centre-lines belong on ME-CENTER
+discipline: mechanical
+severity: error
+description: |
+  Per rule 37 §1 centre-lines and feature axes live on layer ME-CENTER with
+  the CENTER linetype. Common offenders are 'CENTERLINE' / 'CENTER' / 'AXIS'
+  / 'M-CENTER' from legacy drawings — the fix migrates them in place.
+
+  Pairs with `acad-mechanical.draw_centerline` and
+  `acad-mechanical.draw_centerline_cross`, both of which place lines on
+  ME-CENTER by default.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(CENTER|CENTERLINE|AXIS|M[-_]?CENTER(LINE)?S?|ME[-_]?CENTER[-_]?(NEW|OLD)?)$"
+checks:
+  - { type: layer_equals, value: ME-CENTER }
+fix:
+  type: move_to_layer
+  layer: ME-CENTER
+  create_if_missing: true

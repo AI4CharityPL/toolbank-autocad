@@ -1,0 +1,730 @@
+{
+  "task": "Add 25 missing doors (1100mm leaf + 90deg swing arc)",
+  "plan": [
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 10550.0,
+          "y": 10000
+        },
+        "end": {
+          "x": 10550.0,
+          "y": 8900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 10550.0,
+          "y": 10000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 20550.0,
+          "y": 10000
+        },
+        "end": {
+          "x": 20550.0,
+          "y": 8900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 20550.0,
+          "y": 10000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 19550.0,
+          "y": 39400
+        },
+        "end": {
+          "x": 19550.0,
+          "y": 40500
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 19550.0,
+          "y": 39400
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 30050.0,
+          "y": 39400
+        },
+        "end": {
+          "x": 30050.0,
+          "y": 40500
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 30050.0,
+          "y": 39400
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 41550.0,
+          "y": 39400
+        },
+        "end": {
+          "x": 41550.0,
+          "y": 40500
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 41550.0,
+          "y": 39400
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 3500,
+          "y": 53050.0
+        },
+        "end": {
+          "x": 2400,
+          "y": 53050.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 3500,
+          "y": 53050.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 3500,
+          "y": 58050.0
+        },
+        "end": {
+          "x": 2400,
+          "y": 58050.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 3500,
+          "y": 58050.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 6300.0,
+          "y": 50000
+        },
+        "end": {
+          "x": 6300.0,
+          "y": 51100
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 6300.0,
+          "y": 50000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 18550.0,
+          "y": 50000
+        },
+        "end": {
+          "x": 18550.0,
+          "y": 51100
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 18550.0,
+          "y": 50000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 38550.0,
+          "y": 50000
+        },
+        "end": {
+          "x": 38550.0,
+          "y": 51100
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 38550.0,
+          "y": 50000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 13000,
+          "y": 17550.0
+        },
+        "end": {
+          "x": 11900,
+          "y": 17550.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 13000,
+          "y": 17550.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 13000,
+          "y": 25550.0
+        },
+        "end": {
+          "x": 11900,
+          "y": 25550.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 13000,
+          "y": 25550.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 13000,
+          "y": 33550.0
+        },
+        "end": {
+          "x": 11900,
+          "y": 33550.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 13000,
+          "y": 33550.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 13000,
+          "y": 41550.0
+        },
+        "end": {
+          "x": 11900,
+          "y": 41550.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 13000,
+          "y": 41550.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 51550.0,
+          "y": 8000
+        },
+        "end": {
+          "x": 51550.0,
+          "y": 6900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 51550.0,
+          "y": 8000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 64550.0,
+          "y": 8000
+        },
+        "end": {
+          "x": 64550.0,
+          "y": 6900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 64550.0,
+          "y": 8000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 56000,
+          "y": 15050.0
+        },
+        "end": {
+          "x": 54900,
+          "y": 15050.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 56000,
+          "y": 15050.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 56500,
+          "y": 13550.0
+        },
+        "end": {
+          "x": 57600,
+          "y": 13550.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 56500,
+          "y": 13550.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 270.0,
+        "endAngleDeg": 360.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 56500,
+          "y": 16125.0
+        },
+        "end": {
+          "x": 57600,
+          "y": 16125.0
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 56500,
+          "y": 16125.0
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 270.0,
+        "endAngleDeg": 360.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 54925.0,
+          "y": 20100
+        },
+        "end": {
+          "x": 54925.0,
+          "y": 21200
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 54925.0,
+          "y": 20100
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 59175.0,
+          "y": 20100
+        },
+        "end": {
+          "x": 59175.0,
+          "y": 21200
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 59175.0,
+          "y": 20100
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 53050.0,
+          "y": 48000
+        },
+        "end": {
+          "x": 53050.0,
+          "y": 49100
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 53050.0,
+          "y": 48000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 53550.0,
+          "y": 52000
+        },
+        "end": {
+          "x": 53550.0,
+          "y": 53100
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 53550.0,
+          "y": 52000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 90.0,
+        "endAngleDeg": 180.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 69300.0,
+          "y": 10000
+        },
+        "end": {
+          "x": 69300.0,
+          "y": 8900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 69300.0,
+          "y": 10000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_line",
+      "args": {
+        "start": {
+          "x": 76800.0,
+          "y": 10000
+        },
+        "end": {
+          "x": 76800.0,
+          "y": 8900
+        },
+        "layer": "A-DOOR"
+      }
+    },
+    {
+      "category": "geometry2d",
+      "tool": "acad.geometry2d.draw_arc",
+      "args": {
+        "center": {
+          "x": 76800.0,
+          "y": 10000
+        },
+        "radius": 1100.0,
+        "startAngleDeg": 180.0,
+        "endAngleDeg": 270.0,
+        "layer": "A-DOOR"
+      }
+    }
+  ]
+}

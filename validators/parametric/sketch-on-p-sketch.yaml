@@ -1,0 +1,19 @@
+id: parametric.sketch.on-p-sketch
+name: WIP sketch curves belong on P-SKETCH
+discipline: parametric
+severity: warning
+description: |
+  Per rule 42 §9 unconstrained / work-in-progress sketch geometry lives on
+  layer P-SKETCH. Legacy names like SKETCH, WIP, or ROBOCZE should migrate
+  so layer states hide WIP before plotting.
+
+  Pairs with drawings produced using `acad-parametric.ensure_parametric_layers`.
+scope:
+  entity_types: [Line, Polyline, Arc, Circle, Spline]
+  layer_pattern: "^(SKETCH|WIP|ROBOCZE|SZKIC|P[-_]?SKETCH)$"
+checks:
+  - { type: layer_equals, value: P-SKETCH }
+fix:
+  type: move_to_layer
+  layer: P-SKETCH
+  create_if_missing: true

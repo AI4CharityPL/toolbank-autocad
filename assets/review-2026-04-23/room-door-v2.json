@@ -1,0 +1,154 @@
+{
+  "no_door": [
+    {
+      "handle": "15F",
+      "text": "A-001 | ADMIN OPEN OFFICE | 150 m²",
+      "cx": 7500.0,
+      "cy": 5000.0,
+      "bbox_label": [
+        5000.341064120054,
+        4234.146202819463,
+        9999.658935879947,
+        5765.853797180536
+      ],
+      "enclose": [
+        null,
+        15000,
+        400,
+        10000
+      ],
+      "doors_near": [],
+      "doors_near_v2": []
+    },
+    {
+      "handle": "16F",
+      "text": "A-401 | ADMIN | 104 m²",
+      "cx": 6500.0,
+      "cy": 17000.0,
+      "bbox_label": [
+        5841.984993178718,
+        16346.214188267395,
+        7158.015006821282,
+        17653.785811732607
+      ],
+      "enclose": [
+        null,
+        13000,
+        13000,
+        21000
+      ],
+      "doors_near": [],
+      "doors_near_v2": []
+    },
+    {
+      "handle": "170",
+      "text": "A-402 | ARCHIWUM | 104 m²",
+      "cx": 6500.0,
+      "cy": 25000.0,
+      "bbox_label": [
+        5340.211459754434,
+        24343.656207366985,
+        7659.788540245567,
+        25656.343792633015
+      ],
+      "enclose": [
+        null,
+        13000,
+        21000,
+        29000
+      ],
+      "doors_near": [],
+      "doors_near_v2": []
+    },
+    {
+      "handle": "171",
+      "text": "A-403 | IT / SERWERY | 104 m²",
+      "cx": 6500.0,
+      "cy": 33000.0,
+      "bbox_label": [
+        5100.784447476126,
+        32343.656207366985,
+        7899.215552523875,
+        33656.343792633015
+      ],
+      "enclose": [
+        null,
+        13000,
+        30000,
+        37000
+      ],
+      "doors_near": [],
+      "doors_near_v2": []
+    },
+    {
+      "handle": "172",
+      "text": "A-404 | DYREKCJA | 104 m²",
+      "cx": 6500.0,
+      "cy": 41000.0,
+      "bbox_label": [
+        5398.021828103683,
+        40343.656207366985,
+        7601.978171896317,
+        41656.343792633015
+      ],
+      "enclose": [
+        null,
+        13000,
+        39400,
+        45000
+      ],
+      "doors_near": [],
+      "doors_near_v2": []
+    }
+  ],
+  "door_wall_illegal": [
+    {
+      "handleA": "11D",
+      "handleB": "19B",
+      "layerA": "A-WALL-EXT",
+      "layerB": "A-WALL-FARA",
+      "dxfTypeA": "Polyline",
+      "dxfTypeB": "Polyline",
+      "bboxA": [
+        0,
+        0,
+        80000,
+        60000
+      ],
+      "bboxB": [
+        48000,
+        52000,
+        58000,
+        60000
+      ],
+      "overlapArea": 80000000,
+      "intersectionCount": 2,
+      "severity": "critical",
+      "mode": "polyline_crosses_polyline"
+    },
+    {
+      "handleA": "11E",
+      "handleB": "19B",
+      "layerA": "A-WALL-EXT",
+      "layerB": "A-WALL-FARA",
+      "dxfTypeA": "Polyline",
+      "dxfTypeB": "Polyline",
+      "bboxA": [
+        400,
+        400,
+        79600,
+        59600
+      ],
+      "bboxB": [
+        48000,
+        52000,
+        58000,
+        60000
+      ],
+      "overlapArea": 76000000,
+      "intersectionCount": 2,
+      "severity": "critical",
+      "mode": "polyline_crosses_polyline"
+    }
+  ]
+}

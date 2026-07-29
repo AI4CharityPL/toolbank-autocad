@@ -1,0 +1,28 @@
+id: elec.wire.crossing-needs-junction
+name: Wire endpoints must land on a junction symbol
+discipline: electrical
+severity: warning
+description: |
+  IEC 60617 / PN-EN 61082 require that every wire segment terminates in an
+  explicit graphical element — a device terminal, a tag block, or (for T /
+  cross connections) a JUNCTION dot symbol. Orphan wire endpoints in open
+  space are the single most common schematic-reading defect and frequently
+  flip the entire connectivity graph on a net-list export.
+
+  This is a cross-entity check. It reads the polyline vertex list shipped
+  from the plugin snapshot (rule 34 §5, added in Phase 7.2) and for each
+  endpoint asks: is there a BlockReference named JUNCTION whose centre lies
+  within tolerance? The tolerance is intentionally generous (2.5 units) so
+  drawings whose block insertion point is not pixel-perfect still pass.
+
+  Catches the opposite failure mode of `acad-electrical.place_junction`
+  which *draws* the junction; this rule *verifies* that one exists wherever
+  the schematic demands it.
+scope:
+  entity_types: [Polyline, Line]
+  layer_pattern: "^E[-_]?WIRE(?:[-_]?(CTRL|PWR|SIG|DATA))?$"
+checks:
+  - type: polyline_endpoints_share
+    tolerance: 2.5
+    block_name: JUNCTION
+    require: true

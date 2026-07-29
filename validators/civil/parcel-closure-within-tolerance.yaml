@@ -1,0 +1,20 @@
+id: civil.parcel.closure-tolerance
+name: Parcel polylines must close within 1 mm
+discipline: civil
+severity: error
+description: |
+  Legal parcel boundaries must form a closed loop. PN-EN 61970 / national
+  cadastre practice allows a 1 mm survey closure gap, but anything above
+  that is either a digitising error or a missed segment. Rule pairs with
+  `acad-civil.draw_parcel`, which always emits a closed polyline on
+  C-PROP — this check catches legacy / hand-migrated geometry that still
+  ships a sub-millimetre gap between first and last vertex.
+
+  Evaluated with the new `polyline_closure_within` primitive (rule 34 §5,
+  added in Phase 7.2) which reads the vertex list shipped from the plugin
+  snapshot.
+scope:
+  entity_types: [Polyline]
+  layer_in: [C-PROP]
+checks:
+  - { type: polyline_closure_within, tolerance: 0.001 }

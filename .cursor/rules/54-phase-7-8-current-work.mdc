@@ -1,0 +1,54 @@
+---
+description: Fazy 0–6 ukończone w roadmapie repo; bieżący rozwój zaczyna się od Fazy 7. Czytaj docs/PHASE-7-8-ROADMAP.md przy pierwszym zadaniu rozwojowym.
+alwaysApply: true
+---
+
+# Fazy 7–8 — bieżąca praca rozwojowa
+
+## Stan roadmapy repozytorium
+
+- **Fazy 0–6** są **ukończone w sensie tej roadmapy** (backend, plugin, kategorie, walidatory, domeny Fazy 6, vision scaffold). Szczegóły narzędzi i historii: [CHANGELOG.md](../../CHANGELOG.md) oraz istniejące manifesty w `mcpbank-manifests/`.
+- **Bieżąca praca rozwojowa zaczyna się od Fazy 7.** Pierwsze źródło: [docs/PHASE-7-8-ROADMAP.md](../../docs/PHASE-7-8-ROADMAP.md).
+
+## Zasady dla agenta
+
+- **Nie zakładaj**, że projekt jest „skończony”, ani że cała przyszła praca ogranicza się do drobnych poprawek — **Fazy 7–8 są planowo przed nami**, chyba że użytkownik **explicite** poleci inny zakres.
+- **Nie pomijaj** Faz 7–8 w planowaniu bez wyraźnej instrukcji użytkownika (np. hotfix wyłącznie w istniejącym kodzie).
+- Przy **pierwszym zadaniu rozwojowym** w tej sesji (nowa funkcja, refaktor architektury, nowa kategoria) — **przeczytaj roadmapę** `docs/PHASE-7-8-ROADMAP.md`, żeby kontekst Fazy 7 (iterate, checkpointy, livestream, prymitywy walidatorów, synchronizacja routera) i Fazy 8 (YOLO, E2E, ops) był świadomy.
+
+## Kontekst workspace
+
+Projekt bywa otwierany **bezpośrednio z folderu repozytorium** (workspace Cursor), nie tylko jako „zewnętrzny” opis. **README i CHANGELOG mogą się różnić datą aktualizacji** — przy konflikcie opisów **CHANGELOG + roadmapa** mają pierwszeństwo dla stanu faz.
+
+## Regresje i ukończone fazy
+
+Reguła `52-no-yolo-changes.mdc` nadal chroni **ukończone** fazy przed chaotycznymi zmianami. Nowa praca **YOLO / vision** przewidziana w **Fazie 8** roadmapy jest **osobnym**, planowanym zakresem — nie usprawiedliwia naruszenia inwariantów architektury z `00-architecture-invariants.mdc`.
+
+## KRYTYCZNE — deployment pluginu do AutoCADa
+
+AutoCAD ładuje `AcadMcp.Plugin.dll` **WYŁĄCZNIE** z ApplicationPlugins bundle, nie z `bin\Debug\net8.0-windows\`. Sama odbudowa przez `dotnet build` **NIE dociera** do uruchomionego AutoCADa — restart AutoCADa tylko przeładowuje TĘ SAMĄ starą DLL z bundle.
+
+**Bundle location**: `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents\`
+
+**Po KAŻDEJ zmianie w `src/AcadMcp.Plugin/`** (lub `src/AcadMcp.Shared/` jeśli używany przez plugin):
+
+```powershell
+dotnet build src\AcadMcp.sln -c Debug
+powershell -ExecutionPolicy Bypass -File scripts\deploy-plugin.ps1 -Kill
+# nastepnie: user uruchamia AutoCAD, autoloader wciaga nowa DLL
+```
+
+`scripts\deploy-plugin.ps1` zabija acad.exe (z `-Kill`), kopiuje pięć plików (`AcadMcp.Plugin.dll/.pdb/.deps.json`, `AcadMcp.Shared.dll/.pdb`) do bundle i mówi użytkownikowi co robić dalej.
+
+**Zmiany wyłącznie w `src/AcadMcp.Backend/`** NIE wymagają deploy-plugin — backend jest spawnowany na nowo dla każdego MCP calla.
+
+**Diagnostyka czy AutoCAD ma najnowszą DLL**:
+```powershell
+(Get-Process -Name 'acad').Modules | ? ModuleName -like '*AcadMcp*' | select ModuleName, FileName
+Get-Item "$env:APPDATA\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents\AcadMcp.Plugin.dll" | select LastWriteTime, Length
+```
+Porównaj LastWriteTime bundle-DLL z `bin\Debug\net8.0-windows\AcadMcp.Plugin.dll` — jeśli bundle starszy, deploy nie był wykonany.
+
+## Diagnostyka wiszącego dispatcha (od Phase 7.1)
+
+`PipeSession.HandleToolAsync` loguje teraz `--> tool=X corr=Y timeoutMs=Z` przed dispatch i `<-- tool=X corr=Y ok elapsedMs=N` po. Wyjątki z `DispatchAsync` są logowane z `THREW elapsedMs=N` i wysyłane jako `InternalError` tool response. Jeśli pipe session kończy się z `handled N requests` ale w logu nie ma N pasujących par `-->`/`<--`, to znaczy że dispatch `N`-ty wisi — ostatni `-->` bez `<--` mówi które narzędzie wini.

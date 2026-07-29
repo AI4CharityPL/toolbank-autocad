@@ -1,0 +1,1202 @@
+[
+  {
+    "handleA": "11D",
+    "handleB": "19B",
+    "layerA": "A-WALL-EXT",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      0,
+      0,
+      80000,
+      60000
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 80000000,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "11E",
+    "handleB": "19B",
+    "layerA": "A-WALL-EXT",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      400,
+      400,
+      79600,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 76000000,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12F",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      46400,
+      48000,
+      79600,
+      48000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "187",
+    "handleB": "19B",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      57000,
+      60000
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "187",
+    "handleB": "19A",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      57000,
+      60000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "187",
+    "handleB": "199",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      57000,
+      60000
+    ],
+    "bboxB": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "187",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      57000,
+      60000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "186",
+    "handleB": "19A",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      47000,
+      65000,
+      47000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "184",
+    "handleB": "19B",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      52000,
+      65000,
+      52000
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "188",
+    "handleB": "19B",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      58000,
+      52000,
+      58000,
+      60000
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "198",
+    "handleB": "199",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "198",
+    "handleB": "19A",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "183",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      48000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "19A",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "133",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      56000,
+      12000,
+      56000,
+      48000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "155",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      0,
+      47000,
+      48000,
+      47000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "192",
+    "handleB": "19A",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      65000,
+      45000,
+      80000,
+      45000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "198",
+    "handleB": "4B9",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      50000,
+      39000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "198",
+    "handleB": "4BA",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      51400,
+      39000,
+      57000,
+      39000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "198",
+    "handleB": "4BB",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      59000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "47C",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      65000,
+      36000,
+      66400,
+      36000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "480",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      65000,
+      39000,
+      67500,
+      39000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "4BA",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      51400,
+      39000,
+      57000,
+      39000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "4BB",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      59000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "4BC",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      60400,
+      40000,
+      65000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "4BE",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      53600,
+      33000,
+      60500,
+      33000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "199",
+    "handleB": "4BF",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "bboxB": [
+      61600,
+      33000,
+      65000,
+      33000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "186",
+    "handleB": "198",
+    "layerA": "A-WALL-INT",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      47000,
+      65000,
+      47000
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "11E",
+    "handleB": "12A",
+    "layerA": "A-WALL-EXT",
+    "layerB": "A-WALL-FIRE",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      400,
+      400,
+      79600,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "11E",
+    "handleB": "12B",
+    "layerA": "A-WALL-EXT",
+    "layerB": "A-WALL-FIRE",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      400,
+      400,
+      79600,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "175",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      48000,
+      8000,
+      65000,
+      8000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "176",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      48000,
+      11000,
+      65000,
+      11000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "177",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      48000,
+      17100,
+      65000,
+      17100
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "178",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      48000,
+      20100,
+      65000,
+      20100
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "495",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      43100,
+      13000,
+      48000,
+      13000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "12F",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      46400,
+      48000,
+      79600,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "155",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      0,
+      47000,
+      48000,
+      47000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "156",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      0,
+      50000,
+      48000,
+      50000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "183",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      48000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12A",
+    "handleB": "12D",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      400,
+      48000,
+      20600
+    ],
+    "bboxB": [
+      46400,
+      12000,
+      79600,
+      12000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "184",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      65000,
+      52000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "19B",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-FARA",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      52000,
+      58000,
+      60000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "12B",
+    "handleB": "198",
+    "layerA": "A-WALL-FIRE",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      48000,
+      39400,
+      48000,
+      59600
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "19A",
+    "handleB": "4BB",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      59000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "19A",
+    "handleB": "4BC",
+    "layerA": "A-WALL-LEAD",
+    "layerB": "A-WALL-INT",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "bboxB": [
+      60400,
+      40000,
+      65000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "4C4",
+    "handleB": "198",
+    "layerA": "A-DOOR-FIRE",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      50000,
+      38900,
+      51400,
+      39100
+    ],
+    "bboxB": [
+      48000,
+      39000,
+      57000,
+      48000
+    ],
+    "overlapArea": 140000,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "4C7",
+    "handleB": "199",
+    "layerA": "A-DOOR-FIRE",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      59000,
+      39900,
+      60400,
+      40100
+    ],
+    "bboxB": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "overlapArea": 140000,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "4C7",
+    "handleB": "19A",
+    "layerA": "A-DOOR-FIRE",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Polyline",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      59000,
+      39900,
+      60400,
+      40100
+    ],
+    "bboxB": [
+      57000,
+      40000,
+      65000,
+      47000
+    ],
+    "overlapArea": 140000,
+    "intersectionCount": 2,
+    "severity": "critical",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "4CC",
+    "handleB": "199",
+    "layerA": "A-DOOR",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Arc",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      60500,
+      33000,
+      61600,
+      34100
+    ],
+    "bboxB": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "overlapArea": 1210000,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  },
+  {
+    "handleA": "4CB",
+    "handleB": "199",
+    "layerA": "A-DOOR",
+    "layerB": "A-WALL-LEAD",
+    "dxfTypeA": "Line",
+    "dxfTypeB": "Polyline",
+    "bboxA": [
+      60500,
+      33000,
+      60500,
+      34100
+    ],
+    "bboxB": [
+      57000,
+      33000,
+      65000,
+      40000
+    ],
+    "overlapArea": 0,
+    "intersectionCount": 1,
+    "severity": "major",
+    "mode": "polyline_crosses_polyline"
+  }
+]

@@ -1,0 +1,21 @@
+id: civil.road.centerline-on-c-road-cntr
+name: Road centrelines belong on C-ROAD-CNTR
+discipline: civil
+severity: error
+description: |
+  Per rule 38 §6 + §9 the road horizontal alignment (centreline) lives on
+  layer C-ROAD-CNTR with the CENTER linetype. Common offenders are
+  'CENTERLINE' / 'ROAD' / 'AXIS' / 'C-CENTERLINE' from legacy plans.
+
+  Pairs with `acad-civil.draw_alignment_tangent` and
+  `acad-civil.draw_alignment_curve`, both of which place geometry on
+  C-ROAD-CNTR by default.
+scope:
+  entity_types: [Line, Polyline, Arc]
+  layer_pattern: "^(CENTERLINE|ROAD|AXIS|ROAD[-_]?CENTER(LINE)?|C[-_]?CENTERLINE|C[-_]?ROAD[-_]?CENTER)$"
+checks:
+  - { type: layer_equals, value: C-ROAD-CNTR }
+fix:
+  type: move_to_layer
+  layer: C-ROAD-CNTR
+  create_if_missing: true

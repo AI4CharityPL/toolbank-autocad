@@ -1,0 +1,302 @@
+{
+  "id": "acad-dimensions",
+  "name": "acad-dimensions",
+  "description": "AutoCAD parametric dimension entities: linear (rotated and aligned), angular (3-point and 2-line), radial, diametric, arc-length, ordinate, plus baseline and continued chains derived from a prior dimension. Includes dimension style (DimStyle) lookup and assignment. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-dimensions.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "2l",
+    "3p",
+    "aligned",
+    "angular",
+    "apply",
+    "arc",
+    "arch",
+    "architectural",
+    "auto",
+    "autocad",
+    "baseline",
+    "cad",
+    "chain",
+    "continued",
+    "cumulative",
+    "diametric",
+    "dim",
+    "dimension",
+    "dimensions",
+    "dimstyle",
+    "dimstyles",
+    "dwg",
+    "ensure",
+    "entity",
+    "length",
+    "linear",
+    "list",
+    "ordinate",
+    "overall",
+    "radial",
+    "set",
+    "style",
+    "tick",
+    "walls"
+  ],
+  "intent_examples": [
+    "aligned dimension",
+    "angle 3 points",
+    "angle between two lines",
+    "angular dim from lines",
+    "angular dim from vertex",
+    "angular dimension three points",
+    "angular dimension two lines",
+    "apply arch tick style",
+    "apply dimstyle to entities",
+    "arc length dimension",
+    "auto dim walls",
+    "automatycznie wymiaruj sciany",
+    "baseline chain dimensions",
+    "baseline dimension chain",
+    "batch dimension building facade",
+    "biegnace sumy wymiarow",
+    "chain dimensions across walls",
+    "continued chain dimensions",
+    "continued dimension chain",
+    "cumulative dimension chain",
+    "diametric dimension",
+    "dim arc length",
+    "dim diameter of circle",
+    "dim overall length",
+    "dim radius of circle",
+    "dim total width",
+    "dim x ordinate",
+    "dim y ordinate",
+    "dimaligned",
+    "dimarc",
+    "dimbaseline",
+    "dimcontinue",
+    "dimdiameter",
+    "dimension parallel to segment",
+    "dimradius",
+    "dimstyle z kreskami architektonicznymi",
+    "dlugosc luku wymiar",
+    "ensure ARCH-ISO dimstyle",
+    "horizontal dimension",
+    "kat miedzy liniami",
+    "kat z trzech punktow",
+    "lancuch wymiarow bazowych",
+    "lancuch wymiarow ciaglych",
+    "lancuch wymiarow narastajacych",
+    "linear dimension",
+    "list dimension styles",
+    "normalise dim layer style",
+    "ordinate dimension",
+    "outer dimension of entities",
+    "overall dimension",
+    "promien okregu wymiar",
+    "radial dimension",
+    "retrofit dim layer to arch",
+    "rotated linear dim",
+    "running totals dimension",
+    "set dimstyle on dimension",
+    "setup architectural dim style",
+    "show dimstyles",
+    "srednica okregu wymiar",
+    "stworz styl wymiarowania architektoniczny",
+    "swap dimension style",
+    "tick marks dimension style",
+    "ustaw styl wymiarowania",
+    "what dimstyles exist",
+    "wspolrzedna od ukladu",
+    "wszystkie dimstyles",
+    "wylistuj style wymiarowania",
+    "wymiar dlugosci luku",
+    "wymiar katowy 2 linie",
+    "wymiar katowy 3 punkty",
+    "wymiar liniowy",
+    "wymiar ogolny budynku",
+    "wymiar poziomy",
+    "wymiar promienia",
+    "wymiar rownolegly",
+    "wymiar srednicy",
+    "wymiar wspolrzednych",
+    "wymiar wzdluz krawedzi",
+    "wymiary ciagle",
+    "wymiary kumulatywne od bazy",
+    "wymiary od bazy",
+    "zamien styl wymiarow na warstwie",
+    "zmien styl wymiarow",
+    "zmien wszystkie wymiary na warstwie",
+    "zrob lancuch wymiarow po scianach"
+  ],
+  "tools_summary": [
+    {
+      "name": "apply_arch_tick_style",
+      "description": "Scan every Dimension entity on a given layer and re-assign its dimension style to the target (default ARCH-ISO). If ensureStyle=true the target style is auto-created via ensure_architectural_dimstyle first. Useful for retrofitting legacy drawings to rule 66\u0027s architectural tick convention in one call.",
+      "tags": [
+        "apply",
+        "arch",
+        "tick",
+        "style"
+      ]
+    },
+    {
+      "name": "auto_dim_walls",
+      "description": "Automatically build a continued dimension chain across a list of wall handles. Each wall\u0027s start/end endpoints are projected onto the baseline direction through \u0027origin\u0027 \u002B \u0027baselineDeg\u0027; duplicates within mergeToleranceMm are collapsed. Remaining projected points are sorted and fed to continued_chain. Walls whose endpoints cannot be resolved (non-Curve entities) are returned in skippedHandles instead of aborting. Combined with ensure_architectural_dimstyle this replaces 90%\u002B of manual DIMLINEAR / DIMCONT chains when dimensioning a facade.",
+      "tags": [
+        "auto",
+        "dim",
+        "walls"
+      ]
+    },
+    {
+      "name": "dimension_aligned",
+      "description": "Place an aligned dimension parallel to the segment p1-\u003Ep2 at dimLinePoint.",
+      "tags": [
+        "dimension",
+        "aligned"
+      ]
+    },
+    {
+      "name": "dimension_angular_2l",
+      "description": "Place an angular dimension between two existing line entities. The arc passes through arcPoint.",
+      "tags": [
+        "dimension",
+        "angular",
+        "2l"
+      ]
+    },
+    {
+      "name": "dimension_angular_3p",
+      "description": "Place an angular dimension defined by a vertex (center) and two rays through \u0027first\u0027 and \u0027second\u0027. The arc passes through arcPoint.",
+      "tags": [
+        "dimension",
+        "angular",
+        "3p"
+      ]
+    },
+    {
+      "name": "dimension_arc_length",
+      "description": "Place an arc-length dimension on an Arc; arcPoint locates the dimension arc.",
+      "tags": [
+        "dimension",
+        "arc",
+        "length"
+      ]
+    },
+    {
+      "name": "dimension_baseline_chain",
+      "description": "Build a baseline chain of linear dimensions from a common baseline point to N subsequent points; spacing is taken from the dimstyle\u0027s DIMDLI.",
+      "tags": [
+        "dimension",
+        "baseline",
+        "chain"
+      ]
+    },
+    {
+      "name": "dimension_continued_chain",
+      "description": "Build a continued chain of linear dimensions: each new dimension\u0027s first extension line is the previous dimension\u0027s second extension line.",
+      "tags": [
+        "dimension",
+        "continued",
+        "chain"
+      ]
+    },
+    {
+      "name": "dimension_cumulative_chain",
+      "description": "Cumulative dimension chain: N dimensions sharing a SINGLE dim line, each reporting the distance from baselinePoint to point_i (running total). Use for exterior overall/axis/opening dimension rows per rule 66 \u00A71. Differs from baseline_chain (staggered by DIMDLI) and continued_chain (end-to-end).",
+      "tags": [
+        "dimension",
+        "cumulative",
+        "chain"
+      ]
+    },
+    {
+      "name": "dimension_diametric",
+      "description": "Place a diametric dimension on a Circle through farPoint (the leader anchor on the far side of the curve).",
+      "tags": [
+        "dimension",
+        "diametric"
+      ]
+    },
+    {
+      "name": "dimension_linear",
+      "description": "Place a linear (rotated) dimension between p1 and p2 with the dim line passing through dimLinePoint at the given rotation in degrees (0 = horizontal).",
+      "tags": [
+        "dimension",
+        "linear"
+      ]
+    },
+    {
+      "name": "dimension_ordinate",
+      "description": "Place an ordinate (X or Y datum) dimension at definingPoint with leader endpoint at leaderEnd. useXAxis=true measures the X distance from UCS origin.",
+      "tags": [
+        "dimension",
+        "ordinate"
+      ]
+    },
+    {
+      "name": "dimension_overall",
+      "description": "Place a single linear dimension spanning the overall bbox of one or more entities projected onto rotationDeg. Useful for \u0027outer-most\u0027 exterior dimensions (rule 66 level 1). rotationDeg 0\u00B0 measures along X (horizontal), 90\u00B0 along Y. Uses the bounding boxes fetched via acad.geometry2d.get_entity.",
+      "tags": [
+        "dimension",
+        "overall"
+      ]
+    },
+    {
+      "name": "dimension_radial",
+      "description": "Place a radial dimension on a Circle or Arc; chordPoint specifies which side of the curve the leader exits.",
+      "tags": [
+        "dimension",
+        "radial"
+      ]
+    },
+    {
+      "name": "ensure_architectural_dimstyle",
+      "description": "Idempotently create (or update) the ARCH-ISO dimension style used by the 3-level architectural dimension hierarchy (rule 66). Sets architectural tick arrowheads (\u0027ArchTick\u0027), text height scaled to plot scale, mm precision, no trailing zeros. Safe to call multiple times; returns whether the style was created, updated or left untouched.",
+      "tags": [
+        "ensure",
+        "architectural",
+        "dimstyle"
+      ]
+    },
+    {
+      "name": "list_dimstyles",
+      "description": "List all dimension styles defined in the active drawing plus the current Dimstyle.",
+      "tags": [
+        "list",
+        "dimstyles"
+      ]
+    },
+    {
+      "name": "set_entity_dimstyle",
+      "description": "Assign a dimension style to one or more existing dimension entities (by handle).",
+      "tags": [
+        "set",
+        "entity",
+        "dimstyle"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "dimensions",
+    "tool_count_target": 17,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase3_annotations_blocks",
+    "last_regenerated_utc": "2026-04-24T09:11:38.8721252Z"
+  }
+}

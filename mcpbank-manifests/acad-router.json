@@ -1,0 +1,101 @@
+{
+  "id": "acad-router",
+  "name": "acad-router",
+  "description": "AutoCAD MCP router - the single permanent entry point to ~30 specialist AutoCAD MCP categories (geometry-2d/3d, modify, layers, blocks, annotations, dimensions, layouts, files, parametric, architecture, mechanical, civil, electrical, vision, validators, workflows, livestream). Exposes 9 meta-tools: status, find_tools, load_category, recommend_categories, explain_capabilities, describe_drawing, undo_checkpoint, restore_checkpoint, design_iterate. The actual category MCPs are loaded on demand via MCP Nexus's mcpd_find / mcpd_connect flow. Backend talks to the AutoCAD .NET plugin (NETLOAD'ed) over a single named pipe.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-router.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": false,
+  "tags": [
+    "autocad", "cad", "dwg", "router", "meta", "orchestrator",
+    "ai-design", "12-of-10", "auto-design", "agent",
+    "rysowanie", "projektowanie", "automatyka", "agent-projektant",
+    "vision", "ocr", "validation", "norms", "iso", "pn-en",
+    "architecture", "mechanical", "civil", "electrical",
+    "iterate", "checkpoint", "rollback", "design-loop"
+  ],
+  "intent_examples": [
+    "podlacz sie do autocad",
+    "narysuj cos w autocad",
+    "stworz projekt budynku w autocad",
+    "zaprojektuj plan rzutu kondygnacji",
+    "potrzebuje pomocy z autocad",
+    "co potrafi ten system autocad",
+    "co umiesz w autocad",
+    "zrob mi rysunek techniczny zgodny z PN-EN ISO 128",
+    "rozpoznaj co jest na rysunku autocad (OCR)",
+    "waliduj projekt zgodnie z normami",
+    "automatycznie zaprojektuj cos 12/10",
+    "connect to autocad",
+    "draw something in autocad",
+    "create a building plan in autocad",
+    "design a floor plan with auto-dimensioning",
+    "what can this autocad mcp system do",
+    "validate my drawing against ISO line weights",
+    "OCR the title block of this drawing",
+    "auto-design a structural detail to 12/10 quality",
+    "iteruj plan i wroc do checkpointu jesli walidator fail",
+    "auto-design loop with rollback on validation failure",
+    "zrob checkpoint, narysuj, zwaliduj i cofnij jesli zle"
+  ],
+  "tools_summary": [
+    {
+      "name": "acad_status",
+      "description": "Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only).",
+      "tags": ["status", "health", "ping", "info"]
+    },
+    {
+      "name": "acad_find_tools",
+      "description": "Semantic search across all acad-* MCP servers via MCP Nexus find_tools, filtered to our namespace. Returns ranked candidates with category and tool name.",
+      "tags": ["find", "search", "discover", "semantic"]
+    },
+    {
+      "name": "acad_load_category",
+      "description": "Shortcut: connect to a single acad-<name> MCP server in lazy mode. Returns its tool list summary so you can pick the next call.",
+      "tags": ["load", "connect", "category", "lazy"]
+    },
+    {
+      "name": "acad_recommend_categories",
+      "description": "Suggest the 1-3 most relevant categories for a free-text task description. Saves tokens by avoiding indiscriminate loading.",
+      "tags": ["recommend", "suggest", "categorize", "plan"]
+    },
+    {
+      "name": "acad_explain_capabilities",
+      "description": "Returns a compact catalog of all known acad-* categories with one-line summaries.",
+      "tags": ["explain", "capabilities", "catalog", "overview"]
+    },
+    {
+      "name": "acad_describe_drawing",
+      "description": "Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call.",
+      "tags": ["vision", "ocr", "describe", "screenshot"]
+    },
+    {
+      "name": "acad_undo_checkpoint",
+      "description": "Create a named undo checkpoint so subsequent operations can be rolled back atomically (Phase 7).",
+      "tags": ["undo", "checkpoint", "save", "transaction"]
+    },
+    {
+      "name": "acad_restore_checkpoint",
+      "description": "Roll back to a previously created checkpoint (Phase 7). Used by the auto-design loop on validation failure.",
+      "tags": ["restore", "rollback", "checkpoint", "undo"]
+    },
+    {
+      "name": "acad_design_iterate",
+      "description": "Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop.",
+      "tags": ["iterate", "design", "loop", "checkpoint", "rollback", "auto-fix", "validate", "plan", "agent"]
+    }
+  ],
+  "metadata": {
+    "category": "router",
+    "tool_count_target": 9,
+    "requires_plugin": false,
+    "supported_acad_versions": ["LT-2020+", "2020", "2021", "2022", "2023", "2024", "2025"],
+    "supported_lt": true,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.2.0",
+    "phase": "phase7_loop"
+  }
+}

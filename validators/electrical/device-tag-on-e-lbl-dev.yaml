@@ -1,0 +1,20 @@
+id: elec.tag.device-on-e-lbl-dev
+name: Device tags belong on E-LBL-DEV
+discipline: electrical
+severity: warning
+description: |
+  Per rule 39 §6 + §11 IEC 81346 device tags (-K1, -Q1, -F1, …) live on
+  layer E-LBL-DEV (ACI 2, 0.18 mm). Misfiled tags hide when the technician
+  freezes annotation layers to print just the schematic geometry.
+
+  Pairs with `acad-electrical.place_device_tag` (which also validates the
+  IEC 81346 prefix letter at write time).
+scope:
+  entity_types: [DBText, MText]
+  layer_pattern: "^(DEVTAG|DEVICE[-_]?TAG|E[-_]?DEV|E[-_]?LBL[-_]?DEV)$"
+checks:
+  - { type: layer_equals, value: E-LBL-DEV }
+fix:
+  type: move_to_layer
+  layer: E-LBL-DEV
+  create_if_missing: true

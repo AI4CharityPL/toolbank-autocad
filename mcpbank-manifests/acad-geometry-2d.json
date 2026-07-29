@@ -1,0 +1,505 @@
+{
+  "id": "acad-geometry-2d",
+  "name": "acad-geometry-2d",
+  "description": "AutoCAD 2D geometry primitives: create lines, polylines, circles, arcs, ellipses, rectangles, polygons, splines, points, donuts, xlines, rays, single- and multi-line text, hatches and revision clouds; query entities (entity descriptor, bounding box, length, area, intersections, distances) inside a rectangular window; modify with offset, trim, extend, join, explode, fillet, chamfer and delete. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session (NETLOAD or auto-bundle). Read-only tools are flagged ReadOnly = true.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-geometry-2d.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "arc",
+    "area",
+    "autocad",
+    "bounding",
+    "box",
+    "cad",
+    "chamfer",
+    "circle",
+    "corner",
+    "curve",
+    "curves",
+    "delete",
+    "distance",
+    "donut",
+    "draw",
+    "dwg",
+    "ellipse",
+    "entities",
+    "entity",
+    "explode",
+    "extend",
+    "fillet",
+    "geometry-2d",
+    "get",
+    "hatch",
+    "in",
+    "intersections",
+    "join",
+    "length",
+    "line",
+    "list",
+    "mtext",
+    "offset",
+    "point",
+    "points",
+    "polygon",
+    "polyline",
+    "ray",
+    "rectangle",
+    "revcloud",
+    "spline",
+    "text",
+    "to",
+    "trim",
+    "window",
+    "xline"
+  ],
+  "intent_examples": [
+    "add dtext",
+    "add wrapped text",
+    "arc by center radius and angle",
+    "area of closed polyline",
+    "associative hatch over boundary",
+    "bbox encji",
+    "bevel corner between curves",
+    "break apart entity",
+    "chamfer corner with two distances",
+    "chamfer polilinii",
+    "circle by center and radius",
+    "closest distance from point to curve",
+    "cloud over polyline",
+    "compute aabb of entity",
+    "compute area of shape",
+    "compute distance points",
+    "compute intersections of two curves",
+    "compute perimeter",
+    "connect collinear segments",
+    "create annulus",
+    "create arc",
+    "create chamfer segment",
+    "create circle",
+    "create ellipse",
+    "create fillet arc",
+    "create line segment",
+    "create offset entity",
+    "create point entity",
+    "create polyline",
+    "create ray entity",
+    "create rectangle",
+    "create regular polygon",
+    "create revcloud markup",
+    "create spline",
+    "create xline",
+    "decompose into segments",
+    "delete entities by handle",
+    "describe entity by handle",
+    "dodaj mtext",
+    "dodaj tekst jednolinijkowy",
+    "draw a circle",
+    "draw a line",
+    "draw a point",
+    "draw arc",
+    "draw donut shape",
+    "draw ellipse",
+    "draw hatch pattern",
+    "draw infinite construction line",
+    "draw multiline text block",
+    "draw polygon",
+    "draw polyline",
+    "draw ray from point",
+    "draw rectangle",
+    "draw revision cloud",
+    "draw single line text",
+    "draw spline curve",
+    "ellipse by axes",
+    "erase multiple entities",
+    "explode entity into primitives",
+    "explode polilinie",
+    "extend a curve to boundary",
+    "extend do granic",
+    "extend line to circle",
+    "extents of entity",
+    "fetch entity properties",
+    "fill area with hatch",
+    "filled ring",
+    "fillet corner with radius",
+    "fillet polilinii",
+    "find entities in rectangle",
+    "get bounding box",
+    "get curve intersections",
+    "get curve length",
+    "get distance between points",
+    "get distance to entity",
+    "get enclosed area",
+    "get entity details",
+    "half infinite line",
+    "infinite line through point",
+    "join multiple curves",
+    "label at point",
+    "length between coordinates",
+    "length of polyline",
+    "lengthen curve to entity",
+    "linia od punktu do punktu",
+    "list entities in window",
+    "lista obiektow w prostokacie",
+    "merge curves into polyline",
+    "mtext at point",
+    "najkrotsza odleglosc do encji",
+    "narysuj chmure rewizji",
+    "narysuj donut",
+    "narysuj elipse",
+    "narysuj kreskowanie",
+    "narysuj krzywa sklejana",
+    "narysuj linie",
+    "narysuj linie konstrukcyjna",
+    "narysuj luk",
+    "narysuj okrag",
+    "narysuj polilinie",
+    "narysuj promien",
+    "narysuj prostokat",
+    "narysuj punkt",
+    "narysuj wielokat",
+    "oblicz pole zamknietego ksztaltu",
+    "obwod polilinii",
+    "odleglosc miedzy punktami",
+    "odleglosc punktu od krzywej",
+    "offset a curve by distance",
+    "offset polilinii",
+    "opisz encje",
+    "parallel copy curve",
+    "perpendicular distance",
+    "pobierz info o obiekcie",
+    "podaj dlugosc krzywej",
+    "podaj dystans dwoch punktow",
+    "podaj pole powierzchni",
+    "podaj prostokat ograniczajacy",
+    "point at coordinate",
+    "polacz krzywe",
+    "polygon with N sides",
+    "polyline through points",
+    "przesun krzywa rownolegle",
+    "przytnij krzywa",
+    "punkty przeciecia krzywych",
+    "rectangle by two corners",
+    "remove from drawing",
+    "remove segment between intersections",
+    "round corner between curves",
+    "rozbij obiekt",
+    "rysuj revcloud",
+    "scal segmenty",
+    "scinaj naroznik",
+    "select inside box",
+    "shorten curve at boundary",
+    "skasuj encje",
+    "spline through points",
+    "stworz elipse",
+    "stworz kolo",
+    "stworz luk okregu",
+    "stworz odcinek",
+    "stworz pierscien",
+    "stworz polilinie",
+    "stworz prostokat",
+    "stworz ray",
+    "stworz spline",
+    "stworz wielokat foremny",
+    "stworz xline",
+    "trim a curve to boundaries",
+    "trim do granic",
+    "usun obiekty",
+    "where do curves cross",
+    "wstaw napis",
+    "wstaw punkt",
+    "wstaw tekst wieloliniowy",
+    "wydluz krzywa",
+    "wypelnij obszar wzorem",
+    "zaokraglij naroznik",
+    "znajdz obiekty w oknie",
+    "znajdz przeciecia"
+  ],
+  "tools_summary": [
+    {
+      "name": "chamfer_corner",
+      "description": "Chamfer two curves at their intersection with two distances; returns the new chamfer line.",
+      "tags": [
+        "chamfer",
+        "corner"
+      ]
+    },
+    {
+      "name": "delete_entities",
+      "description": "Erase entities by handle. Pass multiple in one batch for atomicity.",
+      "tags": [
+        "delete",
+        "entities"
+      ]
+    },
+    {
+      "name": "draw_arc",
+      "description": "Draw an arc by center, radius, and start/end angle in degrees (CCW).",
+      "tags": [
+        "draw",
+        "arc"
+      ]
+    },
+    {
+      "name": "draw_circle",
+      "description": "Draw a circle by center point and radius.",
+      "tags": [
+        "draw",
+        "circle"
+      ]
+    },
+    {
+      "name": "draw_donut",
+      "description": "Draw a donut (filled annulus) at a center, with inner and outer diameters.",
+      "tags": [
+        "draw",
+        "donut"
+      ]
+    },
+    {
+      "name": "draw_ellipse",
+      "description": "Draw an ellipse by center, major-axis end point and minor-to-major ratio (0 \u003C ratio \u003C= 1).",
+      "tags": [
+        "draw",
+        "ellipse"
+      ]
+    },
+    {
+      "name": "draw_hatch",
+      "description": "Apply an associative hatch over closed boundaries identified by handle.",
+      "tags": [
+        "draw",
+        "hatch"
+      ]
+    },
+    {
+      "name": "draw_line",
+      "description": "Draw a 2D straight line segment between two points on the active drawing.",
+      "tags": [
+        "draw",
+        "line"
+      ]
+    },
+    {
+      "name": "draw_mtext",
+      "description": "Draw multiline text (MTEXT) with wrap-width and height.",
+      "tags": [
+        "draw",
+        "mtext"
+      ]
+    },
+    {
+      "name": "draw_point",
+      "description": "Draw a single point entity at a 2D position.",
+      "tags": [
+        "draw",
+        "point"
+      ]
+    },
+    {
+      "name": "draw_polygon",
+      "description": "Draw a regular polygon (3..1024 sides), inscribed or circumscribed.",
+      "tags": [
+        "draw",
+        "polygon"
+      ]
+    },
+    {
+      "name": "draw_polyline",
+      "description": "Draw a 2D lightweight polyline through the given vertex list, optionally closed.",
+      "tags": [
+        "draw",
+        "polyline"
+      ]
+    },
+    {
+      "name": "draw_ray",
+      "description": "Draw a half-infinite ray from a base point in a given direction.",
+      "tags": [
+        "draw",
+        "ray"
+      ]
+    },
+    {
+      "name": "draw_rectangle",
+      "description": "Draw an axis-aligned rectangle as a closed polyline by two opposite corners.",
+      "tags": [
+        "draw",
+        "rectangle"
+      ]
+    },
+    {
+      "name": "draw_revcloud",
+      "description": "Draw a revision cloud polyline through the given vertices with arc-length min/max.",
+      "tags": [
+        "draw",
+        "revcloud"
+      ]
+    },
+    {
+      "name": "draw_spline",
+      "description": "Draw a 2D spline interpolated through the given fit points, optionally closed.",
+      "tags": [
+        "draw",
+        "spline"
+      ]
+    },
+    {
+      "name": "draw_text",
+      "description": "Draw single-line text (DTEXT) at a 2D position with given height/rotation/style.",
+      "tags": [
+        "draw",
+        "text"
+      ]
+    },
+    {
+      "name": "draw_xline",
+      "description": "Draw an infinite construction line through a base point in a given direction.",
+      "tags": [
+        "draw",
+        "xline"
+      ]
+    },
+    {
+      "name": "explode_entity",
+      "description": "Explode a polyline/block/hatch into its component primitives.",
+      "tags": [
+        "explode",
+        "entity"
+      ]
+    },
+    {
+      "name": "extend_curve",
+      "description": "Extend a curve until it reaches one of the boundary entities.",
+      "tags": [
+        "extend",
+        "curve"
+      ]
+    },
+    {
+      "name": "fillet_corner",
+      "description": "Fillet two curves at their intersection with the given radius; returns the new fillet arc.",
+      "tags": [
+        "fillet",
+        "corner"
+      ]
+    },
+    {
+      "name": "get_area",
+      "description": "Return enclosed area for a closed curve (circle, ellipse, closed polyline, hatch).",
+      "tags": [
+        "get",
+        "area"
+      ]
+    },
+    {
+      "name": "get_bounding_box",
+      "description": "Return axis-aligned bounding box of an entity by handle (XY plane).",
+      "tags": [
+        "get",
+        "bounding",
+        "box"
+      ]
+    },
+    {
+      "name": "get_curve_length",
+      "description": "Return curve length (perimeter) of a line/polyline/arc/spline by handle.",
+      "tags": [
+        "get",
+        "curve",
+        "length"
+      ]
+    },
+    {
+      "name": "get_distance_points",
+      "description": "Return Cartesian distance between two 2D points.",
+      "tags": [
+        "get",
+        "distance",
+        "points"
+      ]
+    },
+    {
+      "name": "get_distance_to_entity",
+      "description": "Return shortest distance from a 2D point to a curve entity by handle.",
+      "tags": [
+        "get",
+        "distance",
+        "to",
+        "entity"
+      ]
+    },
+    {
+      "name": "get_entity",
+      "description": "Return full descriptor (class, layer, color, bbox, length, area, endpoints) of an entity by handle.",
+      "tags": [
+        "get",
+        "entity"
+      ]
+    },
+    {
+      "name": "get_intersections",
+      "description": "Return XY intersection points between two curves identified by handle.",
+      "tags": [
+        "get",
+        "intersections"
+      ]
+    },
+    {
+      "name": "join_curves",
+      "description": "Join multiple coincident curves into a single polyline if topology allows.",
+      "tags": [
+        "join",
+        "curves"
+      ]
+    },
+    {
+      "name": "list_entities_in_window",
+      "description": "List handles of all entities whose bounding box intersects the rectangular window.",
+      "tags": [
+        "list",
+        "entities",
+        "in",
+        "window"
+      ]
+    },
+    {
+      "name": "offset_curve",
+      "description": "Offset a curve by a signed distance, returning the new curve handle.",
+      "tags": [
+        "offset",
+        "curve"
+      ]
+    },
+    {
+      "name": "trim_curve",
+      "description": "Trim a curve at intersections with the boundary list, keeping the side opposite the pick point.",
+      "tags": [
+        "trim",
+        "curve"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "geometry-2d",
+    "tool_count_target": 32,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase1_geometry2d",
+    "last_regenerated_utc": "2026-04-22T11:24:58.4692376Z"
+  }
+}

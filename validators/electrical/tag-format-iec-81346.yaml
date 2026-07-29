@@ -1,0 +1,23 @@
+id: elec.tag.iec-81346-format
+name: Device tags must follow IEC 81346 format (-<Letter><digits>)
+discipline: electrical
+severity: error
+description: |
+  IEC 81346-2 device designations use a leading hyphen, a single capital
+  letter category prefix (K=relay, Q=breaker, F=fuse/protection, M=motor,
+  T=transformer, X=connector, H=signal device, B=sensor) and one or more
+  digits, optionally followed by a sub-counter (e.g. -K12.3).
+
+  Tags are stored as text in Text / MText entities OR as a TAG attribute on
+  a symbol BlockReference. Either form must match the canonical regex. Pairs
+  with elec.tag.device-on-e-lbl-dev (which pins the text to E-LBL-DEV) and
+  with `acad-electrical.place_device_tag` (which enforces the same prefix
+  letter at write time — see rule 39 §6 / §11).
+scope:
+  entity_types: [DBText, MText, BlockReference]
+  layer_pattern: "^(E[-_]?LBL[-_]?DEV|DEVTAG)$"
+checks:
+  - type: any_of
+    checks:
+      - { type: text_matches_regex, pattern: '^-[KQFMTXHB]\d+(\.\d+)?$' }
+      - { type: text_matches_regex, attribute: TAG, pattern: '^-[KQFMTXHB]\d+(\.\d+)?$' }

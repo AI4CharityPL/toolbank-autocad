@@ -1,0 +1,210 @@
+{
+  "id": "acad-civil",
+  "name": "acad-civil",
+  "description": "High-level civil-engineering drafting: road alignments (tangent \u002B circular curve segments on C-ROAD-CNTR with CENTER linetype), road corridor edges (C-ROAD-EDGE Continuous), stationing tick marks \u002B labels in metric (0\u002B020) or US (0\u002B20) format perpendicular to the alignment, parcel polylines built from surveyor (bearing, distance) legs with closure tolerance check, major / minor topographic contours with elevation labels, spot elevations as cross \u002B signed \u002BXX.XX text, and a true-north arrow that respects drawing rotation. Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships a 12-layer Polish PN \u002B US NCS hybrid civil layer key. Pairs with acad-validators rules under validators/civil/.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-civil.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "alignment",
+    "arrow",
+    "autocad",
+    "cad",
+    "civil",
+    "contour",
+    "corridor",
+    "curve",
+    "draw",
+    "dwg",
+    "elevation",
+    "ensure",
+    "health",
+    "labels",
+    "layers",
+    "line",
+    "north",
+    "parcel",
+    "place",
+    "road",
+    "spot",
+    "station",
+    "tangent"
+  ],
+  "intent_examples": [
+    "alignment arc segment",
+    "alignment straight segment",
+    "chainage labels along centerline",
+    "civil category metadata",
+    "civil parcel tolerances",
+    "co potrafi civil",
+    "contour line topograficzna",
+    "create civil layer standard",
+    "diagnostyka kategorii civil",
+    "draw alignment circular curve",
+    "draw alignment tangent segment",
+    "draw major contour line with label",
+    "draw north arrow",
+    "draw parcel from bearing distance legs",
+    "draw road corridor edges",
+    "draw road with width",
+    "ensure civil engineering layers",
+    "etykiety stacjonowania",
+    "geodetic point with elevation",
+    "kompas N",
+    "krawedzie jezdni offset",
+    "list civil layer key",
+    "lot polygon from surveyor traverse",
+    "luk poziomy drogi",
+    "narysuj dzialke z bearings",
+    "narysuj korytarz drogowy",
+    "narysuj luk osi drogi",
+    "narysuj odcinek prostej drogi",
+    "narysuj warstwice glowna",
+    "north indicator",
+    "parcel closure check",
+    "place spot elevation cross \u002B text",
+    "place stationing labels along road",
+    "polyline dzialki geodezyjnej",
+    "punkt wysokosciowy \u002B102.45",
+    "road centerline curve",
+    "road centerline tangent",
+    "road pavement edges",
+    "rzedna terenu",
+    "setup C-* layer key",
+    "spot elevation marker",
+    "station labels every 20m",
+    "stworz wszystkie warstwy civil",
+    "tangenta osi drogi",
+    "topographic contour line",
+    "true north arrow with rotation",
+    "warstwica 250m",
+    "wlacz standardowe warstwy C-* w projekcie",
+    "wstaw stacjonowanie 0\u002B020",
+    "wstaw strzalke polnocy"
+  ],
+  "tools_summary": [
+    {
+      "name": "civil_health",
+      "description": "Report the 12-layer civil engineering key, the parcel-closure tolerance presets (residential / commercial / agricultural / forest), the supported stationing systems (\u0027metric_km\u0027 / \u0027us_feet\u0027), and the planned bundled-block list. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults \u2014 e.g. which closure tolerance applies to a residential lot \u2014 without making a real call to AutoCAD.",
+      "tags": [
+        "civil",
+        "health"
+      ]
+    },
+    {
+      "name": "draw_alignment_curve",
+      "description": "Draw a single circular curve segment of a road horizontal alignment as an Arc on layer C-ROAD-CNTR (default). Spirals / clothoid transitions are NOT in v1 \u2014 only tangents and circular curves. The arc spans from startAngleDeg to endAngleDeg around the centre with the given radius (in metres, in the drawing\u0027s current units).",
+      "tags": [
+        "draw",
+        "alignment",
+        "curve"
+      ]
+    },
+    {
+      "name": "draw_alignment_tangent",
+      "description": "Draw a single straight (tangent) segment of a road horizontal alignment as a line on layer C-ROAD-CNTR (default) \u2014 picks up CENTER linetype because the layer carries it. Per rule 38 \u00A76 the road centreline MUST be a CENTER linetype on C-ROAD-CNTR; agents who reach for acad-geometry2d.draw_line directly bypass the linetype assignment.",
+      "tags": [
+        "draw",
+        "alignment",
+        "tangent"
+      ]
+    },
+    {
+      "name": "draw_contour_line",
+      "description": "Draw a topographic contour line as a polyline on layer C-TOPO-MAJR (when isMajor=true, default) or C-TOPO-MINR (when isMajor=false). When isMajor=true, also drops a labelled DBText with the elevation (formatted to 2 decimals) at the labelEvery-th vertex. Per rule 38 \u00A74 minor contours are unlabelled; major contours MUST be labelled \u2014 agents who set isMajor=true on a 1 m contour break the visual hierarchy.",
+      "tags": [
+        "draw",
+        "contour",
+        "line"
+      ]
+    },
+    {
+      "name": "draw_north_arrow",
+      "description": "Draw a basic north arrow at \u0060position\u0060: an isoceles triangle pointing toward TRUE north (rotated by trueNorthDegFromPageNorth from the page \u002BY axis per rule 38 \u00A78) with optional \u0027N\u0027 letter above the tip. The triangle apex is sizeM tall, the base is 0.4 \u00D7 sizeM wide, drawn on layer C-NORTH (Continuous, default). Per rule 38 \u00A78 a north arrow with the default 0\u00B0 rotation when the drawing is rotated ruins all bearings on the plan \u2014 agents MUST pass the drawing rotation explicitly. The COMPASS variant ships with the Phase-7 block library.",
+      "tags": [
+        "draw",
+        "north",
+        "arrow"
+      ]
+    },
+    {
+      "name": "draw_parcel",
+      "description": "Build a parcel polyline by walking from \u0060start\u0060 along a list of (bearing, distance) legs and draw it on layer C-PROP (PHANTOM2 linetype, default). Bearings MUST be surveyor textual form: \u0027N 45 30 15 E\u0027 / \u0027N 45\u00B0 30\\\u0027 15\u0022 E\u0027 / \u0027S 30 W\u0027. Computes the closure error (distance from the last vertex back to the start) and reports it in metres along with \u0060closureStatus = \u0027in_tolerance\u0027 | \u0027out_of_tolerance\u0027\u0060. Tolerance is set by \u0060kind\u0060 (\u0027residential\u0027 \u003C 0.02 m, \u0027commercial\u0027 \u003C 0.05 m, \u0027agricultural\u0027 \u003C 0.20 m, \u0027forest\u0027 \u003C 0.50 m per rule 38 \u00A73) or via \u0060toleranceMOverride\u0060. Setting autoClose=true closes the polyline geometrically (last vertex snapped to first) but the original closure error is still reported.",
+      "tags": [
+        "draw",
+        "parcel"
+      ]
+    },
+    {
+      "name": "draw_road_corridor",
+      "description": "Given a road centreline polyline \u002B a total widthM, draws the centreline on C-ROAD-CNTR (CENTER linetype) PLUS two parallel edge polylines on C-ROAD-EDGE (Continuous), each offset by widthM/2 to either side at every vertex (mitred at internal vertices using the average of the incoming and outgoing tangent normals). Per rule 38 \u00A76 the edges are Continuous, NOT CENTER \u2014 the layer assignment is what makes the plan readable. Returns all 3 entity handles \u002B the widthM used.",
+      "tags": [
+        "draw",
+        "road",
+        "corridor"
+      ]
+    },
+    {
+      "name": "ensure_civil_layers",
+      "description": "Idempotently create the 12-layer civil-engineering key (C-ROAD-CNTR, C-ROAD-EDGE, C-ROAD-LANE, C-PROP, C-ESMT, C-ROW, C-TOPO-MAJR, C-TOPO-MINR, C-TOPO-SPOT, C-STAT, C-ANNO, C-NORTH) per rule 38 \u00A79, with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. C-ROAD-CNTR = 0.30 mm CENTER, C-ROAD-EDGE = 0.50 mm Continuous, C-PROP = 0.50 mm PHANTOM2, C-TOPO-MAJR = 0.35 mm, C-TOPO-MINR = 0.13 mm). Existing layers are left alone, never overwritten. includeRoad / includeProperty / includeTopo flags skip the corresponding sub-set so a survey-only drawing does not get road layers it never uses.",
+      "tags": [
+        "ensure",
+        "civil",
+        "layers"
+      ]
+    },
+    {
+      "name": "place_spot_elevation",
+      "description": "Place a survey spot elevation at \u0060position\u0060: a small \u002B cross (two perpendicular short lines on C-TOPO-SPOT) AND a signed elevation text formatted \u0027\u002B102.45\u0027 / \u0027-1.23\u0027 (Polish PN-EN ISO 6709 conventional 2-decimal precision) offset by textOffsetM to the upper-right. Returns BOTH the cross handles and the text handle. Per rule 38 \u00A75 drawing only the text breaks downstream takeoffs because the actual point is missing.",
+      "tags": [
+        "place",
+        "spot",
+        "elevation"
+      ]
+    },
+    {
+      "name": "place_station_labels",
+      "description": "Walk the centreline polyline and at every interval (default 20 m) drop: (1) a small perpendicular tick mark on layer C-STAT and (2) a labelled DBText with the station notation parallel to the alignment, offset to one side. Notation respects the system flag: \u0027metric_km\u0027 \u2192 \u00270\u002B020\u0027 (Polish / EU, default), \u0027us_feet\u0027 \u2192 \u00270\u002B20\u0027 (US, where 1 station = 100 ft). Per rule 38 \u00A77 ticks are perpendicular to the LOCAL tangent, recomputed at every vertex, NOT to the global \u002BX axis.",
+      "tags": [
+        "place",
+        "station",
+        "labels"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "civil",
+    "tool_count_target": 10,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase6_domains",
+    "discipline": "civil",
+    "depends_on_categories": [
+      "geometry-2d",
+      "layers",
+      "annotations"
+    ],
+    "paired_validators_dir": "validators/civil/",
+    "v1_limitations": [
+      "Vertical alignments / profile views ship in Phase 7.",
+      "Spirals / clothoid transitions are NOT in v1 — only tangents and circular curves on horizontal alignments.",
+      "draw_road_corridor mitres internal vertices using the average-normal method without acute-corner self-intersection check; this is fine for v1 alignments, sharper corners arrive with the spiral support in Phase 7.",
+      "draw_north_arrow synthesises a basic triangle inline; the COMPASS variant ships with the Phase-7 block library under blocks/civil/."
+    ],
+    "last_regenerated_utc": "2026-04-22T15:49:18.6866844Z"
+  }
+}

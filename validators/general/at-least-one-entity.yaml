@@ -1,0 +1,12 @@
+id: general.smoke.at-least-one-entity
+name: Drawing must contain at least one model-space entity
+discipline: general
+severity: error
+description: |
+  Smoke check: a delivered DWG with zero model-space entities is almost always
+  the result of a failed export or an empty template, not an intended deliverable.
+  At least one Line / Polyline / Circle / Arc / Hatch / BlockReference is required.
+checks:
+  - type: entity_count_at_least
+    entity_types: [Line, Polyline, Polyline2d, Polyline3d, Circle, Arc, Hatch, BlockReference, MText, DBText]
+    value: 1

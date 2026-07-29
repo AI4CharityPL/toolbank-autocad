@@ -1,0 +1,21 @@
+id: civil.road.edge-on-c-road-edge
+name: Edge of pavement belongs on C-ROAD-EDGE (Continuous)
+discipline: civil
+severity: error
+description: |
+  Per rule 38 §6 the edge of pavement is a Continuous polyline on layer
+  C-ROAD-EDGE. Drafting it on the centreline layer (C-ROAD-CNTR) is the
+  most common civil mistake — the result reads as a wide centreline rather
+  than a road, and downstream takeoff scripts double-count.
+
+  Pairs with `acad-civil.draw_road_corridor`, which always places its two
+  parallel edges on C-ROAD-EDGE.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(EDGE[-_]?OF[-_]?PAVEMENT|EOP|ROAD[-_]?EDGE|C[-_]?EDGE|C[-_]?EOP)$"
+checks:
+  - { type: layer_equals, value: C-ROAD-EDGE }
+fix:
+  type: move_to_layer
+  layer: C-ROAD-EDGE
+  create_if_missing: true

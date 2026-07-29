@@ -1,0 +1,14 @@
+id: general.text.min-height
+name: Annotation text must be at least 1.8 mm high
+discipline: general
+severity: warning
+description: |
+  Polish architectural drafting practice (and most CAD office standards) require
+  a minimum legible annotation text height of 1.8 mm at 1:1 scale. Text smaller
+  than that becomes unreadable on A3+ paper plots even at native scale.
+references:
+  - https://pn-en-iso-3098.example.com/text-heights
+scope:
+  entity_types: [DBText, MText]
+checks:
+  - { type: text_height_at_least, value: 1.8 }

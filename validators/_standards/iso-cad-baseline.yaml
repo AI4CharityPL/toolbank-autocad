@@ -1,0 +1,14 @@
+id: iso-cad-baseline
+name: ISO baseline CAD hygiene
+description: |
+  Minimal hygiene every CAD deliverable should pass: units in mm, no print
+  surprises (DEFPOINTS, layer "0"), legible text, at least one entity in
+  model space.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.layers.no-construction-on-layer-zero
+  - general.text.min-height
+  - general.text.standard-style-present
+  - general.smoke.at-least-one-entity
+  - general.geometry.degenerate-circle

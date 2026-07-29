@@ -1,0 +1,29 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <Authors>AutoCAD MCP Megasystem</Authors>
+    <Company>AutoCAD MCP Megasystem</Company>
+    <Product>AutoCAD MCP Megasystem</Product>
+    <Copyright>(c) AutoCAD MCP Megasystem</Copyright>
+    <Version>0.1.0-alpha</Version>
+    <NeutralLanguage>en-US</NeutralLanguage>
+
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <DeterministicSourcePaths Condition="'$(CI)' == 'true'">true</DeterministicSourcePaths>
+
+    <AcadInstallPath Condition="'$(AcadInstallPath)' == ''">C:\Program Files\Autodesk\AutoCAD 2025\</AcadInstallPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SourceRoot Include="$(MSBuildThisFileDirectory)" />
+  </ItemGroup>
+
+</Project>

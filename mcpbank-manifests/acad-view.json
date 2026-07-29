@@ -1,0 +1,122 @@
+{
+  "id": "acad-view",
+  "name": "acad-view",
+  "description": "Model-space view control for the active AutoCAD document: zoom to an arbitrary drawing-unit rectangle (zoom_window), zoom to drawing extents / limits / named view, zoom by scale factor or around a named center point, and list / activate / describe stored named views. Used as a pre-step for acad.files.export_file scope=Display when the AI agent needs to frame a specific region before capturing a PNG + running describe_image on the result, and as a reset tool between regional captures in multi-tile visual review loops.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-view.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "dwg",
+    "view",
+    "zoom",
+    "viewport",
+    "named-view",
+    "capture",
+    "visual-review",
+    "inspection"
+  ],
+  "intent_examples": [
+    "zoom to rectangle",
+    "zoom window",
+    "zoom do prostokata",
+    "frame a region of the drawing",
+    "pokaz fragment rysunku",
+    "zblizenie na obszar rysunku",
+    "przyblizyc do obszaru",
+    "zoom extents",
+    "zoom na calosc rysunku",
+    "pokaz caly rysunek",
+    "fit all to view",
+    "ZOOM E",
+    "zoom all",
+    "pokaz cale granice rysunku",
+    "ZOOM A",
+    "zoom to center",
+    "wysrodkuj widok",
+    "center zoom",
+    "zoom scale",
+    "scale view by factor",
+    "zoom in by 2x",
+    "powieksz widok o czynnik",
+    "wylistuj widoki",
+    "list named views",
+    "pokaz zapisane widoki",
+    "show named views in drawing",
+    "which views are saved",
+    "ustaw nazwany widok",
+    "restore named view",
+    "switch to view",
+    "activate named view",
+    "przelacz na widok",
+    "biezacy widok",
+    "current view info",
+    "describe active view",
+    "pokaz parametry aktywnego widoku",
+    "view info"
+  ],
+  "tools_summary": [
+    {
+      "name": "zoom_window",
+      "description": "Zoom the active model-space view to the axis-aligned rectangle defined by two corner points (drawing units). Use before acad.files.export_file scope=\"Display\" to capture a specific region as PNG, or to frame an area for visual inspection.",
+      "tags": ["zoom", "window", "capture"]
+    },
+    {
+      "name": "zoom_extents",
+      "description": "Zoom the active model-space view to fit the bounding box of all entities (ZOOM _E). Use as a reset between regional captures.",
+      "tags": ["zoom", "extents"]
+    },
+    {
+      "name": "zoom_all",
+      "description": "Zoom the active view to the drawing limits + extents (ZOOM _A).",
+      "tags": ["zoom", "all", "limits"]
+    },
+    {
+      "name": "zoom_center",
+      "description": "Zoom to a specific center point with a requested view height in drawing units.",
+      "tags": ["zoom", "center"]
+    },
+    {
+      "name": "zoom_scale",
+      "description": "Zoom the active view by a relative scale factor.",
+      "tags": ["zoom", "scale"]
+    },
+    {
+      "name": "list_views",
+      "description": "List all named views stored in the drawing's VIEW table with center, width, height and paper-space flag.",
+      "tags": ["list", "views", "named-view"]
+    },
+    {
+      "name": "set_current_view",
+      "description": "Restore a named view by name.",
+      "tags": ["named-view", "restore"]
+    },
+    {
+      "name": "get_current_view",
+      "description": "Return the currently active view's center, width, height and paper-space flag.",
+      "tags": ["current", "view", "info"]
+    }
+  ],
+  "metadata": {
+    "category": "view",
+    "tool_count_target": 8,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase8_visual_review"
+  }
+}

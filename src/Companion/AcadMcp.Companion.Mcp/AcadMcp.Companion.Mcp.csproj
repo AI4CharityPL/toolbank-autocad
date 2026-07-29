@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>AcadMcp.Companion.Mcp</RootNamespace>
+    <AssemblyName>AcadMcp.Companion.Mcp</AssemblyName>
+    <Description>Embedded MCP client. Spawns the AutoCAD tool-bank server (stdio JSON-RPC) and exposes its tool catalog + universal dispatch to the in-app agent.</Description>
+  </PropertyGroup>
+
+</Project>

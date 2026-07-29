@@ -1,0 +1,19 @@
+id: elec.wire.power-on-e-wire-pwr
+name: Power rails belong on E-WIRE-PWR
+discipline: electrical
+severity: warning
+description: |
+  Per rule 39 §9 + §11 the L1 / L2 / L3 / N / PE rails of a ladder
+  diagram live on layer E-WIRE-PWR (ACI 1, 0.50 mm Continuous). Catches
+  legacy 'L1' / 'POWER' / 'ZASIL' / 'MAINS' layers that need to migrate.
+
+  Pairs with `acad-electrical.draw_ladder_rails`.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(L1|L2|L3|N|PE|POWER|ZASIL|ZASILANIE|MAINS|E[-_]?PWR|E[-_]?WIRE[-_]?PWR)$"
+checks:
+  - { type: layer_equals, value: E-WIRE-PWR }
+fix:
+  type: move_to_layer
+  layer: E-WIRE-PWR
+  create_if_missing: true

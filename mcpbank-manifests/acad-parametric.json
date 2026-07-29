@@ -1,0 +1,244 @@
+{
+  "id": "acad-parametric",
+  "name": "acad-parametric",
+  "description": "Parametric drafting: geometric constraints via native -GEOMCONSTRAINT (Horizontal, Vertical, Parallel, Perpendicular, Coincident, Fix), DELCONSTRAINT cleanup, inventory of constraint proxy entities in model space, and dynamic BlockReference property get/set (visibility, lookup, distance, angle) without opening the Block Editor. Ships a dedicated P-* layer key for parametric annotation hygiene. Pairs with acad-validators under validators/parametric/. Full dimensional DIMCONSTRAINT workflows and Block Editor-only geometric constraints ship in Phase 7.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-parametric.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "apply",
+    "autocad",
+    "block",
+    "cad",
+    "coincident",
+    "constraint",
+    "constraints",
+    "delete",
+    "dwg",
+    "dynamic",
+    "ensure",
+    "entities",
+    "entity",
+    "fix",
+    "geom",
+    "get",
+    "health",
+    "horizontal",
+    "layers",
+    "list",
+    "parallel",
+    "parametric",
+    "perpendicular",
+    "properties",
+    "property",
+    "set",
+    "vertical"
+  ],
+  "intent_examples": [
+    "90 degree constraint two lines",
+    "anchor sketch fix constraint",
+    "apply coincident constraint",
+    "apply horizontal constraint",
+    "apply parallel constraint",
+    "apply perpendicular constraint",
+    "apply vertical constraint",
+    "co potrafi parametric",
+    "coincident geom constraint",
+    "datum fix one entity",
+    "DELCONSTRAINT handle",
+    "delete constraints on entity",
+    "dynamic block angle degrees policy",
+    "ensure parametric layer key",
+    "find geom constraints in drawing",
+    "fix geom constraint",
+    "force two lines parallel",
+    "GC coincident",
+    "GC fix",
+    "GC horizontal",
+    "GC parallel",
+    "GC perpendicular",
+    "GC vertical",
+    "get BlockReference parameters",
+    "horizontal geom constraint",
+    "inspect dynamic block handle",
+    "inventory parametric constraints",
+    "jakie ma wlasciwosci dynamiczny blok",
+    "list constraint proxies",
+    "list dynamic block properties",
+    "lista encji constraint",
+    "make line vertical parametric",
+    "merge endpoints coincident",
+    "P-SKETCH layer list",
+    "parallel geom constraint",
+    "parametric category metadata",
+    "parametric drafting layers",
+    "parametric MCP info",
+    "perpendicular geom constraint",
+    "polacz punkty coincident",
+    "prostopadle linie constraint",
+    "read dynamic visibility distance",
+    "remove geometric constraints from line",
+    "rownolegle do osi X",
+    "rownolegle dwie linie constraint",
+    "set dynamic block distance",
+    "setup P-CONSTRAINED layer",
+    "strip parametric constraints",
+    "stworz warstwy P- parametric",
+    "toggle dynamic block visibility state",
+    "ustaw visibility dynamic block",
+    "usun constrainty z obiektu",
+    "vertical geom constraint",
+    "warstwy szkicu parametrycznego",
+    "which constraints exist model space",
+    "write BlockReference dynamic property",
+    "wymus pionowa linie",
+    "wymus pozioma linie constraint",
+    "zablokuj punkt odniesienia fix",
+    "zmien parametr bloku dynamicznego"
+  ],
+  "tools_summary": [
+    {
+      "name": "apply_geom_coincident",
+      "description": "Apply a Coincident geometric constraint between two picks (handles a and b) via transparent -GEOCONSTRAINT. Works best on endpoints / points the solver can merge; whole-entity picks may fail depending on AutoCAD build. If the command rejects the pick set, constrain boundary polylines instead of hatch (rule 42 \u00A78).",
+      "tags": [
+        "apply",
+        "geom",
+        "coincident"
+      ]
+    },
+    {
+      "name": "apply_geom_fix",
+      "description": "Apply a Fix geometric constraint to anchor one entity (datum behaviour per rule 42 \u00A72). Call once per sketch for the construction corner \u2014 do not Fix every entity or the drawing becomes over-constrained.",
+      "tags": [
+        "apply",
+        "geom",
+        "fix"
+      ]
+    },
+    {
+      "name": "apply_geom_horizontal",
+      "description": "Apply a Horizontal geometric constraint to one line-like entity in the current space using AutoCAD transparent -GEOCONSTRAINT. The entity handle must reference a Line, polyline segment, or other object the solver accepts for Horizontal. Runs outside an MCP transaction \u2014 AutoCAD owns the command transaction.",
+      "tags": [
+        "apply",
+        "geom",
+        "horizontal"
+      ]
+    },
+    {
+      "name": "apply_geom_parallel",
+      "description": "Apply a Parallel geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Both entities must live in the same current space; mixed paper-space / block-context picks are undefined \u2014 resolve handles from the active viewport context first.",
+      "tags": [
+        "apply",
+        "geom",
+        "parallel"
+      ]
+    },
+    {
+      "name": "apply_geom_perpendicular",
+      "description": "Apply a Perpendicular geometric constraint between two curves via transparent -GEOCONSTRAINT. Common pitfall: picking two lines that are already parallel to the UCS axes \u2014 the solver may report redundant constraints (rule 42 \u00A73).",
+      "tags": [
+        "apply",
+        "geom",
+        "perpendicular"
+      ]
+    },
+    {
+      "name": "apply_geom_vertical",
+      "description": "Apply a Vertical geometric constraint to one line-like entity in the current space using transparent -GEOCONSTRAINT. Complements apply_geom_horizontal; do not stack both on the same line unless the office standard requires it.",
+      "tags": [
+        "apply",
+        "geom",
+        "vertical"
+      ]
+    },
+    {
+      "name": "delete_entity_constraints",
+      "description": "Run transparent -DELCONSTRAINT on one entity handle to strip geometric/dimensional constraints attached to that object. Use before explode-freeze workflows or when rebuilding a sketch (rule 42 \u00A74 \u2014 explode orphans constraints differently).",
+      "tags": [
+        "delete",
+        "entity",
+        "constraints"
+      ]
+    },
+    {
+      "name": "ensure_parametric_layers",
+      "description": "Idempotently create the 6-layer parametric sketch key (P-CONSTRUCTION, P-SKETCH, P-CONSTRAINED, P-DYNAMIC, P-PARAM-LBL, P-NOTE) per rule 42 \u00A79 with prescribed ACI colour, Continuous linetype, and lineweight. Existing layers are never overwritten.",
+      "tags": [
+        "ensure",
+        "parametric",
+        "layers"
+      ]
+    },
+    {
+      "name": "get_dynamic_block_properties",
+      "description": "Read all DynamicBlockReferenceProperty entries from a BlockReference handle: names, read-only flags, UnitsType, CLR type, and current Value. isDynamicBlock=false returns an empty list \u2014 the handle is still a block insert but not dynamic. Use the reference handle, never hard-code anonymous *U block names (rule 42 \u00A76).",
+      "tags": [
+        "get",
+        "dynamic",
+        "block",
+        "properties"
+      ]
+    },
+    {
+      "name": "list_constraint_entities",
+      "description": "Scan model space for database objects whose runtime class name contains \u0027Constraint\u0027 (constraint proxy / glyph entities). Optional layerFilter narrows results. Read-only with respect to geometry \u2014 still requires the plugin for DB access.",
+      "tags": [
+        "list",
+        "constraint",
+        "entities"
+      ]
+    },
+    {
+      "name": "parametric_health",
+      "description": "Return the 6-layer P-* parametric key, planned Phase-7 block roster, and the dynamic-block angle value policy string. Does not open AutoCAD.",
+      "tags": [
+        "parametric",
+        "health"
+      ]
+    },
+    {
+      "name": "set_dynamic_block_property",
+      "description": "Write one DynamicBlockReferenceProperty on a BlockReference by name. Pass JSON booleans as true/false, numbers as JSON numbers. For Angle-typed properties the numeric value is interpreted as degrees and converted to radians in the plugin (see parametric_health.dynamicAnglePolicy). Strings are for lookup / text parameters. Read-only properties throw.",
+      "tags": [
+        "set",
+        "dynamic",
+        "block",
+        "property"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "parametric",
+    "tool_count_target": 12,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase6_domains",
+    "discipline": "parametric",
+    "depends_on_categories": [
+      "layers",
+      "blocks"
+    ],
+    "paired_validators_dir": "validators/parametric/",
+    "v1_limitations": [
+      "Geometric constraints run via native -GEOCONSTRAINT Editor.Command — behaviour is locale/AutoCAD-build sensitive; Coincident on whole entities may require manual picks in some drawings.",
+      "DIMCONSTRAINT authoring, BEDIT-scoped block-definition constraints, and associative-network DOF analysis ship in Phase 7.",
+      "list_constraint_entities scans model space only (not every layout) and matches class names containing 'Constraint' — not a full associative-graph export.",
+      "Dynamic-block angle inputs are JSON numbers in degrees at the MCP boundary; the plugin converts to radians when UnitsType looks angular (substring 'angl')."
+    ],
+    "last_regenerated_utc": "2026-04-22T16:32:06.4918489Z"
+  }
+}

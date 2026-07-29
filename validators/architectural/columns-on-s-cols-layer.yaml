@@ -1,0 +1,26 @@
+id: arch.columns.on-s-cols-layer
+name: Structural columns belong on S-COLS, not on architectural layers
+discipline: architectural
+severity: error
+description: |
+  Per rule 36 §5 structural columns are referenced from the architectural
+  plan but OWNED by the structural discipline. They MUST sit on layer
+  'S-COLS' (with the centre-mark on S-COLS-CTRL). Drafting columns on
+  'A-WALL', 'A-COLS', 'COLUMNS' etc. breaks coordination with the structural
+  set when the model is exchanged.
+
+  This rule pairs with `acad-architecture.insert_rect_column` and
+  `acad-architecture.insert_round_column`, both of which place the column
+  profile on S-COLS by default.
+references:
+  - .cursor/rules/36-architecture-domain-traps.mdc#5-columns-are-never-on-the-wall-layer
+  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+scope:
+  entity_types: [Polyline, Circle]
+  layer_pattern: "^(A[-_]?COLS?|COLUMNS?|COLS?|A[-_]?WALL|STRUCT[-_]?COLS?)$"
+checks:
+  - { type: layer_equals, value: S-COLS }
+fix:
+  type: move_to_layer
+  layer: S-COLS
+  create_if_missing: true

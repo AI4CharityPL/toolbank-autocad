@@ -1,0 +1,10 @@
+id: general.text.standard-style-present
+name: Text style 'Standard' must be defined
+discipline: general
+severity: info
+description: |
+  Many block libraries and user templates assume that the 'Standard' text style
+  exists. Removing it via PURGE leaves block attributes and dimensions falling
+  back to a missing-style placeholder that shows incorrect heights and fonts.
+checks:
+  - { type: text_style_must_exist, name: Standard }

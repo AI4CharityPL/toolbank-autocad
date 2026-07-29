@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>AcadMcp.Companion.Host</RootNamespace>
+    <AssemblyName>AcadMcp.Companion.Host</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <!-- ElementHost bridges WPF UserControl into PaletteSet (WinForms Control). -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <Description>In-app AutoCAD AI assistant. NETLOAD plugin hosting a WPF chat palette (command ACADAI) backed by the AutoCAD tool bank.</Description>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <NoWarn>$(NoWarn);CA1416;MSB3277</NoWarn>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcadMcp.Companion.Agent\AcadMcp.Companion.Agent.csproj" />
+    <ProjectReference Include="..\AcadMcp.Companion.Mcp\AcadMcp.Companion.Mcp.csproj" />
+  </ItemGroup>
+
+  <!-- AutoCAD managed assemblies (loaded from AutoCAD's process at runtime via NETLOAD). -->
+  <ItemGroup>
+    <Reference Include="acmgd">
+      <HintPath>$(AcadInstallPath)acmgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+    <Reference Include="acdbmgd">
+      <HintPath>$(AcadInstallPath)acdbmgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+    <Reference Include="accoremgd">
+      <HintPath>$(AcadInstallPath)accoremgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+  </ItemGroup>
+
+</Project>

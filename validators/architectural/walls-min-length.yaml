@@ -1,0 +1,13 @@
+id: arch.walls.min-length
+name: Walls shorter than 50 mm are suspicious
+discipline: architectural
+severity: warning
+description: |
+  Wall segments shorter than 50 mm are almost always editing-noise: leftover
+  trims from FILLET / TRIM operations, double clicks, or copies that were not
+  fully welded. Surface them so the user can manually merge or delete.
+scope:
+  entity_types: [Line, Polyline]
+  layer_in: [WALLS]
+checks:
+  - { type: length_at_least, value: 50 }

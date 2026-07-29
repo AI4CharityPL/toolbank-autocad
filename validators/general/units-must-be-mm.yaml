@@ -1,0 +1,12 @@
+id: general.units.must-be-mm
+name: Drawing units must be millimetres
+discipline: general
+severity: error
+description: |
+  ISO and most European CAD standards require model-space distances in
+  millimetres. INSUNITS must therefore be set to mm. Drawings authored in
+  inches or as "undefined" cause downstream import / scale-factor bugs.
+references:
+  - https://www.iso.org/standard/16873.html
+checks:
+  - { type: units_must_be, value: mm }

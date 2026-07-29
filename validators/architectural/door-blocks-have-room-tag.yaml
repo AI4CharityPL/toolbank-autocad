@@ -1,0 +1,20 @@
+id: arch.doors.must-have-room-tag
+name: Door blocks must carry a ROOM_NUMBER attribute
+discipline: architectural
+severity: warning
+description: |
+  Door BlockReferences must expose a non-empty ROOM_NUMBER attribute so that
+  the door schedule generator and the BIM export can correlate each door with
+  its host room. Empty / missing ROOM_NUMBER values cause schedule rows to be
+  dropped silently.
+scope:
+  entity_types: [BlockReference]
+checks:
+  - type: any_of
+    checks:
+      - type: not
+        check: { type: layer_matches, pattern: "^A-DOOR" }
+      - type: all_of
+        checks:
+          - { type: attribute_present, tag: ROOM_NUMBER }
+          - { type: attribute_value_matches, tag: ROOM_NUMBER, pattern: "^[A-Za-z0-9.-]+$" }

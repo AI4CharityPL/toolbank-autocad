@@ -1,0 +1,21 @@
+id: iso-mechanical-baseline
+name: ISO mechanical-drafting baseline
+description: |
+  Minimum hygiene for an ISO-style mechanical drawing produced with the
+  acad-mechanical category. Builds on `iso-cad-baseline` and adds the four
+  mechanical traps covered by paired validators today (rule 37 §11):
+
+  - hidden lines must use HIDDEN linetype AND live on ME-HIDDEN;
+  - centre-lines must use CENTER linetype AND live on ME-CENTER.
+
+  The 3/4-arc check on ME-THREAD ships once the validator engine grows the
+  `entity_class_equals` primitive — until then the convention is enforced by
+  `acad-mechanical.draw_threaded_hole` itself.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.text.min-height
+  - mech.hidden.must-be-dashed
+  - mech.hidden.on-me-hidden-layer
+  - mech.centerlines.must-be-dashed
+  - mech.centerlines.on-me-center-layer

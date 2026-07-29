@@ -1,0 +1,194 @@
+{
+  "pdf": "c:\\Users\\DELL\\Dev\\autocad-mcp\\assets\\review-2026-04-23\\smoke-overview.pdf",
+  "overview": "c:\\Users\\DELL\\Dev\\autocad-mcp\\assets\\review-2026-04-23\\tiles\\overview.png",
+  "overview_size_px": [
+    1651,
+    1275
+  ],
+  "dpi_tiles": 300,
+  "dpi_overview": 150,
+  "rows": 3,
+  "cols": 4,
+  "tiles": [
+    {
+      "name": "tile-r0c0.png",
+      "row": 0,
+      "col": 0,
+      "px_bbox": [
+        0,
+        0,
+        825,
+        850
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r0c1.png",
+      "row": 0,
+      "col": 1,
+      "px_bbox": [
+        825,
+        0,
+        1650,
+        850
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r0c2.png",
+      "row": 0,
+      "col": 2,
+      "px_bbox": [
+        1650,
+        0,
+        2475,
+        850
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r0c3.png",
+      "row": 0,
+      "col": 3,
+      "px_bbox": [
+        2475,
+        0,
+        3301,
+        850
+      ],
+      "size_px": [
+        826,
+        850
+      ]
+    },
+    {
+      "name": "tile-r1c0.png",
+      "row": 1,
+      "col": 0,
+      "px_bbox": [
+        0,
+        850,
+        825,
+        1700
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r1c1.png",
+      "row": 1,
+      "col": 1,
+      "px_bbox": [
+        825,
+        850,
+        1650,
+        1700
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r1c2.png",
+      "row": 1,
+      "col": 2,
+      "px_bbox": [
+        1650,
+        850,
+        2475,
+        1700
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r1c3.png",
+      "row": 1,
+      "col": 3,
+      "px_bbox": [
+        2475,
+        850,
+        3301,
+        1700
+      ],
+      "size_px": [
+        826,
+        850
+      ]
+    },
+    {
+      "name": "tile-r2c0.png",
+      "row": 2,
+      "col": 0,
+      "px_bbox": [
+        0,
+        1700,
+        825,
+        2550
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r2c1.png",
+      "row": 2,
+      "col": 1,
+      "px_bbox": [
+        825,
+        1700,
+        1650,
+        2550
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r2c2.png",
+      "row": 2,
+      "col": 2,
+      "px_bbox": [
+        1650,
+        1700,
+        2475,
+        2550
+      ],
+      "size_px": [
+        825,
+        850
+      ]
+    },
+    {
+      "name": "tile-r2c3.png",
+      "row": 2,
+      "col": 3,
+      "px_bbox": [
+        2475,
+        1700,
+        3301,
+        2550
+      ],
+      "size_px": [
+        826,
+        850
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+# =====================================================
+# AutoCAD MCP Megasystem - .gitignore
+# =====================================================
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.vs/
+artifacts/
+
+# Build outputs (we ship via launchers in bin-launchers/, but bin/obj from each csproj are local)
+**/bin/Debug/
+**/bin/Release/
+**/obj/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+project.lock.json
+project.fragment.lock.json
+**/.dotnet/
+
+# Rider / VS / VSCode
+.idea/
+*.iml
+.vscode/
+!.vscode/settings.json.example
+
+# Python (Vision sidecar)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+.coverage
+htmlcov/
+
+# YOLO / SAM weights (can be huge, downloaded by setup script)
+src/AcadMcp.Vision/models/*.pt
+src/AcadMcp.Vision/models/*.onnx
+src/AcadMcp.Vision/models/*.bin
+
+# Generated docs / catalogs
+tools-catalog/_generated/
+docs/tools/_generated/
+
+# Local secrets / configs
+*.local.json
+.env
+.env.*
+!.env.example
+secrets/
+
+# AutoCAD work files
+*.bak
+*.dwl
+*.dwl2
+*.err
+*.log
+*.acl
+*.svd
+*.sv$
+*.dwl
+*.ac$
+
+# Test artifacts
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Temp
+temp/
+tmp/
+%TEMP%/acadmcp/
+
+# Cursor session-specific (rules ARE versioned, settings are not)
+.cursor/settings.json
+.cursor/state/

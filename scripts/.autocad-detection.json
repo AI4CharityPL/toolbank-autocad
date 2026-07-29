@@ -1,0 +1,42 @@
+﻿{
+    "DetectedAt":  "2026-04-22T12:38:16.6676570+02:00",
+    "Found":  true,
+    "Installations":  [
+                          {
+                              "ProductName":  "AutoCAD 2025 — polski (Polish)",
+                              "RegistryVersion":  "R25.0",
+                              "ReleaseId":  "ACAD-8101:415",
+                              "InstallPath":  "C:\\Program Files\\Autodesk\\AutoCAD 2025\\",
+                              "IsLT":  false,
+                              "Vertical":  "vanilla",
+                              "PluginCapable":  true,
+                              "MissingDlls":  [
+
+                                              ],
+                              "FoundDllPaths":  {
+                                                    "accoremgd.dll":  "C:\\Program Files\\Autodesk\\AutoCAD 2025\\accoremgd.dll",
+                                                    "acmgd.dll":  "C:\\Program Files\\Autodesk\\AutoCAD 2025\\acmgd.dll",
+                                                    "acdbmgd.dll":  "C:\\Program Files\\Autodesk\\AutoCAD 2025\\acdbmgd.dll"
+                                                },
+                              "TargetTfm":  "net8.0-windows",
+                              "TfmReason":  "AutoCAD 2025+ uses .NET 8",
+                              "ApiYear":  2025,
+                              "Mode":  "full"
+                          }
+                      ],
+    "ComProgIds":  [
+                       "AutoCAD.Application",
+                       "AutoCAD.Application.25"
+                   ],
+    "Recommended":  {
+                        "ProductName":  "AutoCAD 2025 — polski (Polish)",
+                        "TargetTfm":  "net8.0-windows",
+                        "InstallPath":  "C:\\Program Files\\Autodesk\\AutoCAD 2025\\",
+                        "Mode":  "full",
+                        "Vertical":  "vanilla",
+                        "ApiYear":  2025
+                    },
+    "RecommendedTfm":  "net8.0-windows",
+    "SupportsPlugin":  true,
+    "Mode":  "full"
+}

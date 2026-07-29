@@ -1,0 +1,20 @@
+id: elec.rung.label-on-e-lbl-rung
+name: Ladder rung-number labels belong on E-LBL-RUNG
+discipline: electrical
+severity: warning
+description: |
+  Per rule 39 §4 + §11 the integer rung-number text on the LEFT rail of a
+  ladder lives on layer E-LBL-RUNG (ACI 2, 0.25 mm). Mixing rung labels
+  with wire-number labels (E-LBL-WIRE) confuses the maintenance technician
+  who is filtering by layer state to print only the rung index.
+
+  Pairs with `acad-electrical.draw_ladder_rung`.
+scope:
+  entity_types: [DBText, MText]
+  layer_pattern: "^(RUNG|RUNGS|E[-_]?RUNG|E[-_]?LBL[-_]?RUNG)$"
+checks:
+  - { type: layer_equals, value: E-LBL-RUNG }
+fix:
+  type: move_to_layer
+  layer: E-LBL-RUNG
+  create_if_missing: true

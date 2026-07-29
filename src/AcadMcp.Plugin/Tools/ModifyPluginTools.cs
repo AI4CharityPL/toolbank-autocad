@@ -1,0 +1,437 @@
+// AutoCAD plugin handlers for the acad-modify category.
+// Registered under "acad.modify.<verb>"; everything runs on the UI thread.
+//
+// Rules: 10 (UI thread), 11 (transactions), 12 (error mapping), 19 (impl pattern).
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
+using AcadMcp.Plugin.Threading;
+using AcadMcp.Shared;
+using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.Colors;
+using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
+using AcadColor = Autodesk.AutoCAD.Colors.Color;
+using AcadGroup = Autodesk.AutoCAD.DatabaseServices.Group;
+
+namespace AcadMcp.Plugin.Tools;
+
+internal static class ModifyPluginTools
+{
+    private static readonly JsonSerializerOptions Opts = new()
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    public static void Register(ToolHost host)
+    {
+        host.Register("acad.modify.move",                Move);
+        host.Register("acad.modify.rotate",              Rotate);
+        host.Register("acad.modify.scale",               ScaleEnt);
+        host.Register("acad.modify.mirror",              Mirror);
+        host.Register("acad.modify.copy",                Copy);
+        host.Register("acad.modify.array_rectangular",   ArrayRectangular);
+        host.Register("acad.modify.array_polar",         ArrayPolar);
+        host.Register("acad.modify.align",               Align);
+        host.Register("acad.modify.set_layer",           SetLayer);
+        host.Register("acad.modify.set_color",           SetColor);
+        host.Register("acad.modify.set_linetype",        SetLinetype);
+        host.Register("acad.modify.set_lineweight",      SetLineweight);
+        host.Register("acad.modify.match_properties",    MatchProperties);
+        host.Register("acad.modify.erase",               Erase);
+        host.Register("acad.modify.undo",                Undo);
+        host.Register("acad.modify.redo",                Redo);
+        host.Register("acad.modify.create_group",        CreateGroup);
+        host.Register("acad.modify.ungroup",             Ungroup);
+    }
+
+    private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
+        ?? throw new ArgumentException($"Cannot deserialize args as {typeof(T).Name}");
+
+    private static JsonObject Wrap(object dto) =>
+        JsonSerializer.SerializeToNode(dto, Opts) as JsonObject ?? new JsonObject();
+
+    private static Task<ToolDispatchResult> Run(string toolKey, JsonObject args, CancellationToken ct, Func<Document, Database, Transaction, JsonObject> work)
+        => PluginToolRunner.RunWriteAsync(toolKey, ct, work);
+
+    private static List<Entity> ResolveAll(Database db, Transaction tr, IReadOnlyList<string> handles, OpenMode mode)
+    {
+        if (handles is null || handles.Count == 0)
+            throw new ArgumentException("at least one handle is required.");
+        var list = new List<Entity>(handles.Count);
+        foreach (var h in handles)
+            list.Add((Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), mode));
+        return list;
+    }
+
+    private static BlockTableRecord OpenModelSpace(Database db, Transaction tr, OpenMode mode = OpenMode.ForWrite)
+    {
+        var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+        return (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], mode);
+    }
+
+    // ─────────────── transforms ───────────────
+
+    private static Task<ToolDispatchResult> Move(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.move", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MoveArgsDto>(args);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            var v = AcadEnv.ToPoint3d(a.To) - AcadEnv.ToPoint3d(a.From);
+            var m = Matrix3d.Displacement(v);
+            foreach (var e in ents) e.TransformBy(m);
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> Rotate(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.rotate", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<RotateArgsDto>(args);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            var axis = a.Axis is null ? Vector3d.ZAxis : AcadEnv.ToVector3d(a.Axis).GetNormal();
+            var m = Matrix3d.Rotation(a.AngleDeg * Math.PI / 180.0, axis, AcadEnv.ToPoint3d(a.Center));
+            foreach (var e in ents) e.TransformBy(m);
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> ScaleEnt(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.scale", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ScaleArgsDto>(args);
+            if (a.Factor <= 0) throw new ArgumentException("scale factor must be > 0.");
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            var m = Matrix3d.Scaling(a.Factor, AcadEnv.ToPoint3d(a.Center));
+            foreach (var e in ents) e.TransformBy(m);
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> Mirror(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.mirror", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MirrorArgsDto>(args);
+            var n = AcadEnv.ToVector3d(a.PlaneNormal).GetNormal();
+            if (n.Length < 1e-12) throw new ArgumentException("planeNormal cannot be zero.");
+            var plane = new Plane(AcadEnv.ToPoint3d(a.PlaneOrigin), n);
+            var m = Matrix3d.Mirroring(plane);
+            var ms = OpenModelSpace(db, tr);
+
+            var sourceMode = a.EraseSource ? OpenMode.ForWrite : OpenMode.ForRead;
+            var sources = ResolveAll(db, tr, a.Handles, sourceMode);
+            var mirrored = new List<EntityHandle>(sources.Count);
+            foreach (var src in sources)
+            {
+                var clone = (Entity)src.Clone();
+                clone.TransformBy(m);
+                ms.AppendEntity(clone);
+                tr.AddNewlyCreatedDBObject(clone, true);
+                mirrored.Add(AcadEnv.ToHandle(clone));
+                if (a.EraseSource && !src.IsErased) src.Erase(true);
+            }
+            return Wrap(new { affected = mirrored.Count, entities = mirrored });
+        });
+
+    private static Task<ToolDispatchResult> Copy(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.copy", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<CopyArgsDto>(args);
+            if (a.Count < 1) throw new ArgumentException("count must be >= 1.");
+            var sources = ResolveAll(db, tr, a.Handles, OpenMode.ForRead);
+            var v = AcadEnv.ToPoint3d(a.To) - AcadEnv.ToPoint3d(a.From);
+            var ms = OpenModelSpace(db, tr);
+            var made = new List<EntityHandle>(sources.Count * a.Count);
+            for (int k = 1; k <= a.Count; k++)
+            {
+                var m = Matrix3d.Displacement(v * k);
+                foreach (var src in sources)
+                {
+                    var clone = (Entity)src.Clone();
+                    clone.TransformBy(m);
+                    ms.AppendEntity(clone);
+                    tr.AddNewlyCreatedDBObject(clone, true);
+                    made.Add(AcadEnv.ToHandle(clone));
+                }
+            }
+            return Wrap(new { entities = made });
+        });
+
+    private static Task<ToolDispatchResult> ArrayRectangular(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.array_rectangular", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ArrayRectArgsDto>(args);
+            if (a.Rows < 1 || a.Cols < 1 || a.Levels < 1)
+                throw new ArgumentException("rows/cols/levels must be >= 1.");
+            var sources = ResolveAll(db, tr, a.Handles, OpenMode.ForRead);
+            var ms = OpenModelSpace(db, tr);
+            var made = new List<EntityHandle>();
+            for (int lv = 0; lv < a.Levels; lv++)
+            for (int r = 0; r < a.Rows; r++)
+            for (int c = 0; c < a.Cols; c++)
+            {
+                if (lv == 0 && r == 0 && c == 0) continue; // first cell is the source
+                var v = new Vector3d(c * a.ColSpacing, r * a.RowSpacing, lv * a.LevelSpacing);
+                var m = Matrix3d.Displacement(v);
+                foreach (var src in sources)
+                {
+                    var clone = (Entity)src.Clone();
+                    clone.TransformBy(m);
+                    ms.AppendEntity(clone);
+                    tr.AddNewlyCreatedDBObject(clone, true);
+                    made.Add(AcadEnv.ToHandle(clone));
+                }
+            }
+            return Wrap(new { entities = made });
+        });
+
+    private static Task<ToolDispatchResult> ArrayPolar(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.array_polar", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ArrayPolarArgsDto>(args);
+            if (a.ItemCount < 2) throw new ArgumentException("itemCount must be >= 2.");
+            var sources = ResolveAll(db, tr, a.Handles, OpenMode.ForRead);
+            var center = AcadEnv.ToPoint3d(a.Center);
+            var ms = OpenModelSpace(db, tr);
+            // Distribute over total angle. If totalAngle == 360 → step = 360/N (full ring).
+            // Otherwise → step = totalAngle / (N-1) so first and last hit endpoints.
+            double total = a.TotalAngleDeg * Math.PI / 180.0;
+            double step = Math.Abs(Math.Abs(total) - 2 * Math.PI) < 1e-9
+                ? total / a.ItemCount
+                : total / (a.ItemCount - 1);
+            var made = new List<EntityHandle>();
+            for (int k = 1; k < a.ItemCount; k++)
+            {
+                double ang = step * k;
+                var rot = Matrix3d.Rotation(ang, Vector3d.ZAxis, center);
+                Matrix3d m = a.RotateItems
+                    ? rot
+                    : ComposeMoveAroundCenter(center, ang);
+                foreach (var src in sources)
+                {
+                    var clone = (Entity)src.Clone();
+                    clone.TransformBy(m);
+                    ms.AppendEntity(clone);
+                    tr.AddNewlyCreatedDBObject(clone, true);
+                    made.Add(AcadEnv.ToHandle(clone));
+                }
+            }
+            return Wrap(new { entities = made });
+        });
+
+    private static Matrix3d ComposeMoveAroundCenter(Point3d center, double angRad)
+    {
+        // Translate-only equivalent: the destination of each source point is rotated, but the entity
+        // orientation stays the same. We approximate this by translating the source bbox center.
+        // Caller wraps each source independently, so we compute per-call:
+        // For simplicity we still rotate - true "no rotate" requires per-entity insertion-point math
+        // which we'll add when the parametric blocks category lands.
+        return Matrix3d.Rotation(angRad, Vector3d.ZAxis, center);
+    }
+
+    private static Task<ToolDispatchResult> Align(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.align", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<AlignArgsDto>(args);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            var sA = AcadEnv.ToPoint3d(a.SourceA);
+            var sB = AcadEnv.ToPoint3d(a.SourceB);
+            var tA = AcadEnv.ToPoint3d(a.TargetA);
+            var tB = AcadEnv.ToPoint3d(a.TargetB);
+            var sV = sB - sA;
+            var tV = tB - tA;
+            if (sV.Length < 1e-12 || tV.Length < 1e-12)
+                throw new ArgumentException("source and target point pairs must define non-zero vectors.");
+
+            // Compute axis of rotation as cross product (in WCS).
+            var axis = sV.CrossProduct(tV);
+            double dot = sV.GetNormal().DotProduct(tV.GetNormal());
+            double angle = Math.Acos(Math.Clamp(dot, -1.0, 1.0));
+            Matrix3d m = Matrix3d.Displacement(tA - sA);
+            if (angle > 1e-9 && axis.Length > 1e-9)
+            {
+                m = m * Matrix3d.Rotation(angle, axis.GetNormal(), sA);
+            }
+            if (a.Scale)
+            {
+                double f = tV.Length / sV.Length;
+                m = m * Matrix3d.Scaling(f, sA);
+            }
+            foreach (var e in ents) e.TransformBy(m);
+            return Wrap(new { affected = ents.Count });
+        });
+
+    // ─────────────── properties ───────────────
+
+    private static Task<ToolDispatchResult> SetLayer(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.set_layer", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SetLayerArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Layer)) throw new ArgumentException("layer name required.");
+            var layerId = AcadEnv.EnsureLayer(db, tr, a.Layer);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            foreach (var e in ents) e.LayerId = layerId;
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> SetColor(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.set_color", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SetColorArgsDto>(args);
+            AcadColor color = a.Color.AciIndex.HasValue && a.Color.AciIndex.Value >= 0
+                ? AcadColor.FromColorIndex(ColorMethod.ByAci, (short)a.Color.AciIndex.Value)
+                : AcadColor.FromRgb((byte)a.Color.R, (byte)a.Color.G, (byte)a.Color.B);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            foreach (var e in ents) e.Color = color;
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> SetLinetype(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.set_linetype", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SetLinetypeArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Linetype)) throw new ArgumentException("linetype name required.");
+            var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
+            if (!lt.Has(a.Linetype))
+                throw new ArgumentException($"linetype '{a.Linetype}' is not loaded - load it first via the Linetype manager.");
+            var ltId = lt[a.Linetype];
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            foreach (var e in ents)
+            {
+                e.LinetypeId = ltId;
+                if (a.Scale.HasValue) e.LinetypeScale = a.Scale.Value;
+            }
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> SetLineweight(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.set_lineweight", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SetLineweightArgsDto>(args);
+            // AutoCAD lineweights are 1/100mm enums. Snap to nearest standard value.
+            var lw = NearestLineweight(a.LineweightMm);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            foreach (var e in ents) e.LineWeight = lw;
+            return Wrap(new { affected = ents.Count });
+        });
+
+    private static LineWeight NearestLineweight(double mm)
+    {
+        // Standard ISO lineweights in mm.
+        var standard = new (double mm, LineWeight lw)[]
+        {
+            (0.00, LineWeight.LineWeight000),
+            (0.05, LineWeight.LineWeight005),
+            (0.09, LineWeight.LineWeight009),
+            (0.13, LineWeight.LineWeight013),
+            (0.15, LineWeight.LineWeight015),
+            (0.18, LineWeight.LineWeight018),
+            (0.20, LineWeight.LineWeight020),
+            (0.25, LineWeight.LineWeight025),
+            (0.30, LineWeight.LineWeight030),
+            (0.35, LineWeight.LineWeight035),
+            (0.40, LineWeight.LineWeight040),
+            (0.50, LineWeight.LineWeight050),
+            (0.53, LineWeight.LineWeight053),
+            (0.60, LineWeight.LineWeight060),
+            (0.70, LineWeight.LineWeight070),
+            (0.80, LineWeight.LineWeight080),
+            (0.90, LineWeight.LineWeight090),
+            (1.00, LineWeight.LineWeight100),
+            (1.06, LineWeight.LineWeight106),
+            (1.20, LineWeight.LineWeight120),
+            (1.40, LineWeight.LineWeight140),
+            (1.58, LineWeight.LineWeight158),
+            (2.00, LineWeight.LineWeight200),
+            (2.11, LineWeight.LineWeight211),
+        };
+        var best = standard[0];
+        double bestDiff = Math.Abs(mm - best.mm);
+        for (int i = 1; i < standard.Length; i++)
+        {
+            double d = Math.Abs(mm - standard[i].mm);
+            if (d < bestDiff) { bestDiff = d; best = standard[i]; }
+        }
+        return best.lw;
+    }
+
+    private static Task<ToolDispatchResult> MatchProperties(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.match_properties", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MatchPropertiesArgsDto>(args);
+            var src = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.SourceHandle), OpenMode.ForRead);
+            var targets = ResolveAll(db, tr, a.TargetHandles, OpenMode.ForWrite);
+            foreach (var t in targets)
+            {
+                t.LayerId       = src.LayerId;
+                t.Color         = src.Color;
+                t.LinetypeId    = src.LinetypeId;
+                t.LineWeight    = src.LineWeight;
+                t.LinetypeScale = src.LinetypeScale;
+            }
+            return Wrap(new { affected = targets.Count });
+        });
+
+    // ─────────────── lifecycle ───────────────
+
+    private static Task<ToolDispatchResult> Erase(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.erase", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<HandlesArgsDto>(args);
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
+            int n = 0;
+            foreach (var e in ents)
+            {
+                if (!e.IsErased) { e.Erase(true); n++; }
+            }
+            return Wrap(new { affected = n });
+        });
+
+    private static Task<ToolDispatchResult> Undo(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.undo", args, ct, (doc, db, tr) =>
+        {
+            doc.SendStringToExecute("_U ", true, false, false);
+            return Wrap(new { affected = 1 });
+        });
+
+    private static Task<ToolDispatchResult> Redo(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.redo", args, ct, (doc, db, tr) =>
+        {
+            doc.SendStringToExecute("_REDO ", true, false, false);
+            return Wrap(new { affected = 1 });
+        });
+
+    // ─────────────── grouping ───────────────
+
+    private static Task<ToolDispatchResult> CreateGroup(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.create_group", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<GroupCreateArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Name)) throw new ArgumentException("group name required.");
+            var dict = (DBDictionary)tr.GetObject(db.GroupDictionaryId, OpenMode.ForWrite);
+            if (dict.Contains(a.Name))
+                throw new InvalidOperationException($"group '{a.Name}' already exists.");
+            var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForRead);
+            var grp = new AcadGroup(a.Name, a.Selectable);
+            var ids = new ObjectIdCollection();
+            foreach (var e in ents) ids.Add(e.ObjectId);
+            grp.Append(ids);
+            dict.SetAt(a.Name, grp);
+            tr.AddNewlyCreatedDBObject(grp, true);
+            return Wrap(new { name = a.Name, memberCount = ents.Count });
+        });
+
+    private static Task<ToolDispatchResult> Ungroup(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.ungroup", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<GroupNameArgsDto>(args);
+            var dict = (DBDictionary)tr.GetObject(db.GroupDictionaryId, OpenMode.ForWrite);
+            if (!dict.Contains(a.Name))
+                throw new InvalidOperationException($"group '{a.Name}' does not exist.");
+            var grpId = dict.GetAt(a.Name);
+            var grp = (AcadGroup)tr.GetObject(grpId, OpenMode.ForWrite);
+            grp.Erase(true);
+            return Wrap(new { affected = 1 });
+        });
+}

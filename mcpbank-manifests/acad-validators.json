@@ -1,0 +1,223 @@
+{
+  "id": "acad-validators",
+  "name": "acad-validators",
+  "description": "Rule-based validator for AutoCAD drawings. Loads YAML rules (id, severity, discipline, scope, checks, optional auto-fix) from a bundled library plus user contributions, runs them against the active document via the AcadMcp .NET plugin, and returns a structured ValidationReport: per-rule counts and per-violation entityHandle/dxfType/layer/expected/observed/fixAvailable. Supports primitive checks (layer_equals, layer_matches, color_equals, linetype_equals, lineweight_at_least, length/area/radius_at_least, text_matches, attribute_present, bbox_inside, ...) and composite ones (not / any_of / all_of), plus document-level checks (entity_count_at_least, layer_must_exist, units_must_be). Auto-fix recipes (move_to_layer, set_color, set_linetype, set_lineweight, delete_entity, set_attribute) run in a single grouped transaction so failures roll back atomically. Includes bundled \u0022standards\u0022 (iso-cad-baseline, polish-arch-baseline) and an add_validator_rule tool for live extension. Architecture: rules 33-validators-rule-format and 34-validators-engine-traps.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-validators.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "add",
+    "against",
+    "auto",
+    "autocad",
+    "cad",
+    "check",
+    "collision",
+    "drawing",
+    "dwg",
+    "explain",
+    "fix",
+    "geometric",
+    "intersect",
+    "list",
+    "overlap",
+    "reload",
+    "rule",
+    "rules",
+    "standard",
+    "standards",
+    "validate",
+    "validator",
+    "validators",
+    "violations",
+    "with"
+  ],
+  "intent_examples": [
+    "add custom validator rule",
+    "apply automatic fixes",
+    "auto fix violations",
+    "available standards",
+    "check drawing for errors",
+    "check one rule only",
+    "check overlaps between layers",
+    "check standard compliance",
+    "co sprawdza ta regula",
+    "create user rule",
+    "dodaj nowa regule walidacji",
+    "doors crossing walls",
+    "drzwi przecinajace sciany",
+    "explain validator rule",
+    "find entities that intersect",
+    "fix the report",
+    "geometric overlap scan",
+    "jakie standardy sa dostepne",
+    "list cad standards",
+    "list last violations",
+    "list validator rules",
+    "napraw bledy walidacji",
+    "odswiez baze regul",
+    "ostatnie bledy walidacji",
+    "overlapping labels",
+    "pokaz dostepne walidatory",
+    "pokaz nakladki",
+    "pokaz ostatnie naruszenia",
+    "pokaz tresc reguly",
+    "przeladuj reguly walidacji",
+    "refresh validators",
+    "register new validator yaml",
+    "reload validator rules",
+    "rescan rules folder",
+    "rule details",
+    "run a single validator rule",
+    "run standard preset",
+    "run validators on dwg",
+    "show available rules",
+    "show last validation report",
+    "show standard presets",
+    "sprawdz poprawnosc rysunku",
+    "sprawdz ta regule",
+    "sprawdz wg normy",
+    "stworz wlasna regule",
+    "text overlaps text",
+    "validate active drawing",
+    "validate against rule",
+    "validate against standard",
+    "what does this rule check",
+    "what validators are available",
+    "what violations did we find",
+    "which entities collide",
+    "wykonaj poprawki automatycznie",
+    "wylistuj reguly walidacji",
+    "wylistuj standardy",
+    "znajdz nakladajace sie obiekty",
+    "zwaliduj jedna regula",
+    "zwaliduj rysunek",
+    "zwaliduj wedlug standardu"
+  ],
+  "tools_summary": [
+    {
+      "name": "add_validator_rule",
+      "description": "Persist a brand-new validator rule to the user-rules directory (%LOCALAPPDATA%/AcadMcp/validators/_user/\u003Cdiscipline\u003E/\u003Cid\u003E.yaml) and reload the registry. The \u0027yaml\u0027 argument is the full YAML document text. Returns the assigned id and on-disk path.",
+      "tags": [
+        "add",
+        "validator",
+        "rule"
+      ]
+    },
+    {
+      "name": "auto_fix_violations",
+      "description": "Apply the fix recipe for every fixable violation in the cached report (or only those for the supplied ruleIds). All fixes run inside a SINGLE plugin transaction (rule 34 \u00A73); failure rolls back the whole batch. Set dryRun=true to preview the planned actions without writing.",
+      "tags": [
+        "auto",
+        "fix",
+        "violations"
+      ]
+    },
+    {
+      "name": "check_overlaps",
+      "description": "Purely geometric overlap / intersection scanner. Finds pairs of entities whose bounding boxes (or curves, for mode=polyline_crosses_polyline) overlap or cross. Use cases: doors actually piercing walls, labels stacked on top of each other, notes touching geometry. Args: layersA (required), layersB (default layersA), mode bbox_intersect|centroid_in_bbox|polyline_crosses_polyline, tolerance mm, optional window rectangle. Result is sorted by severity then overlap area.",
+      "tags": [
+        "overlap",
+        "intersect",
+        "geometric",
+        "check",
+        "collision"
+      ]
+    },
+    {
+      "name": "explain_rule",
+      "description": "Return the full definition of one validator rule by id - severity, discipline, description, references, scope, list of checks and the optional fix recipe. Pure local query - does not touch AutoCAD.",
+      "tags": [
+        "explain",
+        "rule"
+      ]
+    },
+    {
+      "name": "list_standards",
+      "description": "List every bundled standard preset (id, human name, ordered list of rule ids it expands to). Standards are convenience presets for validate_against_standard. Pure local query.",
+      "tags": [
+        "list",
+        "standards"
+      ]
+    },
+    {
+      "name": "list_validators",
+      "description": "List every available validator rule (id, name, severity, discipline, fix-available, description). Optional filters: discipline (general|architectural|mechanical|electrical|civil|mep) and minSeverity (info|warning|error). Pure local query - does not touch AutoCAD.",
+      "tags": [
+        "list",
+        "validators"
+      ]
+    },
+    {
+      "name": "list_violations",
+      "description": "Return the most recent ValidationReport produced for the active document. The cache is keyed by document name \u002B path so opening a different drawing returns \u0027no report yet\u0027 (rule 34 \u00A79).",
+      "tags": [
+        "list",
+        "violations"
+      ]
+    },
+    {
+      "name": "reload_validator_rules",
+      "description": "Re-scan embedded resources, \u003Crepo\u003E/validators and %LOCALAPPDATA%/AcadMcp/validators for rule YAML files and rebuild the in-process registry. Returns the new total rule count and any load errors.",
+      "tags": [
+        "reload",
+        "validator",
+        "rules"
+      ]
+    },
+    {
+      "name": "validate_against_standard",
+      "description": "Resolve a standard id (e.g. \u0027iso-cad-baseline\u0027) to its rule set and run validate_drawing for that bundle. Use list_standards first to discover available presets.",
+      "tags": [
+        "validate",
+        "against",
+        "standard"
+      ]
+    },
+    {
+      "name": "validate_drawing",
+      "description": "Run a set of validator rules against the active document and return a structured report (per-rule counts, every violation with handle/dxfType/layer/expected/observed/fixAvailable). Optional filters: ruleIds (explicit list, overrides everything else), discipline, minSeverity, includePaperspace.",
+      "tags": [
+        "validate",
+        "drawing"
+      ]
+    },
+    {
+      "name": "validate_with_rule",
+      "description": "Run exactly one validator rule (by id) against the active document and return a focused report. Throws if the ruleId is unknown.",
+      "tags": [
+        "validate",
+        "with",
+        "rule"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "validators",
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "tool_count_target": 11,
+    "phase": "phase5_validators",
+    "rule_library_size": 13,
+    "bundled_standards": [
+      "iso-cad-baseline",
+      "polish-arch-baseline"
+    ],
+    "user_rules_dir": "%LOCALAPPDATA%\\AcadMcp\\validators\\_user",
+    "last_regenerated_utc": "2026-04-22T13:45:18.5432997Z"
+  }
+}

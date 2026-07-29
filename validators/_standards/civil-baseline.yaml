@@ -1,0 +1,24 @@
+id: civil-baseline
+name: Civil-engineering baseline (PN + NCS hybrid)
+description: |
+  Minimum hygiene for a civil-engineering / survey deliverable produced
+  with the acad-civil category. Builds on `iso-cad-baseline` and adds the
+  five civil traps covered by paired validators today (rule 38 §11):
+
+  - road centrelines on C-ROAD-CNTR with CENTER linetype;
+  - edge of pavement on C-ROAD-EDGE (Continuous);
+  - parcels on C-PROP (PHANTOM2);
+  - spot elevations on C-TOPO-SPOT.
+
+  Parcel closure tolerance enforcement (rule 38 §3) is checked AT-WRITE-TIME
+  by `acad-civil.draw_parcel` itself; a post-hoc validator will land once
+  the engine grows a `polyline_closure_within` check primitive.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.text.min-height
+  - civil.road.centerline-on-c-road-cntr
+  - civil.road.centerline-must-be-dashed
+  - civil.road.edge-on-c-road-edge
+  - civil.topo.spot-on-c-topo-spot
+  - civil.parcel.on-c-prop

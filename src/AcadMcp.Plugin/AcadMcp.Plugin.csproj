@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      net8.0-windows = AutoCAD 2025+ (which itself runs on .NET 8 runtime).
+      Multi-targeting net48 (for AutoCAD 2020-2024) requires a separate AcadInstallPath2024
+      pointing at AutoCAD 2024 managed assemblies AND a parallel test install. Deferred until
+      we have such an environment - tracked as a future "legacy AutoCAD" phase.
+      See rule 16-acad-plugin-lifecycle.mdc.
+    -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>AcadMcp.Plugin</RootNamespace>
+    <AssemblyName>AcadMcp.Plugin</AssemblyName>
+    <UseWindowsForms>false</UseWindowsForms>
+    <UseWPF>false</UseWPF>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <Description>AutoCAD Extension loaded via NETLOAD. Hosts NamedPipeServer + UiThreadDispatcher.</Description>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <NoWarn>$(NoWarn);CA1416;MSB3277</NoWarn>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcadMcp.Shared\AcadMcp.Shared.csproj" />
+  </ItemGroup>
+
+  <!--
+    AutoCAD managed assemblies (acmgd.dll, acdbmgd.dll, accoremgd.dll) are referenced by HintPath.
+    Path is auto-detected by detect-autocad.ps1 and overridable via $(AcadInstallPath) MSBuild prop.
+    These assemblies are NOT copied to output (Private=false) - the plugin loads them from
+    AutoCAD's process at runtime via NETLOAD.
+  -->
+  <ItemGroup>
+    <Reference Include="acmgd">
+      <HintPath>$(AcadInstallPath)acmgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+    <Reference Include="acdbmgd">
+      <HintPath>$(AcadInstallPath)acdbmgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+    <Reference Include="accoremgd">
+      <HintPath>$(AcadInstallPath)accoremgd.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+    <Reference Include="acdbmgdbrep">
+      <HintPath>$(AcadInstallPath)acdbmgdbrep.dll</HintPath>
+      <Private>false</Private>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
+  </ItemGroup>
+
+</Project>

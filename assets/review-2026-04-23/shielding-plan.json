@@ -1,0 +1,402 @@
+[
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "11D",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "11E",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12F",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "187",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "187",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "187",
+      "b": "199"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "187",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "186",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "184",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "188",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "198",
+      "b": "199"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "198",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "183",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "133",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "155",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "192",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "198",
+      "b": "4B9"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "198",
+      "b": "4BA"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "198",
+      "b": "4BB"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "47C"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "480"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "4BA"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "4BB"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "4BC"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "4BE"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "199",
+      "b": "4BF"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "186",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "11E",
+      "b": "12A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "11E",
+      "b": "12B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "175"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "176"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "177"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "178"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "495"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "12F"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "155"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "156"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "183"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12A",
+      "b": "12D"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "184"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "19B"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "12B",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "19A",
+      "b": "4BB"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "19A",
+      "b": "4BC"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "4C4",
+      "b": "198"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "4C7",
+      "b": "199"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "4C7",
+      "b": "19A"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "4CC",
+      "b": "199"
+    }
+  },
+  {
+    "category": "geometry2d",
+    "tool": "acad.geometry2d.get_intersections",
+    "args": {
+      "a": "4CB",
+      "b": "199"
+    }
+  }
+]

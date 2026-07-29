@@ -1,0 +1,183 @@
+---
+description: Plumbing / sanitary-fixture policy (acad-plumbing) — block naming, layer split, attribute contract, populate_bathroom presets. Enforces Polish WT-2019 minimum fixture footprints and PN-EN 17210 accessibility. READ BEFORE editing PlumbingPluginTools.cs, adding new presets, or calling insert_* from acad-architecture / validators.
+globs:
+  - "src/AcadMcp.Plugin/Tools/PlumbingPluginTools.cs"
+  - "src/AcadMcp.Plugin/Tools/PlumbingDtos.cs"
+  - "src/AcadMcp.Backend/Categories/Plumbing/**/*.cs"
+alwaysApply: false
+---
+
+# 63. Sanitary-fixture policy (acad-plumbing)
+
+Companion to rule 19 (tool impl pattern), rule 28 (block / layer traps),
+rule 64 (furniture density) and rule 35 (domain-categories design). Defines
+block naming, layer split, attribute contract, preset footprint and minimum
+room sizes per Polish *Warunki Techniczne 2019* and *PN-EN 17210* accessibility.
+
+## 1. Drawing unit
+
+Millimetres. All factory footprints are literal WT-2019 / PN-EN fixture sizes.
+Callers MUST call `files.set_units('mm')` first; inches/metres drawings will
+be visually wrong and `populate_bathroom` clearance warnings will be off.
+
+## 2. Block naming convention
+
+All sanitary blocks start with the prefix `PLMB-` — the prefix is how
+`list_plumbing_in_model` distinguishes plumbing from furniture or architecture.
+
+- **Fixed**: `PLMB-<CATEGORY>-<VARIANT>`
+  (e.g. `PLMB-WC-FS`, `PLMB-WC-ACC`, `PLMB-BSN-STD`).
+- **Sized**: `PLMB-<CATEGORY>-<VARIANT>-<W>-<D>`
+  (e.g. `PLMB-SHW-WI-1200-900`, `PLMB-BSN-ACC-700-550`).
+
+### Fixed catalogue (must stay in sync with `s_fixedCatalog`)
+
+| name         | category | domain       | W × D (mm) | accessible | standard         | purpose |
+|--------------|----------|--------------|------------|:----------:|------------------|---------|
+| PLMB-WC-FS   | wc       | residential  | 370 × 650  | no         | PN-EN 997        | floor-standing WC |
+| PLMB-WC-WH   | wc       | residential  | 370 × 540  | no         | PN-EN 997        | wall-hung WC (lower footprint) |
+| PLMB-WC-BID  | wc       | residential  | 370 × 550  | no         | PN-EN 14528      | bidet-combo |
+| PLMB-WC-ACC  | wc       | universal    | 800 × 800  | **yes**    | PN-EN 17210 §T.4 | accessible WC + grab bars |
+| PLMB-BSN-STD | basin    | residential  | 600 × 450  | no         | PN-EN 14688      | wash basin |
+| PLMB-BSN-DBL | basin    | residential  |1200 × 450  | no         | PN-EN 14688      | double wash basin |
+| PLMB-UR-STD  | urinal   | office       | 380 × 340  | no         | PN-EN 13407      | wall-hung urinal |
+| PLMB-UR-ACC  | urinal   | universal    | 380 × 450  | **yes**    | PN-EN 17210 §U.4 | accessible lower-rim urinal |
+
+### Sized families
+
+| family            | default W × D | accessible | standard         | notes |
+|-------------------|---------------|:----------:|------------------|-------|
+| PLMB-BSN-ACC      |  700 × 550    | **yes**    | PN-EN 17210 §U.2 | knee-clearance marker below |
+| PLMB-SHW-SQ       |  900 × 900    | no         | PN-EN 14527      | square/rect shower tray |
+| PLMB-SHW-WI       | 1200 × 900    | **yes**    | PN-EN 17210 §S.3 | walk-in barrier-free |
+| PLMB-BT-STANDARD  | 1700 × 700    | no         | PN-EN 232        | std rectangular bathtub |
+| PLMB-BT-MINI      | 1500 × 700    | no         | PN-EN 232        | mini rectangular bathtub |
+| PLMB-BT-CORNER    | 1400 × 1400   | no         | PN-EN 232        | quarter-round corner tub |
+
+Any new catalogue entry MUST extend `s_fixedCatalog` / `s_sizedFamilies`,
+`BuildFixedBlock` / `BuildSizedBlock`, and this table in the same commit.
+
+## 3. Block origin
+
+Every `PLMB-` block has its origin at the **geometric centre** of the
+footprint. Rotations spin around the centre; callers pass the centre point as
+`position`.
+
+Exception: accessible WC (`PLMB-WC-ACC`) includes the grab-bar envelope in the
+800×800 footprint but the bowl centre is offset toward the rear (+y). The
+`position` argument still refers to the 800×800 centroid, not the bowl
+centreline. Keep this in mind when aligning against walls.
+
+## 4. Attribute contract
+
+Every `PLMB-` block carries four attribute definitions:
+
+| tag         | prompt         | visible? | default         | purpose                      |
+|-------------|----------------|----------|-----------------|------------------------------|
+| INV_ID      | Inventory ID   | visible  | `—`             | schedules / inventory        |
+| TYPE        | Type / variant | hidden   | block name      | schedule grouping            |
+| ACCESSIBLE  | Accessible     | hidden   | `TRUE` / `FALSE`| compliance filter (PN-EN 17210) |
+| NOTE        | Note           | hidden   | `""`            | free text                    |
+
+`list_plumbing_in_model` reads INV_ID / TYPE / ACCESSIBLE. The
+`ACCESSIBLE=TRUE` attribute is how `acad-schedules` (D8) and
+`acad-validators` (D6) build the accessibility counter without parsing block
+names.
+
+## 5. Layer split
+
+Applied automatically by `DefaultLayerFor` based on block-name prefix.
+
+| block prefix | default layer | color | purpose |
+|--------------|---------------|-------|---------|
+| PLMB-WC      | A-PLMB-WC     |  6    | WCs     |
+| PLMB-BSN     | A-PLMB-BSN    |  4    | basins  |
+| PLMB-SHW     | A-PLMB-SHW    |  5    | showers |
+| PLMB-BT      | A-PLMB-BT     |  4    | bathtubs |
+| PLMB-UR      | A-PLMB-UR     |  6    | urinals |
+| PLMB-*       | A-PLMB        |  4    | fallback |
+
+Callers may override via `layer` arg. Colors are recommendations — actual ACI
+is set by the plotstyle (rule 61, planned D9).
+
+## 6. `populate_bathroom` presets (MANDATORY preset names)
+
+| preset                        | items placed                                                   | min room (mm) |
+|-------------------------------|----------------------------------------------------------------|---------------|
+| wc-public                     | WC + basin (accessible variants if `accessible=true`)          | 1200 × 1400 |
+| wc-accessible                 | PLMB-WC-ACC + PLMB-BSN-ACC-700-550                             | 1500 × 1800 (PN-EN 17210 §T.1) |
+| bathroom-residential          | WC + basin + bathtub (room ≥ 1800w) OR shower                  | 1600 × 2200 (WT-2019 §82) |
+| bathroom-hospital-patient     | PLMB-WC-WH + PLMB-BSN-ACC + PLMB-SHW-WI-1200-900               | 2400 × 2400 |
+| shower-room                   | shower + basin                                                 | 1400 × 2000 |
+| wc-block-staff                | 2× WC + 2× basin + 1× urinal                                   | 3200 × 2400 |
+
+When room is smaller than min, `PopulateBathroomResult.Warnings` lists the
+shortfall; items are still placed best-effort — caller decides whether to
+abort. **The caller MUST always inspect `Warnings` before shipping a plan.**
+
+## 7. Clearance budget (WT-2019 + PN-EN 17210)
+
+Presets place fixtures at these minimum clearances; `validators.check_clearance`
+(planned D6) enforces them post-hoc.
+
+- **WC front clearance** ≥ 600 mm (standard); **≥ 800 mm** (accessible, PN-EN 17210 §T.2)
+- **WC side clearance (accessible)** ≥ 800 mm (one side, grab-bar access)
+- **Basin front clearance** ≥ 600 mm; **≥ 1200 mm** (accessible, PN-EN 17210 §U.2 — wheelchair approach)
+- **Basin knee clearance (accessible)** ≥ 700 mm height × 300 mm deep × 600 mm wide
+- **Shower tray approach** ≥ 750 mm; **≥ 1200 mm** (walk-in, PN-EN 17210 §S.3)
+- **Bathtub long-side clearance** ≥ 600 mm
+- **Urinal centre-to-centre** ≥ 760 mm (WT-2019 §83); accessible pisuar at 450 mm rim height
+- **Wheelchair turning Ø** ≥ 1500 mm inside accessible bathrooms (PN-EN 17210 §M.4)
+
+The preset layouts in `BuildBathroomPlan` target the accessible minima when
+`accessible=true` and the WT-2019 residential minima otherwise.
+
+## 8. Scaling and rotation
+
+1. `insert_plumbing` accepts arbitrary `scaleX`/`scaleY`, but any non-1.0
+   scale distorts text / attributes — use only for niche tweaks. Prefer the
+   specialised tools with sized families.
+2. `orientation` on `populate_bathroom`: `north` (default, WCs along north
+   wall), `east`/`south`/`west` rotate the entire plan around the room
+   centroid. This is how you mirror plans for left-hand vs right-hand cubicles.
+3. The accessible WC (`PLMB-WC-ACC`) grab-bar footprint orientation rotates
+   with the block; be careful when mirroring a row of accessible stalls —
+   swap `orientation` rather than scaling by -1 (which would flip text).
+
+## 9. Interaction with other categories
+
+- **`acad-architecture`** — place sanitary fixtures AFTER walls close the
+  room so `populate_bathroom` can pick up the bbox from the boundary polyline.
+- **`acad-furniture`** — some presets overlap: `bathroom-hospital-patient`
+  does NOT include a visitor chair (add via `acad-furniture.insert_chair`
+  with `type=armchair`). Keep plumbing and seating on separate layers for
+  independent freeze.
+- **`acad-hatches`** — the room floor hatch (tile / stone) MUST be drawn
+  BEFORE plumbing so the hatch boundary tracer (rule 62 §5) doesn't pick up
+  the basin outline as an island. If you hatch after, run `hatches.clip_hatch`
+  to exclude fixtures.
+- **`acad-validators`** (planned D6) — `check_clearance` will flag preset
+  warnings that weren't addressed; `check_overlaps` will flag a basin in a
+  door swing.
+
+## 10. When to regenerate manifest
+
+Add / rename a tool in `PlumbingTools.cs`, re-generate with
+
+```powershell
+dotnet run --project src\AcadMcp.Backend -c Release --no-build -- `
+  --category plumbing --regenerate-manifest
+```
+
+Pre-build `check-manifests` gate will otherwise fail.
+
+## 11. Performance budget
+
+| tool                              | target p50 | notes |
+|-----------------------------------|-----------:|-------|
+| list_plumbing_catalog             |    < 50 ms | in-memory |
+| insert_* (single)                 |   < 150 ms | BTR creation + BR insert |
+| populate_bathroom (1–5 items)     |   < 500 ms | one preset |
+| list_plumbing_in_model (< 200)    |   < 250 ms | full MS scan |
+
+Exceeding budget by 2× ⇒ open an issue with reproducer DWG.

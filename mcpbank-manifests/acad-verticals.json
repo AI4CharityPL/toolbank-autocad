@@ -1,0 +1,169 @@
+{
+  "id": "acad-verticals",
+  "name": "acad-verticals",
+  "description": "Stairs (straight, spiral, U/L), ramps, elevators (passenger/bed/goods), escalators, platform lifts and handrails per PN-EN 13374 and WT \u00A754. Bed-lift minimum 160x260 with 1600 kg capacity enforced for hospitals.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-verticals.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "draw",
+    "dwg",
+    "elevator",
+    "elevators",
+    "escalator",
+    "handrail",
+    "insert",
+    "lift",
+    "platform",
+    "pn-en-13374",
+    "ramp",
+    "ramps",
+    "rampy",
+    "schody",
+    "shaped",
+    "spiral",
+    "stair",
+    "stairs",
+    "straight",
+    "verticals",
+    "windy",
+    "wt-54"
+  ],
+  "intent_examples": [
+    "accessibility ramp",
+    "balustrada",
+    "bed lift hospital",
+    "circular stair plan",
+    "draw escalator run",
+    "draw handrail",
+    "draw lift shaft",
+    "draw ramp",
+    "draw spiral stair",
+    "draw straight stair",
+    "draw u-shaped stair",
+    "helical stair",
+    "insert elevator",
+    "insert escalator",
+    "insert platform lift",
+    "insert stair run",
+    "krecone schody",
+    "moving stair",
+    "narysuj pochylnie",
+    "narysuj porecz",
+    "narysuj schody proste",
+    "narysuj schody spiralne",
+    "narysuj schody U",
+    "passenger elevator",
+    "pochylnia dla niepelnosprawnych",
+    "podnosnik dla wozkow",
+    "railing on stair",
+    "return stair",
+    "ruchome schody",
+    "schody 1-biegowe",
+    "schody dwubiegowe",
+    "stair chair",
+    "stair handrail",
+    "stair with landing",
+    "straight-run stair plan",
+    "wheelchair lift",
+    "wheelchair ramp plan",
+    "winda szpitalna",
+    "wstaw platforme dla niepelnosprawnych",
+    "wstaw schody ruchome",
+    "wstaw winde"
+  ],
+  "tools_summary": [
+    {
+      "name": "draw_handrail",
+      "description": "Draw a handrail run as a polyline on A-RAIL with an optional mm-height annotation. Warns when heightMm falls outside WT \u00A7298 public stair range 900..1100 mm.",
+      "tags": [
+        "draw",
+        "handrail"
+      ]
+    },
+    {
+      "name": "draw_ramp",
+      "description": "Draw an accessibility ramp: rectangle outline, slope arrow (up or down) along length, percentage label. Emits compliance warnings against WT \u00A766 (accessible ramp max 6% for rise \u003E 500 mm).",
+      "tags": [
+        "draw",
+        "ramp"
+      ]
+    },
+    {
+      "name": "draw_stair_spiral",
+      "description": "Draw a spiral stair in plan view: outer arc, inner arc (column), radial tread lines, centre dot \u002B label. Rule 67 \u00A73 (spiral).",
+      "tags": [
+        "draw",
+        "stair",
+        "spiral"
+      ]
+    },
+    {
+      "name": "draw_stair_straight",
+      "description": "Draw a straight-run stair in plan view: outline rectangle, tread lines, UP/DN direction arrow with label, all on layers A-STRS and A-STRS-DIR. Computes tread depth from runLengthMm / treadCount and emits compliance warnings against WT \u00A754 (public stair: 150-175 mm riser, 250-350 mm tread, 1200 mm min clear width).",
+      "tags": [
+        "draw",
+        "stair",
+        "straight"
+      ]
+    },
+    {
+      "name": "draw_stair_u_shaped",
+      "description": "Draw a U-shaped (two-run, 180\u00B0 return) stair: two straight runs separated by gapMm \u002B one landing rectangle. Each run returns its own compliance warnings.",
+      "tags": [
+        "draw",
+        "stair",
+        "shaped"
+      ]
+    },
+    {
+      "name": "insert_elevator_v",
+      "description": "Draw an elevator shaft in plan: rectangle outline, two diagonal lines (indicates lift symbol per ISO 7001), centred kind label. Kind must be \u0027passenger\u0027, \u0027bed\u0027 or \u0027goods\u0027; the tool warns when cabin size falls below the kind-specific minimum (bed-lift 1600\u00D72600 in hospitals per WT \u00A7193; passenger lift 1100\u00D71400).",
+      "tags": [
+        "insert",
+        "elevator"
+      ]
+    },
+    {
+      "name": "insert_escalator",
+      "description": "Draw an escalator run: rectangle outline, evenly-spaced step lines, direction arrow, UP/DN label. Rotation locates the lower landing at origin.",
+      "tags": [
+        "insert",
+        "escalator"
+      ]
+    },
+    {
+      "name": "insert_platform_lift",
+      "description": "Draw a platform lift (wheelchair lift / stair-chair): rectangle outline \u002B PL label. Default 1100\u00D71400 mm matches PN-EN 81-41.",
+      "tags": [
+        "insert",
+        "platform",
+        "lift"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "verticals",
+    "tool_count_target": 8,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-04-24T09:39:00.3066590Z"
+  }
+}

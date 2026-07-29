@@ -1,0 +1,97 @@
+---
+description: Vision / OCR / ML traps documented up-front. Read BEFORE adding a new acad-vision tool, swapping an OCR engine, or claiming a YOLO result.
+globs:
+  - "src/AcadMcp.Vision/**/*.py"
+  - "src/AcadMcp.Backend/Categories/Vision/**/*.cs"
+alwaysApply: false
+---
+
+# Vision / OCR / ML traps
+
+Same discipline as rules 26-28: documented sharp edges. Do not "fix" what is documented behaviour.
+
+## 1. Image normalisation is mandatory
+
+Most CAD drawings are scanned at 200-600 DPI greyscale or 1-bit B&W. Every model has different expectations:
+
+- **PaddleOCR**: needs RGB uint8, max side ≤ 1920 px, white background. We must auto-resize and convert grayscale→RGB.
+- **YOLO (Ultralytics)**: ingests anything; we should still resize down to ≤ 1280 px so inference stays under 1 s on CPU.
+- **SAM2**: max input 1024 px short side; longer images must be tiled, not stretched.
+
+Do the normalisation in `_loaders.py`, **once**, before dispatch. Never let an OCR engine see a 14 000 × 10 000 px image — it will OOM your dev box.
+
+## 2. PDF OCR is page-by-page
+
+PDFs are not images. They have to be rasterised first, one page at a time, at the user's chosen DPI (default 300). Use `pypdfium2` (BSD, no Ghostscript dep). NEVER pass a multi-page PDF to PaddleOCR directly — it silently OCRs only page 1.
+
+## 3. OCR confidence ≠ correctness
+
+PaddleOCR returns confidence in [0, 1]. Empirically:
+
+- < 0.55 → almost always wrong (noise, watermark, drawing line)
+- 0.55-0.85 → about 70 % correct
+- > 0.85 → about 95 % correct
+
+We surface confidence in the API response so callers can filter. Default cutoff for "extract title-block" is **0.70**. Below that we mark the result `low_confidence: true` instead of dropping it; the AI agent decides.
+
+## 4. Title-block layout varies wildly
+
+There is no universal title-block. Per discipline you need a different layout heuristic:
+
+- **Architectural (US)**: bottom-right rectangle, fields stacked vertically.
+- **Architectural (EU/PL)**: right column or bottom strip, fields in a labelled grid.
+- **Mechanical**: bottom strip with `DRAWING NO`, `SCALE`, `MATERIAL`, `REV`.
+- **Electrical**: bottom-right with `PROJECT`, `SHEET`, `DATE`, `DRN BY`, `CHK BY`.
+
+The `extract_titleblock` tool MUST take a `discipline` hint; without it we fall back to the most common (`architectural-eu`). Never claim a generic title-block extractor.
+
+## 5. YOLO custom CAD-symbol model is per-discipline too
+
+A door symbol in arch is not a door symbol in P&ID. Train and ship per-discipline weights:
+
+- `cad-symbols-arch.pt`
+- `cad-symbols-mech.pt`
+- `cad-symbols-elec.pt`
+- `cad-symbols-pid.pt`
+
+Endpoint takes `discipline` to pick the right weights. Default model is `cad-symbols-arch.pt`. Until we have trained weights checked in, the endpoint MUST 503 with `installHint: "run scripts/setup-vision-models.ps1 to download weights"`.
+
+## 6. Vision LLM cost / latency budget
+
+Anthropic Claude 3.5 Sonnet vision: ~3-5 s per image at $0.003-$0.015. OpenAI GPT-4o vision: ~2-4 s at similar cost. Therefore:
+
+- Always cache responses keyed by content hash (rule 29 §8).
+- Default `max_image_side_px = 1568` (Anthropic recommends ≤ 1568 long side).
+- Compress to JPEG quality 85 before sending — drawings are line art, JPEG is fine and cuts payload by 5-10×.
+- Refuse images > 5 MB after compression.
+
+## 7. Coordinate system is image-pixels, not drawing-units
+
+OCR / YOLO / SAM all return pixel coordinates with origin at top-left. AutoCAD uses paper-space inches/mm with origin at bottom-left. Conversion to drawing units requires (a) the image-DPI and (b) the paper-size at print time, both of which the user has to provide. We surface pixel coordinates from vision endpoints and let the C# Backend convert when (and only when) it knows the paper context. Don't pretend you can guess.
+
+## 8. CrossValidateWithDxf is a *string set diff*, not a renderer
+
+The "compare OCR result to DXF text" tool does NOT re-render the DWG. It takes:
+
+- a list of `{text, confidence}` from OCR
+- a list of `text` strings from DXF (extracted by C# via `acad.files.export_file` to DXF, then walking the DXF entity stream)
+
+and returns `{matched: [...], only_in_ocr: [...], only_in_dxf: [...]}`. Apply normalisation: lowercase, strip leading/trailing whitespace, collapse runs of whitespace, strip surrounding non-alphanumerics. Do NOT use Levenshtein > 1 by default — it explodes on dimensions like `12.50` ↔ `12,50`. Surface a `numericTolerance` flag to opt in.
+
+## 9. Lazy import is mandatory
+
+Never `import paddleocr` at module top. Heavy ML imports add 2-5 s to FastAPI startup and break `/health` readiness. Wrap inside `_loader()` functions called on first use, with `try/except ImportError` returning 503 with `installHint`.
+
+## 10. Concurrent inference: one engine at a time
+
+OCR / YOLO / SAM all hold large GPU/CPU buffers. Wrap the inference call in an `asyncio.Semaphore(value=1)` per engine — concurrent requests get queued, not run in parallel. Otherwise small dev boxes OOM.
+
+## 11. Cache invalidation lives in `_cache.py`
+
+Use `(sha256(content) + engine_name + engine_version)` as the cache key. Bump `engine_version` whenever you upgrade a model. **Never** cache by request URL — same content uploaded twice via different paths must hit the cache.
+
+## When in doubt
+
+1. Re-read this file before touching the involved engine.
+2. Add a one-line `# trap #N (rule 32)` comment on any line that survives a "looks weird" review.
+3. New trap → append here in the same numbered format **before** committing the Python fix.

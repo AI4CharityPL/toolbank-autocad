@@ -1,0 +1,44 @@
+{
+  "task": "Phase C-Anno: clear text overlaps",
+  "plan": [
+    {
+      "category": "modify",
+      "tool": "acad.modify.erase",
+      "args": {
+        "handles": [
+          "13D",
+          "242",
+          "262",
+          "27D",
+          "280",
+          "4A4",
+          "4E2"
+        ]
+      }
+    },
+    {
+      "category": "modify",
+      "tool": "acad.modify.move",
+      "args": {
+        "handles": [
+          "285"
+        ],
+        "from": [
+          38092.76944065484,
+          -3907.7762619372443,
+          0.0
+        ],
+        "to": [
+          38092.76944065484,
+          -2950.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "category": "files",
+      "tool": "acad.files.save_document",
+      "args": {}
+    }
+  ]
+}

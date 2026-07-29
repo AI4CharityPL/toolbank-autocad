@@ -1,0 +1,15 @@
+﻿# audit: 0a63c8f0-e51d-410b-a4d0-5c739fc2d3f7.txt
+# scanned 143 text entities
+  A-AREA-IDEN: 53
+  S-GRID-IDEN: 38
+  A-ANNO-NOTE: 18
+  A-ANNO-TEXT: 16
+  A-ANNO-TTLB: 12
+  A-ANNO-SYMB-EGRS: 5
+  A-ANNO-SYMB: 1
+
+# labels with bbox: 143
+
+# bbox-overlapping label pairs: 0
+
+# labels inventory saved: C:\Users\DELL\Dev\autocad-mcp\assets\review-2026-04-23\labels-inventory.json

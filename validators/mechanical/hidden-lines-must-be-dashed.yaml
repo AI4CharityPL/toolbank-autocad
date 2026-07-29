@@ -1,0 +1,22 @@
+id: mech.hidden.must-be-dashed
+name: Hidden-feature lines must use HIDDEN linetype
+discipline: mechanical
+severity: error
+description: |
+  ISO 128 specifies a short-dash linetype (HIDDEN / HIDDEN2 / HIDDENX2) for
+  features that lie behind the visible body. Drawings that ship hidden
+  features as solid Continuous lines mislead manufacturing and CMM
+  inspection. The canonical home for hidden geometry is layer ME-HIDDEN
+  (rule 37 §1) — use mech.hidden.on-me-hidden-layer to enforce that too.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(M[-_]?HIDDEN|ME[-_]?HIDDEN)$"
+checks:
+  - type: any_of
+    checks:
+      - { type: linetype_equals, value: HIDDEN }
+      - { type: linetype_equals, value: HIDDEN2 }
+      - { type: linetype_equals, value: HIDDENX2 }
+fix:
+  type: set_linetype
+  value: HIDDEN

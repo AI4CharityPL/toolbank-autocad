@@ -1,0 +1,15 @@
+id: general.layers.no-construction-on-layer-zero
+name: No real geometry on layer "0"
+discipline: general
+severity: warning
+description: |
+  Layer "0" is the AutoCAD reserved layer used for block content with
+  ByLayer / ByBlock inheritance. Real model-space geometry should live on a
+  named, discipline-specific layer so that visibility, plot style and lineweight
+  can be controlled per discipline.
+scope:
+  layer_in: ["0"]
+  entity_types: [Line, Polyline, Polyline2d, Polyline3d, Circle, Arc, Hatch]
+checks:
+  - type: not
+    check: { type: layer_equals, value: "0" }

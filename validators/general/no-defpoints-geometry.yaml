@@ -1,0 +1,17 @@
+id: general.layers.no-defpoints-geometry
+name: No real geometry on the DEFPOINTS layer
+discipline: general
+severity: warning
+description: |
+  DEFPOINTS is reserved for AutoCAD's dimension definition points - it never
+  prints by design. Putting visible geometry on it produces drawings that look
+  fine on screen but are blank on plot. Move the geometry to a printable layer.
+scope:
+  layer_in: [DEFPOINTS, Defpoints]
+checks:
+  - type: not
+    check: { type: layer_equals, value: DEFPOINTS }
+fix:
+  type: move_to_layer
+  layer: "0"
+  create_if_missing: false

@@ -1,0 +1,218 @@
+{
+  "id": "acad-selection",
+  "name": "acad-selection",
+  "description": "Non-interactive entity selection over the active drawing's ModelSpace: pick by criteria (layer, color, type/DXF name, handle list), by geometry (rectangular window, fence polyline, polygon, all-in-modelspace), apply free-form filter predicates, build named selection sets stored as Xrecords in the NamedObjectsDictionary, and load/list/delete those sets later. Returns lists of entity handles that downstream tools (acad-modify, acad-geometry-2d, acad-geometry-3d, etc.) can consume directly. Never opens an interactive 'Select objects:' prompt - rule 14-acad-no-blocking-prompts. All read paths are flagged ReadOnly = true; only saving a named set writes to the database.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-selection.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "all",
+    "autocad",
+    "by",
+    "cad",
+    "color",
+    "count",
+    "dwg",
+    "entities",
+    "fence",
+    "filter",
+    "handle",
+    "layer",
+    "load",
+    "polygon",
+    "save",
+    "select",
+    "selection",
+    "set",
+    "type",
+    "window"
+  ],
+  "intent_examples": [
+    "all entities of color",
+    "all entities on layer",
+    "all lines",
+    "all model space entities",
+    "all polylines",
+    "apply filter to selection",
+    "count by type",
+    "count entities",
+    "crossing selection",
+    "fence selection",
+    "filter by layer",
+    "filter entities",
+    "filter entities by color",
+    "filter selection",
+    "filtruj zaznaczenie",
+    "find entities by handle",
+    "get saved selection by name",
+    "how many entities",
+    "ile obiektow",
+    "load selection set",
+    "lookup by handles",
+    "narrow selection by criteria",
+    "obiekty na warstwie",
+    "policz obiekty",
+    "polygon crossing",
+    "polygon window",
+    "polyline fence pick",
+    "resolve handles",
+    "restore named selection",
+    "save selection by name",
+    "save selection set",
+    "select all entities",
+    "select by color",
+    "select by entity type",
+    "select by fence",
+    "select by handle",
+    "select by layer",
+    "select by polygon",
+    "select by window",
+    "select crossing fence",
+    "select dxf type",
+    "select everything",
+    "select inside box",
+    "select inside polygon",
+    "select red entities",
+    "ssget load",
+    "ssget save",
+    "store named selection",
+    "wczytaj zestaw selekcji",
+    "window selection",
+    "wszystkie obiekty",
+    "zapisz zestaw selekcji",
+    "zaznacz oknem",
+    "zaznacz plotem",
+    "zaznacz po kolorze",
+    "zaznacz po typie",
+    "zaznacz po uchwytach",
+    "zaznacz po warstwie",
+    "zaznacz wielokatem",
+    "zaznacz wszystko"
+  ],
+  "tools_summary": [
+    {
+      "name": "count_entities",
+      "description": "Count entities in model space (optionally filtered by DXF type).",
+      "tags": [
+        "count",
+        "entities"
+      ]
+    },
+    {
+      "name": "filter_entities",
+      "description": "Apply an additional layer/type/color filter to a candidate set (or to all of model space if no handles supplied).",
+      "tags": [
+        "filter",
+        "entities"
+      ]
+    },
+    {
+      "name": "load_selection_set",
+      "description": "Load a previously saved named selection set and return its handles. Validates each handle still exists.",
+      "tags": [
+        "load",
+        "selection",
+        "set"
+      ]
+    },
+    {
+      "name": "save_selection_set",
+      "description": "Save a list of entity handles under a named selection set (stored in the AcadMcp xrecord dictionary on the drawing).",
+      "tags": [
+        "save",
+        "selection",
+        "set"
+      ]
+    },
+    {
+      "name": "select_all",
+      "description": "Select every entity currently in model space (no filtering).",
+      "tags": [
+        "select",
+        "all"
+      ]
+    },
+    {
+      "name": "select_by_color",
+      "description": "Select all entities by color (true RGB or ACI index).",
+      "tags": [
+        "select",
+        "by",
+        "color"
+      ]
+    },
+    {
+      "name": "select_by_handle",
+      "description": "Resolve a list of entity handles into a single selection result. Validates each handle exists.",
+      "tags": [
+        "select",
+        "by",
+        "handle"
+      ]
+    },
+    {
+      "name": "select_by_layer",
+      "description": "Select all entities on the given layer. Optionally restrict by frozen/thawed state.",
+      "tags": [
+        "select",
+        "by",
+        "layer"
+      ]
+    },
+    {
+      "name": "select_by_type",
+      "description": "Select entities by AutoCAD DXF entity name (e.g. \u0022LINE\u0022, \u0022LWPOLYLINE\u0022, \u0022CIRCLE\u0022, \u00223DSOLID\u0022, \u0022INSERT\u0022).",
+      "tags": [
+        "select",
+        "by",
+        "type"
+      ]
+    },
+    {
+      "name": "select_fence",
+      "description": "Select entities crossing a polyline fence defined by an ordered vertex list.",
+      "tags": [
+        "select",
+        "fence"
+      ]
+    },
+    {
+      "name": "select_polygon",
+      "description": "Select entities inside (crossing=false) or intersecting (crossing=true) a closed polygonal region.",
+      "tags": [
+        "select",
+        "polygon"
+      ]
+    },
+    {
+      "name": "select_window",
+      "description": "Select entities fully inside (or, with crossing=true, intersecting) the WCS axis-aligned window from min to max.",
+      "tags": [
+        "select",
+        "window"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "selection",
+    "tool_count_target": 12,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase2_3d_modify",
+    "last_regenerated_utc": "2026-04-22T11:57:30.2791437Z"
+  }
+}

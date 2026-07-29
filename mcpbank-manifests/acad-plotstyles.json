@@ -1,0 +1,93 @@
+{
+  "id": "acad-plotstyles",
+  "name": "acad-plotstyles",
+  "description": "Manage CTB (color-dependent) and STB (named) plot-style tables. Apply 9-tier lineweight policy (0.05 mm hatches -\u003E 1.4 mm outer building outline), per-layer plot color, screen percentage and plot flag. Ships AIA-2017 and PN-B-01025 presets.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-plotstyles.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "aia",
+    "apply",
+    "autocad",
+    "cad",
+    "ctb",
+    "dwg",
+    "ensure",
+    "layout",
+    "lineweights",
+    "list",
+    "plot",
+    "plotstyle",
+    "plotstyles",
+    "pn-b-01025",
+    "stb",
+    "to"
+  ],
+  "intent_examples": [
+    "apply plot style to layout",
+    "ensure plot style table",
+    "enum plot style table",
+    "install HOSPITAL-ISO ctb",
+    "jakie plotstyle sa dostepne",
+    "list plot styles",
+    "lista CTB",
+    "plotstyle na arkuszu roboczym",
+    "przypisz CTB do arkusza",
+    "set CTB for paperspace",
+    "show available CTB STB",
+    "skopiuj CTB do autocad",
+    "ustaw lineweight na layout",
+    "wczytaj plotstyle do autocad",
+    "zainstaluj CTB"
+  ],
+  "tools_summary": [
+    {
+      "name": "apply_plotstyle_to_layout",
+      "description": "Apply a named plot-style (CTB/STB) to a paperspace layout. Optionally runs ensure_ctb first so the sheet is copied into AutoCAD before being assigned (ensure=true, default). Under the hood dispatches acad.layouts.configure_plot { layoutName, plotStyle }.",
+      "tags": [
+        "apply",
+        "plotstyle",
+        "to",
+        "layout"
+      ]
+    },
+    {
+      "name": "ensure_ctb",
+      "description": "Ensure a colour-dependent plot-style (CTB) is installed in AutoCAD\u0027s Plot Styles directory. Queries acad.layouts.list_plot_styles to resolve the target directory, then copies from sourcePath (caller override) or the repo asset folder \u003Crepo\u003E/assets/plotstyles/\u003Cname\u003E. If the CTB already exists and overwrite=false (default), reports existedBefore=true, copied=false. Calls list_plot_styles a second time to verify the refresh picked up the new sheet. Use this before apply_plotstyle_to_layout so the target sheet is guaranteed loaded.",
+      "tags": [
+        "ensure",
+        "ctb"
+      ]
+    },
+    {
+      "name": "list_plotstyles",
+      "description": "Enumerate all plot-styles currently visible to AutoCAD (CTB \u002B STB). filter=\u0027ctb\u0027 or \u0027stb\u0027 narrows the returned names. Also returns repo presets (HOSPITAL-ISO, ISO-Standard, monochrome), the AutoCAD Plot Styles directory, and the backend asset directory so the caller can prep ensure_ctb calls.",
+      "tags": [
+        "list",
+        "plotstyles"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "plotstyles",
+    "tool_count_target": 3,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "MCP Nexus AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-04-24T11:43:43.6761467Z"
+  }
+}

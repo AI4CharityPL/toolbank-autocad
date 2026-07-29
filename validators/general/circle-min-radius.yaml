@@ -1,0 +1,13 @@
+id: general.geometry.degenerate-circle
+name: Circles must have a non-trivial radius
+discipline: general
+severity: warning
+description: |
+  Circles below 0.01 drawing units are visually invisible at any sane plot
+  scale and almost always represent leftover construction noise from a failed
+  hatch or text-height calculation. Flag them so the user can decide whether
+  to delete or scale up.
+scope:
+  entity_types: [Circle]
+checks:
+  - { type: radius_at_least, value: 0.01 }

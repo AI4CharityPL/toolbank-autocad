@@ -1,0 +1,20 @@
+id: mech.hidden.on-me-hidden-layer
+name: Hidden-feature lines belong on ME-HIDDEN
+discipline: mechanical
+severity: error
+description: |
+  Per rule 37 §1 hidden-feature edges live on layer ME-HIDDEN with the HIDDEN
+  linetype. Drafting them on ME-VISIBLE / 0 / a custom HIDDEN-layer-name
+  breaks downstream layer-state filters and the ISO inspection workflow.
+
+  Pairs with `acad-mechanical.draw_hidden_edge`, which places lines on
+  ME-HIDDEN by default.
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(HIDDEN|HIDDENS?|M[-_]?HIDDEN|ME[-_]?HIDDEN[-_]?(NEW|OLD)?|HIDDEN[-_]?LINES?)$"
+checks:
+  - { type: layer_equals, value: ME-HIDDEN }
+fix:
+  type: move_to_layer
+  layer: ME-HIDDEN
+  create_if_missing: true

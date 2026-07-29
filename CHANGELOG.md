@@ -1,0 +1,1713 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [Unreleased]
+
+### Fixed
+
+- **Companion: chat no longer freezes ("zacina się") in either plan or non-plan mode.** Root cause: the entire network path to the LLM had no time guard — the shared `HttpClient` used `Timeout.InfiniteTimeSpan` and the SSE read loop (`SseStream.ReadDataLinesAsync` → `ReadLineAsync`) only ended on stream close or user Cancel, so any silent provider stall (rate-limit hold, proxy/VPN, mid-stream hiccup) hung the chat forever on "Analizuję…/Kontynuuję…". Added: (1) an inter-token **idle timeout** in the SSE reader (`ChatRequest.StreamIdleTimeout`, default 90 s, wired into all three providers) that turns a stalled stream into a clean error; (2) a per-turn **wall-clock timeout with one automatic retry** in `AgentOrchestrator.SendTurnWithTimeoutAsync` (`CompanionSettings.TurnTimeoutSeconds`, default 240 s); (3) a 20 s bound on `RefreshModelsAsync` so startup/provider-switch can't hang the panel. New settings `StreamIdleTimeoutSeconds` / `TurnTimeoutSeconds`.
+- **Companion: agent works incrementally instead of one giant turn.** System prompt now instructs the model to split long work/answers across turns and process many rooms/elements in small batches, complementing the existing token-limit auto-continuation — keeps the chat responsive and avoids oversized single requests.
+- **Companion: plan mode now produces a final summary.** After all plan steps execute, a dedicated text-only synthesis pass runs in a fresh chat section (`OnSectionBreak`) and streams the closing answer; `SetFinalText` no longer silently drops the result when earlier steps already streamed text into the assistant bubble.
+
+### Added
+
+- New standalone product **in-app AutoCAD AI Assistant** (`src/Companion/`), a separate, installable WPF chat palette (command `ACADAI`) independent of the editor integration. Lets clients chat with OpenAI / Anthropic / Gemini directly inside AutoCAD using their own API key (BYOK, encrypted with Windows DPAPI), attach images/PDF/text to the chat, count elements and generate reports (layer/block schedules, BOM) with Markdown rendering and CSV export.
+  - `AcadMcp.Companion.Mcp`: embedded stdio MCP client that spawns the existing `AcadMcp.Backend --category router` as a child process and reuses the entire tool bank (router + composites + plugin primitives) with zero re-implementation. Coexists with the Cursor client (the plugin pipe server already accepts multiple sessions).
+  - `AcadMcp.Companion.Agent`: provider-agnostic tool-calling loop with SSE streaming (`OpenAiProvider`, `AnthropicProvider`, `GeminiProvider`), multimodal message building per vendor, DPAPI key store, settings, and report flow templates.
+  - `AcadMcp.Companion.Host`: `IExtensionApplication` + singleton `PaletteSet` hosting an MVVM WPF chat view (streaming, attachments, settings tab, quick reports). Does not load `AcadMcp.Backend` in-process (rule 16); does not surface the internal protocol name in the UI.
+  - Packaging: `installer/PackageContents.companion.xml`, per-user Inno Setup installer `installer/AcadMcpCompanion.iss`, `scripts/deploy-companion.ps1` (dev deploy) and `scripts/build-companion-installer.ps1` (client `.exe`/zip). The bundle ships Host + tool host (`AcadMcp.Plugin`) + backend server so a single install is self-contained; the client enters their API key on first run.
+  - Build clean: `dotnet build -c Release` 0 err / 0 warn across all three Companion projects.
+
+### Added
+
+- **Companion: multi-agent planning + autonomous continuation.** New "Tryb planowania" toggle: a planner pass produces a numbered step plan (inspecting the drawing read-only first), then executor passes run each step sequentially (Cursor-style plan/agent split). The agent loop now auto-continues when a response is truncated by the token limit (provider `finish_reason`/`stop_reason`/`finishReason` parsed for OpenAI/Anthropic/Gemini), so long builds and answers finish even past the per-response character limit. Raised default `MaxToolIterations` 12 → 24.
+- **Companion: AI room visualizations in chat.** New client-side tool `render_visualization` lets the agent generate a rendered image of an indicated room from drawing data (dimensions, room type, furniture) + conversation context (e.g. hospital ward) using the active provider's image model (OpenAI `gpt-image-1`, Gemini `gemini-2.5-flash-image`). The image is shown inline in the chat (`MessageBubble.Image`, `IImageGenerator`, `OnImage` observer callback). Anthropic returns a hint to switch provider (no image model).
+
+- New read-only tool `get_room_data` in `acad-schedules`: locate ONE room by number or name (substring) and return its number, name, area (m²), bbox dimensions (width × depth mm), plus the doors, windows and furniture whose insertion point lies inside the room boundary (each opening tagged with its wall N/S/E/W). Backs accurate "find room A-304" lookups and grounds AI room visualizations. (#ACAD-26)
+- New write tool `correct_room_area` in `acad-schedules`: measures the REAL area with the wall-aware region detector and rewrites the `N m²` token on the label when it diverges from the measured value (or to an explicit value), reusing `update_dbtext`/`update_mtext`. Supports `apply=false` dry-run and a `tolerancePct`. Treats the measured geometry — not the (possibly AI-generated, wrong) label — as the source of truth. (#ACAD-29)
+- New read-only batch tool `audit_all_rooms` in `acad-schedules`: scans every room label, measures area via `get_room_region`, compares to label m², counts doors/windows/furniture in the detected region, flags `leakSuspected` / `labelMismatch` / `emptyOpenings` / `furnitureMismatch`, optional CSV export to `%LOCALAPPDATA%\AcadMcp\reports\`. (#ACAD-29)
+- New batch write tool `correct_all_room_areas` in `acad-schedules`: wrapper around `correct_room_area` for all mismatched labels (`apply=false` dry-run by default). (#ACAD-29)
+- `RoomRegionSolver` in `AcadMcp.Shared/Geometry` (AutoCAD-free, unit-tested): rasterized wall-aware flood-fill that returns a room's measured area, bbox and traced outline polygon, plus an even-odd point-in-polygon test. New plugin primitive `acad.schedules.get_room_region` wraps it (with raycast / closed-polyline fallbacks). (#ACAD-29)
+
+### Changed
+
+- **Universal room region detector (flood-fill).** Boundary detection no longer trusts the smallest enclosing polyline (caught the whole-floor outline ~4656 m²) or a naive raycast over ALL lines (caught `S-GRID` construction lines → ~65 m² for the 200 m² `A-304`). `get_room_data` now calls the new `acad.schedules.get_room_region`, which classifies layers (wall/glazing boundary vs grid/annotation/furniture noise), rasterizes only wall geometry, seals door/window openings and flood-fills from the label point — returning the MEASURED area, bbox and a traced outline. Furniture is tested against that outline (point-in-polygon), openings against the perimeter. Falls back to wall-raycast then smallest closed polyline, and reports the detection `method`. `get_room_data` now returns the measured `areaM2` plus `labelAreaM2` (parsed from the label) so the measured geometry — not the stated figure — is authoritative. (#ACAD-29)
+- **Hospital audit hardening.** Sibling labels grouped by point-in-polygon on the detected outline (not bbox overlap). Openings filtered with `InsideOrNearBoundary` on the outline perimeter. Flood-fill rejects results >3× labelled area (`labelAreaM2` heuristic). Plugin `get_room_region` seals all door/window blocks within region radius (`sealAllDoors`, wider seal width). (#ACAD-29)
+- **Universal boundary fitting for rooms.** `list_room_labels` no longer just grabs the smallest enclosing closed polyline (which picked the whole-floor outline, ~4656 m², when rooms aren't drawn as closed loops). It now also fits a room rectangle by ray-casting from the label to the nearest wall in each direction (Line/Polyline edges, with a small fan to bridge doorways) and chooses the boundary whose area best matches the label's stated area (e.g. "200 m²"), else the tightest enclosing one. `CollectWallSegments` now filters to boundary layers (excluding `S-GRID` and other noise). (#ACAD-28)
+- **Universal, layer-agnostic room search.** `get_room_data` now scans labels on ALL layers by default (`allLayers=true`) and treats any closed polyline as a candidate boundary, so it finds spaces regardless of layer naming (not just `A-ROOM-IDEN`/`A-ROOM-BNDY`). `acad.schedules.list_room_labels` gained an additive `allLayers` flag (and accepts `"*"` in `labelLayers`). The Companion system prompt now mandates all-layer search for finding spaces, counting objects and analyzing the project, and retrying without a layer filter when a filtered search is empty. (#ACAD-27)
+- **Visualizations are domain-neutral.** `render_visualization` no longer assumes hospital/interior: added a `space_kind` field (interior/exterior/garden/yard) so renders of offices, apartments, classrooms, gardens or yards aren't forced into a clinical interior, and the composed prompt explicitly forbids adding medical elements unless the type says so. The agent infers the space type from its name and the conversation. (#ACAD-27)
+- **Companion chat: tool calls collapse into one group.** Multiple tool invocations during a turn now accumulate in a single collapsible "Użyto N narzędzi" group (expand to see each tool + ✓/✗), and the assistant's answer renders BELOW the tool group instead of above it, keeping the transcript readable. (#ACAD-27)
+
+### Fixed
+
+- **Schedules: `generate_room_schedule` threw `NullReferenceException`** when called without a `position` argument (the required `Position` deserialized to null and `InsertTableAsync` dereferenced it). It now anchors at origin when no position is supplied. (#ACAD-26)
+- **Companion: AI room visualizations did not match the drawing.** The agent sent a guessed scene description (e.g. "approx. 8 m × 5 m" for a 200 m² room). `render_visualization` now takes a structured room spec (dimensions, windows + daylight, doors, furniture) which the Companion composes into one photoreal prompt, and the agent is instructed to fill it from `get_room_data` (real dimensions/openings/furniture) instead of guessing. The agent no longer uses the non-existent `filter_entities` `textContains` filter to find rooms. (#ACAD-26)
+- **Companion: agent could not "see" the drawing.** The spawned `AcadMcp.Backend` logs to stderr; the Companion redirected stderr but never drained it, so once the OS pipe buffer (~4 KB) filled the backend blocked on its next log write and stopped answering JSON-RPC, hanging every tool call. Added a stderr drain loop in `McpStdioClient`, full call/result + lifecycle logging to `%LOCALAPPDATA%\AcadMcp\logs\companion-*.log`, agent-turn logging, and a sharper system prompt that makes the model call `acad_status` / `acad_call` first instead of guessing.
+- **Companion: `ACADAI` palette not visible.** WPF view now hosted via `ElementHost`; palette docks to the bottom as a resizable bar; bumped the PaletteSet GUID so AutoCAD stops restoring a stale off-screen position.
+
+### Changed
+
+- **Companion UI: theme-aware + live models.** Chat palette now reads AutoCAD `COLORTHEME` and applies a dark/light brush set so it stays readable in both modes (`ThemePalette` + DynamicResource brushes). The Settings model field is a live, editable dropdown populated from the provider's `/models` API using the user's key (`ModelCatalog`, with curated fallback), and saving the API key shows an explicit "saved" confirmation and refreshes the model list.
+- **Companion deploy:** `scripts/deploy-companion.ps1 -SkipPlugin` omits the duplicate `AcadMcp.Plugin.dll`/ComponentEntry on dev machines that already run the pipe via `AcadMcp.bundle`, avoiding a pipe-name conflict at AutoCAD startup.
+- Added always-on workflow rule `56-jira-for-important-work.mdc` requiring important work to be reflected in Jira and durable documentation, after Atlassian project setup drifted through chat/Confluence before the final Jira structure was corrected.
+
+### Changed - Phase D12 Hospital2026 regeneration with all new categories (2026-04-24)
+
+Closes the D12 entry on `docs/PLAN-PROFESSIONAL-UPGRADE-2026.md` with a
+**partial target**: score 8 / 17 (concept-sketch tier) against the
+senior-architect-reviewer rubric, vs. the 15 / 17 goal. Blocker documented
+below. See `artifacts/architect-review/D12-status-2026-04-24.md` for the
+full audit trail and recommendations.
+
+1. **Regenerated Hospital2026 DWG** via 60+ composite tool calls across
+   callouts, plotstyles, dimensions, grids, schedules, sections, hatches,
+   openings (windows), furniture, plumbing, verticals, detail callouts.
+   Final DWG `assets/Hospital2026_D12_FINAL.dwg` (230 KB, 926 entities)
+   + baseline backup `assets/Hospital2026_D12_BEFORE_REGEN.dwg`
+   + checkpoints `ckpt-20260424-140029636` / `ckpt-20260424-141603189`.
+2. **Quantified 4 live Gemini 3.1 Pro architect-review passes** ($0.41
+   spent, $74.59 / $75 budget remaining). Scorecards written to
+   `artifacts/architect-review/architect-review-20260424T*.json`.
+3. **Identified paperspace blocker**: 6 of 17 rubric criteria (schedules,
+   callouts, finishes-legend, orientation-scale, reflected-ceiling,
+   details) structurally require paperspace layouts, but
+   `layouts.configure_plot paperSize` rejects every ISO A0 variant we try
+   (`eInvalidInput`) on this workstation. Paperspace pass needs a new
+   plugin primitive `acad.layouts.list_available_paper_sizes` before
+   `configure_plot` can hand-pick a size registered with the active
+   plotter - see status doc for the unblock recipe.
+
+### Added - Phase D11 senior-architect-reviewer persona + Gemini 3.1 Pro integration (2026-04-24)
+
+Closes Phase D11 from the master plan (`docs/PLAN-PROFESSIONAL-UPGRADE-2026.md`).
+Unlocks Phase D12 (Hospital2026 regeneration with rule-60 scorecard).
+Build still **0 err / 0 warn (Release)**; tests **131 / 131 C# + 31 / 31 Python**;
+**first live end-to-end Gemini 3.1 Pro call measured at 12.6 s / $0.0121**
+against a real Hospital2026 poster (see
+`artifacts/architect-review/D11-smoke-2026-04-24.md`).
+
+1. **New persona `senior-architect-reviewer`** in the Vision sidecar.
+   - Applies rule 60's 17-criterion scorecard to any floor-plan raster.
+   - Emits strict JSON (17 rows, `{id, label, score, note}`).
+   - Scores are snapped to the 0 / 0.5 / 1.0 grid; verdict ladder is
+     `<10 concept-sketch | 10-13 technical-study | 14-15 executive-with-remark | >=16 full-wykonawczy`.
+   - Files: `src/AcadMcp.Vision/acadmcp_vision/schemas.py`,
+     `src/AcadMcp.Vision/acadmcp_vision/app.py`,
+     `src/AcadMcp.Vision/personas/senior-architect-reviewer.md`,
+     `src/AcadMcp.Vision/personas/senior-architect-reviewer.json`.
+
+2. **New endpoint `POST /v1/architect-review`** alongside `/v1/describe-image`.
+   - Request: `{ image, language, brief, max_tokens, provider }`.
+   - Response: `{ score, verdict, criteria[17], fatal_gaps, threshold_note,
+     raw_text, provider, model, cached }`.
+   - 503 with `install_hint` when no vision LLM key is configured.
+   - `max_tokens` ceiling raised to 16000 (was 4000) + default raised to
+     4000 (was 1600). Rationale: Gemini 3.x thinking models count reasoning
+     tokens against `max_output_tokens`, so a too-tight cap truncates the
+     17-row JSON mid-row.
+
+3. **Google Gemini 3.1 Pro integration** in `engines/vision_llm.py`.
+   - Default model: `gemini-3.1-pro-preview` (released 2026-02-19 - the
+     April 2026 frontier vision model; MMMU-Pro 75.1%, Video-MME 78.2%,
+     DocVQA 95.7%).
+   - Accepts either `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
+   - Supports `ACADMCP_GOOGLE_MODEL` + `ACADMCP_GOOGLE_THINKING`
+     (low/medium/high/max). Default thinking = `low` because reasoning
+     tokens share the output budget with the JSON scorecard.
+   - Provider auto-selection order: Anthropic -> OpenAI -> Google.
+   - Fallback: both `google-genai` (preferred) and legacy
+     `google-generativeai` SDKs are supported.
+   - `pyproject.toml` `[ml]` extras now include `google-genai>=1.0`.
+   - `/version` endpoint reports `api_keys.google` alongside
+     `anthropic` / `openai`.
+
+4. **Budget-aware live driver** `scripts/run-architect-review.py`.
+   - Discovers the sidecar port via `%LOCALAPPDATA%/acadmcp/vision/.port`.
+   - Enforces a cumulative USD budget (`--budget-usd`, default $10) AND a
+     per-call safety cap (`--per-call-cap-usd`, default $0.25). Aborts
+     BEFORE the call that would exceed either.
+   - Writes a timestamped JSON report per run to
+     `artifacts/architect-review/`.
+   - Supports `.env` loading, `--smoke` and `--dry-run` modes, brief file
+     input, and multi-image batches.
+
+5. **Secrets hygiene.**
+   - Added `.env.example` (committed) documenting every env var.
+   - Confirmed `.env` is gitignored via the existing `.env` rule and
+     exempted `.env.example` via `!.env.example` in `.gitignore`.
+
+6. **Tests** (new file `src/AcadMcp.Vision/tests/test_architect_review.py`).
+   - 24 static tests with no network / API dependency:
+     - Rubric has exactly 17 canonical criteria in order.
+     - Persona prompt EN / PL cite every label / id + rules 60-70.
+     - Threshold ladder maps score -> verdict correctly at every boundary.
+     - JSON parser tolerates markdown fences, trailing prose, missing
+       rows (default 0.0), out-of-range scores (clamped), unknown ids
+       (ignored).
+     - `/v1/architect-review` endpoint round-trips stubbed replies into
+       the expected response shape for all four verdicts + LLM-unavailable.
+     - Descriptor `personas/senior-architect-reviewer.json` stays in sync
+       with `ARCHITECT_REVIEW_CRITERIA` and verdict ladder.
+   - **Full Vision suite: 31 / 31 green** (24 new + 7 existing).
+
+7. **Live smoke proof** (`artifacts/architect-review/D11-smoke-2026-04-24.md`).
+   - Reviewed `assets/Hospital2026_POSTER_6000x4500.png` via Gemini 3.1 Pro.
+   - Result: **2.0 / 17 -> concept-sketch verdict** in 12.6 s for $0.0121.
+   - All 17 criteria produced actionable notes with `fix:` directives
+     mapped to backend tools (e.g. `acad.hatches.draw_hatch`,
+     `acad.furniture.populate_room`, `acad.annotate.dimlinear`).
+   - This score is factually correct: the poster has shielding, corridors,
+     doors (swings only), beds, north arrow and room labels - but no
+     hatching, no furniture, no dimension chains, no schedules, no
+     sections, no finishes legend. That is exactly the gap Phase D12 is
+     designed to close.
+
+### Fixed - 3 UX polish items from the full tool audit (2026-04-23)
+
+Closes the `audit-ux-better-errors` follow-up item from the full tool
+audit. No regressions; full suite still **131 / 131 green**; Debug +
+Release both **0 err / 0 warn**.
+
+1. **`files.audit_database`** (`AuditInfo` ctor bug on AutoCAD 2025).
+   The plugin handler used `Activator.CreateInstance(AuditInfo)` which
+   fails because `AuditInfo` is `sealed` with no public parameterless
+   constructor in the modern ObjectARX managed API, and
+   `Database.Audit(AuditInfo)` is no longer exposed — only the
+   extension `Database.Audit(bool fixErrors, bool bCmdLnEcho)` is.
+   - New strategy in `src/AcadMcp.Plugin/Tools/FilesPluginTools.cs`:
+     reflectively probe `Database.Audit(AuditInfo)` first (legacy
+     AutoCAD 2020-2024 path) and construct `AuditInfo` via either
+     `.ctor()` or `.ctor(bool fix)` if found; fall back to the
+     `Database.Audit(bool, bool)` extension on modern builds (AutoCAD
+     2025+) and return `{ ran: true, fix, mode: "extension-no-counters" }`.
+     The reflective legacy path additionally returns `errorsFound` /
+     `errorsFixed`.
+   - `mode` in the result tells the caller which path was taken so
+     downstream automation can decide whether counters are trustworthy.
+
+2. **`geometry-2d.list_entities_in_window` + `grids.snap_to_grid`**
+   emitted a cryptic `NullReferenceException` on missing point args
+   (`corner1` / `corner2` / `point` / `origin`) because `WindowArgDto`
+   / `SnapToGridArgs` don't mark them as nullable — an empty JSON body
+   produced a record whose corner fields were `null`, and the body
+   dereferenced `a.Corner1.X` immediately.
+   - `list_entities_in_window` (`Geometry2dPluginTools.cs`) now throws
+     `ArgumentException("corner1 required (expected { x, y }).")` /
+     `"corner2 required ..."` before indexing.
+   - `snap_to_grid` (`GridsTools.cs`) grew explicit guards for
+     `point`, `origin`, `xSpacingsMm`, `ySpacingsMm` (including a
+     non-empty-collection guard) with matching messages.
+
+3. **`callouts.insert_*`** (5 composite tools) now validate required
+   args **before** any plugin call so a partial failure can't leave
+   AutoCAD with a wedged transaction mid-symbol. Added top-of-method
+   guards to `CalloutsTools.cs` for:
+   - `insert_north_arrow` — `position`, `scale`, `layer`, `label`
+   - `insert_scale_bar` — `position`, `scale`, `layer`
+   - `insert_section_callout` — `startPoint`, `endPoint`, `scale`,
+     `label`, `viewDirection`, `layer`
+   - `insert_detail_callout` — `center`, `radiusMm > 0`, `scale`,
+     `label`, `layer`
+   - `insert_title_block` — `bottomLeft`, `sheetSize`, `scale`,
+     `layer`, `borderLayer`
+   Each guard throws `ArgumentException` with a concrete example
+   (`"position required (expected { x, y })"` /
+   `"sheetSize required (A0/A1/A2/A3/A4)"`) so agents can self-correct
+   without reading code.
+
+### Added - Full tool audit across 29 categories (2026-04-23)
+
+- **New doc `docs/TOOL-AUDIT-2026-04-23.md`** — proof that literally every
+  one of the 322 registered MCP tools dispatches correctly. Headline:
+  0 uncaught throws, 0 surfaced runtime errors, 8 PASS (catalogs with
+  optional args), 311 GATED (correctly short-circuit on missing
+  gateway), 3 VALIDATES (cleanly reject empty args with validation
+  error). Per-category table, reproduction command, known-but-benign
+  follow-ups.
+- **New xUnit tests `tests/AcadMcp.Tests/FullToolAuditTests.cs`** —
+  two audit tests:
+  1. `Every_tool_in_every_category_has_complete_metadata` — asserts
+     every tool has non-empty Name/Description/DeclaringType/Method and
+     that `ToolRegistry.ResolveMethod` returns a live `MethodInfo`.
+  2. `Every_tool_dispatches_without_hanging_or_uncaught_throw` — calls
+     `ToolInvoker.InvokeAsync` on every tool with empty args and null
+     gateways, classifies the result, fails if any tool throws or hangs
+     (3 s per tool). Fast (~ 2 s total) so it can sit in pre-commit.
+- **Test count**: 129 → **131 / 131 green**.
+
+### Fixed - `ToolInvoker` NRE for tools taking `IVisionSidecarClient` / unflagged plugin (2026-04-23)
+
+- **Root cause**: `ToolInvoker.InvokeAsync` had a `RequiresPlugin`
+  metadata guard, but not every tool that dereferences `IPluginGateway`
+  declares `RequiresPlugin = true` (e.g. `geometry-2d.get_distance_points`),
+  and there was **no guard at all** for `IVisionSidecarClient`. Nine
+  vision tools + one geometry tool surfaced as `INVOKER-BUG`
+  (`NullReferenceException`) in the audit.
+- **Fix**: added a **parameter-driven gateway guard** in
+  `src/AcadMcp.Backend/Mcp/ToolInvoker.cs`. Before invoking the method,
+  iterates `method.GetParameters()`; if any parameter is
+  `IPluginGateway` (and `plugin` arg is null) or `IVisionSidecarClient`
+  (and `vision` arg is null), returns a clean
+  `InvokeResult(IsError = true, "requires the AutoCAD plugin gateway" /
+  "requires the Vision sidecar")` instead of letting the tool body
+  dereference the null. Complements (does not replace) the existing
+  `RequiresPlugin` metadata check.
+- **Result**: 0 uncaught throws across all 322 tools.
+
+### Added - Phase D D10: architectural-fidelity rubric + rule enrichments (2026-04-23)
+
+- **Rule `60-architectural-fidelity.mdc`** — the 17-criterion scorecard
+  that `senior-architect-reviewer` (D11 Vision persona) applies to every
+  floor plan before it qualifies as rysunek wykonawczy. Criteria span
+  material expression (hatching), furnishing, sanitary fixtures, door +
+  window quality, vertical circulation, structural grid, dimension
+  chains, schedules, callouts, section lines, lineweight, finishes
+  legend, north + scale + compass, RCP, jamb/sill/lintel details and
+  room-program fidelity. Each criterion maps to one generator tool AND
+  one detector tool + the matching category rule. Threshold policy:
+  `< 10` = concept, `10-13` = technical study, `14-15` = executive with
+  remark, `16-17` = full wykonawczy.
+- **Rule `26-acad-api-traps.mdc`** extended with **7 hatching pitfalls**
+  (§11a-g): boundary orientation CCW, associativity + ghost hatches,
+  pattern file (`.pat`) resolution via SupportPath, seed-point UCS
+  rules, literal mm scale, clip-via-rebuild pattern, and `HatchStyle`
+  = island detection (not clipping). Companion to rule 62.
+- **Rule `22-mcp-tool-args-results.mdc`** extended with the **block
+  attribute contract**: tag constants in a single `static class`,
+  exactly ONE visible tag + rest invisible, string values with strict
+  encoding (`"900"` / `"0"` / `""`), DTO surface via
+  `IReadOnlyDictionary<string,string> Attributes`, checklist for
+  adding new tags. Reference impl = `OpeningsPluginTools` (rule 65).
+- **Build**: solution Debug 0 err / 0 warn, `dotnet test` 129/129 green.
+- **Outstanding D10 gap**: block-attribute contract now documented, but
+  no central `OpeningAttrTags` static class yet exists — existing
+  plugin code still uses string literals. Follow-up task to refactor
+  logged separately.
+
+### Fixed - IPC deserialization: PropertyNameCaseInsensitive across 25 proxies (2026-04-23)
+
+- **Systemic bug** discovered during the full tool audit: plugin-side
+  primitives that return typed records with PascalCase properties (e.g.
+  `FurnCatalogEntry`, `PlumbEntry`) serialize to PascalCase JSON, but the
+  backend proxies and tool facades used `JsonSerializerOptions` **without**
+  `PropertyNameCaseInsensitive = true`. As a result, proxy-side
+  deserialization silently dropped every string/enum field and zeroed
+  numeric fields. Reproduced end-to-end with
+  `acad_call { category:furniture, tool:list_furniture_catalog }` — every
+  entry came back `{ widthMm:0, depthMm:0 }` with no `name` / `category`
+  / `description` / `domain`.
+- **Fix**: added `PropertyNameCaseInsensitive = true` to the shared
+  `Opts` `JsonSerializerOptions` in **25 files**: `FurnitureProxy`,
+  `PlumbingProxy`, `ViewProxy`, `ArchitectureProxy`, `OpeningsProxy`,
+  `HatchesProxy`, `LayersProxy`, `FilesProxy`, `ModifyProxy`,
+  `LayoutsProxy`, `CivilProxy`, `SelectionProxy`, `AnnotationsProxy`,
+  `Geometry3dProxy`, `DimensionsProxy`, `MechanicalProxy`,
+  `BlocksProxy`, `VisionProxy`, `ElectricalProxy`, `ValidatorsProxy`,
+  `BooleanOpsProxy`, `Geometry2dProxy`, `PlotstylesTools`,
+  `SectionsTools`, `SchedulesTools`. `ParametricProxy` already had it
+  (treated as the reference implementation).
+- **Tests**: full backend build Release + Debug = 0 err / 0 warn;
+  `dotnet test` = 129/129 green; deferred E2E smoke pending MCP
+  reconnect.
+
+### Added - Phase D D9c: `acad-plotstyles` (2026-04-24)
+
+- **`acad-plotstyles`** — 3 composite tools for CTB/STB plot-style
+  management (rule 61):
+  - `ensure_ctb` — install a colour-dependent plot-style into AutoCAD's
+    Plot Styles directory. Queries `acad.layouts.list_plot_styles` to
+    resolve the target folder, then file-copies from `sourcePath`
+    (caller override) or the repo asset `<repo>/assets/plotstyles/<name>`.
+    Idempotent under `overwrite=false`; reports `existedBefore`,
+    `copied`, `sourceResolved`, `listedAfter` so callers can diff before /
+    after states. Emits a human-readable note when AutoCAD does not
+    disclose the plot-styles directory (e.g. roaming profiles).
+  - `apply_plotstyle_to_layout` — assign a named CTB/STB to a paperspace
+    layout; dispatches `acad.layouts.configure_plot { layoutName,
+    plotStyle, rotation:0 }`. When `ensure=true` (the default) it calls
+    `ensure_ctb` first so the sheet is guaranteed loaded before
+    `SetCurrentStyleSheet` runs.
+  - `list_plotstyles` — enumerate all plot-styles AutoCAD currently sees
+    (CTB + STB). `filter='ctb'|'stb'|null` narrows the `names` result;
+    `ctb` + `stb` arrays always return the full per-extension lists.
+    Also returns repo presets (`HOSPITAL-ISO.ctb`, `ISO-Standard.ctb`,
+    `monochrome.ctb`), the AutoCAD Plot Styles directory, and the
+    backend asset directory so callers can pre-stage files.
+- **`acad.layouts.list_plot_styles`** — new plugin primitive. Calls
+  `PlotSettingsValidator.Current.RefreshLists(new PlotSettings(false))`
+  then `GetPlotStyleSheetList()`, splits results into `ctb` + `stb`
+  buckets, and probes `%APPDATA%\Autodesk\AutoCAD *\R*\<locale>\Plotters
+  \Plot Styles` (AutoCAD 2018+) with a fallback to the legacy `Plot
+  Styles` location for older installs.
+- **`PlotstylesPalette`** — canonical preset names (HOSPITAL-ISO,
+  ISO-Standard, monochrome), the full **rule 61 §2 lineweight tier
+  table** (ACI 1-9 → 0.13–0.70 mm) for architectural drawings, and
+  `AssetsDirectory()` which walks up from the test binary to find
+  `<repo>/assets/plotstyles/` via the `AcadMcp.Backend.csproj` marker.
+- **`rule 61-lineweight-policy.mdc`** — 6-section policy covering the
+  scope of `acad-plotstyles`, the mandatory colour → lineweight tier
+  table, canonical CTB presets, directory resolution strategy (best-
+  effort probe + graceful fallback), `apply_plotstyle_to_layout`
+  contract (`ensure=true` default), and unit-test expectations.
+- **`assets/plotstyles/README.md`** — operator guide explaining how to
+  drop a pre-authored CTB into the repo and have `ensure_ctb` pick it
+  up automatically. Binary CTBs remain opt-in (not tracked by default).
+- **`PlotstylesTests`** — 7 new unit tests (129 total, +6 after dedup):
+  catalog binding, category declaration (all 3 `RequiresPlugin=true`),
+  default-preset completeness, lineweight tier coverage (all 9 ACIs),
+  literal rule 61 §2 table values, assets-directory resolution,
+  monotonic visual priority (fire-wall > section > wall > frame).
+
+Build 0 err / 0 warn (Release + Debug). Manifest regenerated via
+`AcadMcp.Backend.dll --category plotstyles --regenerate-manifest`
+(3 tools; retires `plotstyles_placeholder`).
+
+**Full E2E via `acad_call` router dispatch (2026-04-24, 4/4 green):**
+
+1.  `acad_load_category plotstyles` → 3 composites returned with full
+    descriptions + PL/EN intent arrays + JSON schema.
+2.  `acad_call plotstyles list_plotstyles {}` → 13 plot-styles enumerated
+    (9 CTB + 4 STB: `acad.ctb`, `DWF Virtual Pens.ctb`, `Fill Patterns.
+    ctb`, `Grayscale.ctb`, `monochrome.ctb`, `Screening 25/50/75/100%
+    .ctb` + `acad.stb`, `Autodesk-Color.stb`, `Autodesk-MONO.stb`,
+    `monochrome.stb`); `assetsDir` resolved to `<repo>/assets/plotstyles`;
+    `presets` lists HOSPITAL-ISO + ISO-Standard + monochrome.
+3.  `acad_call plotstyles list_plotstyles { filter: "stb" }` → narrows to
+    4 STB sheets, `count=4`, other buckets unchanged.
+4.  `acad_call plotstyles ensure_ctb { name: "monochrome.ctb" }` →
+    `existedBefore=true, copied=false, listedAfter=true` (graceful no-op
+    because the target already lives in AutoCAD's plot-style table).
+5.  `acad_call plotstyles apply_plotstyle_to_layout { layoutName:
+    "Układ1", plotstyle: "monochrome.ctb", ensure: false }` →
+    `applied=true`, no notes.
+6.  `acad_call plotstyles apply_plotstyle_to_layout { layoutName: "A0-001
+    RZUT PARTERU", plotstyle: "Grayscale.ctb", ensure: false }` →
+    `applied=true` (second layout, different CTB — confirms the composite
+    round-trips `psv.SetCurrentStyleSheet` correctly).
+
+**Known refinement pending (non-blocking):** on AutoCAD 2025 (Polish
+locale, this workstation) the plugin's directory probe via
+`Environment.SpecialFolder.ApplicationData` does NOT surface
+`%APPDATA%\Autodesk\AutoCAD 2025\R25.0\plk\Plotters\Plot Styles` even
+though the folder exists. `list_plotstyles` returns `directory=null` and
+`ensure_ctb` falls back to the documented note "AutoCAD did not disclose
+a Plot Styles directory — nothing was copied". Enumeration +
+`apply_plotstyle_to_layout` are unaffected. Will be fixed in a follow-up
+iteration by probing `HostApplicationServices.Current.FindFile("acad.
+ctb", null, FindFileHint.Default)` which AutoCAD resolves against its
+own support paths and by reading `LOCALROOTPREFIX` system var.
+
+### Added - Phase D D9b: `acad-sections` (2026-04-24)
+
+- **`acad-sections`** — 4 composite tools that add section / elevation
+  symbology on top of the `acad-callouts` end-marker primitives (rule 70):
+  - `insert_section_line` — draws a DASHED2 cut line on `A-DETL-SECT`,
+    6 mm plotted perpendicular offset ticks at both endpoints, and
+    delegates the labelled end markers to
+    `acad-callouts.insert_section_callout` with `drawCutLine=false` so
+    the two categories never duplicate the circle+triangle marker
+    geometry (rule 69 §4). Returns the cut-line handle plus all marker
+    handles for one-shot rollback.
+  - `insert_section_title` — caption (`PRZEKRÓJ A-A`) + 80 mm plotted
+    underline + scale line (`SKALA 1:50`) on `A-DETL-TITL`. `caption` is
+    overridable (`ELEWACJA`, `WIDOK`, `FRAGMENT`, `DETAL`, …); `viewScale`
+    is independent of the plan scale so a 1:100 plan can host a 1:50
+    section's title text.
+  - `insert_elevation_marker` — filled triangle (8 mm plotted) pointing
+    in the requested compass direction (N/E/S/W + diagonals, or bare
+    degrees) over a 30 mm plotted baseline, with a `ELEWACJA <dir>` label
+    and optional sheet reference. Kept distinct from section callouts so
+    the "which face is this?" symbology is unambiguous.
+  - `list_section_lines` — inventories all entities on `A-DETL-SECT` (or
+    a caller-supplied layer), returning per-handle object class and
+    curve length (when available). Degrades gracefully if the layer is
+    absent — returns an empty list instead of throwing.
+- **`SectionsPalette`** — canonical layer set (`A-DETL-SECT/TITL/ELEV`),
+  DASHED2 cut linetype with scaled `ltscale`, plotted sizes for ticks /
+  title underline / elevation triangle + baseline, and an 8-entry
+  compass-direction map with `ResolveDirectionDeg` (accepts names or
+  bare numeric strings).
+- **`rule 70-sections-elevations.mdc`** — 7-section policy covering the
+  layer set, cut-line contract (DASHED2 + ticks + delegated end markers),
+  section-title contract, elevation-marker contract, inventory contract,
+  composite-of-composite pattern (Sections → Callouts is an explicit
+  exception to rule 35 §2), and test coverage expectations.
+- **`SectionsTests`** — 9 new unit tests (123 total, +8 after dedup):
+  catalog binding, category declaration, compass direction resolution
+  (names + bare degrees + fallback), layer naming convention (`A-DETL-`
+  prefix), DASHED2 linetype contract, plotted-size sanity checks,
+  directions dictionary completeness.
+
+`acad-sections` is the first composite category to legally call another
+composite category (`CalloutsTools.InsertSectionCallout`). Rule 70 §6
+documents the cross-composite dispatch contract.
+
+Build 0 err / 0 warn (Release + Debug). Manifest regenerated via
+`AcadMcp.Backend.dll --category sections --regenerate-manifest` to reflect
+the 4 new tools and retire the scaffolded `sections_placeholder`.
+
+### Added - Phase D D9a: `acad-callouts` (2026-04-24)
+
+- **`acad-callouts`** — 5 composite tools for plan-symbol drawing, composed
+  entirely from existing primitives (rule 35 §2, rule 69):
+  - `insert_north_arrow` — ISO 5455 circle + diamond arrow + "N" label;
+    plotted Ø30 mm scaled by the user-declared plan scale (1:100 → 3000 mm
+    drawing-unit). `rotationDeg` lets the arrow track project north.
+  - `insert_scale_bar` — chequered 5-segment graphic scale bar (50 mm
+    plotted total) with metre labels + `SKALA 1:100` caption. Segment
+    metres auto-scale from the plan scale (0.5 m @ 1:20-25, 1 m @ 1:50-100,
+    2 m @ 1:200, 5 m @ 1:500).
+  - `insert_section_callout` — two circle+triangle markers with section
+    letter (default `A`) + cut line + view-direction arrows. `sheetReference`
+    optional bottom-half label ("1/5"). `drawCutLine=false` lets callers
+    supply their own dashed cut.
+  - `insert_detail_callout` — area circle + leader + bubble with detail
+    number on top, target scale on bottom; bubble position defaults NE of
+    the feature, overridable via `leaderEndPoint`.
+  - `insert_title_block` — ISO 7200 sheet border + 12-row PL title block
+    (`PROJEKT`/`INWESTOR`/…/`SPRAWDZAJĄCY`) in the bottom-right corner.
+    Accepts A0–A4 sheet sizes and both an explicit `fields` list and
+    shorthand `projectName`/`sheetNumber`/`author`/`date`/`titleText`.
+- **`CalloutsPalette`** — canonical layer set (`A-ANNO-NORT/SBAR/SYMB/TTLB/
+  BORD/TEXT`), ISO 5455 plotted sizes, ISO A0–A4 sheet table, scale-bar
+  preset table, default 12-row title block keys, scale-factor resolver.
+- **`rule 69-callouts-leaders.mdc`** — layer / plotted-size / leader
+  hierarchy contract. Defines the PL title block rows, the section marker
+  geometry (PN-EN ISO 128), the chequered scale bar rules, and test
+  coverage expectations.
+- **`CalloutsTests`** — 9 new unit tests (115 total, +8): catalog binding,
+  category declaration, scale-factor resolver, scale-bar preset table,
+  ISO sheet table, title-block row contract, layer naming convention.
+
+Build 0 err / 0 warn (Release + Debug). All composite drawing goes through
+existing primitives: `acad.geometry2d.draw_polyline / draw_line /
+draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
+(via `ArchitectureProxy`). No new plugin handlers were added.
+
+### Added - Router: universal `acad_call` dispatch (2026-04-24)
+
+- **`acad_call { category, tool, args }`** — new meta-tool on the `acad-router`
+  that dispatches in-process to **any** backend composite (via
+  `ToolRegistry` + reflection) or **any** plugin primitive by dotted name
+  (`acad.<cat>.<name>` routed through `IPluginGateway`). Replaces the old
+  "lazy MCPBank connect" workflow: Cursor no longer needs `mcpbank-discovery`
+  / `mcpbank-dynamic` to reach category tools — the router owns the full
+  catalog directly. No subprocess spawn, single stdio hop, shared
+  plugin/vision clients.
+- **`acad_load_category`** — now returns the real tool list of a category
+  (name, description, intent, input schema) pulled from `ToolRegistry`,
+  instead of the previous stub that only said "would call `mcpd_connect`".
+  New `includeSchema: bool` flag for compact listings.
+- **`acad_find_tools`** — real keyword search across every loaded category's
+  `McpTool` metadata (name + description + intent, with name-hit scoring
+  boost), replacing the previous MCPBank stub. Returns `{category, tool,
+  description, readOnly, requiresPlugin, score}` tuples.
+- **`acad_explain_capabilities`** — rebuilt from the live `ToolRegistry`
+  (per-category tool counts), eliminating drift between documentation and
+  actual loaded categories.
+- **`acad_recommend_categories`** — extended keyword set to cover the Phase D
+  categories (schedules / openings / hatches / furniture / plumbing / grids /
+  verticals) and recommends the `acad_call` invocation contract.
+
+### Changed
+
+- **`RouterServer`** now takes `ToolRegistry` + `IVisionSidecarClient` via
+  DI (was plugin-only), enabling the new in-process dispatch.
+- **`Program.cs`** registers `IVisionSidecarClient` for the router process
+  too (was category-only), so `acad_call` can reach vision composites.
+- **`ToolInvoker`** — extracted from `CategoryServer.HandleToolsCallAsync`
+  into a shared helper (`src/AcadMcp.Backend/Mcp/ToolInvoker.cs`). Both the
+  category server and the router now use it for reflection-based tool
+  invocation (parameter binding, plugin/vision injection, typed exception
+  mapping). Removes ~100 lines of duplicated logic.
+- **`acad_load_category.json`** descriptor updated under
+  `.cursor/projects/<ws>/mcps/user-acad-router/tools/`.
+- **`acad_call.json`** descriptor added.
+- **`HandleInitialize.instructions`** — rewrote the router's advertised
+  capabilities message to reflect the new `acad_call` flow and drop the
+  obsolete `mcpbank-discovery` references.
+
+### Notes
+
+- Cursor must restart the `user-acad-router` MCP server to pick up the new
+  binary (rebuild produced a fresh `AcadMcp.Backend.dll`; Cursor caches the
+  stdio process).
+- Plugin-side primitives are unchanged; `acad_call` only adds a new routing
+  layer above them.
+
+### Added - Phase D D8: acad-schedules (2026-04-24)
+
+- **acad-schedules +5 composite tools** — Polish hospital-grade schedule
+  generators that assemble AutoCAD `Table` entities from existing drawing
+  content. Every tool is a backend composite that orchestrates the new
+  plugin primitives plus `acad.annotations.add_table`, so the drawing
+  reflects live model data without a second source of truth.
+  - `generate_door_schedule` — *"ZESTAWIENIE STOLARKI DRZWIOWEJ"*.
+    Pulls every opening with `kind=door` via
+    `acad.openings.list_openings_in_model` and renders a 10-column table
+    (NR / TYP / SZER. / WYS. / REI / OGNIOOCH. / RC / DB / POM. OD /
+    POM. DO). Emits `complianceNotes` for lead-shielded doors and for
+    REI values below the WT §232 evacuation minimum.
+  - `generate_window_schedule` — *"ZESTAWIENIE STOLARKI OKIENNEJ"*. Nine
+    columns (NR / TYP / SZER. / WYS. / PARAPET / SZYBA / RC / DB / POM.).
+    Sill height comes from `SILL_MM` on the window attribute contract.
+  - `generate_room_schedule` — *"ZESTAWIENIE POMIESZCZEŃ"*. Uses the new
+    `acad.schedules.list_room_labels` primitive to enumerate DBText /
+    MText on `A-ROOM-IDEN` + `A-ANNO-ROOM`, optionally joining each
+    label against a closed polyline on `boundaryLayer` (default
+    `A-ROOM-BNDY`) for an m² figure. Auto-numbers rows starting at 101
+    when `autoNumber = true`. Strips MText formatting codes from labels.
+  - `generate_finish_legend` — *"LEGENDA WYKOŃCZEŃ"*. Ships with 11
+    default hospital rows (F-01 PVC homogeniczne, F-02 PVC antystatyczna
+    sale OR, F-03 gres techniczny, F-04 epoksyd 2K, W-01..W-04 HPL /
+    tynk / glazura / GKF, C-01..C-03 sufity higieniczne) plus RAL codes
+    and locations. Extra rows can be appended through `extraRows`.
+  - `update_schedules` — finds every `Table` whose title cell contains
+    "ZESTAWIENIE / LEGENDA / WYKOŃCZEŃ / SCHEDULE / LEGEND" via the new
+    `acad.schedules.find_schedule_tables` primitive, classifies each
+    hit as doors / windows / rooms / finish and rebuilds it at the same
+    insertion point. The old table is erased *after* the replacement
+    is successfully committed so a mid-flight failure cannot leave the
+    drawing without the schedule.
+- **TableStyle presets HOSPITAL-DEF + OFFICE-DEF** — committed as real
+  AutoCAD `TableStyle` objects via the new
+  `acad.schedules.ensure_table_style` primitive (title/header/body text
+  heights + title & header ACI fill colors, mapped onto the 2018+
+  cell-style API using `_TITLE` / `_HEADER` / `_DATA` names). HOSPITAL
+  is dense (5 / 3.5 / 2.5 mm, red title, light-orange header); OFFICE
+  is lighter (4 / 3 / 2.5 mm, blue title, grey header). Every generator
+  runs `ensure_table_style` once unless the caller opts out via
+  `ensureStyle = false`.
+- **`SchedulesPalette`** (`src/AcadMcp.Backend/Categories/Schedules/`)
+  centralises every magic constant: Polish titles, layer names
+  (`A-ANNO-TBLS`, `A-ANNO-LEGN`), preset specs, default column widths,
+  row heights and the header row for each schedule kind. Tests assert
+  that header + column counts stay in sync so a future column addition
+  is a compile/test-time error, not a runtime layout bug.
+- **Plugin primitives +4** (new `SchedulesPluginTools.cs`, registered in
+  `PluginEntryPoint`):
+  - `acad.schedules.ensure_table_style` — write handler. Creates or
+    updates a TableStyle in the TableStyleDictionary, applies text
+    heights per `_TITLE` / `_HEADER` / `_DATA`, optionally switches the
+    current database style.
+  - `acad.schedules.list_table_styles` — read-only enumeration for
+    tooling + diagnostics.
+  - `acad.schedules.list_room_labels` — read-only DBText/MText walker
+    on configurable label layers (default `A-ROOM-IDEN`, `A-ANNO-ROOM`)
+    with optional bbox-pre-filtered ray-cast against closed polylines
+    on `boundaryLayer` to derive per-room area (m²).
+  - `acad.schedules.find_schedule_tables` — read-only Table walker
+    returning `handle / title / rows / cols / layer / position` for
+    every schedule in model space, optionally filtered by
+    `titleContains` / `layerFilter`.
+
+### Tests
+
+- `tests/AcadMcp.Tests/Categories/SchedulesTests.cs` — 5 facts (replace
+  the stub placeholder): catalog has exactly the 5 D8 tools; both
+  presets exist with the expected text heights and fill ACIs; every
+  schedule's header array stays the same length as its column-width
+  array; the default finish-legend rows are all 5-wide and there are at
+  least ten of them; every Polish title constant is non-empty and
+  contains the expected diacritic-bearing keyword.
+- Full suite: **107 / 107 passing** (was 103/103 after D7 → +4 from
+  D8 schedules). `check-manifests.ps1`: 0 problems (29 code
+  categories, 30 manifests, the +1 is the legacy `files` helper).
+
+### Build
+
+- `dotnet build src\AcadMcp.sln -c Release`: **0 errors, 0 warnings**.
+  The `acad-schedules` manifest is regenerated to list all 5 composite
+  tools; the placeholder stub `schedules_placeholder` is removed.
+
+### Follow-ups
+
+- The `acad.schedules.*` primitives are new, so the in-process plugin
+  must be redeployed (`scripts\deploy-plugin.ps1`) before the 5 backend
+  tools will succeed at runtime. The router stays fine — it only reads
+  the regenerated manifest.
+- Rendering polish deferred to D12: currently the title row is written
+  into the leftmost cell; horizontal merging of the title row across
+  the full column span will be added when we bind the real AutoCAD
+  `SetMergeCell` API in an `add_table` follow-up.
+
+### Added - Phase D D7: acad-verticals + acad-grids (2026-04-24)
+
+- **acad-verticals +8 composite tools** (rule 67):
+  - `draw_stair_straight` — straight-run stair outline + tread lines +
+    UP/DN direction arrow + label on `A-STRS` / `A-STRS-DIR`. Computes
+    tread depth from `runLengthMm / treadCount` and emits
+    `complianceWarnings` for WT §54 riser (150–175 mm), tread (250–350
+    mm), clear width (≥ 1200 mm) and the Blondel ratio `2r + t`
+    (600–650 mm comfort band).
+  - `draw_stair_spiral` — outer arc + inner arc (column) + radial
+    tread lines sweeping `sweepDeg` degrees from `startAngleDeg`,
+    centred on `center` with centre UP/DN label.
+  - `draw_stair_u_shaped` — two straight runs + 180° landing rectangle,
+    forwarding each run's warnings individually.
+  - `draw_ramp` — rectangle + slope arrow + percentage label on
+    `A-RAMP`; warns when `accessible = true` **and** rise > 500 mm
+    **and** slope > 6 % (WT §66), or when width < 1200 mm.
+  - `insert_elevator_v` — shaft rectangle + diagonals (ISO 7001 lift
+    symbol) + kind label; enforces kind-specific minimums
+    (bed-lift 1600×2600 mm per WT §193; passenger lift 1100×1400 mm
+    per PN-EN 81-70).
+  - `insert_escalator` — outline + step lines + direction arrow +
+    UP/DN label on `A-VTRN-ESCL`.
+  - `insert_platform_lift` — 1100×1400 mm default rectangle + PL label
+    on `A-VTRN-LIFT` (PN-EN 81-41).
+  - `draw_handrail` — polyline on `A-RAIL` with optional height
+    annotation; warns when height is outside WT §298 900–1100 mm
+    range for public stairs.
+  All eight are composite — they go through `ArchitectureProxy`'s
+  primitive gateways (`draw_line` / `draw_polyline` / `draw_circle` /
+  `draw_arc` / `add_dbtext`) and do NOT introduce a new plugin-side
+  handler file.
+- **acad-grids +6 composite tools** (rule 67):
+  - `draw_grid` — orthogonal column grid from two spacing lists;
+    auto-generates letter labels (A, B, C… for X-axes) and numeric
+    labels (1, 2, 3… for Y-axes) with configurable bubble sides
+    (default: north + west). Bubbles are circle + DBText placed at
+    `extendMm + bubbleRadiusMm` outside the grid box.
+  - `add_grid_axis` — single labeled axis line with optional
+    start/end bubbles; direction vector inferred from endpoints.
+  - `add_grid_bubble` — standalone bubble (circle + text) at a point.
+  - `list_grid_axes` — read-only inventory via
+    `acad.selection.select_by_layer` on `A-GRID` + `A-GRID-BUB`.
+  - `snap_to_grid` — **pure backend maths** (no plugin call,
+    `RequiresPlugin = false`). Finds the nearest intersection given an
+    origin + two spacing lists; returns snapped point, axis labels
+    (A/1, B/2, …) and `cellLabel = "{x}/{y}"`. Used by other tools to
+    align entities to structural axes.
+  - `delete_grid` — erases entities on axis + bubble layers **or** a
+    provided handle list; delegates to `acad.modify.erase`.
+- **`GridsPalette`** — helper with spreadsheet-style `LetterLabel`
+  (A, B…, Z, AA, AB…, AZ, BA…), numeric labels, `CumulativeOffsets`
+  for spacing lists, and default bubble radius / extend values.
+- **`VerticalsPalette`** — layer names + WT numeric constants
+  (riser/tread/width thresholds, ramp slope cap, lift cabin minimums,
+  handrail height band) used by every `complianceWarnings` emitter.
+- **`ArchitectureProxy` visibility** — promoted from `internal` to
+  `public` so sibling composite categories (Verticals, Grids,
+  Callouts, Sections) can reuse the `draw_line` / `draw_polyline` /
+  `draw_circle` / `draw_arc` / `add_dbtext` / `dimension_linear` /
+  `dimension_aligned` / `create_layer` gateways without duplicating
+  JSON-object plumbing (rule 35 §2).
+- **rule 67-grid-axes.mdc** — single source of truth for the
+  column-grid + vertical-circulation policy: layer key (A-GRID /
+  A-GRID-MINOR / A-GRID-BUB / A-GRID-ID / A-STRS / A-STRS-DIR /
+  A-RAMP / A-RAMP-DIR / A-VTRN-ELEV / A-VTRN-ESCL / A-VTRN-LIFT /
+  A-RAIL), Polish X=letters / Y=numbers convention, bubble geometry
+  (text height = 0.9 · radius, centred-offset DBText for 2019
+  portability), typical module sizes per building type, hospital 7.2
+  m reference, `snap_to_grid` validator tolerance (50 mm for
+  modular, `A-WALL-NONMOD` escape hatch), WT threshold table, U-shape
+  landing constraint, handrail-coverage convention, grid ↔
+  dimension-chain interplay with rule 66 (L3 overall measured between
+  outermost bubbles, L2 axis stations locked to bubble centres),
+  `delete_grid` safety guidance, and the standard "Do NOT" list.
+- **Tests**: `VerticalsTests` (8 tool names pinned) + `GridsTests`
+  (6 tool names + `LetterLabel` spreadsheet-style generation,
+  `CumulativeOffsets` sums, `SnapToGrid` intersection math). Full
+  suite: **103/103 passing** (was 100/100 after D6 + 5 new D7 tests).
+- **Manifests regenerated** for `acad-verticals` (1→8 tools) and
+  `acad-grids` (1→6 tools). `check-manifests.ps1`: **0 problems**
+  across 29 code categories / 30 manifests.
+- **Build**: `dotnet build src\AcadMcp.sln -c Release` → 0 errors /
+  0 warnings.
+
+### Added - Phase D D6: Architecture + Dimensions + Blocks extension (2026-04-24)
+
+- **acad-architecture +6 composite tools** (rule 66):
+  - `draw_ceiling_grid` — grid layout of suspended ceiling tiles with rotation.
+  - `insert_stair` — straight stair run with tread lines + up-direction arrow.
+  - `insert_ramp` — ramp outline with slope arrow + percentage label.
+  - `insert_elevator` — elevator shaft rectangle with diagonals + centre label.
+  - `attach_room_tag` — 3-line number/name/area room tag on `A-ANNO-NOTE`.
+  - `split_wall_at_opening` — wraps `acad.openings.cut_wall_for_opening`
+    for consistent wall-splitting semantics (2-vertex walls only; multi-
+    vertex polyline wall splitting queued for D7).
+  All six are **composite** — they call `acad.geometry2d.*`, `acad.layers.*`,
+  `acad.annotations.*` and `acad.openings.*` primitives through
+  `ArchitectureProxy` without introducing a new plugin-side handler file.
+- **acad-dimensions +5 tools** (rule 66):
+  - **Plugin primitives** (3) — `ensure_architectural_dimstyle` (creates /
+    updates `ARCH-ISO` with tick marks, 2.5 mm text, DIMSCALE=100,
+    DIMRND=1 mm, DIMDEC=0), `dimension_cumulative_chain` (running-total
+    segments on a single dim-line point) and `apply_arch_tick_style`
+    (sweeps every `Dimension` on a layer, reassigns to target style).
+  - **Backend composites** (2) — `auto_dim_walls` (projects wall end-points
+    onto a baseline, merges T-junctions within `mergeToleranceMm`, hands
+    off to `acad.dimensions.continued_chain`) and `dimension_overall`
+    (bounding-box extents along a rotation axis, hands off to
+    `acad.dimensions.linear`).
+- **acad-blocks +4 tools** (rule 28 extension):
+  - `library_register` / `library_list` — file-persistent catalog of block
+    libraries under `%LocalAppData%/AcadMcp/block-libraries.json`. Each
+    library = named folder of `.dwg` files, scanned recursively by default.
+  - `bulk_insert` — multi-item insert with auto-import from registered
+    libraries for missing block names; returns per-item handles + list of
+    imported block names + skipped count.
+  - `swap_block` — globally replaces every `BlockReference` of `oldName`
+    with `newName`, preserving position/rotation/scale/layer and copying
+    matching attribute tag/value pairs onto the new definition.
+- **rule 66-dimension-chains.mdc** — documents the 3-level chain
+  hierarchy (L1 opening / L2 axis / L3 overall), ARCH-ISO DIM var table,
+  continued vs baseline vs cumulative semantics, `auto_dim_walls`
+  projection + T-junction-merge algorithm, layer conventions
+  (`A-ANNO-DIMS`, `S-ANNO-DIMS`, `A-ANNO-DIMS-EGRESS`) and compliance
+  tie-in to PN-B-01025 / PN-EN ISO 129-1.
+- **Tests updated**: `ArchitectureTests`, `DimensionsTests`, `BlocksTests`
+  now pin every D6 tool by name. `dotnet test`: **100/100 passing**.
+- **Manifests regenerated** for `acad-architecture` (10→16 tools),
+  `acad-dimensions` (12→17), `acad-blocks` (12→16). `check-manifests`:
+  29 code categories / 30 manifests / **0 problems**.
+- **Build**: `dotnet build src/AcadMcp.sln -c Release` → 0 errors /
+  0 warnings across Plugin + Backend + Tests.
+
+### Added - Phase D D0..D2: Scaffolding + Hatches category in flight
+
+- **D0 — baseline frozen** (2026-04-24):
+  - `assets/Hospital2026_A0-001_BEFORE_PHASE_D.dwg` (61 686 B) backup copy.
+  - AutoCAD router checkpoint `ckpt-20260424-075427802` labelled
+    `phaseD_start_baseline` — rollback anchor if D1..D12 fails.
+- **D1 — 10 new MCP categories scaffolded**:
+  `acad-hatches`, `acad-furniture`, `acad-plumbing`, `acad-openings`,
+  `acad-verticals`, `acad-grids`, `acad-schedules`, `acad-sections`,
+  `acad-plotstyles`, `acad-callouts`. Each one got:
+  - stub `[McpTool]` class under `src/AcadMcp.Backend/Categories/<Folder>/`
+  - mcpbank manifest under `mcpbank-manifests/acad-*.json`
+  - launcher under `bin-launchers/acad-*.cmd`
+  - smoke test under `tests/AcadMcp.Tests/Categories/<Folder>Tests.cs`
+  - `_README.md` with planned tool list
+  - Single source of truth: `scripts/new-category.ps1` (rule 41).
+  - Post-scaffold `check-manifests.ps1`: 29 code categories / 30 manifests,
+    0 problems. `dotnet build src/AcadMcp.sln -c Release`: 0 errors, 0 warnings.
+- **D2 — acad-hatches (P0) fully implemented** (8 tools):
+  - `draw_hatch` — boundary-handle fill with color / bg / associative / annotative.
+  - `draw_hatch_by_boundary` — seed-point auto-boundary via
+    `Editor.TraceBoundary(detectIslands)`, persisting temp boundaries to
+    non-plottable layer `A-BNDRY-TEMP`.
+  - `list_patterns` — read-only, 45+ patterns (ANSI31..38, ISO02/03/09,
+    AR-CONC / BRSTD / BRELM / B816 / B88 / RROOF / HBONE / PARQ1 / SAND /
+    RSHKE, BATTING, EARTH, CORK, NET / NET3, GRAVEL, SWAMP, GRASS, HONEY,
+    TRIANG, DOTS, CROSS, ESCHER, FLEX, ZIGZAG, CLAY, SACNCR, SOLID, LINE)
+    with default scale/angle hints.
+  - `apply_material_preset` + `apply_material_preset_by_point` — 23 material
+    keys (`concrete`, `reinforced-concrete`, `concrete-block`, `brick`,
+    `brick-elm`, `insulation`, `plaster`, `stone`, `earth`/`soil`, `steel`,
+    `glass`, `wood-cross`, `wood-grain`, `parquet`, `tile`, `lead-shield`,
+    `faraday`, `sand`, `cork`, `gravel`, `grass`) each mapped to
+    (pattern, scale, angle°, ACI color) per new rule 62.
+  - `clip_hatch` — replace loops on an existing hatch and re-evaluate.
+  - `regenerate_hatches` — scoped re-eval: explicit handles, layer filter,
+    or `allInModelSpace=true` after bulk wall edits.
+  - `list_hatches` — read-only enumeration with layer/pattern filter
+    returning handle / layer / pattern / scale / angle / area / loopCount /
+    associative for every Hatch in model space.
+  - Plugin side (`HatchesPluginTools.cs`) fully wired through
+    `PluginEntryPoint.Initialize` and `ToolHost.Register(...)`; all
+    handlers go through `PluginToolRunner.RunWriteAsync` (or `RunReadAsync`
+    for read-only tools) per rules 10/11/19.
+- **Rule 62 (`.cursor/rules/62-hatching-policy.mdc`)**: authoritative
+  material -> (pattern, scale, angle, color) table, drawing-unit mm
+  assumption, associativity rules, `A-BNDRY-TEMP` layer contract,
+  TraceBoundary failure modes, plot-lineweight decoupling from hatches,
+  per-tool performance budget (< 120 ms single hatch, < 800 ms seed-point
+  fill, < 8 s regenerate-all on a 5 000 m² plan with 200 hatches).
+- **Manifest sync**: `mcpbank-manifests/acad-hatches.json` regenerated via
+  `dotnet run --project src/AcadMcp.Backend -- --category hatches
+  --regenerate-manifest` — tools_summary now lists all 8 real tools,
+  intent_examples auto-populated from `[McpTool] Intent=` arrays
+  (40 PL+EN entries total).
+- **Build + test gate**: `dotnet build -c Release` = 0 err 0 warn.
+  `dotnet test --filter HatchesTests` = 1/1 passed. `check-manifests.ps1`
+  = 29 code / 30 manifests / 0 problems.
+
+### Added - Phase D D5: acad-openings (P0) fully implemented (2026-04-24)
+
+- **10 tools** covering professional doors + windows with fire (REI),
+  burglary (RC per PN-EN 1627), acoustic (Rw dB) and lead-shield ratings,
+  automatic numbering and schedule export:
+  - `list_opening_catalog` — read-only, 11 door + window families with
+    `supportsFire`, `supportsBurglary`, `supportsLeadShield` capability
+    flags surfaced to callers + validators.
+  - `insert_door` — types `single` / `double` / `sliding` / `fire` /
+    `hospital` (double-swing) / `lead` (radiological shielding).
+    Auto-numbers `D-001` unless `number=` or `autoNumber=false` supplied.
+    Full attribute contract written: `NUMBER`, `TYPE`, `WIDTH_MM`,
+    `HEIGHT_MM`, `REI`, `LEAF_DIR`, `SWING_DIR`, `ACOUSTIC_DB`, `LEAD`,
+    `ROOM_FROM`, `ROOM_TO`.
+  - `insert_window` — types `fixed` / `casement` / `tilt` / `hospital`
+    (fire-rated) / `fire`. Auto-numbers `W-001`. Writes `RC`, `FIRE_CLASS`,
+    `SILL_MM`, `ROOM`.
+  - `insert_opening_generic` — escape-hatch: insert any `DOOR-*` / `WIN-*`
+    block by canonical name with explicit attribute map.
+  - `draw_door_by_points` — quick-sketch line + 90° swing arc between
+    hinge and leaf-end, no block / no attributes (concept studies only).
+  - `draw_window_by_points` — quick-sketch 2 parallel lines + centre glass
+    line between two jamb points (`wallThickness` configurable).
+  - `cut_wall_for_opening` — surgical wall split: projects jamb points
+    onto wall axis, erases original Line / 2-vertex Polyline, creates
+    up to 2 surviving segments; reports `gapLengthMm` + new handles.
+    Multi-segment polyline walls rejected with a clear message (D6 scope).
+  - `renumber_openings` — `kind=doors|windows|all`,
+    `order=insertion|spatial` (Y↓ X→), overridable prefixes and
+    zero-padding. Returns per-entity change log.
+  - `list_openings_in_model` — read-only, full attribute decoding,
+    filter by kind and layer. 18 fields per opening.
+  - `export_schedule` — read-only CSV / JSON (18-column schema).
+    Optional `outputPath=` for on-disk write (UTF-8). Sorted by `NUMBER`.
+- **Block library (parametric, in-code)** — 11 sized families keyed by
+  `<FAMILY>-<W>-<H>`. Geometry at block origin = centre of the opening on
+  the wall axis. Block draws jamb ticks + leaf / swing-arc / glass-lines;
+  the wall gap itself is carved separately via `cut_wall_for_opening` —
+  a two-step workflow that keeps wall surgery auditable.
+- **Unified 14-tag attribute contract** (every opening carries all tags;
+  empty-string when irrelevant for the kind): `NUMBER` (visible), `TYPE`,
+  `WIDTH_MM`, `HEIGHT_MM`, `REI`, `RC`, `FIRE_CLASS`, `LEAF_DIR`,
+  `SWING_DIR`, `SILL_MM`, `ACOUSTIC_DB`, `LEAD`, `ROOM_FROM`, `ROOM_TO`.
+  Visibility restricted to `NUMBER` so 1:100 plans stay readable.
+- **Layer split** (AIA-2017): `A-DOOR`, `A-DOOR-FIRE`, `A-DOOR-HOSP`,
+  `A-DOOR-LEAD`, `A-GLAZ`, `A-GLAZ-FIRE`. Inferred from block family;
+  caller override supported.
+- **Automatic numbering**: each insert scans model-space for max
+  `D-nnn` / `W-nnn` and increments; callers can pin `number=` explicitly
+  (e.g. `D-EVAC-01` for evacuation routes); `renumber_openings` resets.
+- **Rule 65 (`.cursor/rules/65-door-window-schedule.mdc`)**: block naming,
+  origin semantics, the 14-tag attribute contract (table form with
+  visibility + per-kind applicability), numbering rules, layer split,
+  wall-cutting projection semantics with cautionary notes about jamb
+  location, schedule column order (18 columns), interaction with
+  architecture / hatches / furniture / plumbing / schedules / sections,
+  per-tool perf budget (< 60 ms single insert, < 300 ms schedule for
+  ≈ 200 openings), and a 7-step checklist for adding new families.
+- **Plugin side** (`OpeningsPluginTools.cs`, ~820 LOC) wired in
+  `PluginEntryPoint.Initialize`; every handler goes through
+  `PluginToolRunner.RunWriteAsync` / `RunReadAsync` per rule 10 / 11 / 19.
+- **Manifest sync**: `mcpbank-manifests/acad-openings.json` regenerated;
+  tools_summary lists all 10 real tools, intent_examples auto-populated
+  from `[McpTool] Intent=` arrays (60+ PL + EN entries).
+- **xUnit coverage**: `tests/AcadMcp.Tests/Categories/OpeningsTests.cs`
+  replaced stub with 3 tests — 1 structural (10 tools registered) + 1
+  theory asserting each tool name is present + 1 flag-semantics test
+  (`list_*` and `export_schedule` = read-only; `insert_*`, `cut_wall_*`,
+  `renumber_*` = write). All 15 tests across D2 + D3 + D4 + D5 pass.
+- **Build gate**: `dotnet build src/AcadMcp.sln -c Release` = 0 err 0 warn,
+  `check-manifests.ps1` = 29 code / 30 manifests / 0 problems.
+
+### Added - Phase D D4: acad-plumbing (P0) fully implemented (2026-04-24)
+
+- **9 tools** covering sanitary fixtures for hospitals, offices and
+  residential buildings (WT-2019 + PN-EN 17210 accessibility):
+  - `list_plumbing_catalog` (14 catalogue entries with Polish / EN standard
+    references — PN-EN 997, 14528, 14688, 13407, 232, 14527, 17210).
+    Filter by category / domain / `accessibleOnly`.
+  - `insert_plumbing` — generic by fully-qualified name.
+  - `insert_wc` — floor-standing / wall-hung / bidet-combo + accessible
+    800×800 variant with grab-bar L-marker (PN-EN 17210 §T.4).
+  - `insert_basin` — standard / double / accessible (knee-clearance marker
+    per §U.2).
+  - `insert_shower` — square/rect shower tray or walk-in barrier-free
+    (curtain indicator + centre drain per §S.3).
+  - `insert_bathtub` — standard 1700×700 / mini 1500×700 / corner
+    1400×1400 quarter-round + drain + faucet indicators.
+  - `insert_urinal` — wall-hung + accessible lower-rim variant (§U.4).
+  - `populate_bathroom` — 6 presets: `wc-public`, `wc-accessible`,
+    `bathroom-residential`, `bathroom-hospital-patient`, `shower-room`,
+    `wc-block-staff`. All orientation-aware (north/east/south/west).
+  - `list_plumbing_in_model` — read-only, filters by layer / block name,
+    returns INV_ID / TYPE / ACCESSIBLE attribute values.
+- **Block library (parametric, in-code)** — 8 fixed + 6 sized families,
+  every block with origin at geometric centre and four attribute
+  definitions (INV_ID visible, TYPE / ACCESSIBLE / NOTE hidden). Sized
+  families key each unique (W, D) into a distinct cached
+  `BlockTableRecord` named `<family>-<W>-<D>`.
+- **Layer split** (AIA-2017):
+  `A-PLMB-WC / -BSN / -SHW / -BT / -UR`, fallback `A-PLMB`.
+- **Rule 63 (`.cursor/rules/63-sanitary-fixtures-wt.mdc`)**: canonical
+  block-name convention, fixed catalogue + sized-family tables,
+  attribute contract (ACCESSIBLE flag fed to downstream schedules /
+  validators), layer split table, the 6 populate_bathroom presets with
+  minimum room sizes (WT-2019 §82 1600×2200 residential, PN-EN 17210 §T.1
+  1500×1800 accessible WC, §S.3 walk-in shower clearance), clearance budget
+  (basin front clearance, WC grab-bar envelope, wheelchair turning Ø
+  1500 mm, urinal centre-to-centre 760 mm), interaction with
+  architecture / furniture / hatches / validators, per-tool perf budget
+  (< 150 ms single insert, < 500 ms full preset).
+- **Plugin side** (`PlumbingPluginTools.cs`, ~610 LOC) wired in
+  `PluginEntryPoint.Initialize`; every handler goes through
+  `PluginToolRunner.RunWriteAsync` / `RunReadAsync` per rule 10/11/19.
+- **Manifest sync**: `mcpbank-manifests/acad-plumbing.json` regenerated;
+  tools_summary lists all 9 real tools, intent_examples auto-populated
+  (45+ PL+EN entries).
+- **Build gate**: `dotnet build src/AcadMcp.sln -c Release` = 0 err 0 warn,
+  `check-manifests.ps1` = 29 code / 30 manifests / 0 problems.
+
+### Added - Phase D D3: acad-furniture (P0) fully implemented (2026-04-24)
+
+- **10 tools** covering hospital + office + residential furniture with
+  parametric, zero-asset block generation (first-call creates
+  `BlockTableRecord`, subsequent calls insert `BlockReference`s):
+  - `list_furniture_catalog` — read-only, 15 fixed + 11 sized families
+    (bed / chair / desk / cabinet / sofa / table) filterable by category or
+    domain (hospital / office / residential).
+  - `insert_furniture` — generic, fully-qualified block name (e.g.
+    `FURN-DESK-OFF-1600-800`), supports independent `scaleX`/`scaleY`.
+  - `insert_bed` (standard / ICU / bariatric / pediatric / OR / labour)
+  - `insert_chair` (office / armchair / stool / exam / wheelchair)
+  - `insert_desk` (office / reception / nurse-station, configurable W × D)
+  - `insert_cabinet` (storage / medical / file / wardrobe, configurable W × D)
+  - `insert_sofa` (2/3-seat lounge or clinical)
+  - `insert_table` (rectangle / round / square / exam, configurable W × D)
+  - `populate_room` — auto-fill a room (closed polyline handle OR bbox) with
+    7 presets: `ward-room` / `icu-room` / `or-room` / `office` /
+    `reception` / `waiting` / `consult`; supports orientation
+    north / east / south / west (whole plan rotates around centroid).
+  - `list_furniture_in_model` — read-only, enumerates all `FURN-*`
+    BlockReferences with INV_ID / TYPE / NOTE attributes, filterable by layer
+    or block name.
+- **Block library (parametric, in-code)**:
+  - 15 **fixed** blocks: 6 beds, 5 chairs, 4 sofas (all with geometric centre
+    origin — rotations spin around centre for predictable placement).
+  - 11 **sized** families — each unique (W mm, D mm) pair produces a
+    distinct cached `BlockTableRecord` named
+    `<family>-<W>-<D>` (e.g. `FURN-DESK-OFF-1600-800`,
+    `FURN-CBT-MED-800-500`, `FURN-TBL-ROUND-1200-1200`).
+  - Every block carries four attribute definitions: `INV_ID` (visible),
+    `TYPE` / `ROOM` / `NOTE` (hidden, editable) — schedule-ready (D8).
+- **Layer split** (AIA-2017): `A-FURN-BED / -CHR / -DSK / -CBT / -SFA / -TBL`
+  auto-applied by block prefix, fallback `A-FURN`. Callers may override.
+- **Rule 64 (`.cursor/rules/64-furniture-density-per-room.mdc`)**:
+  drawing-unit (mm) assumption, block-name convention, attribute contract,
+  layer split table, the 7 preset definitions with minimum room sizes,
+  clearance budget per PN-EN 17210 / WT-2019 §95 / §234 (bed side access
+  ≥ 900 mm, wheelchair turning Ø ≥ 1500 mm, corridor with bed transit
+  ≥ 2200 mm), scaling/rotation rules, cross-category interactions
+  (architecture, openings, hatches, schedules), per-tool performance budget
+  (< 200 ms single insert, < 500 ms 5-item preset, < 1.5 s 15-item preset).
+- **Plugin side** (`FurniturePluginTools.cs`, ~630 LOC) wired in
+  `PluginEntryPoint.Initialize`; every handler goes through
+  `PluginToolRunner.RunWriteAsync` / `RunReadAsync` per rule 10/11/19.
+- **Manifest sync**: `mcpbank-manifests/acad-furniture.json` regenerated via
+  `dotnet run --project src/AcadMcp.Backend -- --category furniture
+  --regenerate-manifest` — tools_summary now lists all 10 tools,
+  intent_examples auto-populated (50+ PL+EN entries).
+- **Build gate**: `dotnet build src/AcadMcp.sln -c Release` = 0 err 0 warn,
+  `check-manifests.ps1` = 29 code / 30 manifests / 0 problems.
+
+### Planned - Phase D: Architectural Fidelity Upgrade (awaits green-light)
+
+- **Plan document**: `docs/PLAN-PROFESSIONAL-UPGRADE-2026.md` — 13-section roadmap to
+  bring generated drawings from parametric-MVP level (walls + rectangles + bed-rectangles)
+  up to executive-grade output comparable to a Polish architectural practice
+  (reference: user-supplied plan excerpt 2026-04-23 with axis grids Y1/Y3, chain
+  dimensions, spiral staircase, full furniture, sanitary fixtures, K1/K6/K10
+  profile callouts).
+- **Gap analysis**: 17 checklist items, 4 CRITICAL + 7 MAJOR + 6 MINOR gaps
+  identified (hatching, furniture, plumbing, windows, stairs/elevators, grids,
+  dimension chains, schedules, sections, lineweights, callouts, symbols, RCP,
+  construction details).
+- **New MCP categories (7 proposed)**: `acad-hatches` (8 tools), `acad-furniture`
+  (10), `acad-plumbing` (8), `acad-openings` (10), `acad-verticals` (7),
+  `acad-grids` (6), `acad-schedules` (5), `acad-sections` (4),
+  `acad-plotstyles` (3), `acad-callouts` (4) — **48 new tools** respecting
+  the single-backend-per-category invariant (`00-architecture-invariants.mdc` §1).
+- **Extensions (3 existing categories)**: `Architecture` +6 tools (draw_window,
+  draw_stair, draw_elevator, draw_ramp, draw_ceiling_grid, split_wall_at_opening),
+  `Dimensions` +5 tools (chain, cumulative, baseline, tick policy, auto_dim_walls),
+  `Blocks` +4 tools (library_register, library_list, bulk_insert, swap_block).
+- **Block library (80+ DWG assets planned)**: `assets/blocks/{furniture-hospital,
+  furniture-office, plumbing, openings, verticals, symbols}/` with per-folder
+  `manifest.json`.
+- **10 new `.cursor/rules/` entries (60-69)**: architectural fidelity minimum,
+  9-tier lineweight policy, per-layer hatching policy, WT §78 sanitary fixtures,
+  per-room furniture density, door/window schedule atts, 3-level dimension chains,
+  grid axes with bubble labels, plan symbols (north + scale bar + title block
+  per PN-B-01025), K1/K6/K10 callout convention.
+- **New vision persona** `senior-architect-reviewer` with 17-criterion rubric
+  (PL+EN) covering WT 2022, MZ 2019, PN-B-01025, PN-EN-ISO-129/128/5457, AIA
+  Layer Guidelines. Output: deterministic JSON `{score, grade, findings[],
+  overall}`.
+- **Phase D execution plan (D0..D12)**: scaffold → P0 categories (hatches,
+  furniture, plumbing, openings) → P1 (verticals, grids, schedules) → P2/P3
+  (sections, plotstyles, callouts) → rules → persona → regenerate
+  Hospital 2026 plan from Phase C checkpoint → target `senior-architect-reviewer`
+  score ≥ 15/17 on overview and ≥ 13/17 on every zoom tile.
+- **12 / 10 rubric refined**: 4 axes (safety 12 @ 40% + arch-fidelity 17 @ 40%
+  + legal compliance 10 @ 15% + docs 5 @ 5%) = 44 pts total. Current state:
+  30/44 = 8.2/10. Target post-D: 43/44 = 11.7/10.
+- **Effort estimate**: ~47.5 person-days (27 dev + 9 QA + 11.5 block-authoring)
+  or ~25 calendar days at 2 FTE.
+- **Risks + rollback**: per-D-step checkpoints (`ckpt-phaseD-<step>`),
+  `check_overlaps` × 5 gate before/after D12 regeneration, manifest sync via
+  existing `CheckManifestSync` MSBuild target.
+
+### Fixed - Phase C-Doors: 25 missing doors added to the Hospital 2026 A0-001 (2026-04-23)
+
+- **Diagnosis tooling** (`scripts/room-door-inventory.py`, `room-door-inventory2.py`,
+  `analyze-door-swings.py`): build a 53-room × 61-door matrix from a
+  `collect_entities` + `check_overlaps` snapshot, decompose 99 wall polylines
+  into 127 axis-aligned segments, and classify door-door / door-wall bbox
+  collisions into `{T-junction, leaf-in-frame, same-door leaf+arc, double-leaf,
+  swing-conflict}` buckets.
+- **Fix generator** `scripts/gen-missing-doors.py`: emits a ready-to-run
+  `acad_design_iterate` plan (50 steps: 25 × `acad.geometry2d.draw_line` +
+  25 × `acad.geometry2d.draw_arc`) for every room the inventory flagged as
+  door-less, picking the corridor-facing wall and placing a 1100 mm leaf
+  hinged on the inside jamb with a 90° swing arc (radius 1100 mm).
+- **Execution** (router checkpoint `ckpt-20260423-230845856`): 25 new doors
+  created on layer `A-DOOR` at handles `528..559`. Post-fix re-inventory
+  reports 0 rooms without a door.
+- **Compliance** (`docs/HOSPITAL-2026-REVIEW-FINDINGS.md` §4d/§4e):
+  0 through-wall shielding breaches, 0 wall-through-bed crossings,
+  0 text-text overlaps, 0 real door-door swing conflicts, every room
+  carries at least one door → **12 / 12** on the safety axis of the review
+  rubric. Deliverables: `assets/Hospital2026_A0-001.dwg` (61 686 B,
+  534 entities, AC1032), `assets/Hospital2026_FINAL.pdf` (ISO A0, 180 047 B),
+  `assets/Hospital2026_POSTER_6000x4500.png` (670 082 B).
+
+### Added - Phase 7.4 acad-router meta-tools catch-up (9th tool + loop phase)
+
+- **Router**: ninth meta-tool `acad_design_iterate` added as a first-class
+  stub in `tools/list` (RouterServer.cs) — acts as the entry point for the
+  Phase 7.0 plan→checkpoint→execute→validate→auto-fix→rollback loop.
+- **Manifest** `mcpbank-manifests/acad-router.json`: `tool_count: 9`,
+  `tools_summary` extended with `acad_design_iterate`, and
+  `metadata.phase` bumped to `phase7_loop` so discovery surfaces the loop
+  capability.
+- **Tests**: wired `tests/AcadMcp.Tests/AcadMcp.Tests.csproj` into
+  `src/AcadMcp.sln`, added `[InternalsVisibleTo]` from
+  `src/AcadMcp.Backend/Properties/AssemblyInfo.cs`, and made `ToolRegistry`
+  default-constructible (NullLogger). `scripts/pre-commit.ps1` grew a
+  `[7/7] dotnet test` gate; suite is currently 78 green.
+
+### Added - Phase 7.2 validators cross-entity primitives + 4 new discipline rules
+
+- **Entity snapshot enrichment**: `ValidatorsPluginTools.BuildSnapshot`
+  now collects `className` (from `ent.GetRXClass().Name`) and `vertices`
+  for `Line`, `Polyline`, `Polyline2d`, `Polyline3d`. DTOs
+  `EntitySnapshotPluginDto` / `EntitySnapshotDto` extended symmetrically.
+- **CheckEvaluator**: 4 new check-types
+  - `entity_class_equals` — true AutoCAD RX-class equality (catches
+    `AcDbCircle` where a thread representation demands `AcDbArc`).
+  - `text_matches_regex` — regex against `TextValue` or a named block
+    `attribute` (e.g. `TAG`).
+  - `polyline_closure_within` — first-vertex-to-last-vertex distance
+    check with tolerance (mm).
+  - `polyline_endpoints_share` — **cross-entity**: each polyline
+    endpoint must share coordinates with another entity within a
+    tolerance, optionally filtered by `block_name` or `layer`. Requires
+    `EvalContext.AllEntities`; `ValidationEngine.RunAsync` now populates
+    it per rule from the correct model- or paper-space bucket.
+- **New YAML rules** (4): `validators/mechanical/thread-is-arc-not-circle`,
+  `validators/electrical/tag-format-iec-81346`,
+  `validators/civil/parcel-closure-within-tolerance`,
+  `validators/electrical/wire-crossing-needs-junction`.
+- **Tests** `ValidatorsCoreTests.cs`: every YAML under `validators/`
+  parses; all four new Phase 7.2 rules are discoverable; one unit test
+  per new primitive, including the negative cross-entity case (junction
+  only at one endpoint = violation) and the positive one (junction at
+  both endpoints = clean).
+
+### Added - Phase 7.0 checkpoint sub-system + acad_design_iterate loop
+
+- **Plugin** `CheckpointPluginTools.cs`: 4 tools
+  `acad.checkpoint.create/restore/list/clear` on an in-memory LIFO stack
+  per-document, issuing AutoCAD `UNDO _Mark` / `UNDO _Back <n>` on the
+  UI thread via `doc.SendStringToExecute` (rule 15). Optional DWG file
+  snapshot to `%LOCALAPPDATA%\AcadMcp\checkpoints\<docKey>\<id>.dwg` with
+  automatic best-effort fallback when the UNDO stack cannot be trusted
+  (e.g. after a document reload).
+- **Router**: `acad_status`, `acad_undo_checkpoint`,
+  `acad_restore_checkpoint` and `acad_design_iterate` are no longer
+  stubs — they invoke the plugin through `IPluginGateway.InvokeAsync`.
+  `PluginUnavailableException` / `PluginToolException` are mapped to
+  MCP `isError:true` content instead of JSON-RPC errors, so agents get
+  actionable messages.
+- **DI**: `Program.cs` now always registers `IPluginGateway`
+  (router-mode included) so the router can drive plugin tools without
+  losing its "no local tool-catalog" invariant.
+- **Design loop** `Mcp/DesignIterator.cs`: wraps a user-supplied
+  `PlanStep[]` + `standardId` into the 6-stage loop —
+  create checkpoint → execute every step → `ValidationEngine.RunAsync`
+  → auto-apply `fix:` blocks where present → re-validate →
+  bail out / succeed / rollback to the checkpoint. A structured audit
+  log is written to `%LOCALAPPDATA%\AcadMcp\logs\iterate-<ts>.json` on
+  every run (success or abort).
+- **E2E regression** `scripts/e2e-smoke.ps1`: spawns all 19 MCP servers
+  over stdio, runs `initialize → tools/list → shutdown → exit`, and
+  asserts the tool count matches each `mcpbank-manifests/acad-*.json`.
+  Currently 19/19 green + `-Live` adds a router→plugin `acad_status`
+  round-trip (20/20 with AutoCAD running).
+
+### Added
+- Documented Phase 7–8 roadmap (`docs/PHASE-7-8-ROADMAP.md`), always-apply Cursor rule `54-phase-7-8-current-work.mdc`, and README Status / onboarding section so agents treat Phases 0–6 as delivered and start planning from Phase 7.
+
+### Added - Phase 6.5 acad-parametric (rule 42 + 12 tools + plugin acad.parametric.* + parametric-baseline)
+
+- **Rule first** (rule 53): `42-parametric-domain-traps.mdc` — Block Editor vs
+  model space, Fix as datum anchor, over-constraining, explode destroys
+  constraints, dynamic-block value typing plus anonymous `*U` block names,
+  geometric vs dimensional strategy, hatch vs boundary polylines, 6-layer
+  P-* key, Phase-7 block library note.
+- **Plugin** `ParametricPluginTools.cs`: 10 handlers on `acad.parametric.*`
+  — `-GEOCONSTRAINT` via `Editor.Command` (transaction committed before the
+  command so AutoCAD owns the command transaction), `-DELCONSTRAINT`, model-
+  space constraint-entity scan (class name contains `Constraint`),
+  dynamic-block property get/set with degree-to-radian coercion when
+  `UnitsType.ToString()` contains `angl` (portable across AutoCAD enum
+  spellings).
+- **Backend** `Categories/Parametric/`: `ensure_parametric_layers`,
+  `apply_geom_horizontal` / `vertical` / `parallel` / `perpendicular` /
+  `coincident` / `fix`, `delete_entity_constraints`,
+  `list_constraint_entities`, `get_dynamic_block_properties`,
+  `set_dynamic_block_property`, `parametric_health`; `ParametricProxy`,
+  `ParametricPalette`, DTOs; registered in `PluginEntryPoint`.
+- **Validators**: `parametric.sketch.on-p-sketch`,
+  `parametric.profile.on-p-constrained`; standard
+  `validators/_standards/parametric-baseline.yaml` (5 rules including
+  general ISO hygiene). Validators self-check now loads **29 rules across 6
+  standards** (was 27 / 5 after Phase 6.4 electrical).
+- **Manifest** `mcpbank-manifests/acad-parametric.json` — `phase6_domains`,
+  `discipline: parametric`, `depends_on_categories` layers+blocks,
+  explicit `v1_limitations`.
+- **Tests** `tests/AcadMcp.Tests/Categories/ParametricTests.cs` — 12-tool
+  catalog, 6 palette layers, `parametric_health` ReadOnly + pluginless,
+  non-empty `DynamicAnglePolicy` string.
+
+### Added - Phase 6.4 acad-electrical (rule 39 + 12 tools + 5 paired validators + electrical-baseline)
+
+- **Rule first** (rule 53): `39-electrical-domain-traps.mdc` BEFORE any
+  electrical code. 13 traps: IEC vs ANSI symbol style (rectangle vs zig-zag
+  for resistors, rectangle vs circle for coils — pick one per drawing);
+  NO vs NC contact symbols (the horizontal slash IS the NC marker, so the
+  category ships TWO separate tools `place_contact_no` and
+  `place_contact_nc` — never one with a `kind` flag); junction dot vs
+  crossing semantics (filled circle = electrical connection, no dot =
+  pass-through); ladder rail + rung numbering (sequential rung-numbers on
+  the LEFT rail, coil at the RIGHT end of each rung); coil → contact
+  cross-reference text below the coil (`5: 12, 14, 18`); IEC 81346
+  device-tag prefix lookup (`-K`/`-Q`/`-F`/`-S`/`-B`/`-M`/`-T`/`-G`/`-X`/
+  `-W`/`-H` — agents who invent prefixes get a fail-fast); tag syntax
+  with optional `=FUNC+LOC-PREFIXSEQ` aspects; wires-connect-at-symbol-
+  terminals (every symbol exposes named terminals); schematic ≠ panel
+  layout split (panel side deferred to Phase 7); power-rail colour
+  convention (L1 brown, N blue, PE green/yellow — collapsed to layer
+  `E-WIRE-PWR` ACI 1, label disambiguates); per-drawing symbol unit size
+  (5 mm office default); the 12-layer IEC + JIC hybrid key; planned
+  `blocks/electrical/` library; validator pairing rules.
+
+- **acad-electrical MCP category — 12 tools**
+  (`src/AcadMcp.Backend/Categories/Electrical/`):
+  - infrastructure: `ensure_electrical_layers` (idempotent, ships the
+    12-layer E-* key with full lineweight metadata; `includePanel=true`
+    flag for cross-sheet drawings, default false because v1 ships
+    schematic side only);
+  - ladder: `draw_ladder_rails` (two vertical rails on `E-WIRE-PWR` with
+    labelled tops `L1` / `N` per rule 39 §9), `draw_ladder_rung` (one
+    horizontal rung + sequential rung-number text on the LEFT rail per
+    rule 39 §4);
+  - wires: `draw_wire` (poly-line routed to `E-WIRE` / `E-WIRE-PWR` /
+    `E-WIRE-CTRL` by `kind` flag, with explicit override),
+    `draw_wire_junction` (filled SOLID-hatched circle dot per rule 39 §3
+    — separate tool by design, NOT auto-added by `draw_wire` because
+    crossings without a junction are valid);
+  - symbols: `place_resistor` (IEC rectangle / ANSI zig-zag with terminals
+    `1`/`2`), `place_contact_no` (no slash, terminals `in`/`out`),
+    `place_contact_nc` (slash present, terminals `in`/`out`), `place_coil`
+    (IEC rectangle / ANSI circle with optional `tag` and `contactRungs`
+    cross-reference text on `E-XREF`, terminals `A1`/`A2` per IEC);
+  - terminals: `place_terminal_block` (row of N numbered rectangles on
+    `E-TERM` with sequential labels on `E-LBL-WIRE`, exposes top + bottom
+    centre points so wires snap to either side);
+  - tags: `place_device_tag` (parses IEC 81346 short / location-qualified /
+    fully-qualified form, validates the prefix letter against the
+    11-letter set at write time, returns canonical
+    `=FUNC+LOC-PREFIXSEQ`);
+  - introspection: `electrical_health` (read-only — returns the layer key,
+    the IEC prefix table, supported styles, default unit size,
+    planned-block roster).
+
+- **`ElectricalPalette.cs`** — single source of truth for the 12-layer
+  electrical key (mirrors rule 39 §11) and the planned-block roster.
+- **`IecDeviceTagPrefixes.Allowed`** — the `K`/`Q`/`F`/`S`/`B`/`M`/`T`/
+  `G`/`X`/`W`/`H` lookup that powers `place_device_tag` validation.
+- **`DeviceTag.cs`** — pure C# IEC 81346 parser, AutoCAD-free; validated
+  by the `ElectricalTests` theory data (positive + negative cases, lower-
+  case prefix coercion, dash-inferred short form, full canonical
+  round-trip).
+- **`ElectricalProxy.cs`** — IPC composition layer (rule 35 §2). Wraps
+  primitive plugin handlers (`acad.layers.create_layer`,
+  `acad.geometry2d.draw_*`, `acad.geometry2d.draw_hatch`,
+  `acad.annotations.add_dbtext`) with full lineweight-aware layer
+  metadata; centralises the JSON-shape mapping so the Plugin DTO contract
+  doesn't leak into the tools.
+- **5 paired validators** under `validators/electrical/`:
+  `elec.symbol.on-e-symbol-layer`, `elec.wire.on-e-wire-layer`,
+  `elec.wire.power-on-e-wire-pwr`, `elec.rung.label-on-e-lbl-rung`,
+  `elec.tag.device-on-e-lbl-dev`. All ship with a `move_to_layer` fix.
+- **New standard** `validators/_standards/electrical-baseline.yaml`
+  bundles the three general ISO hygiene rules with the five electrical
+  rules (8 rules total). Self-check now reports **27 rules across 5
+  standards** (was 22 / 4 in Phase 6.3).
+- **Conscious gap (documented)**: the prefix-format and missing-junction-
+  dot validators are deferred until the YAML engine grows
+  `text_matches_regex` and `polyline_endpoints_share` check primitives.
+  Both conventions are enforced AT-WRITE-TIME by `place_device_tag` and
+  by the explicit `draw_wire_junction` tool respectively.
+- **Manifest** `mcpbank-manifests/acad-electrical.json` regenerated to
+  reflect the 12 tools and updated metadata (`phase: phase6_domains`,
+  `discipline: electrical`, `depends_on_categories`,
+  `paired_validators_dir`, explicit `v1_limitations`).
+- **Tests** in `AcadMcp.Tests/Categories/ElectricalTests.cs`: tool
+  catalog (12 tools), layer key (12 layers, `E-WIRE-PWR` ACI 1 0.50 mm),
+  IEC prefix table (11 letters), `electrical_health` ReadOnly +
+  pluginless, `DeviceTag.Parse` accepts/rejects matrix, canonical
+  round-trip.
+- **Pre-commit gate** passes (6/6) — the manifest-sync + Intent-attribute
+  + secret + CHANGELOG + validators-self-check checks are all green.
+
+### Added - Phase 6.3 acad-civil (rule 38 + 10 tools + 5 paired validators + civil-baseline)
+
+- **Rule first** (rule 53): `38-civil-domain-traps.mdc` BEFORE any civil
+  code. 11 traps: stationing notation (Polish/EU `0+020` vs US `0+20`,
+  single-source `format_station`), surveyor bearings (`N 45° 30' 15" E`,
+  quadrant-driven sign — never `degrees * π / 180`), parcel closure
+  tolerance (residential 0.02 m / commercial 0.05 m / agricultural 0.20 m /
+  forest 0.50 m, never silently snap), contour intervals (major every
+  5 / 10 m on `C-TOPO-MAJR` LABELLED, minor every 1 / 2 m on
+  `C-TOPO-MINR` UNLABELLED), spot elevation = cross + signed two-decimal
+  text on `C-TOPO-SPOT`, road centreline `CENTER` vs edge of pavement
+  `Continuous` linetype split, station ticks perpendicular to LOCAL
+  tangent (not page +X), true-north arrow (rotates with drawing rotation,
+  not page +Y), the 12-layer civil key, the planned `blocks/civil/` library,
+  and validator pairing.
+- **acad-civil MCP category — 10 tools** (`Backend/Categories/Civil/`):
+  - infrastructure: `ensure_civil_layers` (idempotent, ships the 12-layer
+    key with full lineweight metadata; `includeRoad` / `includeProperty` /
+    `includeTopo` flags so survey-only drawings can skip road layers);
+  - alignment: `draw_alignment_tangent` (Line on `C-ROAD-CNTR` w/ CENTER),
+    `draw_alignment_curve` (Arc on `C-ROAD-CNTR`);
+  - corridor: `draw_road_corridor` (centreline + two parallel edges
+    offset by `widthM/2` with mitred internal vertices via average-normal
+    method);
+  - stationing: `place_station_labels` (walks the centreline, drops a
+    perpendicular tick + tangent-rotated label every `intervalM`, system
+    `"metric_km"` or `"us_feet"`, recomputes tangent at every vertex per
+    rule 38 §7);
+  - parcel: `draw_parcel` (parses `(bearing, distance)` legs via
+    `Bearing.Parse`, walks them via `CivilParcel.Traverse`, reports
+    `closureErrorM` + `closureStatus` against the `kind` tolerance, optional
+    `autoClose` to snap geometrically while still reporting the original
+    error);
+  - topography: `draw_contour_line` (routes to `C-TOPO-MAJR` LABELLED or
+    `C-TOPO-MINR` UNLABELLED per `isMajor`), `place_spot_elevation`
+    (cross + signed two-decimal text per PN-EN ISO 6709);
+  - orientation: `draw_north_arrow` (synthesised triangle + optional `N`
+    letter, rotated by `trueNorthDegFromPageNorth`, rule 38 §8);
+  - introspection: `civil_health` (ReadOnly, RequiresPlugin=false; reports
+    layer key + parcel-tolerance presets + supported stationing systems +
+    planned bundled blocks).
+- **CivilGeometry.cs** — pure-C# surveyor numerics: `Bearing` record (parse
+  + format + `ToVector()` with quadrant-driven sign), `CivilStationing.Format`
+  (single source of truth for `"0+020"` / `"0+20"`), `CivilParcel.Traverse`
+  (returns vertices + closure error + within-tolerance flag).
+- **CivilPalette.cs** — single source of truth for the 12-layer civil key
+  (mirrors rule 38 §9), parcel-kind enum + `CivilTolerances.ClosureMetresFor`,
+  and `PlannedBlocks` listing the Phase-7 DWG library
+  (NORTH_ARROW_BASIC / COMPASS, BENCHMARK_GEODETIC, MANHOLE_CIRCULAR,
+  CATCH_BASIN_GRATE, TREE_DECIDUOUS / CONIFEROUS, STATION_TICK_MAJOR).
+- **CivilProxy.cs** — composition over `acad.layers.create_layer`,
+  `acad.geometry2d.draw_line | draw_polyline | draw_arc`, and
+  `acad.annotations.add_dbtext`. Same shape as MechanicalProxy
+  (`Point2dDto → Point3dDto` JSON promotion via `ToPoint3dNode`,
+  `EnsureLayerAsync` carrying full metadata).
+- **Manifest** `mcpbank-manifests/acad-civil.json` regenerated to 10 tools
+  and back-filled with `phase=phase6_domains`, `discipline=civil`,
+  `depends_on_categories=[geometry-2d, layers, annotations]`,
+  `paired_validators_dir=validators/civil/`, and an explicit
+  `v1_limitations` list (vertical alignments / profile views deferred to
+  Phase 7, spirals not in v1, north-arrow basic synthesised inline, road
+  corridor uses average-normal mitre).
+- **Paired validators under `validators/civil/`** — 5 NEW rules:
+  - `civil.road.centerline-on-c-road-cntr` (legacy CENTERLINE / ROAD / AXIS
+    → C-ROAD-CNTR with auto-create);
+  - `civil.road.centerline-must-be-dashed` (CENTER linetype on
+    C-ROAD-CNTR);
+  - `civil.road.edge-on-c-road-edge` (legacy EOP / EDGE-OF-PAVEMENT →
+    C-ROAD-EDGE);
+  - `civil.topo.spot-on-c-topo-spot` (legacy SPOT-ELEV / RZEDNA → C-TOPO-SPOT);
+  - `civil.parcel.on-c-prop` (legacy PROPERTY / LOT / PARCEL / BNDY →
+    C-PROP).
+- **`validators/_standards/civil-baseline.yaml`** (NEW) — bundles the
+  5 civil traps + 3 ISO general baseline rules into one drop-in standard
+  for civil deliverables.
+- **Tests** `tests/AcadMcp.Tests/Categories/CivilTests.cs` — 10-tool inventory
+  check, palette consistency (12 layers), `civil_health` is `ReadOnly +
+  RequiresPlugin=false`, six bearing → vector parametric cases (covering
+  all four quadrants + cardinals), bearing string round-trip, four
+  metric-stationing format cases, and TWO `CivilParcel.Traverse` cases
+  (perfect-closure 10×10 m square AND a deliberately-short last leg that
+  triggers `WithinTolerance=false`).
+- **Validators self-check** now reports **22 rules across 4 standards** (was
+  17 / 3 after Phase 6.2).
+- **Pre-commit gate**: 6/6 green.
+
+#### Known gap
+
+`civil.parcel.must-close` (rule 38 §3) waits on the validator engine
+growing a `polyline_closure_within` check primitive. Convention is enforced
+AT-WRITE-TIME by `draw_parcel` itself — the result includes
+`closureErrorM` + `closureStatus` so the agent (or a downstream rule
+runner) can flag out-of-tolerance parcels immediately.
+
+### Added - Phase 6.2 acad-mechanical (rule 37 + 12 tools + 4 paired validators)
+
+- **Rule first** (rule 53): `37-mechanical-domain-traps.mdc` BEFORE any
+  mechanical code. 11 traps: edge-class linetypes (visible / hidden / centre
+  each on its own layer + linetype), centreline shape (extension past the
+  feature, not just a `+`), section cutting plane = thick PHANTOM polyline +
+  arrow heads + labels (NOT the hatch — separate call), the four hole
+  representations (through, counterbore, countersink, blind, threaded), the
+  threaded-hole 3/4 minor-Ø arc convention (rule 37 §4a), bolt-head top view
+  as flat-to-flat hexagon (NOT "size string"), filled-equilateral revision
+  triangle, mechanical dimstyle (ISO-25, not architectural), ISO 128-50
+  material → hatch pattern map, the 11-layer ISO-mechanical key, and validator
+  pairing.
+- **acad-mechanical MCP category — 12 tools** (`Backend/Categories/Mechanical/`):
+  - infrastructure: `ensure_mechanical_layers` (idempotent, ships the 11-layer
+    ISO key with full lineweight metadata, optional include flags for
+    `ME-CONSTRUCTION` and `ME-REV`);
+  - edge classes: `draw_visible_edge`, `draw_hidden_edge`, `draw_centerline`,
+    `draw_centerline_cross` (round-feature crosshair sized by
+    `featureRadiusMm + extensionMm`, rotation supported);
+  - section: `draw_section_cut_line` (thick PHANTOM polyline + two
+    arrow-head triangles + two DBText labels — 5 entity handles in one call);
+  - holes: `draw_through_hole`, `draw_counterbore_hole` (cbore Ø must exceed
+    through Ø, fails fast otherwise), `draw_threaded_hole` (FULL major circle
+    on `ME-VISIBLE` + 3/4 arc on `ME-THREAD` HIDDEN, configurable gap angle
+    and start, default 270° span);
+  - fasteners: `draw_bolt_head_top_view` (regular hex flat-to-flat, optional
+    inscribed shank circle, reports across-corners diameter; `nominalDiameterMm`
+    is documentation-only);
+  - revisions: `draw_revision_triangle` (closed equilateral polyline + SOLID
+    hatch + Middle-aligned DBText, returns both triangle and text handles);
+  - introspection: `mechanical_health` (ReadOnly, RequiresPlugin=false; reports
+    layer key, ISO 128-50 material → hatch table, planned bundled blocks).
+- **MechanicalPalette.cs** — single source of truth for the 11-layer ISO
+  mechanical key (mirrors rule 37 §9). Each entry carries `Name`, `AciColor`,
+  `Linetype`, `LineweightMm`, `Plottable`, `Purpose`. Plus
+  `MechanicalPalette.PlannedBlocks` listing the Phase-7 DWG library
+  (BOLT_HEX_M*, WASHER_FLAT_M*, BEARING_RADIAL_*, SURFACE_FINISH_BASIC,
+  WELD_SYMBOL_BASIC).
+- **MechanicalPatterns.ByMaterial** — ISO 128-50 material → `(pattern, scale,
+  angle)` lookup so agents say `material: "steel"` instead of
+  `pattern: "ANSI31"`. Currently covers cast iron, steel, bronze, brass,
+  aluminium, glass, soil, concrete.
+- **MechanicalProxy.cs** — composition helper that wraps
+  `acad.layers.create_layer`, `acad.geometry2d.draw_line | draw_polyline |
+  draw_circle | draw_arc | draw_hatch`, and `acad.annotations.add_dbtext`.
+  Re-applies the lessons from `ArchitectureProxy` (parameter-name fixes,
+  `Point2dDto → Point3dDto` JSON promotion via `ToPoint3dNode`,
+  `EnsureLayerAsync` shape with full metadata).
+- **Manifest** `mcpbank-manifests/acad-mechanical.json` regenerated to 12
+  tools and back-filled with `phase=phase6_domains`,
+  `discipline=mechanical`, `depends_on_categories=[geometry-2d, layers,
+  annotations]`, `paired_validators_dir=validators/mechanical/`, and an
+  explicit `v1_limitations` list (side-view holes deferred to Phase 7,
+  section hatch is a separate call, bundled blocks ship in Phase 7).
+- **Paired validators under `validators/mechanical/`** — 4 rules:
+  - `mech.hidden.must-be-dashed` (existing — extended layer pattern to
+    accept both `M-HIDDEN` and `ME-HIDDEN`);
+  - `mech.hidden.on-me-hidden-layer` (NEW — moves legacy hidden geometry to
+    `ME-HIDDEN`, with auto-create);
+  - `mech.centerlines.must-be-dashed` (existing — extended layer pattern);
+  - `mech.centerlines.on-me-center-layer` (NEW — moves legacy centrelines to
+    `ME-CENTER`, with auto-create).
+- **`validators/_standards/iso-mechanical-baseline.yaml`** (NEW) — bundles
+  the 4 mechanical traps + 3 ISO general baseline rules into one
+  drop-in standard for mechanical deliverables.
+- **Tests** `tests/AcadMcp.Tests/Categories/MechanicalTests.cs` rewritten:
+  asserts the exact 12 tool names, validates that `MechanicalPalette.All`
+  has the canonical 11-layer key with `ME-CONSTRUCTION` as the only
+  non-plottable entry, asserts `MechanicalPatterns.ByMaterial` covers the
+  four ISO 128-50 anchor materials, and confirms `mechanical_health` is
+  `ReadOnly + RequiresPlugin=false` (rules 19 + 22).
+- **Validators self-check** now reports **17 rules across 3 standards** (was
+  15 / 2 after Phase 6.1).
+- **Pre-commit gate**: 6/6 green (build, manifest sync, forbidden patterns,
+  secret scan, CHANGELOG, validators self-check).
+
+#### Known gap
+
+`mech.threads.minor-arc-not-full-circle` (rule 37 §4a) cannot be expressed
+with the current YAML check primitives (need `entity_class_equals`).
+Convention is enforced AT-WRITE-TIME by `draw_threaded_hole` always
+emitting an `Arc` (never a `Circle`); the post-hoc validator will land
+together with the new check primitive in a future phase. Documented in
+rule 37 §4a and the category `_README.md`.
+
+### Added - Phase 6.1 acad-architecture (rule 35 + rule 36 + 10 tools)
+
+- **Rules first** (rule 53): two new `.mdc` files BEFORE any domain code:
+  - `35-domain-categories-design.mdc` — universal contract for the 5 planned
+    domain categories (`acad-architecture`, `acad-mechanical`, `acad-civil`,
+    `acad-electrical`, `acad-parametric`): intent layer (not raw geometry),
+    compose primitives, auto-create infrastructure, idempotent infrastructure
+    + non-idempotent content, units check, paired validators, 30-tool budget,
+    new-category checklist.
+  - `36-architecture-domain-traps.mdc` — 13 architecture-specific pitfalls
+    (walls = centreline + 2 faces, mitre/butt/square wall ends, doors are
+    panel + swing + opening, windows are sill + glass + header, columns belong
+    on `S-COLS` not `A-WALL`, rooms = closed boundary + tag with computed
+    area, slabs on `S-SLAB`, stairs need stringers + treads + arrow + break
+    line, linear vs aligned dim heuristic, hatches last, the AIA layer key
+    table, bundled `blocks/architectural/` plan, validator pairing).
+- **acad-architecture MCP category — 10 tools** (`Backend/Categories/Architecture/`):
+  - `ensure_architectural_layers` (idempotent, ships the 16-layer AIA key),
+    `draw_wall`, `draw_walls_chain` (mitred-corner offset polylines),
+    `insert_door` (panel + swing arc), `insert_window` (sill + glass +
+    header + 2 jambs), `insert_rect_column`, `insert_round_column`
+    (column profile + crosshair on `S-COLS-CTRL`), `define_room` (closed
+    boundary + 3 text labels with shoelace-formula area in m²),
+    `dimension_wall` (auto-pick linear vs aligned per rule 36 §9),
+    `architecture_health` (read-only metadata).
+  - `ArchitecturePalette.cs` — single source of truth for the AIA layer
+    key + planned bundled-block list (mirrors rule 36 §11/§12).
+  - `ArchitectureProxy.cs` — composition helper that calls
+    `acad.layers.create_layer`, `acad.geometry2d.draw_*`,
+    `acad.annotations.add_dbtext`, `acad.dimensions.linear`/`aligned`
+    via `IPluginGateway` so tools never duplicate plugin handlers
+    (rule 35 §2). Sends `Point3dDto`-shaped payloads where the plugin
+    expects them (e.g. `add_dbtext.position`, `dimensions.linear.p1/p2`).
+- **Paired validators** (`validators/architectural/`):
+  - Updated `walls-on-walls-layer.yaml` to migrate from legacy `WALLS` to
+    AIA-canonical `A-WALL` (scope still catches `WALL`, `WALLS`, `M-WALL`,
+    `WALLS_NEW`, `A-WALL-NEW`, `A-WALL-OLD` and offers a `move_to_layer` fix).
+  - New `wall-centerlines-on-a-wall-ctrl.yaml` (warning, fixable) — pairs with
+    `draw_wall` / `draw_walls_chain`.
+  - New `columns-on-s-cols-layer.yaml` (error, fixable) — pairs with
+    `insert_rect_column` / `insert_round_column`.
+  - `polish-arch-baseline.yaml` updated to bundle the two new rules
+    (now 9 rules vs the previous 7).
+- `bin-launchers/acad-architecture.cmd` and
+  `mcpbank-manifests/acad-architecture.json` (10 tools, `phase: phase6_domains`,
+  `discipline: architectural`, `depends_on_categories: [geometry-2d, layers,
+  annotations, dimensions]`, `paired_validators_dir`, explicit
+  `v1_limitations` list calling out the door/window wall-cut deferral).
+- Validator self-check passes with **15 rules / 2 standards** (was 13/2).
+
+### Added - Phase 5 phase5_validators (in progress)
+
+- **Rules first** (rule 53): two new `.mdc` files BEFORE any code:
+  - `33-validators-rule-format.mdc` - canonical YAML schema for validator rules (`id`, `discipline`, `severity`, `scope`, `checks`, `fix`), check + fix primitive tables, hard rules (no blanket fixes, ≥25-char descriptions), and the `--validators-self-check` workflow.
+  - `34-validators-engine-traps.mdc` - 11 documented engine pitfalls (collect entities once per run, read-only collectors, single grouped fix transaction, ACI-vs-true-color mapping, conditional geometric checks, regex compilation cache, separate doc snapshot, agent-actionable violation messages, last-report cache, baseline diffing, idempotent fixes).
+- **Backend validator engine** (`src/AcadMcp.Backend/Validators/`):
+  - `Rule.cs` POCOs (`Severity`, `Discipline`, `RuleScope`, `CheckSpec`, `FixSpec`).
+  - `RuleLoader.cs` - YamlDotNet-based parser enforcing rule 33 §7 hard rules (id format, severity enum, description length, no blanket-fix).
+  - `RuleRegistry.cs` - 3-tier discovery (embedded resources → `<repo>/validators/` → `%LOCALAPPDATA%\AcadMcp\validators\`) with later sources overriding earlier IDs.
+  - `StandardLibrary.cs` - presets that bundle multiple rule IDs (`iso-cad-baseline`, `polish-arch-baseline`).
+  - `CheckEvaluator.cs` - entity-level + document-level predicate dispatcher with cached compiled regex (rule 34 §6) and pass-on-null semantics for missing geometric properties (rule 34 §5).
+  - `ValidationEngine.cs` - orchestrator that computes union scope, makes ONE `acad.validators.collect_entities` call per space (rule 34 §1), evaluates rules, builds `ValidationReport`.
+  - `ValidationReport.cs` - structured `Violation` records with `entityHandle`, `expected`, `observed`, `fixAvailable` for agent-actionable feedback (rule 34 §8).
+- **acad-validators MCP category - 10 tools** (`Backend/Categories/Validators/`):
+  - `list_validators`, `explain_rule`, `list_standards`, `validate_drawing`, `validate_with_rule`, `validate_against_standard`, `list_violations`, `auto_fix_violations`, `add_validator_rule`, `reload_validator_rules`.
+  - `ValidatorsRuntime` - process-singleton registry + last-report cache keyed by active doc (rule 34 §9).
+  - `ValidatorsProxy` - generic IPC layer to plugin tools.
+- **Plugin handlers** (`src/AcadMcp.Plugin/Tools/ValidatorsPluginTools.cs`):
+  - `acad.validators.collect_entities` - read-only entity snapshot collector (model + paper space) with computed length/area/radius and block attribute extraction.
+  - `acad.validators.doc_summary` - document-level metadata (layers, blocks, text styles, units, entity counts).
+  - `acad.validators.apply_fixes` - SINGLE grouped transaction with full rollback on any failure (rule 34 §3).
+- **Bundled rule library**: 13 YAML rules across `general` / `architectural` / `mechanical` disciplines + 2 standard presets, all embedded as resources in `AcadMcp.Backend.dll`.
+- **`AcadMcp.Backend.exe --validators-self-check`** - new diagnostic CLI flag that loads every embedded + repo + user rule and standard, prints a summary, exits non-zero on any parse failure. No AutoCAD needed. Wired into pre-commit gate as check `[6/6]` (rule 40 §6).
+- `bin-launchers/acad-validators.cmd` and `mcpbank-manifests/acad-validators.json` (10 tools, rich description, `phase`, `rule_library_size: 13`, `bundled_standards`, `user_rules_dir` metadata).
+
+### Added - Phase 4 phase4_vision_sidecar (in progress)
+
+- **Rules first** (rule 53): two new `.mdc` files BEFORE any code:
+  - `29-acad-vision-architecture.mdc` - HTTP/JSON not gRPC, 127.0.0.1-only bind, idle-shutdown sidecar lifecycle, `IVisionSidecarClient` not raw `HttpClient`, no AutoCAD-plugin dependency in v1, content-hash cache keys.
+  - `32-acad-vision-traps.mdc` - 11 documented vision/OCR/ML pitfalls (image normalisation, PDF page-by-page, OCR confidence cutoffs, per-discipline title-block templates, per-discipline YOLO weights, vision-LLM cost/latency budget, pixel coords vs drawing units, cross-validate is a string-set diff, lazy ML imports, single-engine semaphore, cache invalidation).
+- **AcadMcp.Vision Python sidecar (v0.2.0)** - real FastAPI HTTP API replaces Phase 0 stub:
+  - `acadmcp_vision/app.py` - FastAPI wire-up, idle-shutdown watchdog (default 300 s), pid/port discovery files under `%LOCALAPPDATA%\AcadMcp\`, hard-refuses non-loopback `--host`, per-engine `asyncio.Semaphore(1)` queues.
+  - `schemas.py` - Pydantic v2 request/response shapes for `ImageRef` / OCR / detect-symbols / titleblock / dimensions / classify / describe / segment / cross-validate plus health/version envelopes.
+  - `_loaders.py` - tolerant image loading (path or base64 data URL), PDF page rasterisation via `pypdfium2`, RGB-uint8 normalisation with capped long side, optional-dep probing.
+  - `_cache.py` - disk JSON cache keyed by `sha256(content)+engine+version`, 7-day TTL.
+  - `engines/ocr.py` - PaddleOCR (default), EasyOCR, Tesseract; canonical `OcrToken` shape; per-engine module globals.
+  - `engines/yolo.py` - Ultralytics adapter with per-discipline `cad-symbols-{arch,mech,elec,pid}.pt` weights under `%LOCALAPPDATA%\AcadMcp\vision-models\`.
+  - `engines/vision_llm.py` - Anthropic Claude 3.5 Sonnet + OpenAI GPT-4o adapters with auto-pick by API-key presence, JPEG q85 + 1568 px long-side cap, 5 MB payload refuse.
+  - `engines/titleblock.py` - per-discipline label-alias templates (architectural-eu/us, mechanical, electrical, civil) + panel-region selection (bottom_right / right_strip / bottom_strip) + label/value spatial pairing.
+  - `engines/dimensions.py` - regex parser for dimension callouts (`1234`, `12.5 mm`, `12'-6"`, EU `1.234,56`) with normalisation to millimetres.
+  - HTTP endpoints: `GET /health`, `GET /version`, `POST /v1/ocr`, `/v1/detect-symbols`, `/v1/extract-titleblock`, `/v1/extract-dimensions`, `/v1/classify-drawing`, `/v1/describe-image`, `/v1/cross-validate-with-dxf`. All ML endpoints return 503 + `installHint` when their dep is missing (rule 32 trap #9).
+  - Tests rewritten to verify health, optional-dep introspection, 503 envelope shape and the dep-free cross-validate endpoint (incl. numeric tolerance).
+- **acad-vision MCP category - 9 tools** (Backend `Categories/Vision/`):
+  - `ocr_image`, `detect_symbols`, `extract_titleblock`, `extract_dimensions`, `classify_drawing`, `describe_image`, `cross_validate_with_dxf`, `vision_health`, `vision_version`.
+  - DTOs (`VisionDtos.cs`) mirror the Python schemas one-for-one (snake_case JSON via `[JsonPropertyName]`).
+  - `VisionProxy` - generic `Post/GetAsync<TArgs,TResult>` over `IVisionSidecarClient`.
+  - All tools require `IVisionSidecarClient` injection (NOT `IPluginGateway`); they work without AutoCAD running.
+- **Backend plumbing** for the new sidecar:
+  - `Backend/Sidecar/IVisionSidecarClient.cs` + `VisionSidecarClient.cs` - HTTP/1.1 client with port discovery (`ACADMCP_VISION_PORT` env, then `%LOCALAPPDATA%\AcadMcp\vision.port`, then default `50062`), strongly-typed `VisionUnavailableException` / `VisionEngineUnavailableException` / `VisionToolException`.
+  - `Program.cs` registers `IVisionSidecarClient` for every non-router category.
+  - `CategoryServer.BuildCallArgs` injects `IVisionSidecarClient` when a tool parameter requests it (analogous to `IPluginGateway`).
+  - `CategoryServer` catches the three vision exception types and surfaces them as MCP `isError: true` results with the `installHint` text intact.
+- **Lifecycle scripts**:
+  - `scripts/start-vision.ps1` - idempotent sidecar launcher (`-EnsureRunning`, `-WaitHealthy`, `-Force`, `-Stop`, `-Port`); writes `vision.pid` + `vision.port` discovery files; auto-detects stale PIDs.
+  - `scripts/setup-vision-models.ps1` - installs ML extras (`pip install -e .[ml]` or OCR-only) and reports YOLO weights presence per discipline.
+  - `bin-launchers/acad-vision.cmd` - calls `start-vision.ps1 -EnsureRunning -WaitHealthy` then launches the .NET host bound to `--category vision`.
+- **Manifest**: `mcpbank-manifests/acad-vision.json` regenerated from `[McpTool]` metadata. Hand-tuned `description` (no auto-stub), `requires_plugin=false`, new `requires_python_sidecar=true` block referencing the start/setup scripts; `metadata.phase=phase4_vision_sidecar`. Pre-commit gate passes for all 13 manifests, total **172 MCP tools across 13 categories**.
+
+### Added - Phase 3 phase3_annotations_blocks (complete)
+
+- **acad-files category - 11 tools** (DWG / DXF lifecycle and conversion):
+  - **Documents**: `list_documents` (every open DWG, active flag, modified, read-only, entity count), `get_active_document`, `new_document` (acad.dwt template).
+  - **Lifecycle**: `open_document` (`readOnly` and `password`, deduped against already-open docs by full path), `save_document` (existing path, current native DwgVersion), `save_document_as` (new path + reflection-resolved `DwgVersion` token / year alias), `close_document` (by path or active, optional save-before-close).
+  - **Import**: `import_file` (`.DWG` via `WblockCloneObjects` per trap #5, optional displacement to insertion; `.DXF` via `db.DxfIn`).
+  - **Export**: `export_file` for `DWG` (`SaveAs`), `DXF` (`db.DxfOut`), `PDF` / `DWF` / `DWFX` / `IMAGE` (`PNG`) via `PlotEngine` with paired `Begin*` / `End*` calls per trap #11. Supports `layout` and `scope` (`Display` / `Extents` / `Limits` / `Window` / `Layout`).
+  - **Maintenance**: `purge_database` (cascading purge across `BlockTable`, `LayerTable`, `LinetypeTable`, `TextStyleTable`, `DimStyleTable`, `RegAppTable`, `UcsTable`, `ViewTable`; built-in symbols `0`, `Defpoints`, `ByLayer`, `ByBlock`, `Continuous`, `Standard`, anonymous `*` records skipped; trap #12), `audit_database` (reflects into `AuditInfo` so this compiles across verticals; default `fix=false`).
+  - DTOs (`Backend/Categories/Files/FilesDtos.cs` + `Plugin/Tools/FilesDtos.cs`), proxy, plugin handlers (file-ops use a UI-thread runner WITHOUT a wrapping transaction since `Database.SaveAs`, `DxfOut`, `WblockCloneObjects` and `LayoutManager` own their own txn).
+  - Manifest regenerated from `[McpTool]` metadata: 11 tools, 19 tags, 54 PL+EN intent examples, `metadata.phase=phase3_annotations_blocks`.
+
+### Fixed - Phase 3 plugin compilation gaps
+
+- `AcadEnv.ValidateSymbolName`: `SymbolUtilityServices` is in `Autodesk.AutoCAD.DatabaseServices`, not `Autodesk.AutoCAD.Runtime`.
+- `AnnotationsPluginTools.AddMLeaderBlock`: `MLeader.BlockScale` is `Scale3d`, not `double`.
+- `AnnotationsPluginTools.AddTable`: switched from deprecated `Table.SetRowHeight` / `Table.SetColumnWidth` to `Table.Rows[i].Height` / `Table.Columns[i].Width`; replaced non-existent `Table.TextStyleId` with per-cell `Cells[r,c].TextStyleId` assignment.
+- `AnnotationsPluginTools.CreateTextStyle`: `FontDescriptor` constructor on this SDK uses positional args, not `typeface:` keyword.
+- `LayersPluginTools`: `LayerStateMasks.All` is not defined — added explicit `AllLayerStateMasks` const ORing every documented bit (`On|Frozen|Locked|Plot|NewViewport|Color|LineType|LineWeight|PlotStyle|CurrentViewport`).
+- `LayoutsPluginTools.ConfigurePlot`: `PlotSettingsValidator` lives in `Autodesk.AutoCAD.DatabaseServices`, not `PlottingServices`; switched to the `.Current` singleton (constructor private on AutoCAD 2025).
+- Full solution `dotnet build src/AcadMcp.sln` now produces **0 warnings, 0 errors**.
+
+### Added - Phase 0 bootstrap (in progress)
+
+- Initial project skeleton: folder structure, `git init`, `.gitignore`, `README.md`, this `CHANGELOG.md`
+- `NuGet.config` pinning nuget.org as the only source
+- `.cursor/rules/` "growing rulebook":
+  - **Foundation (always-apply):** `00-architecture-invariants`, `01-folder-layout`, `02-no-breaking-changes`, `03-language-and-style`, `04-build-and-test-gates`, `50-task-flow`, `51-changelog`, `52-no-yolo-changes`, `53-rules-update-mandate`
+  - **Plugin invariants (10-15):** `10-acad-ui-thread`, `11-acad-transactions`, `12-acad-error-mapping`, `13-acad-units-coords`, `14-acad-no-blocking-prompts`, `15-acad-sendcommand`
+  - **MCP tool authoring (20-25):** `20-mcp-tool-attribute`, `21-mcp-tool-naming`, `22-mcp-tool-args-results`, `23-mcp-tool-idempotency`, `24-mcp-tool-category-binding`, `25-mcp-tool-tests`
+- `scripts/detect-autocad.ps1` - wykrywa AutoCAD, LT, wertyki, mapuje na TFM (net48 / net8.0-windows). Wykryto: AutoCAD 2025 PL, full mode, net8.0-windows
+- .NET solution `src/AcadMcp.sln` z 6 projektami:
+  - `AcadMcp.Shared` (net8.0 + net48) - DTOs, pipe contracts, `[McpTool]` attribute
+  - `AcadMcp.SourceGen` (netstandard2.0) - Roslyn source generator with diagnostics ACAD0001..ACAD0005
+  - `AcadMcp.Backend` (net8.0) - stdio MCP host parameterized by `--category` (and `--category router`)
+  - `AcadMcp.Plugin` (net8.0-windows + net48) - referenced AutoCAD via HintPath to AcadInstallPath
+  - `AcadMcp.ComBridge` (net8.0-windows) - COM/ROT fallback with custom MarshalCompat (replaces removed Marshal.GetActiveObject)
+  - `AcadMcp.Lisp` (net8.0) - LISP script library
+- `AcadMcp.Vision` Python sidecar (Phase 0 stub: FastAPI /health, /version)
+- Backend MCP framework: `StdioJsonRpcHost`, `ToolRegistry`, `CategoryServer`, `RouterServer` with all 8 meta-tools (acad_status, acad_find_tools, acad_load_category, acad_recommend_categories, acad_explain_capabilities, acad_describe_drawing, acad_undo_checkpoint, acad_restore_checkpoint)
+- E2E smoke test passed: `initialize` → `tools/list` (8 tools) → `tools/call(acad_recommend_categories)` returns correct PL keyword routing
+- Source generator diagnostics verified end-to-end: ACAD0001 fires on missing/short `Intent`, ACAD0002 fires on bad tool names (PascalCase, > 5 words). Tested with throwaway `_Probe` category.
+- MSBuild target `CheckManifestSync` wired into `AcadMcp.Backend.csproj` runs after Release build, calling `scripts/check-manifests.ps1`. Bypass with `-p:SkipManifestCheck=true`.
+- MCPBank integration:
+  - **Rules:** `30-mcpbank-manifest`, `31-mcpbank-discovery-hygiene` (manifest shape + discoverability quality)
+  - `mcpbank-manifests/acad-router.json` - router manifest (8 meta-tools, lazy_mode=false, 12 PL+EN intent_examples)
+  - `bin-launchers/acad-router.cmd` - router launcher (Release build)
+  - `BankAutoRegister.cs` - regenerates `tools_summary` + `intent_examples` from `[McpTool]` metadata while preserving human-edited fields (description, tags, metadata.author, etc.)
+  - `RepoRootDetector.cs` - walks up from binary to find repo root (looks for `mcpbank-manifests/` or `.git/`)
+  - `Program.cs` `--regenerate-manifest` flag: dotnet AcadMcp.Backend --category <name> --regenerate-manifest writes/updates the matching `mcpbank-manifests/acad-<name>.json`
+  - `scripts/register-mcps.ps1` - upserts every `acad-*.json` into the user's MCPBank registry (auto-detected from `~/.cursor/mcp.json` `mcpbank-dynamic.--registry` arg, fallback to `~/mcpbank/registry/mcpd-registry.json`). Validates required fields, supports `-DryRun`. Smoke-tested: detects acad-router as ADD with 8 tools.
+  - `scripts/install-cursor-config.ps1` - inserts/updates ONLY `acad-router` in `~/.cursor/mcp.json`, leaves all other MCP servers untouched, takes timestamped backup. Smoke-tested: 30+ existing MCP servers preserved, acad-router appended cleanly.
+- Pre-commit gate + category scaffolder:
+  - **Rules:** `40-pre-commit-gates.mdc` (what the hook MUST/MUST NOT check, <60s budget), `41-new-category-flow.mdc` (mandatory naming map for adding any acad-* category)
+  - `scripts/pre-commit.ps1` - 5-section gate (rules YAML, manifest validation, forbidden C# patterns, secret regex, CHANGELOG gate), supports `-Install` (writes `.git/hooks/pre-commit` shim), `-All` (full tree), `-FailFast`. Smoke-tested at 0.62-0.74 s on warm cache.
+  - `scripts/new-category.ps1` - single source of truth for adding `acad-<name>` categories. Generates: `Categories/<Folder>/<Folder>Tools.cs` (compilable stub `[McpTool]`), `_README.md`, `mcpbank-manifests/acad-<name>.json` (with TODO placeholders), `bin-launchers/acad-<name>.cmd`, `tests/AcadMcp.Tests/Categories/<Folder>Tests.cs`. Refuses to overwrite without `-Force`. Validates kebab-case input.
+  - `scripts/check-manifests.ps1` fixed: now reads `tools_summary` (not the obsolete `tools` key), and reports the actual manifest filename (kebab-case) instead of the PascalCase folder name.
+  - **E2E test passed:** `new-category.ps1 -Name probe-temp` → build (green) → `--regenerate-manifest` (manifest tools_summary updated, intent_examples merged with placeholders, last_regenerated_utc stamped, all human-edited fields preserved) → cleanup → `pre-commit -All` (0 errors).
+
+### Added - Phase 2 phase2_3d_modify (in progress)
+
+- **acad-geometry-3d category - 15 tools**:
+  - DTOs (`Geometry3dDtos.cs`, plugin-side `Geometry3dDtos.cs`): `DrawBoxArgs`, `DrawSphereArgs`, `DrawCylinderArgs`, `DrawConeArgs`, `DrawTorusArgs`, `DrawPyramidArgs`, `DrawWedgeArgs`, `ExtrudeCurveArgs`, `RevolveCurveArgs`, `PlanarSurfaceArgs`, `HandleArg3`, plus result types (`EntityResult3`, `VolumeResult`, `AreaResult3`, `CentroidResult`, `BoundingBox3Result`, `MassPropertiesResult`).
+  - Backend `Geometry3dTools.cs` (15 `[McpTool]`s) + `Geometry3dProxy.cs`.
+  - Plugin `Geometry3dPluginTools.cs`: full Solid3d primitive set (`CreateBox/Sphere/Frustum/Torus/Pyramid/Wedge`), `Solid3d.Extrude` (with auto-Region build for raw curves) and `Solid3d.Revolve` around arbitrary axis. `DrawPlanarSurface` builds Region(s) from curve handles. Mass-properties query goes through `Solid3d.MassProperties` (note: AutoCAD .NET API has the documented misspelling `MomentsOfIntertia` – preserved intentionally with a comment to stop future "fixes" from breaking the build). Surface-area for solids walks `Brep.Faces` via `acdbmgdbrep.dll`.
+  - `AcadEnv.cs` extended: `ToPoint3d(Point3dDto)`, `ToVector3d(Vector3dDto)`, `FromPoint3d(Point3d)`.
+  - Plugin `.csproj` now references `acdbmgdbrep.dll` (HintPath, Private=false) for Brep face enumeration.
+  - `mcpbank-manifests/acad-geometry-3d.json` regenerated with all 15 tools, full description, snake_case tags.
+  - `tests/AcadMcp.Tests/Categories/Geometry3dTests.cs` – 5-fact regression suite (catalog completeness, naming, RequiresPlugin, ReadOnly tagging on `get_*` tools, ≥5 intents per tool).
+
+- **acad-boolean-ops category - 8 tools**:
+  - `union_solids`, `subtract_solids`, `intersect_solids` (Solid3d.BooleanOperation with optional erase-tools).
+  - `union_regions`, `subtract_regions`, `intersect_regions` (Region.BooleanOperation).
+  - `create_region` from closed planar curves (with optional `eraseSource`).
+  - `check_intersection` – read-only probe: bbox prefilter → `Curve.IntersectWith` for curves → generic `Entity.IntersectWith` for solids/regions, returns `{intersect, relation}` tag (`disjoint_bbox`, `curves_cross`, `boundaries_cross`, `bbox_overlap_no_boundary_cross`, `bbox_overlap_unverified`).
+  - DTOs, proxy, plugin handlers, manifest (8 tools), test suite.
+
+- **acad-modify category - 18 tools**:
+  - **Transforms**: `move`, `rotate` (3D-axis aware), `scale` (uniform), `mirror` (3D plane via point + normal, optional `eraseSource`), `copy` (with chained `count`), `array_rectangular` (rows × cols × levels), `array_polar` (N items over total angle, optional rotate-with-path), `align` (2-point with optional uniform scale).
+  - **Properties**: `set_layer` (auto-creates layer), `set_color` (RGB or ACI), `set_linetype` (must be loaded), `set_lineweight` (snaps to nearest standard ISO `LineWeight` enum), `match_properties` (layer/color/linetype/lineweight/ltscale).
+  - **Lifecycle**: `erase` (soft-erase via `Entity.Erase`), `undo` and `redo` via `doc.SendStringToExecute("_U "/"_REDO ", true, false, false)`.
+  - **Grouping**: `create_group` (named, selectable flag) and `ungroup` via `db.GroupDictionaryId`.
+  - DTOs, proxy, plugin handlers, manifest (18 tools), test suite.
+
+- **acad-selection category - 12 tools** (avoids interactive `Editor.SelectXxx` per rule 14 – pure scripted enumeration over ModelSpace):
+  - `select_all`, `select_by_layer` (with optional frozen filter), `select_by_color` (RGB or ACI), `select_by_type` (DXF name), `select_by_handle` (validated lookup).
+  - `select_window` (full-inside or crossing AABB), `select_fence` (curve-curve `IntersectWith` + bbox-vs-segment fallback), `select_polygon` (4-corners-in-poly, even-odd rule).
+  - `filter_entities` – generic post-filter (layer + DXF type + color), can take an upstream handle list.
+  - `save_selection_set` / `load_selection_set` – named selection sets persisted in `db.NamedObjectsDictionaryId/ACADMCP_SELECTION_SETS` as `Xrecord` strings (one comma-delimited handle list per name); load auto-prunes erased handles.
+  - `count_entities` – fast count, optionally filtered by DXF type.
+  - DTOs, proxy, plugin handlers, manifest (12 tools), test suite.
+
+- `PluginEntryPoint.Initialize()` now registers all four new tool sets in addition to `BuiltinTools` and `Geometry2dPluginTools`.
+- Total Phase 2 surface: **53 new MCP tools** across 4 categories (running total: **+1 router + 32 + 15 + 8 + 18 + 12 = 86 tools**).
+- Pre-commit gate clean: 6 manifests validated, 63 staged C# files OK, 0 errors, 1.48 s runtime.
+
+### Added - Phase 1 plugin pipe + backend host (in progress)
+
+- AutoCAD `.NET` plugin (`AcadMcp.Plugin`, net8.0-windows for AutoCAD 2025+):
+  - `IExtensionApplication` (`PluginEntryPoint`) - captures UI `SynchronizationContext`, registers `_echo` + `acad_status` built-ins, starts named pipe server, writes heartbeat every 30 s, exposes `ACADMCP_STATUS` and `ACADMCP_PING` AutoCAD commands.
+  - `NamedPipeServer` + `PipeSession` - one session per Backend process, length-prefixed `MessageEnvelope` framing, per-request `CancellationToken`.
+  - `UiThreadDispatcher` - safely marshals `Func`/`Action` to AutoCAD UI thread (mandatory per rule 10).
+  - `HeartbeatFile` at `%LOCALAPPDATA%\AcadMcp\plugin.alive` for external liveness probes.
+  - Lightweight rolling file logger at `%LOCALAPPDATA%\AcadMcp\logs\plugin-yyyymmdd.log` (7-day retention).
+  - Conditional `IsExternalInit` polyfill (kept for future net48 multi-targeting).
+  - `[CommandMethod("ACADMCP_PING")]` returns "AcadMcp pong v0.1.0", `[CommandMethod("ACADMCP_STATUS")]` prints pipe state + uptime + tool count.
+- Backend ↔ Plugin pipe client:
+  - `AcadMcp.Backend/Pipe/PluginPipeClient.cs` - persistent pipe connection, handshake via dedicated `TaskCompletionSource`, correlationId-based response demux, write lock, cancellation forwarding.
+  - `AcadMcp.Shared/Pipe/PipeFraming.cs` - shared length-prefixed JSON envelope reader/writer, 16 MiB max payload.
+  - `AcadMcp.Shared/Contracts.cs` additive: `CancelRequest`, `MessageKind`, `MessageEnvelope` (kept backward-compatible per rule 02).
+- Backend stdio host + plugin gateway (`phase1_mcp_host`):
+  - **Rule 18-backend-host-and-gateway.mdc** - mandatory `IPluginGateway` abstraction, "no direct AutoCAD calls from Backend", lazy connect, single-reconnect policy, error mapping.
+  - `IPluginGateway` + `PluginGateway` (singleton, lazy-connect, ONE reconnect on dropped pipe, typed `PluginUnavailableException` / `PluginToolException`).
+  - Wired into DI: registered ONLY when `--category != router` (router is plugin-free).
+  - `CategoryServer.BuildCallArgs` now injects `IPluginGateway` into any tool parameter typed as such; `RequiresPlugin = true` tools without a registered gateway return MCP error -32603.
+  - `tools/call` error path maps `PluginUnavailableException` and `PluginToolException` to MCP `isError: true` content with the user-facing message (no stack traces leaked).
+- Operator diagnostics:
+  - `AcadMcp.Backend.exe --ping-plugin` - end-to-end E2E check (handshake + `_echo` round-trip + `acad_status`); precise error message if plugin not reachable.
+  - `scripts/install-plugin.ps1` - two install modes: `Bundle` (default; writes `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcp.bundle` with `PackageContents.xml`, auto-loaded on AutoCAD start) and `Acaddoc` (patches `acaddoc.lsp` with NETLOAD line). Supports `-Force` and `-Uninstall`. Smoke-tested: bundle deployed with 5 files + manifest.
+- E2E smoke checkpoints (validated):
+  - `--ping-plugin` without AutoCAD returns the exact remediation message ("NETLOAD AcadMcp.Plugin.dll inside an open AutoCAD session").
+  - Router stdio: `initialize` returns `protocolVersion 2025-06-18`, 8 meta-tools, correct `serverInfo.name="acad-router"`.
+  - Category stdio: `--category geometry-2d` `tools/list` returns empty array (no catalogs yet, expected pre-Phase 1.3).
+  - Full `dotnet build` of solution: 0 warnings, 0 errors; `CheckManifestSync` post-target green.
+
+### Added - Phase 1 first real category: acad-geometry-2d (32 tools)
+
+- **Rule 19-tool-implementation-pattern.mdc** - mandatory Backend↔Plugin tool split, naming map (`draw_line` ↔ `acad.geometry2d.draw_line`), forbidden patterns (no `Autodesk.AutoCAD.*` in Backend), per-call timeout defaults.
+- Backend declarations (`src/AcadMcp.Backend/Categories/Geometry2d/`):
+  - `Geometry2dDtos.cs` - 27 typed records (creation args, query args, modify args, results) with `JsonPropertyName` matching the wire shape.
+  - `Geometry2dProxy.cs` - one-line gateway proxy `CallAsync<TArgs,TResult>(gw, "acad.geometry2d.<verb>", args, timeoutMs, ct)`.
+  - `Geometry2dTools.cs` - **32 `[McpTool]` methods** in three groups:
+    - **Creation (16):** `draw_line`, `draw_polyline`, `draw_circle`, `draw_arc`, `draw_ellipse`, `draw_rectangle`, `draw_polygon`, `draw_spline`, `draw_point`, `draw_donut`, `draw_xline`, `draw_ray`, `draw_text`, `draw_mtext`, `draw_hatch`, `draw_revcloud`.
+    - **Queries (8, all `ReadOnly`):** `get_entity`, `list_entities_in_window`, `get_curve_length`, `get_area`, `get_bounding_box`, `get_intersections`, `get_distance_points`, `get_distance_to_entity`.
+    - **Modifications (8):** `offset_curve`, `trim_curve`, `extend_curve`, `join_curves`, `explode_entity`, `fillet_corner`, `chamfer_corner`, `delete_entities`.
+  - Each tool has 5 PL+EN `Intent` examples (10 in source-gen-validated min). Per-call timeouts: 5 s read-only / 15 s single-entity create / 30 s batch & trim/extend.
+- Plugin implementations (`src/AcadMcp.Plugin/Tools/`):
+  - `AcadEnv.cs` - `RequireActiveDocument`, `EnsureLayer`, `Persist`, `ResolveHandle`, `ToHandle`, point/bbox/color converters.
+  - `AcadErrorMapper.cs` - `Autodesk.AutoCAD.Runtime.Exception` → typed `AcadErrorCode` (rule 12), never leaks stack traces.
+  - `Geometry2dDtos.cs` - 27 plugin-side mirror DTOs (kept out of Shared to keep that assembly small).
+  - `Geometry2dPluginTools.cs` - **all 32 handlers** wrapped in `UiThreadDispatcher.Run` + `LockDocument` + `StartTransaction` + `Commit`. Real AutoCAD .NET API: `Line`, `Polyline`, `Circle`, `Arc`, `Ellipse`, `Spline`, `Hatch`, `MText`, `DBText`, `Xline`, `Ray`, `DBPoint`. Boolean ops via `IntersectWith`. Trim implemented via `GetSplitCurves` + boundary-param sort. Fillet computed analytically (no `FilletAll`). Chamfer drawn as a `Line` between the two distance offsets.
+- `PluginEntryPoint.Initialize()` registers `Geometry2dPluginTools` after `BuiltinTools`. Total registered tools after load: 34 (`_echo`, `acad_status` + 32 geometry).
+- `mcpbank-manifests/acad-geometry-2d.json` - regenerated from `[McpTool]` metadata. 32 `tools_summary` entries, full `tags` set (auto-extracted), per-tool `intent_examples` merged. Description rewritten from TODO to a complete one-paragraph summary.
+- `bin-launchers/acad-geometry-2d.cmd` - launcher script (`AcadMcp.Backend.exe --category geometry-2d`).
+- `tests/AcadMcp.Tests/Categories/Geometry2dTests.cs` - rewritten to a 5-`[Fact]` regression suite (catalog completeness, snake_case names, RequiresPlugin flags, ReadOnly flags, 5+ intents per tool). Compiles when xunit project is added (Phase 1.4+).
+- E2E smoke checkpoints (validated):
+  - `tools/list` over stdio returns all 32 tools with descriptions, intent examples and `[Requires AutoCAD .NET plugin]` markers.
+  - `tools/call draw_circle` without AutoCAD running: backend connects to `\\.\pipe\acadmcp` via `PluginGateway`, gets typed `PluginUnavailableException`, maps to MCP `isError: true` with the exact remediation message ("NETLOAD AcadMcp.Plugin.dll inside an open AutoCAD session"). Round-trip latency: ~5 s (the connect timeout).
+  - Plugin bundle reinstalled with new DLL (5 files + `PackageContents.xml`) at `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcp.bundle\`.
+  - Full `dotnet build` of solution: 0 warnings, 0 errors; `CheckManifestSync` post-target green (1 code category, 2 manifests, 0 problems).
+
+### Phase 1 (remaining)
+
+- xunit test project wired into solution + run on every Release build.
+- E2E end-to-end test with AutoCAD running (manual): NETLOAD, draw line/circle, query, delete; verify undo/redo from MCP client.

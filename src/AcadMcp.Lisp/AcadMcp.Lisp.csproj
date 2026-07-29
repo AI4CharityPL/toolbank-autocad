@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>AcadMcp.Lisp</RootNamespace>
+    <AssemblyName>AcadMcp.Lisp</AssemblyName>
+    <Description>Loader and helpers for *.lsp / *.scr scripts. NEVER hosts [McpTool] methods directly.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AcadMcp.Shared\AcadMcp.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Scripts\*.lsp" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Scripts\*.scr" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

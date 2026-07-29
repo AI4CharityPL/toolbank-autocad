@@ -1,0 +1,288 @@
+<UserControl x:Class="AcadMcp.Companion.Host.UI.ChatView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AcadMcp.Companion.Host.ViewModels"
+             xmlns:ui="clr-namespace:AcadMcp.Companion.Host.UI"
+             mc:Ignorable="d"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             d:DesignWidth="640" d:DesignHeight="280"
+             Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Text}"
+             FontFamily="Segoe UI" FontSize="13">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="B2V" />
+        <ui:InverseBooleanToVisibilityConverter x:Key="NotB2V" />
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.AccentText}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Brush.Button}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.ButtonText}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource Brush.Input}" />
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Brush.Text}" />
+            <Setter Property="Padding" Value="6" />
+        </Style>
+
+        <DataTemplate x:Key="BubbleTemplate" DataType="{x:Type vm:MessageBubble}">
+            <Border Margin="6,4" CornerRadius="8" Padding="10,8" MaxWidth="460">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{DynamicResource Brush.AssistantBubble}" />
+                        <Setter Property="HorizontalAlignment" Value="Left" />
+                        <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.AssistantBubbleText}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsUser}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.UserBubble}" />
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.UserBubbleText}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsTool}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.ToolBubble}" />
+                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.ToolBubbleText}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.ErrorBubble}" />
+                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.ErrorBubbleText}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPlan}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.Chip}" />
+                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.Text}" />
+                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsToolGroup}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Brush.ToolBubble}" />
+                                <Setter Property="TextElement.Foreground" Value="{DynamicResource Brush.ToolBubbleText}" />
+                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="6,4" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Grid>
+                    <!-- normal bubble content (hidden for tool groups) -->
+                    <StackPanel Visibility="{Binding IsToolGroup, Converter={StaticResource NotB2V}}">
+                        <TextBlock Text="{Binding Header}" FontWeight="Bold" Opacity="0.75" Margin="0,0,0,3" />
+                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                        <Image Source="{Binding Image}" Visibility="{Binding HasImage, Converter={StaticResource B2V}}"
+                               MaxWidth="440" Stretch="Uniform" Margin="0,6,0,0" />
+                        <Button Content="Eksport CSV" Style="{StaticResource SecondaryButton}"
+                                Visibility="{Binding IsAssistant, Converter={StaticResource B2V}}"
+                                HorizontalAlignment="Left" Margin="0,6,0,0" Padding="6,2" FontSize="11"
+                                Command="{Binding DataContext.ExportCsvCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}" />
+                    </StackPanel>
+
+                    <!-- collapsible tool-call group: one row, expands to the list of tools -->
+                    <Expander Visibility="{Binding IsToolGroup, Converter={StaticResource B2V}}"
+                              IsExpanded="{Binding IsExpanded}" Header="{Binding GroupHeader}"
+                              Foreground="{DynamicResource Brush.ToolBubbleText}">
+                        <ItemsControl ItemsSource="{Binding Tools}" Margin="18,4,0,2">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Status}" Margin="0,0,6,0" Opacity="0.9" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Title}" TextWrapping="Wrap" Opacity="0.9" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <TabControl Background="{DynamicResource Brush.Window}" Foreground="{DynamicResource Brush.Text}" BorderThickness="0">
+        <!-- ───────── Czat ───────── -->
+        <TabItem Header="Czat">
+            <Grid Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- status + plan toggle -->
+                <Border Grid.Row="0" Background="{DynamicResource Brush.SurfaceAlt}" CornerRadius="6" Padding="8,4" Margin="0,0,0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding StatusText}" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Foreground="{DynamicResource Brush.SubtleText}" />
+                        <CheckBox Grid.Column="1" Content="Tryb planowania" IsChecked="{Binding PlanMode}"
+                                  VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource Brush.Text}"
+                                  ToolTip="Agent najpierw tworzy plan, potem wykonuje go krok po kroku." />
+                    </Grid>
+                </Border>
+
+                <!-- messages -->
+                <ScrollViewer Grid.Row="1" x:Name="MessagesScroll" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Messages}" ItemTemplate="{StaticResource BubbleTemplate}" />
+                </ScrollViewer>
+
+                <!-- quick reports -->
+                <ItemsControl Grid.Row="2" ItemsSource="{Binding Reports}" Margin="0,5,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding Title}" Style="{StaticResource SecondaryButton}"
+                                    Margin="0,0,4,4" Padding="8,3" FontSize="11"
+                                    Command="{Binding DataContext.RunReportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- attachments -->
+                <ItemsControl Grid.Row="3" ItemsSource="{Binding Attachments}" Margin="0,2,0,4">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Brush.Chip}" CornerRadius="10" Padding="8,2" Margin="0,0,4,2">
+                                <TextBlock Text="{Binding FileName}" FontSize="11" Foreground="{DynamicResource Brush.Text}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- input row -->
+                <Grid Grid.Row="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0" Content="📎" ToolTip="Dołącz pliki" Width="34" Margin="0,0,4,0"
+                            Style="{StaticResource SecondaryButton}" Command="{Binding AttachCommand}" />
+
+                    <TextBox Grid.Column="1" x:Name="InputBox" Style="{StaticResource FieldBox}"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="120" VerticalScrollBarVisibility="Auto"
+                             KeyDown="InputBox_KeyDown" />
+
+                    <Button Grid.Column="2" Content="Wyślij" Style="{StaticResource PrimaryButton}" Margin="4,0,0,0"
+                            Command="{Binding SendCommand}" Visibility="{Binding IsNotBusy, Converter={StaticResource B2V}}" />
+                    <Button Grid.Column="2" Content="Stop" Style="{StaticResource SecondaryButton}" Margin="4,0,0,0" Padding="12,6"
+                            Command="{Binding CancelCommand}" Visibility="{Binding IsBusy, Converter={StaticResource B2V}}" />
+                    <Button Grid.Column="3" Content="Nowa" Style="{StaticResource SecondaryButton}" Margin="4,0,0,0" Padding="8,6"
+                            Command="{Binding ResetCommand}" />
+                </Grid>
+            </Grid>
+        </TabItem>
+
+        <!-- ───────── Ustawienia ───────── -->
+        <TabItem Header="Ustawienia">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="12">
+                    <TextBlock Text="Dostawca AI" FontWeight="Bold" Margin="0,0,0,4" />
+                    <ComboBox ItemsSource="{Binding ProviderOptions}" SelectedIndex="{Binding SelectedProviderIndex}" />
+
+                    <Grid Margin="0,12,0,4">
+                        <TextBlock Text="Model" FontWeight="Bold" HorizontalAlignment="Left" />
+                        <TextBlock Text="ładowanie..." FontSize="11" HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource Brush.SubtleText}"
+                                   Visibility="{Binding IsLoadingModels, Converter={StaticResource B2V}}" />
+                    </Grid>
+                    <ComboBox IsEditable="True" ItemsSource="{Binding AvailableModels}"
+                              Text="{Binding ModelText, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Text="Lista pobierana z Twojego konta po zapisaniu klucza. Możesz też wpisać własny model."
+                               Foreground="{DynamicResource Brush.SubtleText}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+
+                    <TextBlock Text="Klucz API (BYOK)" FontWeight="Bold" Margin="0,12,0,4" />
+                    <PasswordBox x:Name="ApiKeyBox" Background="{DynamicResource Brush.Input}" Foreground="{DynamicResource Brush.Text}"
+                                 BorderBrush="{DynamicResource Brush.Border}" Padding="6" />
+                    <TextBlock Text="{Binding ApiKeyStatus}" Foreground="{DynamicResource Brush.SubtleText}" Margin="0,4,0,0" FontSize="11" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="Zapisz klucz" Style="{StaticResource PrimaryButton}" Click="SaveKey_Click" />
+                        <Button Content="Usuń klucz" Style="{StaticResource SecondaryButton}" Margin="6,0,0,0" Padding="12,6"
+                                Click="ClearKey_Click" />
+                    </StackPanel>
+                    <TextBlock Text="Klucz jest szyfrowany lokalnie (Windows DPAPI) i nigdy nie opuszcza tego komputera."
+                               Foreground="{DynamicResource Brush.SubtleText}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0" />
+
+                    <TextBlock Text="Parametry" FontWeight="Bold" Margin="0,16,0,4" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,6,6">
+                            <TextBlock Text="Maks. tokenów" FontSize="11" />
+                            <TextBox Style="{StaticResource FieldBox}" Padding="4" Text="{Binding MaxTokens}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="6,0,0,6">
+                            <TextBlock Text="Temperatura" FontSize="11" />
+                            <TextBox Style="{StaticResource FieldBox}" Padding="4" Text="{Binding Temperature}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,6,0">
+                            <TextBlock Text="Maks. kroków narzędzi" FontSize="11" />
+                            <TextBox Style="{StaticResource FieldBox}" Padding="4" Text="{Binding MaxToolIterations}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="6,0,0,0">
+                            <TextBlock Text="Nazwa potoku" FontSize="11" />
+                            <TextBox Style="{StaticResource FieldBox}" Padding="4" Text="{Binding PipeName}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Button Content="Zapisz ustawienia" Style="{StaticResource PrimaryButton}" Margin="0,16,0,0"
+                            HorizontalAlignment="Left" Command="{Binding SaveSettingsCommand}" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+</UserControl>

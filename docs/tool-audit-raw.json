@@ -1,0 +1,32 @@
+﻿[
+    {
+        "category":  "callouts",
+        "tool":  "insert_north_arrow",
+        "status":  "ERROR",
+        "message":  "Plugin tool \u0027acad.geometry2d.draw_circle\u0027 failed [AcadException]: Object reference not set to an instance of an object."
+    },
+    {
+        "category":  "callouts",
+        "tool":  "insert_scale_bar",
+        "status":  "HANG",
+        "message":  "no response in time window"
+    },
+    {
+        "category":  "callouts",
+        "tool":  "insert_section_callout",
+        "status":  "HANG",
+        "message":  "no response in time window"
+    },
+    {
+        "category":  "callouts",
+        "tool":  "insert_detail_callout",
+        "status":  "VALIDATES",
+        "message":  "Plugin tool \u0027acad.geometry2d.draw_circle\u0027 failed [InvalidArgument]: radius must be \u003e 0"
+    },
+    {
+        "category":  "callouts",
+        "tool":  "insert_title_block",
+        "status":  "HANG",
+        "message":  "no response in time window"
+    }
+]

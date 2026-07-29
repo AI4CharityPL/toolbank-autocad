@@ -1,0 +1,15 @@
+id: parametric-baseline
+name: Parametric sketch baseline (constraints + dynamic blocks)
+description: |
+  Minimum hygiene for parametric sketching with acad-parametric (rule 42).
+  Builds on general ISO rules and adds two layer migrations: WIP sketch
+  curves → P-SKETCH, constrained profiles → P-CONSTRAINED.
+
+  Solver / over-constraint validation (rule 42 §3) is manual in AutoCAD
+  until Phase 7 ships an associative-network probe.
+rules:
+  - general.units.must-be-mm
+  - general.layers.no-defpoints-geometry
+  - general.text.min-height
+  - parametric.sketch.on-p-sketch
+  - parametric.profile.on-p-constrained

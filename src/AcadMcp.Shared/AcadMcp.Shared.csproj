@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <RootNamespace>AcadMcp.Shared</RootNamespace>
+    <AssemblyName>AcadMcp.Shared</AssemblyName>
+    <Description>Wire DTOs and pipe contracts shared between Backend, Plugin, ComBridge. NO AutoCAD references allowed here.</Description>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+
+</Project>

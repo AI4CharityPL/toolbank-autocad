@@ -9,7 +9,7 @@
 Cursor / Claude only ever sees `acad-router` (meta-tools) plus MCP Nexus. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
 ```
-AI Agent ── static ──> acad-router (9 meta-tools)
+AI Agent ── static ──> acad-router (10 meta-tools)
          ── static ──> nexus-server + nexus-gateway (MCP Nexus discovery/dynamic modes)
                             │ mcpd_find / mcpd_connect (lazy)
                             ▼
@@ -59,8 +59,9 @@ Before this was closed off as its own repository, the full system was built and 
 
 - **Build:** 0 errors, 0 warnings across the whole `.sln` (29 code categories / 30 manifests, consistency check clean).
 - **Unit tests:** 138/138 passing.
-- **Category sweep:** all 30 MCP category backends spawned over stdio and checked against their manifests — 29/30 exact tool-count matches. (`router` reports 9 tools in its manifest vs. 10 live; likely one dynamically-added tool not reflected in the static manifest — worth a follow-up, not a functional failure.)
-- **Live AutoCAD integration:** with AutoCAD 2025 actually running, `acad_status` confirmed a live named-pipe connection to the in-process plugin (real document, real layer data), `list_layers` returned the real layer table of the open drawing, and `list_entities_in_window` correctly validated required arguments and then returned real (empty) results for the active drawing.
+- **Category sweep:** all 30 MCP category backends spawned over stdio and checked against their manifests — **30/30 exact tool-count matches.** (`router`'s manifest was missing `acad_call`, the tool actually used to dispatch category tool calls — a real drift between the manifest and the code, found during this pass and fixed by adding the missing entry, not by adjusting the count to match.)
+- **Live AutoCAD integration, read path:** with AutoCAD 2025 actually running, `acad_status` confirmed a live named-pipe connection to the in-process plugin (real document, real layer data), `list_layers` returned the real layer table of the open drawing, and `list_entities_in_window` correctly validated required arguments and then returned real (empty) results for the active drawing.
+- **Live AutoCAD integration, write path:** to avoid touching the real open drawing, a scratch document was created with `new_document`, a real line was drawn (`draw_line`, returned a real `AcDbLine` entity handle) and a real layer created (`create_layer`), both confirmed present via read-back (`list_entities_in_window`, `list_layers`), then the scratch document was closed without saving (`close_document`). `get_active_document` confirmed the original drawing was the active document before, during, and after — untouched throughout, `entityCount` unchanged.
 
 ## Quickstart
 
@@ -174,7 +175,7 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 30 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~336 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 30 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~337 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
 The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `nexus-gateway` or `nexus-server` entry (current MCP Nexus CLI names) and falling back to the older `mcpbank-dynamic` / `mcpbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. Verified against both a `nexus-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
@@ -227,7 +228,7 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**336 tools across 30 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
+**337 tools across 30 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
 
 ## Status
 

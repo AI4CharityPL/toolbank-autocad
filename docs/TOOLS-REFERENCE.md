@@ -2,7 +2,7 @@
 
 Every MCP tool exposed by every category backend (`AcadMcp.Backend.exe --category <name>`), generated directly from the manifests in [`mcpbank-manifests/`](../mcpbank-manifests) so it can't drift from what's actually registered. Regenerate after adding/renaming tools.
 
-**Total: 30 categories, 336 tools.**
+**Total: 30 categories, 337 tools.**
 
 ## Categories
 
@@ -28,7 +28,7 @@ Every MCP tool exposed by every category backend (`AcadMcp.Backend.exe --categor
 - [`parametric`](#parametric) — 12 tool(s)
 - [`plotstyles`](#plotstyles) — 3 tool(s)
 - [`plumbing`](#plumbing) — 9 tool(s)
-- [`router`](#router) — 9 tool(s)
+- [`router`](#router) — 10 tool(s)
 - [`schedules`](#schedules) — 9 tool(s)
 - [`sections`](#sections) — 4 tool(s)
 - [`selection`](#selection) — 12 tool(s)
@@ -505,10 +505,11 @@ Insert sanitary fixtures (WC, sinks, bathtubs, showers, bidets, urinals, medical
 
 AutoCAD MCP router - the single permanent entry point to ~30 specialist AutoCAD MCP categories (geometry-2d/3d, modify, layers, blocks, annotations, dimensions, layouts, files, parametric, architecture, mechanical, civil, electrical, vision, validators, workflows, livestream). Exposes 9 meta-tools: status, find_tools, load_category, recommend_categories, explain_capabilities, describe_drawing, undo_checkpoint, restore_checkpoint, design_iterate. The actual category MCPs are loaded on demand via MCP Nexus's mcpd_find / mcpd_connect flow. Backend talks to the AutoCAD .NET plugin (NETLOAD'ed) over a single named pipe.
 
-**9 tools:**
+**10 tools:**
 
 | Tool | Description |
 |---|---|
+| `acad_call` | UNIVERSAL dispatch: invoke any backend composite (e.g. 'schedules/generate_door_schedule') OR any plugin primitive (e.g. tool='acad.annotations.add_table', category left empty). Routes in-process, no subprocess spawn. |
 | `acad_describe_drawing` | Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call. |
 | `acad_design_iterate` | Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop. |
 | `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |

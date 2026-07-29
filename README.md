@@ -63,6 +63,12 @@ Before this was closed off as its own repository, the full system was built and 
 - **Live AutoCAD integration, read path:** with AutoCAD 2025 actually running, `acad_status` confirmed a live named-pipe connection to the in-process plugin (real document, real layer data), `list_layers` returned the real layer table of the open drawing, and `list_entities_in_window` correctly validated required arguments and then returned real (empty) results for the active drawing.
 - **Live AutoCAD integration, write path:** to avoid touching the real open drawing, a scratch document was created with `new_document`, a real line was drawn (`draw_line`, returned a real `AcDbLine` entity handle) and a real layer created (`create_layer`), both confirmed present via read-back (`list_entities_in_window`, `list_layers`), then the scratch document was closed without saving (`close_document`). `get_active_document` confirmed the original drawing was the active document before, during, and after — untouched throughout, `entityCount` unchanged.
 
+## Known limitation: checkpoint/restore does not roll back yet
+
+Tested live, on the same scratch document: `acad_undo_checkpoint` successfully creates a checkpoint, but `acad_restore_checkpoint` does **not** undo anything yet. Its own response says so explicitly: `restore strategy=deferred undo_steps=0. Phase 7.0 MVP: automatic UNDO rewind is deferred; use Ctrl+Z in AutoCAD to roll back manually.` A line drawn after the checkpoint was still present after "restoring" it.
+
+This is the core mechanism Phase 7.0 (see [docs/PHASE-7-8-ROADMAP.md](docs/PHASE-7-8-ROADMAP.md), "7.0 Pętla projektowa") is built around (`acad_design_iterate`'s auto-fix-or-rollback loop depends on it actually rolling back). It's explicitly flagged as deferred in the code, not a bug I found by surprise — but it means the design-iteration loop cannot yet do what its own description promises, and closing this out is real engineering work (wiring real AutoCAD transaction/UNDO-group rollback), not a documentation fix.
+
 ## Quickstart
 
 ```powershell

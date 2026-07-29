@@ -22,10 +22,11 @@ Skrót bez „sprzedaży” — pełny opis w CHANGELOG:
 
 ## Faza 7 — szczegółowo
 
-### 7.0 Pętla projektowa (iterate + checkpoint + audyt)
+### 7.0 Pętla projektowa (iterate + checkpoint + audyt) — ⚠️ ROLLBACK NIEZAIMPLEMENTOWANY (zweryfikowane na żywo 2026-07-29)
 
 - **`acad_undo_checkpoint` / `acad_restore_checkpoint`** — zapowiedziane w manifeście routera (`mcpbank-manifests/acad-router.json`) jako Phase 7; spójna implementacja w pluginie/backendzie z semantyką cofania atomowego przy porażce walidacji.
-- **`acad_design_iterate`** — meta-narzędzie pętli projektowej (plan → wykonanie → walidacja → ewentualny rollback); wymaga synchronizacji z listą narzędzi routera (patrz **7.4**).
+  - **Stan faktyczny:** `acad_undo_checkpoint` poprawnie tworzy checkpoint (zwraca realne `id`/`label`/`stack_depth`). `acad_restore_checkpoint` **nie cofa jeszcze żadnych zmian** — odpowiedź wprost mówi `restore strategy=deferred undo_steps=0. Phase 7.0 MVP: automatic UNDO rewind is deferred; use Ctrl+Z in AutoCAD to roll back manually.` Zweryfikowane empirycznie: narysowana po checkpoincie linia pozostała na rysunku po wywołaniu restore. To pozostaje do zaimplementowania (prawdziwa integracja z transakcjami/UNDO-group AutoCAD-a), nie jest kosmetyczną poprawką.
+- **`acad_design_iterate`** — meta-narzędzie pętli projektowej (plan → wykonanie → walidacja → ewentualny rollback); wymaga synchronizacji z listą narzędzi routera (patrz **7.4**, ✅ rozwiązane). **Uwaga:** dopóki `acad_restore_checkpoint` nie cofa zmian naprawdę, ścieżka auto-rollback w `acad_design_iterate` też nie działa end-to-end.
 - **Audyt kroków** — logowanie decyzji agenta / kolejności wywołań narzędzi dla debugowania pętli i regresji.
 
 ### 7.1 Livestream / eventy
@@ -54,11 +55,13 @@ Cel: odblokowanie walidatorów obecnie świadomie odłożonych (np. format prefi
 - **Electrical** — panel, xref styków, walidatory junction/style (schemat ↔ layout).
 - **Parametryka** — DIMCONSTRAINT, BEDIT, stopnie swobody (DOF) tam, gdzie API AutoCAD na to pozwala; spójność z `42-parametric-domain-traps.mdc`.
 
-### 7.4 Router / inwarianty — synchronizacja dokumentacji i kodu
+### 7.4 Router / inwarianty — synchronizacja dokumentacji i kodu — ✅ ROZWIĄZANE (2026-07-29)
 
-**Problem znany:** `00-architecture-invariants.mdc` §6 wymienia m.in. `acad_design_iterate` w zestawie meta-narzędzi routera, podczas gdy `acad-router.json` w `tools_summary` opisuje 8 narzędzi **bez** `acad_design_iterate` (i tekst główny manifestu też mówi o „8 meta-tools”).
+**Był problem:** trzy źródła prawdy się rozjeżdżały. `RouterServer.cs` rejestruje 10 tool-stubów (w tym `acad_call`, uniwersalny dispatcher). `mcpbank-manifests/acad-router.json`'s `tools_summary` opisywał tylko 9 — brakowało `acad_call`. `.cursor/rules/00-architecture-invariants.mdc` §6 mówił „~8 meta-tools” i wymieniał 9 nazw (też bez `acad_call`).
 
-**Działanie Fazy 7:** dopasować **jedną** listę prawdy — kod routera, manifest MCPBank, oraz regułę `00-architecture-invariants.mdc` (liczba i nazwy meta-narzędzi), tak aby agent i discovery nie widziały sprzecznych opisów.
+**Zweryfikowane na żywo:** pełny sweep 30/30 kategorii przez realny `AcadMcp.Backend.exe --category router` (`tools/list`) zwrócił dokładnie 10 narzędzi, zgodnych z kodem.
+
+**Naprawione:** dodano brakujący wpis `acad_call` do manifestu (z opisem/tagami zgodnymi z kodem, `tool_count_target` zaktualizowany na 10), poprawiono `00-architecture-invariants.mdc` §6 na poprawną liczbę i pełną listę 10 narzędzi. Wszystkie trzy źródła (kod, manifest, reguła) teraz się zgadzają.
 
 ---
 

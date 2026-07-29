@@ -42,7 +42,7 @@ Categories are discovered via `mcpd_find` (semantic) and connected via `mcpd_con
 
 ## 6. Router stays in Cursor permanently
 
-`acad-router` exposes ~8 meta-tools: `acad_status`, `acad_find_tools`, `acad_load_category`, `acad_design_iterate`, `acad_describe_drawing`, `acad_undo_checkpoint`, `acad_restore_checkpoint`, `acad_recommend_categories`, `acad_explain_capabilities`.
+`acad-router` exposes 10 meta-tools: `acad_status`, `acad_find_tools`, `acad_load_category`, `acad_recommend_categories`, `acad_explain_capabilities`, `acad_call`, `acad_describe_drawing`, `acad_undo_checkpoint`, `acad_restore_checkpoint`, `acad_design_iterate`. This list, `mcpbank-manifests/acad-router.json`, and `RouterServer.cs`'s tool stubs must always agree (Phase 7.4) -- verified 2026-07-29: manifest was missing `acad_call`, now fixed; count and names now match code exactly.
 
 Router does NOT do AutoCAD work itself - it orchestrates. Adding heavy tools to the router = anti-pattern. Such tools belong in their own category.
 

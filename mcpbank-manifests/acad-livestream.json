@@ -1,7 +1,7 @@
 {
   "id": "acad-livestream",
   "name": "acad-livestream",
-  "description": "Phase 7.1 event capture: entity-change (append/modify/erase) and command-lifecycle events captured live from real AutoCAD Database/Document hooks into a bounded ring buffer, exposed poll-style since MCP tool-calling agents have no channel for genuine unsolicited server push. poll_events(sinceSeq) returns what happened since the last check instead of re-scanning the drawing; livestream_status reports buffer occupancy and drop count; clear_events resets the backlog. See docs/PHASE-7-8-ROADMAP.md 7.1 for the scope decision (poll-based, not a raw second named pipe).",
+  "description": "Phase 7.1 event capture: entity-change (append/modify/erase) and command-lifecycle events captured live from real AutoCAD Database/Document hooks into a bounded ring buffer, exposed poll-style since MCP tool-calling agents have no channel for genuine unsolicited server push. poll_events(sinceSeq) returns what happened since the last check instead of re-scanning the drawing; livestream_status reports buffer occupancy and drop count; clear_events resets the backlog. See docs/PHASE-7-STATUS.md for the scope decision (poll-based, not a raw second named pipe).",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-livestream.cmd",

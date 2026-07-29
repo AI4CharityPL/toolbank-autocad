@@ -418,7 +418,7 @@ Tego **nie** robimy w tej iteracji (żeby nie przedłużać), ale masterplan wsk
 - **Piętra 1-3** — identyczna siatka + oddziały łóżkowe 5 × 24 single-bed rooms = 120 łóżek; layout kopiowalny z parteru w jednym rzucie
 - **Walidator `hospital-2026-baseline.yaml`** — dedykowany plik YAML w `validators/rules/` z regułami na: unit check, layer naming AIA, minimum room areas, AIIR compliance, OR ACH implied requirement
 - **Egress / fire** — plan ewakuacji jako A-105 (path of egress, exit signs, F-E extinguishers), regulacja PL WT 2022 § 211-237
-- **Clash detection** — gdy dołączą M/E/P, `acad.validators.clash` (future Phase 8)
+- **Clash detection** — gdy dołączą M/E/P, `acad.validators.clash` (nie zaplanowane jeszcze)
 
 ---
 

@@ -1,0 +1,54 @@
+---
+description: Project status and verification history live in docs/PHASE-7-STATUS.md; current known gaps live in README.md § Known Limitations. Read both before the first development task in a session.
+alwaysApply: true
+---
+
+# Development status
+
+## Where the state of the project lives
+
+- **`docs/PHASE-7-STATUS.md`** — item-by-item verification log: what shipped, how it was tested against real AutoCAD, and the reasoning behind non-obvious implementation choices (e.g. why checkpoint rollback uses a file snapshot instead of AutoCAD's UNDO command, why the event channel is poll-based).
+- **`README.md` § Known Limitations** — the current, honest list of what's genuinely open (e.g. parametric constraint-application tools failing against real AutoCAD, DWG block libraries not yet built). Treat this section as authoritative for "is X done" questions — don't assume something works just because a tool exists in the manifest.
+
+## Rules for the agent
+
+- **Don't assume "done" without checking.** A tool existing in `mcpbank-manifests/` or having unit tests does not mean it works against real AutoCAD — this repo's own history has repeatedly found tools that were catalog-tested but never live-verified turn out to be broken. If you're about to rely on a tool's behavior, check whether it's live-verified per `docs/PHASE-7-STATUS.md`, and if in doubt, test it live yourself.
+- **Don't silently "fix" a Known Limitation without flagging it.** If you find a fix for something listed there, verify it live against real AutoCAD before updating the docs — don't just remove the limitation entry because the code looks plausible.
+- **New feature work** should get the same treatment as everything documented in `docs/PHASE-7-STATUS.md`: implement, build, test, then verify live on real AutoCAD before considering it done.
+
+## Workspace context
+
+The project may be opened directly from the repository folder (Cursor workspace), not only described externally. README and CHANGELOG may differ in update date — on conflicting descriptions, `docs/PHASE-7-STATUS.md` + README's Known Limitations take precedence for current state.
+
+## Regressions
+
+Rule `52-no-yolo-changes.mdc` protects already-verified functionality from chaotic changes. Any new domain/vision work is a deliberate, separately-scoped addition — it does not excuse violating the architecture invariants in `00-architecture-invariants.mdc`.
+
+## CRITICAL — plugin deployment to AutoCAD
+
+AutoCAD loads `AcadMcp.Plugin.dll` **ONLY** from the ApplicationPlugins bundle, not from `bin\Debug\net8.0-windows\`. Rebuilding via `dotnet build` alone does **NOT** reach a running AutoCAD — restarting AutoCAD only reloads the SAME old DLL from the bundle.
+
+**Bundle location**: `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents\`
+
+**After EVERY change in `src/AcadMcp.Plugin/`** (or `src/AcadMcp.Shared/` if used by the plugin):
+
+```powershell
+dotnet build src\AcadMcp.sln -c Debug
+powershell -ExecutionPolicy Bypass -File scripts\deploy-plugin.ps1 -Kill
+# then: the user restarts AutoCAD, the autoloader picks up the new DLL
+```
+
+`scripts\deploy-plugin.ps1` kills acad.exe (with `-Kill`), copies five files (`AcadMcp.Plugin.dll/.pdb/.deps.json`, `AcadMcp.Shared.dll/.pdb`) to the bundle, and tells the user what to do next.
+
+**Changes only in `src/AcadMcp.Backend/`** do NOT require deploy-plugin — the backend is spawned fresh for every MCP call.
+
+**Diagnosing whether AutoCAD has the latest DLL**:
+```powershell
+(Get-Process -Name 'acad').Modules | ? ModuleName -like '*AcadMcp*' | select ModuleName, FileName
+Get-Item "$env:APPDATA\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents\AcadMcp.Plugin.dll" | select LastWriteTime, Length
+```
+Compare the bundle DLL's LastWriteTime with `bin\Debug\net8.0-windows\AcadMcp.Plugin.dll` — if the bundle is older, deploy wasn't run.
+
+## Diagnosing a hung dispatch
+
+`PipeSession.HandleToolAsync` logs `--> tool=X corr=Y timeoutMs=Z` before dispatch and `<-- tool=X corr=Y ok elapsedMs=N` after. Exceptions from `DispatchAsync` are logged with `THREW elapsedMs=N` and sent as an `InternalError` tool response. If a pipe session ends with `handled N requests` but the log doesn't have N matching `-->`/`<--` pairs, the Nth dispatch is hung — the last `-->` without a `<--` names the culprit tool.

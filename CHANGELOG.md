@@ -1143,7 +1143,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   round-trip (20/20 with AutoCAD running).
 
 ### Added
-- Documented Phase 7–8 roadmap (`docs/PHASE-7-8-ROADMAP.md`), always-apply Cursor rule `54-phase-7-8-current-work.mdc`, and README Status / onboarding section so agents treat Phases 0–6 as delivered and start planning from Phase 7.
+- Documented the development status log (`docs/PHASE-7-STATUS.md`), always-apply Cursor rule `54-development-status.mdc`, and README Status / onboarding section so agents treat the documented foundation as delivered and check current status before assuming a tool works.
 
 ### Added - Phase 6.5 acad-parametric (rule 42 + 12 tools + plugin acad.parametric.* + parametric-baseline)
 

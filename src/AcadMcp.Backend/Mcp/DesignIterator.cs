@@ -109,11 +109,12 @@ public sealed class DesignIterator
             if (string.IsNullOrWhiteSpace(label))
                 label = "iter_" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
             ckArgs["label"] = label;
-            // UNDO mark alone is sufficient and ~1000x cheaper than SaveAs.
-            // File snapshot remains opt-in via direct acad.checkpoint.create when
-            // the user really needs a disk-level fallback (e.g., plan that opens
-            // a different drawing and thus drops the UNDO stack).
-            ckArgs["fileSnapshot"] = false;
+            // Leave fileSnapshot unset so acad.checkpoint.create's default (on)
+            // applies. The plugin's rollback mechanism is a .dwg snapshot reopen,
+            // not an AutoCAD UNDO mark (that approach deadlocked the UI thread --
+            // see CheckpointPluginTools.cs header) -- without a snapshot, the
+            // "rollback on abort" step below has nothing to restore from and the
+            // failed plan's changes would stay on the drawing.
 
             var ck = await _plugin.InvokeAsync("acad.checkpoint.create", ckArgs, CheckpointTimeoutMs, ct).ConfigureAwait(false);
             checkpointId = (ck as JsonObject)?["id"]?.GetValue<string>();
@@ -231,8 +232,9 @@ public sealed class DesignIterator
             try
             {
                 var args = new JsonObject { ["id"] = checkpointId };
-                await _plugin.InvokeAsync("acad.checkpoint.restore", args, CheckpointTimeoutMs, ct).ConfigureAwait(false);
-                _logger.LogInformation("design_iterate rolled back to checkpoint {Id}", checkpointId);
+                var restoreResult = await _plugin.InvokeAsync("acad.checkpoint.restore", args, CheckpointTimeoutMs, ct).ConfigureAwait(false);
+                var strategy = (restoreResult as JsonObject)?["strategy"]?.GetValue<string>() ?? "unknown";
+                _logger.LogInformation("design_iterate rolled back to checkpoint {Id} (strategy={Strategy})", checkpointId, strategy);
             }
             catch (Exception ex)
             {

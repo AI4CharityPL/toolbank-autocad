@@ -1,107 +1,110 @@
-# Roadmap: Fazy 7–8 (AutoCAD MCP Megasystem)
+# Roadmap: Phases 7–8 (AutoCAD MCP Megasystem)
 
-Jedno źródło prawdy dla zespołu i agentów Cursor: **co jest już dostarczone (Fazy 0–6)** oraz **aktywna ścieżka rozwoju (Fazy 7–8)**. Szczegóły historyczne i listy narzędzi: [CHANGELOG.md](../CHANGELOG.md).
+Single source of truth for the team and Cursor agents: **what's already shipped (Phases 0–6)** and **the active development track (Phases 7–8)**. Historical detail and tool lists: [CHANGELOG.md](../CHANGELOG.md).
 
 ---
 
-## Stan: Fazy 0–6 (ukończone w sensie roadmapy repozytorium)
+## Status: Phases 0–6 (complete in the sense of this repo's roadmap)
 
-Skrót bez „sprzedaży” — pełny opis w CHANGELOG:
+No-spin summary — full detail in CHANGELOG:
 
-| Obszar | Zawartość (skrót) |
+| Area | Contents (summary) |
 |--------|-------------------|
-| **Backend / plugin** | Jedna binarka `AcadMcp.Backend` per `--category`, jeden plugin .NET, most named pipe (reguła `00-architecture-invariants.mdc`). |
-| **Kategorie MCP** | Geometry 2D/3D, modify, layers, blocks, annotations, pliki, vision scaffold, validators, workflow-ready manifesty. |
-| **Walidatory** | Silnik YAML + standardy baseline; reguły per domena (m.in. electrical, parametric). |
-| **Domeny (Faza 6)** | Architecture, mechanical, civil, electrical (schemat; panel odłożony), parametric — patrz wpisy Phase 6.x w CHANGELOG. |
-| **Vision** | Sidecar, OCR/describe, reguły pułapek w `32-acad-vision-traps.mdc`. |
+| **Backend / plugin** | One `AcadMcp.Backend` binary per `--category`, one .NET plugin, named-pipe bridge (rule `00-architecture-invariants.mdc`). |
+| **MCP categories** | Geometry 2D/3D, modify, layers, blocks, annotations, files, vision scaffold, validators, workflow-ready manifests. |
+| **Validators** | YAML rule engine + baseline standards; per-discipline rules (e.g. electrical, parametric). |
+| **Domains (Phase 6)** | Architecture, mechanical, civil, electrical (schematic; panel deferred), parametric — see the Phase 6.x entries in CHANGELOG. |
+| **Vision** | Sidecar, OCR/describe, pitfall rules in `32-acad-vision-traps.mdc`. |
 
-**Uwaga dla agentów:** nie traktować repozytorium jako „pustego bootstrapu Fazy 0”. Rozwój funkcjonalny kontynuuje się od Fazy 7 poniżej.
+**Note for agents:** do not treat this repository as an "empty Phase 0 bootstrap." Functional development continues from Phase 7 below.
 
 ---
 
-## Faza 7 — szczegółowo
+## Phase 7 — in detail
 
-### 7.0 Pętla projektowa (iterate + checkpoint + audyt) — ⚠️ ROLLBACK NIEZAIMPLEMENTOWANY (zweryfikowane na żywo 2026-07-29)
+### 7.0 Design loop (iterate + checkpoint + audit) — ✅ ROLLBACK IMPLEMENTED (verified live 2026-07-29)
 
-- **`acad_undo_checkpoint` / `acad_restore_checkpoint`** — zapowiedziane w manifeście routera (`mcpbank-manifests/acad-router.json`) jako Phase 7; spójna implementacja w pluginie/backendzie z semantyką cofania atomowego przy porażce walidacji.
-  - **Stan faktyczny:** `acad_undo_checkpoint` poprawnie tworzy checkpoint (zwraca realne `id`/`label`/`stack_depth`). `acad_restore_checkpoint` **nie cofa jeszcze żadnych zmian** — odpowiedź wprost mówi `restore strategy=deferred undo_steps=0. Phase 7.0 MVP: automatic UNDO rewind is deferred; use Ctrl+Z in AutoCAD to roll back manually.` Zweryfikowane empirycznie: narysowana po checkpoincie linia pozostała na rysunku po wywołaniu restore. To pozostaje do zaimplementowania (prawdziwa integracja z transakcjami/UNDO-group AutoCAD-a), nie jest kosmetyczną poprawką.
-- **`acad_design_iterate`** — meta-narzędzie pętli projektowej (plan → wykonanie → walidacja → ewentualny rollback); wymaga synchronizacji z listą narzędzi routera (patrz **7.4**, ✅ rozwiązane). **Uwaga:** dopóki `acad_restore_checkpoint` nie cofa zmian naprawdę, ścieżka auto-rollback w `acad_design_iterate` też nie działa end-to-end.
-- **Audyt kroków** — logowanie decyzji agenta / kolejności wywołań narzędzi dla debugowania pętli i regresji.
+- **`acad_undo_checkpoint` / `acad_restore_checkpoint`** — announced in the router manifest (`mcpbank-manifests/acad-router.json`) as Phase 7; a consistent plugin/backend implementation with atomic-rollback semantics on validation failure.
+  - **Earlier state (as of the first live pass on 2026-07-29):** `acad_undo_checkpoint` correctly created a checkpoint (returned a real `id`/`label`/`stack_depth`). `acad_restore_checkpoint` did **not** roll back any changes yet — the response said so explicitly: `restore strategy=deferred undo_steps=0. Phase 7.0 MVP: automatic UNDO rewind is deferred; use Ctrl+Z in AutoCAD to roll back manually.` Verified empirically: a line drawn after the checkpoint was still present on the drawing after calling restore.
+  - **Why the obvious fix wasn't a real AutoCAD UNDO command:** two straightforward implementations were tried and both caused UI-thread deadlocks. `SendStringToExecute("_.UNDO _Mark ")` queues a deferred command that only drains after returning from the `UiThreadDispatcher` callback, leaving AutoCAD in "command active" state; the next `doc.LockDocument()` from a subsequent tool call then wedges the UI thread. `Editor.Command("_.UNDO", "_Mark")` runs synchronously but still toggled the command-active flag across pipe dispatches in a way that deadlocked layer/geometry follow-up calls after roughly two tool calls.
+  - **Fix shipped (2026-07-29):** rollback via a `.dwg` file snapshot instead of an AutoCAD UNDO command. `acad_undo_checkpoint` takes a full snapshot by default (`fileSnapshot:false` to opt out and record a boundary only). `acad_restore_checkpoint` now, depending on state: (a) same document as the checkpoint — closes it without saving and reopens the snapshot in its place (`strategy=reopened_snapshot`, a genuine rollback); (b) a different document is now active — leaves it untouched and opens the snapshot as an additional document instead (`strategy=reopened_snapshot_as_new_document`); (c) no snapshot exists (checkpoint was created with `fileSnapshot:false`) — reports `strategy=no_snapshot` plainly rather than silently doing nothing.
+  - **Verified live (2026-07-29), all three cases:** (1) drew a line after a checkpoint on a scratch document, restored, `list_documents` confirmed `entityCount` back to 0 — the line was genuinely gone; (2) a `fileSnapshot:false` checkpoint restored as `no_snapshot`, entity count unchanged, no silent no-op dressed up as success; (3) switched the active document after a checkpoint, restored it — the other, unrelated active document was confirmed untouched via `list_documents`, and the snapshot came back as a separate document. Implementation: `src/AcadMcp.Plugin/Tools/CheckpointPluginTools.cs`.
+- **`acad_design_iterate`** — the design-loop meta-tool (plan → execute → validate → rollback if needed); requires staying in sync with the router's tool list (see **7.4**, ✅ resolved). Its `fileSnapshot:false` override on checkpoint creation was removed on 2026-07-29 so its auto-rollback-on-abort step has an actual snapshot to restore from — before this fix, the loop's rollback path had nothing to work with even once the restore mechanism itself was fixed.
+- **Step auditing** — logging agent decisions / tool call order for loop debugging and regression tracking.
 
-### 7.1 Livestream / eventy
+### 7.1 Livestream / events
 
-- **Osobny kanał `livestream`** — zgodnie z `17-pipe-protocol.mdc`: strumieniowanie **nie** należy do głównego pipe’a JSON; osobny pipe w Fazie 7.
-- **`kind: "event"`** na głównym protokole — `AcadEvent` dla zdarzeń typu zmiana encji / cykl życia poleceń (plugin nie emituje eventów przed ukończeniem handshake).
-- **Kategoria `acad-livestream`** (lub równoważna nazwa w manifestach) — narzędzia/kontrakt subskrypcji lub konsumpcji strumienia zgodnie z MCPBank.
+- **Separate `livestream` channel** — per `17-pipe-protocol.mdc`: streaming does **not** belong on the main JSON pipe; a separate pipe in Phase 7.
+- **`kind: "event"`** on the main protocol — `AcadEvent` for entity-change / command-lifecycle events (the plugin does not emit events before the handshake completes).
+- **`acad-livestream` category** (or an equivalent manifest name) — tools/contract for subscribing to or consuming the stream, consistent with MCP Nexus.
 
-### 7.2 Walidatory — prymitywy (z backlogu)
+### 7.2 Validators — primitives (from the backlog)
 
-Rozszerzenie silnika reguł o brakujące prymitywy wspomniane w CHANGELOG / regułach domenowych:
+Extend the rule engine with the missing primitives referenced in CHANGELOG / domain rules:
 
 - `entity_class_equals`
 - `text_matches_regex`
 - `polyline_closure_within`
 - `polyline_endpoints_share`
 
-Cel: odblokowanie walidatorów obecnie świadomie odłożonych (np. format prefiksów tagów, brakujące junction dots) bez obchodzenia się wyłącznie „at-write-time” w narzędziach.
+Goal: unblock validators that are currently deliberately deferred (e.g. tag-prefix formatting, missing junction dots) without resorting purely to "at-write-time" enforcement in the tools.
 
-### 7.3 Domeny — backlog „Phase 7” z manifestów / reguł
+### 7.3 Domains — "Phase 7" backlog from manifests / rules
 
-- **Biblioteki DWG** — bloki pod `blocks/...` (np. electrical, mechanical, architecture) jako współdzielone zasoby z manifestami.
-- **Architektura** — m.in. otwory w ścianach (detale powiązane z warstwami/blokami).
-- **Mechanika** — widoki boczne + bloki (rozszerzenie względem Fazy 6).
-- **Civil** — profile, spirale (wg zakresu manifestów civil).
-- **Electrical** — panel, xref styków, walidatory junction/style (schemat ↔ layout).
-- **Parametryka** — DIMCONSTRAINT, BEDIT, stopnie swobody (DOF) tam, gdzie API AutoCAD na to pozwala; spójność z `42-parametric-domain-traps.mdc`.
+- **DWG libraries** — blocks under `blocks/...` (e.g. electrical, mechanical, architecture) as shared assets with manifests.
+- **Architecture** — wall openings (details tied to layers/blocks), among others.
+- **Mechanical** — side views + blocks (extension of Phase 6).
+- **Civil** — profiles, spirals (per the civil manifest scope).
+- **Electrical** — panel, contact xrefs, junction/style validators (schematic ↔ layout).
+- **Parametric** — DIMCONSTRAINT, BEDIT, degrees of freedom (DOF) wherever the AutoCAD API allows; consistency with `42-parametric-domain-traps.mdc`.
 
-### 7.4 Router / inwarianty — synchronizacja dokumentacji i kodu — ✅ ROZWIĄZANE (2026-07-29)
+### 7.4 Router / invariants — documentation/code sync — ✅ RESOLVED (2026-07-29)
 
-**Był problem:** trzy źródła prawdy się rozjeżdżały. `RouterServer.cs` rejestruje 10 tool-stubów (w tym `acad_call`, uniwersalny dispatcher). `mcpbank-manifests/acad-router.json`'s `tools_summary` opisywał tylko 9 — brakowało `acad_call`. `.cursor/rules/00-architecture-invariants.mdc` §6 mówił „~8 meta-tools” i wymieniał 9 nazw (też bez `acad_call`).
+**The problem:** three sources of truth had drifted apart. `RouterServer.cs` registers 10 tool stubs (including `acad_call`, the universal dispatcher). `mcpbank-manifests/acad-router.json`'s `tools_summary` only described 9 — `acad_call` was missing. `.cursor/rules/00-architecture-invariants.mdc` §6 said "~8 meta-tools" and listed 9 names (also without `acad_call`).
 
-**Zweryfikowane na żywo:** pełny sweep 30/30 kategorii przez realny `AcadMcp.Backend.exe --category router` (`tools/list`) zwrócił dokładnie 10 narzędzi, zgodnych z kodem.
+**Verified live:** a full 30/30-category sweep through the real `AcadMcp.Backend.exe --category router` (`tools/list`) returned exactly 10 tools, matching the code.
 
-**Naprawione:** dodano brakujący wpis `acad_call` do manifestu (z opisem/tagami zgodnymi z kodem, `tool_count_target` zaktualizowany na 10), poprawiono `00-architecture-invariants.mdc` §6 na poprawną liczbę i pełną listę 10 narzędzi. Wszystkie trzy źródła (kod, manifest, reguła) teraz się zgadzają.
+**Fixed:** added the missing `acad_call` entry to the manifest (description/tags matching the code, `tool_count_target` updated to 10), corrected `00-architecture-invariants.mdc` §6 to the correct count and the full list of 10 tools. All three sources (code, manifest, rule) now agree.
 
 ---
 
-## Faza 8 — szczegółowo
+## Phase 8 — in detail
 
 ### Vision / YOLO
 
-- **YOLO per dyscyplina** — zgodnie z `32-acad-vision-traps.mdc` (osobne wagi: arch/mech/elec/P&ID itd.).
-- **Dataset + wersjonowanie wag** — katalog `models/`, skrypt [scripts/setup-vision-models.ps1](../scripts/setup-vision-models.ps1) jako ścieżka instalacji / podpowiedzi 503.
-- **Testy regresji** — wizja nie psuje istniejących ścieżek OCR/describe.
-- **Kalibracja piksel ↔ jednostki rysunku** — unikanie błędów skali przy detekcji (reguła 32).
+- **Per-discipline YOLO** — per `32-acad-vision-traps.mdc` (separate weights: arch/mech/elec/P&ID etc.).
+- **Dataset + weight versioning** — `models/` directory, [scripts/setup-vision-models.ps1](../scripts/setup-vision-models.ps1) as the install path / 503 hint.
+- **Regression tests** — vision must not break the existing OCR/describe paths.
+- **Pixel ↔ drawing-unit calibration** — avoiding scale errors in detection (rule 32).
 
-**Ograniczenie:** `52-no-yolo-changes.mdc` dotyczy **ukończonych** faz — nowe modele i endpointy Fazy 8 to **nowa** praca, nie retroaktywne „przepisywanie” Faz 0–6.
+**Constraint:** `52-no-yolo-changes.mdc` applies to **completed** phases — new Phase 8 models and endpoints are **new** work, not a retroactive rewrite of Phases 0–6.
 
-### Agent UX / dokumentacja / operacje
+### Agent UX / documentation / operations
 
-- **Biblioteka promptów** — szablony zadań per dyscyplina / scenariusz.
-- **Auto-dokumentacja** — narzędzia, reguły Cursor, manifesty (spójne z MCPBank).
-- **Runbook operacyjny** — start/stop sidecara, plugin, typowe awarie, limity.
+- **Prompt library** — task templates per discipline / scenario.
+- **Auto-documentation** — tools, Cursor rules, manifests (consistent with MCP Nexus).
+- **Operational runbook** — sidecar start/stop, plugin, common failures, limits.
 
-### E2E, telemetria, cache
+### E2E, telemetry, cache
 
-- **E2E z AutoCAD** — scenariusze od NETLOAD do narzędzia w wybranej kategorii.
-- **Telemetria pętli (lokalnie)** — iterate / checkpoint / walidacja (bez wysyłki wrażliwych danych poza politykę projektu).
-- **Polityka cache vision** — TTL, invalidacja, klucze per model i per dokument.
+- **E2E with AutoCAD** — scenarios from NETLOAD to a tool call in a chosen category.
+- **Loop telemetry (local only)** — iterate / checkpoint / validation (no sensitive data leaves the machine, per project policy).
+- **Vision cache policy** — TTL, invalidation, keys per model and per document.
 
 ---
 
-## Diagram (opcjonalny): pętla projektowa
+## Diagram (optional): design loop
 
 ```mermaid
 flowchart LR
   subgraph plan [Plan]
-    A[Agent: cel + constraints]
+    A[Agent: goal + constraints]
   end
-  subgraph act [Wykonanie]
+  subgraph act [Execute]
     B[load_category / tools]
     C[draw / modify]
   end
-  subgraph guard [Strażniki]
+  subgraph guard [Guards]
     D[undo_checkpoint]
     E[validators]
     F{OK?}
@@ -111,15 +114,15 @@ flowchart LR
     H[acad_design_iterate]
   end
   A --> B --> C --> D --> E --> F
-  F -->|tak| H
-  F -->|nie| G --> H
+  F -->|yes| H
+  F -->|no| G --> H
   H --> A
 ```
 
 ---
 
-## Od czego zacząć (Cursor)
+## Where to start (Cursor)
 
-1. Przeczytaj ten plik przy pierwszym zadaniu rozwojowym.
-2. Trzymaj się reguły **always-apply** `54-phase-7-8-current-work.mdc` (katalog `.cursor/rules/`).
-3. Nie zakładaj „projektu skończonego” — Fazy 7–8 są explicite w toku planowania/wdrożenia.
+1. Read this file before starting any development task.
+2. Follow the **always-apply** rule `54-phase-7-8-current-work.mdc` (in `.cursor/rules/`).
+3. Do not assume "the project is finished" — Phases 7–8 are explicitly in active planning/implementation.

@@ -1,37 +1,52 @@
-// Plugin handlers for the checkpoint sub-system (Phase 7.0 MVP).
+// Plugin handlers for the checkpoint sub-system.
 // Four tools: create / restore / list / clear.
 //
-// Phase 7.0 strategy:
-//   - create: records an in-memory LIFO entry ONLY. No AutoCAD command is
-//     issued. This avoids every UI-thread trap we hit empirically:
-//       * SendStringToExecute("_.UNDO _Mark ") queues a deferred command that
-//         drains only after we return from the UiThreadDispatcher callback,
-//         leaving AutoCAD in "command active" state; every subsequent
-//         doc.LockDocument() from the next tool call wedges the UI thread.
-//       * Editor.Command("_.UNDO", "_Mark") runs synchronously, but still
-//         toggles the command-active flag across pipe dispatches in a way that
-//         caused layer/geometry follow-ups to deadlock after ~2 tool calls.
-//     An in-memory record gives the router enough to track the boundary, and
-//     the USER can undo through the normal AutoCAD undo stack or open the
-//     optional file snapshot if they enable it.
-//   - Optional file snapshot (opt-in via fileSnapshot:true) runs in a SEPARATE
-//     UiThreadDispatcher.Run - it never overlaps with the create callback.
-//   - restore is DEFERRED to Phase 7.1. Current implementation only removes
-//     records from the stack (no actual UNDO) - callers should rely on the
-//     file snapshot or a manual _.UNDO until 7.1 lands.
-//   - list / clear: manage the in-memory stack only.
-//   - restore: count how many marks lie between the stack top and the target
-//     record, then issue `UNDO _Back` that many times. When even UNDO Back
-//     cannot rewind (stack exhausted / different document), we return a
-//     "file_fallback" outcome pointing at the saved .dwg so the router can
-//     decide whether to OPEN it.
+// Rollback strategy: reopen from a file snapshot, NOT AutoCAD's UNDO command.
+// We tried the obvious approach first and both variants deadlocked the UI
+// thread in practice:
+//   * SendStringToExecute("_.UNDO _Mark ") queues a deferred command that
+//     drains only after we return from the UiThreadDispatcher callback,
+//     leaving AutoCAD in "command active" state; every subsequent
+//     doc.LockDocument() from the next tool call wedges the UI thread.
+//   * Editor.Command("_.UNDO", "_Mark") runs synchronously, but still
+//     toggles the command-active flag across pipe dispatches in a way that
+//     caused layer/geometry follow-ups to deadlock after ~2 tool calls.
+// A file snapshot sidesteps this entirely: no AutoCAD command is ever
+// injected, only DocumentManager-level open/close/save calls that this
+// plugin already uses safely elsewhere (see FilesPluginTools) and that were
+// verified live end-to-end (create scratch doc, draw, restore, verify).
+//
+//   - create: takes a full .dwg snapshot of the active document BY DEFAULT
+//     (pass fileSnapshot:false to skip it and record an in-memory boundary
+//     only -- restore will then have nothing to roll back to). Snapshot I/O
+//     runs in its own UiThreadDispatcher.Run, separate from the record-keeping
+//     step, so it can never share a callback with anything else.
+//   - restore: if the checkpoint has a snapshot AND the active document is
+//     still the one the checkpoint was taken on, closes the active document
+//     WITHOUT saving (discarding everything since the checkpoint) and reopens
+//     the snapshot as the active document -- a real, verified rollback, not a
+//     message asking the user to press Ctrl+Z. If the active document has
+//     since changed (a different document is now active), the snapshot is
+//     opened as an ADDITIONAL document instead of touching the unrelated
+//     active one. If there is no snapshot to restore from, this is reported
+//     plainly as "no_snapshot" rather than silently doing nothing.
 //   - list / clear: manage the in-memory stack only.
 //
-// IMPORTANT: AutoCAD UNDO marks are per-document. This plugin currently
-// tracks a single global stack; opening a different document mid-session
-// will make older records unreachable and force the file-snapshot path.
-// The stack is intentionally simple - Phase 7.0 validates the loop, we'll
-// promote to per-document tracking in Phase 7.1 if needed.
+// Cost tradeoff: a full SaveAs is real disk I/O, proportional to drawing
+// size -- more expensive than the UNDO-mark approach would have been, had it
+// worked. Correctness (an actual rollback) is worth more than that saving for
+// a mechanism whose entire purpose is "make failed operations safe to undo."
+// A cheaper in-process UNDO-mark path remains a legitimate future
+// optimization once the UI-thread command-queueing issue above is solved
+// properly -- this file snapshot approach is not a stopgap needing that to
+// be "real"; it already is.
+//
+// IMPORTANT: checkpoint records (and their snapshots) are per-document by
+// construction -- restore checks DocumentName before touching anything.
+// This plugin tracks a single global stack across all open documents, so
+// switching documents mid-session does not lose older records, it just
+// means restoring them opens the snapshot as a new document instead of
+// replacing whatever is currently active.
 
 using System;
 using System.Collections.Concurrent;
@@ -96,10 +111,13 @@ internal static class CheckpointPluginTools
                 return new { DocName = SafeDocumentName(doc) };
             }, ct).ConfigureAwait(false);
 
-            // STEP 2: optional file snapshot in a SEPARATE UI-thread hop so the
-            // snapshot never shares a callback with a (potentially) queued command.
+            // STEP 2: file snapshot (default ON -- see module header for why this,
+            // not UNDO marks, is the real rollback mechanism) in a SEPARATE
+            // UI-thread hop so it never shares a callback with anything else.
+            // Pass fileSnapshot:false to opt out and record a boundary only
+            // (restore will then report "no_snapshot" instead of rolling back).
             string? snapshotPath = null;
-            if (a.FileSnapshot == true)
+            if (a.FileSnapshot != false)
             {
                 snapshotPath = await UiThreadDispatcher.Run(() =>
                 {
@@ -169,37 +187,56 @@ internal static class CheckpointPluginTools
                 var doc = AcadEnv.RequireActiveDocument();
                 bool sameDoc = string.Equals(SafeDocumentName(doc), target.DocumentName, StringComparison.OrdinalIgnoreCase);
 
-                // Drop target + newer records from the stack regardless of outcome.
+                // Drop target + newer records from the stack regardless of outcome --
+                // once we attempt a restore, everything after this point in the
+                // session is superseded, whether or not a snapshot exists to roll
+                // back to.
                 lock (_lock)
                 {
                     if (idx < _stack.Count) _stack.RemoveRange(idx, _stack.Count - idx);
                 }
 
-                if (!sameDoc)
+                if (target.SnapshotPath is null || !File.Exists(target.SnapshotPath))
                 {
                     return new CheckpointRestoreOutcome(
                         Id: target.Id,
-                        Strategy: "file_fallback",
-                        UndoStepsIssued: 0,
-                        SnapshotPath: target.SnapshotPath,
+                        Strategy: "no_snapshot",
+                        Document: null,
                         Message: target.SnapshotPath is null
-                            ? "active document differs from checkpoint document and no file snapshot was saved."
-                            : "active document differs from checkpoint document - reopen the .dwg snapshot to restore state.");
+                            ? "This checkpoint was created with fileSnapshot:false, so there is nothing to restore from. Create checkpoints without that flag (the default) to make them restorable."
+                            : $"Snapshot file is missing on disk ({target.SnapshotPath}); cannot restore.");
                 }
 
-                // Phase 7.0 MVP: actual UNDO rewind is deferred to 7.1 to avoid
-                // the SendStringToExecute / Editor.Command UI-thread deadlock.
-                // The router will surface a deferred-restore warning to callers;
-                // if the user needs a real rollback they can open the snapshot
-                // (if it exists) or hit Ctrl+Z manually.
-                return new CheckpointRestoreOutcome(
-                    Id: target.Id,
-                    Strategy: target.SnapshotPath is not null ? "file_fallback" : "deferred",
-                    UndoStepsIssued: 0,
-                    SnapshotPath: target.SnapshotPath,
-                    Message: target.SnapshotPath is not null
-                        ? "Phase 7.0 MVP: automatic UNDO rewind is deferred; reopen the .dwg snapshot for a full rollback."
-                        : "Phase 7.0 MVP: automatic UNDO rewind is deferred; use Ctrl+Z in AutoCAD to roll back manually.");
+                var dm = AcadApp.DocumentManager
+                         ?? throw new InvalidOperationException("DocumentManager unavailable.");
+
+                if (sameDoc)
+                {
+                    // Real rollback: discard everything since the checkpoint and
+                    // reopen exactly the state we saved at checkpoint time.
+                    doc.CloseAndDiscard();
+                    var restored = dm.Open(target.SnapshotPath, false);
+                    return new CheckpointRestoreOutcome(
+                        Id: target.Id,
+                        Strategy: "reopened_snapshot",
+                        Document: FilesPluginTools.BuildDocumentInfo(restored),
+                        Message: "Active document was closed without saving and replaced with the checkpoint snapshot.");
+                }
+                else
+                {
+                    // The document that was active at checkpoint time is no longer
+                    // the active one. Don't touch whatever IS currently active and
+                    // unrelated -- open the snapshot as an additional document
+                    // instead. (AutoCAD's DocumentManager makes newly-opened
+                    // documents the active tab as a side effect of Open(), so focus
+                    // does shift, but nothing gets closed or discarded.)
+                    var restored = dm.Open(target.SnapshotPath, false);
+                    return new CheckpointRestoreOutcome(
+                        Id: target.Id,
+                        Strategy: "reopened_snapshot_as_new_document",
+                        Document: FilesPluginTools.BuildDocumentInfo(restored),
+                        Message: "The active document differed from where this checkpoint was taken, so its own document was left untouched. The snapshot was opened as a new document instead (now the active one).");
+                }
             }, ct).ConfigureAwait(false);
 
             return new ToolDispatchResult(true, Wrap(result), null);
@@ -302,11 +339,14 @@ internal sealed record CheckpointRestoreArgsDto(
     [property: JsonPropertyName("label")] string? Label = null);
 
 internal sealed record CheckpointRestoreOutcome(
-    [property: JsonPropertyName("id")]              string Id,
-    [property: JsonPropertyName("strategy")]        string Strategy, // "undo_back" | "file_fallback"
-    [property: JsonPropertyName("undoStepsIssued")] int UndoStepsIssued,
-    [property: JsonPropertyName("snapshotPath")]    string? SnapshotPath,
-    [property: JsonPropertyName("message")]         string Message);
+    [property: JsonPropertyName("id")]       string Id,
+    // "reopened_snapshot" (real rollback, same document),
+    // "reopened_snapshot_as_new_document" (active doc had changed since checkpoint),
+    // or "no_snapshot" (checkpoint was created with fileSnapshot:false, or the
+    // snapshot file is missing from disk -- nothing to restore).
+    [property: JsonPropertyName("strategy")] string Strategy,
+    [property: JsonPropertyName("document")] DocumentInfoDto? Document,
+    [property: JsonPropertyName("message")]  string Message);
 
 internal sealed record CheckpointSummaryDto(
     [property: JsonPropertyName("id")]           string Id,

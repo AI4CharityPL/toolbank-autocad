@@ -86,7 +86,9 @@ internal static class FilesPluginTools
 
     // ─────────── helpers ───────────
 
-    private static DocumentInfoDto BuildDocumentInfo(Document doc)
+    /// internal, not private: reused by CheckpointPluginTools so restore
+    /// results carry the same shape of document info as the files tools do.
+    internal static DocumentInfoDto BuildDocumentInfo(Document doc)
     {
         var db = doc.Database;
         string? path = null;

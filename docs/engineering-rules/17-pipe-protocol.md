@@ -1,0 +1,90 @@
+# Pipe protocol (Backend ↔ Plugin)
+
+Wire format on the named pipe between Backend and Plugin. Length-prefixed JSON. Versioned.
+
+The named pipe is the ONLY channel between the backend MCP processes and the AutoCAD plugin. It MUST stay backward-compatible across minor versions (rule 02-no-breaking-changes).
+
+## Wire format
+
+```
++----------+---------------------+
+| 4 bytes  |   N bytes payload   |
+| length=N |   UTF-8 JSON object |
++----------+---------------------+
+```
+
+- Length prefix: little-endian unsigned 32-bit integer = byte length of payload.
+- Payload: UTF-8 encoded JSON object (no trailing newline, no BOM).
+- Max payload: 16 MiB. Anything larger MUST be rejected with `AcadErrorCode.PayloadTooLarge` and the connection closed.
+- Encoding errors (invalid UTF-8, non-object root, length mismatch) MUST close the connection - no partial recovery.
+
+## Pipe name
+
+- Default: `acadmcp` (full Windows pipe name `\\.\pipe\acadmcp`).
+- Override: env var `ACADMCP_PIPE` set BEFORE plugin NETLOAD.
+- Never hardcode in client code. Always read `PipeProtocol.PipeName` from `AcadMcp.Shared`.
+
+## Envelope discriminator
+
+Every frame is `MessageEnvelope` from `AcadMcp.Shared.Contracts.cs`:
+
+```json
+{ "kind": "handshake|handshakeResponse|tool|toolResponse|cancel|event", "payload": { ...DTO... } }
+```
+
+`kind` is the discriminator. `payload` is the matching DTO (e.g. `HandshakeRequest` for `kind=handshake`). Unknown `kind` MUST close the connection with `AcadErrorCode.ProtocolMismatch`.
+
+## Handshake (mandatory first exchange)
+
+Client (backend) sends `MessageEnvelope { kind: "handshake", payload: HandshakeRequest }`:
+
+```json
+{
+  "kind": "handshake",
+  "payload": {
+    "clientId": "acad-router/0.1.0",
+    "category": "router",
+    "protocolVersion": 1,
+    "backendVersion": "0.1.0"
+  }
+}
+```
+
+Server (plugin) replies `MessageEnvelope { kind: "handshakeResponse", payload: HandshakeResponse }`. If `protocolVersion < PipeProtocol.MinSupportedVersion` or `> PipeProtocol.CurrentVersion`, reply with `Ok=false`, `Error.Code=ProtocolMismatch`, then close.
+
+## Request / response (after handshake)
+
+Client → server: `kind: "tool"` + `ToolRequest` (correlationId, tool name, args, timeoutMs, optional checkpointBefore).
+
+Server → client: `kind: "toolResponse"` + `ToolResponse` (same correlationId, ok flag, result OR error).
+
+`correlationId` MUST round-trip exactly. Server MUST emit exactly one `toolResponse` per `tool` request (no double-fire).
+
+## Cancellation
+
+Client → server: `kind: "cancel"` + `CancelRequest { correlationId }`.
+
+Server best-effort cancels via the per-request `CancellationToken`. If already done, ignore. The cancelled request's `toolResponse` with `Error.Code=Timeout` (re-using the timeout code; agent does not need to distinguish cancel vs timeout) is the only signal.
+
+## Server-pushed events (Phase 7+)
+
+`kind: "event"` + `AcadEvent`. Reserved for entity changes / command lifecycle pushes. Plugin MUST NOT emit events before the client has completed the handshake.
+
+## Connection model
+
+- One connection = one client = one logical session = one MCP backend process.
+- Multiple clients connect simultaneously (one per category MCP currently active).
+- Server maintains an in-process `ConcurrentDictionary<requestId, CancellationTokenSource>` per connection. Cleaned up on connection close.
+
+## Backward compatibility
+
+- Adding new `type` values is allowed. Unknown types reply with `AcadErrorCode.UnknownMessageType` and continue.
+- Adding fields to existing requests is allowed if optional with safe defaults.
+- Renaming or removing fields is FORBIDDEN. Bump `protocolVersion` and run a deprecation cycle (rule 02).
+
+## What MUST NOT be on this pipe
+
+- Streaming output (use a separate `livestream` pipe in Phase 7).
+- Binary blobs > 16 MiB (use a temp file path passed by string).
+- LISP source bodies (LISP runs in the plugin host, not over wire).
+- Authentication tokens (the pipe is local-machine-only; if you need auth, use Windows ACLs on the pipe).

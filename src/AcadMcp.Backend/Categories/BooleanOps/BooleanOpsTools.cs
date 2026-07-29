@@ -2,7 +2,7 @@
 // operations, region creation, intersection probing and disjoint-solid separation.
 // Each method is a thin proxy through IPluginGateway to "acad.booleanops.<verb>".
 //
-// Rules: 19-tool-implementation-pattern.mdc, 20..25.
+// Rules: 19-tool-implementation-pattern.md, 20..25.
 
 using System.Threading;
 using System.Threading.Tasks;

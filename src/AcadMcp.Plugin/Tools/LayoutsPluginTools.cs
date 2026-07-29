@@ -1,7 +1,7 @@
 // AutoCAD plugin handlers for the acad-layouts category.
 // Registered under "acad.layouts.<verb>"; everything runs on the UI thread.
 //
-// Rules: 10, 11, 12, 19, 28-acad-blocks-layers-files-traps.mdc.
+// Rules: 10, 11, 12, 19, 28-acad-blocks-layers-files-traps.md.
 
 using System;
 using System.Collections.Generic;

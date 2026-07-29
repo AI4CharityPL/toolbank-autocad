@@ -138,7 +138,7 @@ public sealed class ChatViewModel : ViewModelBase
         set { _settings.MaxToolIterations = value; Raise(); }
     }
 
-    /// <summary>When on, the agent plans first then executes the plan step-by-step (like Cursor).</summary>
+    /// <summary>When on, the agent plans first then executes the plan step-by-step (planner/executor style).</summary>
     public bool PlanMode
     {
         get => _settings.PlanMode;

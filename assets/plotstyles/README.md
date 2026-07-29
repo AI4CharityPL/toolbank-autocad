@@ -17,7 +17,7 @@ here and they will be discovered automatically.
 1. Either author a CTB in AutoCAD (PLOTSTYLE + STYLESMANAGER + edit table)
    and save it here under one of the canonical names, OR copy an existing
    CTB from another machine.
-2. From Cursor (or any MCP client), run:
+2. From your MCP client, run:
    ```
    acad_call plotstyles ensure_ctb { name: "HOSPITAL-ISO.ctb" }
    ```
@@ -26,7 +26,7 @@ here and they will be discovered automatically.
 
 ## Colour → lineweight tiers
 
-See rule 61 §2 (`.cursor/rules/61-lineweight-policy.mdc`) and
+See rule 61 §2 (`docs/engineering-rules/61-lineweight-policy.md`) and
 `src/AcadMcp.Backend/Categories/Plotstyles/PlotstylesPalette.cs`
 (`ArchLineweightMm`).
 

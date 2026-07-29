@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-furniture category.
 // Mirrors plugin-side argument shapes 1-to-1. JsonPropertyName MUST match plugin readers.
-// See rule 19-tool-implementation-pattern.mdc and rule 64-furniture-density-per-room.mdc.
+// See rule 19-tool-implementation-pattern.md and rule 64-furniture-density-per-room.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

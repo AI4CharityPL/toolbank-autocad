@@ -1,7 +1,7 @@
 # Persona: `senior-architect-reviewer`
 
 **Endpoint:** `POST /v1/architect-review`
-**Rule:** [60-architectural-fidelity](../../../.cursor/rules/60-architectural-fidelity.mdc)
+**Rule:** [60-architectural-fidelity](../../../docs/engineering-rules/60-architectural-fidelity.md)
 **Phase:** D11
 
 This persona is the **exit gate** for every floor plan that ships from this

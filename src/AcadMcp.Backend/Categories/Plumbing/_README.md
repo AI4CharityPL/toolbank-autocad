@@ -60,7 +60,7 @@ All blocks have **origin at the geometric centre** and four attributes:
 - **PN-EN 17210** — accessibility (annex T / U / S / M for WC, basin, shower, manoeuvring)
 - **WT-2019 §73 / §79 / §82 / §83 / §86 / §87** — Polish technical conditions
 
-See `.cursor/rules/63-sanitary-fixtures-wt.mdc` for the exact clearance
+See `docs/engineering-rules/63-sanitary-fixtures-wt.md` for the exact clearance
 budget and preset footprint requirements.
 
 ## How to regenerate the manifest from code

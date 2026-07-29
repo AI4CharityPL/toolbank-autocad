@@ -1,7 +1,7 @@
 // AutoCAD plugin handlers for the acad-files category.
 // Registered under "acad.files.<verb>"; everything runs on the UI thread.
 //
-// Rules: 10, 11, 12, 19, 28-acad-blocks-layers-files-traps.mdc
+// Rules: 10, 11, 12, 19, 28-acad-blocks-layers-files-traps.md
 //   - trap #10: Database.SaveAs is sync-on-UI-thread, format enum lags marketing year.
 //   - trap #11: PDF / DWF export must use PlotEngine; Begin* / End* must be paired.
 //   - trap #12: db.Audit(report, fix:true) mutates; default to fix:false for inspection.

@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-files category.
 // Mirrors the wire shape consumed by the plugin under "acad.files.<verb>".
-// See rule 19, rule 28-acad-blocks-layers-files-traps.mdc.
+// See rule 19, rule 28-acad-blocks-layers-files-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

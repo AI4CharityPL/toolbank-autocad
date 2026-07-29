@@ -2,7 +2,7 @@
 // property updates, grouping, erase. Each method is a thin proxy through
 // IPluginGateway to "acad.modify.<verb>".
 //
-// Rules: 19-tool-implementation-pattern.mdc, 20..25.
+// Rules: 19-tool-implementation-pattern.md, 20..25.
 
 using System.Threading;
 using System.Threading.Tasks;

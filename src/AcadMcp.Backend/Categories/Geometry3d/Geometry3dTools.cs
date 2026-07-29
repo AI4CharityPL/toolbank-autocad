@@ -3,7 +3,7 @@
 // thin proxy through IPluginGateway to the matching plugin handler under the key
 // "acad.geometry3d.<verb>".
 //
-// Rules: 19-tool-implementation-pattern.mdc, 20..25.
+// Rules: 19-tool-implementation-pattern.md, 20..25.
 
 using System.Threading;
 using System.Threading.Tasks;

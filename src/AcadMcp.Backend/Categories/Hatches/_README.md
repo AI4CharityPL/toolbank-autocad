@@ -19,7 +19,7 @@ Draw, manage and regenerate hatches (material fills) on architectural and engine
 
 - All tools live in `HatchesTools.cs` (backend proxy) and `HatchesPluginTools.cs` (plugin side).
 - `Category = "hatches"` on every `[McpTool]`; the source generator validates this matches the folder.
-- Material -> (pattern, scale, angle, color) mapping is pinned by rule **62-hatching-policy.mdc**. To add a new material edit the rule AND `HatchesPluginTools.s_materialPresets` in the same commit.
+- Material -> (pattern, scale, angle, color) mapping is pinned by rule **62-hatching-policy.md**. To add a new material edit the rule AND `HatchesPluginTools.s_materialPresets` in the same commit.
 - Drawing unit assumption: **millimeters**. Preset scales are baked in accordingly.
 
 ## Typical flows

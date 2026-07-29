@@ -1,6 +1,6 @@
 // Single source of truth for the electrical-schematic layer key + IEC 81346
 // device-tag prefix lookup shipped with acad-electrical. Mirrors rule 39 §11
-// + §6 (electrical-domain-traps.mdc).
+// + §6 (electrical-domain-traps.md).
 
 using System.Collections.Generic;
 

@@ -111,7 +111,7 @@ internal static class AcadEnv
 
     /// <summary>
     /// Snap a millimeter value to the nearest standard AutoCAD LineWeight enum.
-    /// See rule 26-acad-api-traps.mdc on LineWeight being an enum.
+    /// See rule 26-acad-api-traps.md on LineWeight being an enum.
     /// </summary>
     public static LineWeight NearestLineWeight(double mm)
     {

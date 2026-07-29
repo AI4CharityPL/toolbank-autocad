@@ -2,7 +2,7 @@
 // detect-autocad.ps1 and other tooling read this to prove the plugin is loaded without IPC.
 // Updated every 30 s while alive; deleted on graceful Terminate.
 //
-// See rule 16-acad-plugin-lifecycle.mdc.
+// See rule 16-acad-plugin-lifecycle.md.
 
 using System;
 using System.IO;

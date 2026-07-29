@@ -1,5 +1,5 @@
 // One-line gateway proxy for acad-openings.
-// See rule 19-tool-implementation-pattern.mdc.
+// See rule 19-tool-implementation-pattern.md.
 
 using System.Text.Json;
 using System.Text.Json.Nodes;

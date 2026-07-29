@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-hatches category.
 // Mirrors plugin-side argument shapes 1-to-1. JsonPropertyName MUST match plugin readers.
-// See rule 19-tool-implementation-pattern.mdc and rule 62-hatching-policy.mdc.
+// See rule 19-tool-implementation-pattern.md and rule 62-hatching-policy.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

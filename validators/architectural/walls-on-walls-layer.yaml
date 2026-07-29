@@ -14,7 +14,7 @@ description: |
   arch.walls.centerline-on-a-wall-ctrl.
 references:
   - https://docs.example.com/CAD-001#walls
-  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+  - .cursor/rules/36-architecture-domain-traps.md#11-layer-key
 scope:
   entity_types: [Line, Polyline]
   layer_pattern: "^(WALL|WALLS|M[-_]?WALL|WALLS_NEW|A[-_]?WALL[-_]?(NEW|OLD)?)$"

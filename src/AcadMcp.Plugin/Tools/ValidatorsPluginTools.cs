@@ -1,6 +1,6 @@
 // AutoCAD plugin handlers for the acad-validators category.
 // Three tools: collect_entities, doc_summary, apply_fixes. All run on the UI thread.
-// See rule 33-validators-rule-format.mdc + rule 34-validators-engine-traps.mdc.
+// See rule 33-validators-rule-format.md + rule 34-validators-engine-traps.md.
 //
 // IMPORTANT (rule 34 §2): collect_entities + doc_summary are STRICTLY READ-ONLY -
 // open everything ForRead, never UpgradeOpen. Mutation lives only in apply_fixes,

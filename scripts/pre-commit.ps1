@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
     Fast local gate run before every commit. Must complete in <60s on a warm cache.
-    Enforces rules 40-pre-commit-gates.mdc.
+    Enforces rules 40-pre-commit-gates.md.
 
 .DESCRIPTION
     Tier 1 checks ONLY:
-      1. Cursor rules well-formed (YAML frontmatter, mandatory keys)
+      1. Engineering rules well-formed (docs/engineering-rules/*.md non-empty, starts with a heading)
       2. mcpbank-manifests/*.json valid + required fields per rule 30
       3. Forbidden C# patterns (per rule 40)
       4. Secret regex on staged files
       5. CHANGELOG.md was touched if anything under src/ changed
       6. Validator YAMLs (validators/**/*.yaml) load through RuleLoader
          (only runs if AcadMcp.Backend.exe is already built; otherwise skipped
-         with a hint). Enforces rules 33-validators-rule-format.mdc and
-         34-validators-engine-traps.mdc.
+         with a hint). Enforces rules 33-validators-rule-format.md and
+         34-validators-engine-traps.md.
       7. xUnit unit tests for AcadMcp.Backend + Shared (net8.0). Runs the
          already-built tests/AcadMcp.Tests.dll via `dotnet test --no-build`
          so the gate stays under the 60 s rule-40 budget. Skipped when the
@@ -111,27 +111,17 @@ Write-Host "=== Pre-commit gate ===" -ForegroundColor Cyan
 Write-Host ("Mode: {0}, Files: {1}" -f ($(if ($All) { 'ALL' } else { 'staged' })), $staged.Count) -ForegroundColor DarkGray
 Write-Host ""
 
-# 1. Cursor rules well-formed
-Write-Host "[1/7] Cursor rules" -ForegroundColor Cyan
-$ruleFiles = Get-ChildItem -Path (Join-Path $RepoRoot ".cursor\rules") -Filter "*.mdc" -ErrorAction SilentlyContinue
+# 1. Engineering rules well-formed
+Write-Host "[1/7] Engineering rules" -ForegroundColor Cyan
+$ruleFiles = Get-ChildItem -Path (Join-Path $RepoRoot "docs\engineering-rules") -Filter "*.md" -ErrorAction SilentlyContinue
 foreach ($rf in $ruleFiles) {
     $text = Get-Content $rf.FullName -Raw
-    if (-not $text.StartsWith("---")) {
-        Add-Err "$($rf.Name): missing YAML frontmatter (must start with '---')"
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        Add-Err "$($rf.Name): file is empty"
         continue
     }
-    $endIdx = $text.IndexOf("`n---", 3)
-    if ($endIdx -lt 0) {
-        Add-Err "$($rf.Name): YAML frontmatter not closed with '---'"
-        continue
-    }
-    $front = $text.Substring(3, $endIdx - 3)
-    if ($front -notmatch "(?m)^\s*description\s*:") {
-        Add-Err "$($rf.Name): YAML frontmatter missing 'description:'"
-        continue
-    }
-    if ($front -notmatch "(?m)^\s*alwaysApply\s*:\s*(true|false)\s*$") {
-        Add-Err "$($rf.Name): YAML frontmatter missing 'alwaysApply: true|false'"
+    if (-not ($text.TrimStart() -match "^#\s+\S")) {
+        Add-Err "$($rf.Name): must start with a '# Title' heading"
         continue
     }
     Add-OK "$($rf.Name)"
@@ -280,7 +270,7 @@ if (-not $shouldRunSelfCheck) {
     }
 }
 
-# 7. xUnit unit tests (rule 25-mcp-tool-tests.mdc + rule 40 §3).
+# 7. xUnit unit tests (rule 25-mcp-tool-tests.md + rule 40 §3).
 # Runs the already-compiled tests/AcadMcp.Tests.dll via `dotnet test --no-build`
 # so the gate stays under the 60 s rule-40 budget on a warm cache (<3 s here).
 # Skipped silently when the assembly is not yet built (fresh clone) so new

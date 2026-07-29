@@ -13,8 +13,8 @@ description: |
   `acad-architecture.insert_round_column`, both of which place the column
   profile on S-COLS by default.
 references:
-  - .cursor/rules/36-architecture-domain-traps.mdc#5-columns-are-never-on-the-wall-layer
-  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+  - .cursor/rules/36-architecture-domain-traps.md#5-columns-are-never-on-the-wall-layer
+  - .cursor/rules/36-architecture-domain-traps.md#11-layer-key
 scope:
   entity_types: [Polyline, Circle]
   layer_pattern: "^(A[-_]?COLS?|COLUMNS?|COLS?|A[-_]?WALL|STRUCT[-_]?COLS?)$"

@@ -1,5 +1,5 @@
 // Single source of truth for the ISO-mechanical layer key shipped with
-// acad-mechanical. Mirrors rule 37 §9 (mechanical-domain-traps.mdc).
+// acad-mechanical. Mirrors rule 37 §9 (mechanical-domain-traps.md).
 //
 // If you add a new layer here, also:
 //   1. Update rule 37 §9 (the table).

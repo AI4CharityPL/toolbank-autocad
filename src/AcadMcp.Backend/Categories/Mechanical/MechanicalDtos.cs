@@ -2,7 +2,7 @@
 // 1-to-1 (rule 22). Every JsonPropertyName matches a field on a primitive
 // plugin handler used by MechanicalProxy.
 //
-// Rules: 35-domain-categories-design.mdc, 37-mechanical-domain-traps.mdc.
+// Rules: 35-domain-categories-design.md, 37-mechanical-domain-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

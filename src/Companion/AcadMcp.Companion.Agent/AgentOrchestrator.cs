@@ -15,7 +15,7 @@ namespace AcadMcp.Companion.Agent;
 /// <summary>
 /// Owns the model-facing conversation and runs the tool-calling loop. Supports:
 /// • auto-continuation when the token limit truncates an answer ("nawet przy limicie znaków"),
-/// • an optional planning pass (planner -> sequential executor steps, like Cursor's plan/agent),
+/// • an optional planning pass (planner -> sequential executor steps),
 /// • a client-side visualization tool that renders a room image via the provider's image model.
 /// </summary>
 public sealed class AgentOrchestrator

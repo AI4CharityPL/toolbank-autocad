@@ -2,7 +2,7 @@
 // multi-line text (MText) with inline formatting, multi-leaders (MLeader, both text and block content),
 // AutoCAD Tables (cell data and updates), and text style management.
 //
-// Rules: 19-tool-implementation-pattern.mdc, 27-acad-text-and-table-traps.mdc.
+// Rules: 19-tool-implementation-pattern.md, 27-acad-text-and-table-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

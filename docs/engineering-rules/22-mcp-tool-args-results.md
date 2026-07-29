@@ -1,0 +1,168 @@
+# Tool inputs and outputs
+
+Tool argument and result records. One DTO in, one DTO out. No primitive parameter explosions.
+
+The MCP JSON schema is auto-generated from C# parameter types. Clean records = clean schemas the LLM can reason about.
+
+## Rules
+
+1. **One `Args` record in, one `Result` record out.** No method with 7 primitive parameters.
+2. **`record` not `class`** for DTOs (immutable, value semantics, init-only setters).
+3. **Suffix conventions:** `XxxArgs` for input, `XxxResult` for output. Same file as the tool method.
+4. **Required = no default value.** Optional = nullable or has default. Required-ness is reflected in the JSON schema.
+5. **Use Shared DTOs** when applicable: `Point2dDto`, `Point3dDto`, `EntityHandle`, `ColorDto`, `LayerInfo`. Don't reinvent.
+6. **Result MUST include `EntityHandle`** for any tool that creates entities. The agent uses handles to chain operations.
+7. **Result MUST include `unitsUsed`** for any tool that returns coordinates/lengths.
+8. **No `JsonElement`/`object`/`dynamic`** in Args or Result. Concrete types only.
+9. **Document each property** with `<summary>` XML comment - they end up in the JSON schema description.
+
+## Bad
+
+```csharp
+public static object DrawLine(double x1, double y1, double z1, double x2, double y2, double z2,
+                              string layer, double? thickness, bool closed, int color)
+{
+    return new { id = "..." };  // anonymous, no schema, no handle, no units
+}
+```
+
+## Good
+
+```csharp
+[McpTool(/* ... */)]
+public static DrawLineResult DrawLine(DrawLineArgs args, CancellationToken ct = default) { ... }
+
+/// <summary>Arguments for draw_line.</summary>
+public sealed record DrawLineArgs(
+    /// <summary>Start point in current drawing units (WCS).</summary>
+    Point3dDto Start,
+    /// <summary>End point in current drawing units (WCS).</summary>
+    Point3dDto End,
+    /// <summary>Target layer name. Defaults to current layer if null.</summary>
+    string? Layer = null);
+
+/// <summary>Result of draw_line.</summary>
+public sealed record DrawLineResult(
+    EntityHandle Entity,
+    double Length,
+    string UnitsUsed);
+```
+
+## Lists / collections
+
+- Collections of entities: `EntityHandle[]` (not `List<EntityHandle>`, not `IEnumerable`).
+- Empty collections: empty array, never null. JSON schema cleaner.
+- Limits: any tool that *could* return >1000 items must accept `int? maxResults = 1000` and indicate truncation in result.
+
+## Errors
+
+DO NOT model errors as a `Result.Error` field. Throw `AcadException` and let the framework convert. The MCP layer maps to JSON-RPC error or `isError: true` content.
+
+## Block attribute contracts
+
+Any tool that **creates or inspects a `BlockReference` with attributes**
+(doors, windows, furniture with inventory numbers, plumbing fixtures,
+title blocks, callouts) MUST follow this pattern so Schedules /
+Validators / Vision all see the same data:
+
+### Tag constants live in the plugin tool file
+
+Never hard-code attribute tag strings in two places. One `static class`
+in the plugin file owns the canonical list:
+
+```csharp
+internal static class OpeningAttrTags
+{
+    public const string Number      = "NUMBER";       // visible
+    public const string Type        = "TYPE";
+    public const string WidthMm     = "WIDTH_MM";
+    public const string HeightMm    = "HEIGHT_MM";
+    public const string Rei         = "REI";
+    public const string Rc          = "RC";
+    public const string FireClass   = "FIRE_CLASS";
+    public const string LeafDir     = "LEAF_DIR";
+    public const string SwingDir    = "SWING_DIR";
+    public const string SillMm      = "SILL_MM";
+    public const string AcousticDb  = "ACOUSTIC_DB";
+    public const string Lead        = "LEAD";
+    public const string RoomFrom    = "ROOM_FROM";
+    public const string RoomTo      = "ROOM_TO";
+
+    public static readonly IReadOnlyList<string> All = new[]
+    {
+        Number, Type, WidthMm, HeightMm, Rei, Rc, FireClass,
+        LeafDir, SwingDir, SillMm, AcousticDb, Lead, RoomFrom, RoomTo,
+    };
+}
+```
+
+Both the `insert_*` tool (which writes attributes) and the
+`list_*_in_model` / `export_schedule` tool (which reads them) reference
+`OpeningAttrTags.*` — never string literals. See `OpeningsPluginTools`
+(rule 65) for the reference implementation.
+
+### Exactly ONE visible tag, the rest invisible
+
+Plans must stay readable at 1:100. Convention:
+
+- **Visible tag** (rendered on the plan): the human-facing identifier.
+  For openings this is `NUMBER` (`D-001`, `W-005`). For furniture
+  inventory it is `INVNO`. For title blocks it is `SHEET_NO`.
+- **Invisible tags**: everything else. Set
+  `AttributeDefinition.Invisible = true` before adding to the block
+  definition. Vision persona and validators read these via
+  `BlockReference.AttributeCollection`, not by parsing the drawing.
+
+A BlockReference with 14 visible tags prints an unreadable plan. Always
+audit: a new attribute defaults to **invisible** unless you have a
+reason plotted on paper.
+
+### Tag values are strings — encode numerics with care
+
+`AttributeReference.TextString` is a `string`. The contract is:
+
+- Integer millimetres → ASCII decimal, no thousands separator:
+  `"900"`, `"2100"`. Never `"900 mm"`, never `"0.9"`.
+- Booleans → `"0"` / `"1"`. Never `"true"` / `"TRUE"`.
+- Enums → canonical uppercase token: `"IN"`, `"OUT"`, `"L"`, `"R"`,
+  `"EI30"`, `"EI60"`, …
+- Empty / irrelevant for the kind → empty string `""`, not `"N/A"`.
+
+`export_schedule` and the Vision persona rely on `int.TryParse` /
+`bool.TryParse` — deviations cause silent "0" reads.
+
+### Result DTO MUST surface the attribute payload
+
+Any `list_*_in_model` or `insert_*` result that returns a block
+reference MUST include an `attributes` field of type
+`IReadOnlyDictionary<string, string>` (tag → value). The field MUST NOT
+be nullable and MUST NOT omit empty values — consumers need to
+distinguish "no such tag" from "tag present but empty".
+
+```csharp
+public sealed record OpeningInModel(
+    EntityHandle Handle,
+    string BlockName,
+    string Layer,
+    Point3dDto InsertionPoint,
+    double RotationDeg,
+    IReadOnlyDictionary<string, string> Attributes);
+```
+
+Schedules / validators must never have to re-open the drawing to read
+attributes — the `list_*_in_model` call is the single source of truth.
+
+### Adding a new attribute tag
+
+1. Extend the tag constants class (above).
+2. Add the column to rule 65 / 63 / 64 / whichever category rule
+   documents that block family.
+3. Update the `s_attrTags` / block-definition builder in the plugin.
+4. Update `export_schedule` CSV header + JSON shape.
+5. Update the Vision persona prompt (rule 60 criterion 4/5) if the
+   attribute is visible to the reviewer.
+6. Add an xUnit test asserting round-trip `insert → list → attribute
+   present with correct string value`.
+7. Regenerate manifest.
+
+Skip any step and a future schedule silently drops the column.

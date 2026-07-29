@@ -34,7 +34,7 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         "ACAD0001",
         "[McpTool] missing Intent examples",
         "Tool '{0}' must declare Intent with at least 5 PL+EN example phrases (got {1}). " +
-        "Intent powers MCPBank semantic discovery via mcpd_find. See rule 20-mcp-tool-attribute.mdc.",
+        "Intent powers MCPBank semantic discovery via mcpd_find. See rule 20-mcp-tool-attribute.md.",
         "AcadMcp.Mcp",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -42,7 +42,7 @@ public sealed class McpToolGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor BadToolName = new(
         "ACAD0002",
         "Invalid MCP tool name",
-        "Tool name '{0}' must be snake_case, start with a letter, and contain at most 5 words separated by underscore. See rule 21-mcp-tool-naming.mdc.",
+        "Tool name '{0}' must be snake_case, start with a letter, and contain at most 5 words separated by underscore. See rule 21-mcp-tool-naming.md.",
         "AcadMcp.Mcp",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -50,7 +50,7 @@ public sealed class McpToolGenerator : IIncrementalGenerator
     private static readonly DiagnosticDescriptor NotStatic = new(
         "ACAD0003",
         "MCP tool method must be static",
-        "Method '{0}' marked [McpTool] must be static. Tool methods are stateless dispatchers; state lives in DI services. See rule 24-mcp-tool-category-binding.mdc.",
+        "Method '{0}' marked [McpTool] must be static. Tool methods are stateless dispatchers; state lives in DI services. See rule 24-mcp-tool-category-binding.md.",
         "AcadMcp.Mcp",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

@@ -3,7 +3,7 @@
 // document inspection (current document, listing all open documents) and database hygiene
 // (purge of all unused records, audit with optional fix).
 //
-// Rules: 19, 28-acad-blocks-layers-files-traps.mdc.
+// Rules: 19, 28-acad-blocks-layers-files-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

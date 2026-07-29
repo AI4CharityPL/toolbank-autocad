@@ -23,7 +23,7 @@
 Two complementary layers:
 
 ### Layer A — live MCP (external)
-Earlier in this session a live sweep via `acad_call` through the Cursor MCP router visited every category. Every `list_*_catalog` / `list_*` / read-only read tool was verified against the live Hospital2026 drawing. The systemic `PropertyNameCaseInsensitive = true` bug across 25 backend proxies was found and fixed there (see CHANGELOG entry 2026-04-23).
+Earlier in this session a live sweep via `acad_call` through the MCP router visited every category. Every `list_*_catalog` / `list_*` / read-only read tool was verified against the live Hospital2026 drawing. The systemic `PropertyNameCaseInsensitive = true` bug across 25 backend proxies was found and fixed there (see CHANGELOG entry 2026-04-23).
 
 ### Layer B — backend-native (this audit)
 Two new xUnit tests in `tests/AcadMcp.Tests/FullToolAuditTests.cs`:

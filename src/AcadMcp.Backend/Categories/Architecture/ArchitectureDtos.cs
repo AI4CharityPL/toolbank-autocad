@@ -2,8 +2,8 @@
 // file so the JSON shape is reviewable in one place. Naming follows rule 22:
 // args end in *Args, results end in *Result, JsonPropertyName matches plugin readers.
 //
-// Rules: 35-domain-categories-design.mdc, 36-architecture-domain-traps.mdc,
-// 22-mcp-tool-args-results.mdc.
+// Rules: 35-domain-categories-design.md, 36-architecture-domain-traps.md,
+// 22-mcp-tool-args-results.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

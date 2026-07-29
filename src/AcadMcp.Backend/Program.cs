@@ -1,6 +1,6 @@
 // AcadMcp.Backend entry point.
 // One binary, multiple processes. Each process exposes ONE category over stdio MCP.
-// See rule 00-architecture-invariants.mdc Invariant #1.
+// See rule 00-architecture-invariants.md Invariant #1.
 
 using System;
 using System.Linq;
@@ -33,7 +33,7 @@ public static class Program
         services.AddLogging(b =>
         {
             // Logging goes to STDERR so that JSON-RPC stays clean on STDOUT.
-            // AddSimpleConsole() writes to stdout by default, which breaks Cursor's MCP parser.
+            // AddSimpleConsole() writes to stdout by default, which breaks the MCP client's JSON-RPC parser.
             b.AddProvider(new AcadMcp.Backend.Logging.StderrLoggerProvider(
                 options.Verbose ? LogLevel.Debug : LogLevel.Information));
         });

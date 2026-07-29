@@ -1,5 +1,5 @@
 // Wire contracts for the named pipe between Backend processes and the AutoCAD Plugin.
-// Frozen surface: per rule 02-no-breaking-changes.mdc, all changes here must be additive.
+// Frozen surface: per rule 02-no-breaking-changes.md, all changes here must be additive.
 
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -105,7 +105,7 @@ public sealed record CancelRequest(
     [property: JsonPropertyName("correlationId")] string CorrelationId);
 
 /// <summary>
-/// Discriminator for <see cref="MessageEnvelope.Kind"/>. See rule 17-pipe-protocol.mdc.
+/// Discriminator for <see cref="MessageEnvelope.Kind"/>. See rule 17-pipe-protocol.md.
 /// Append-only. Adding a new value MUST be tolerated by older peers via UnknownMessageKind error.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -123,7 +123,7 @@ public enum MessageKind
 /// <summary>
 /// Wire envelope. EVERY frame on the pipe is one of these. Payload is the matching DTO
 /// for <see cref="Kind"/>: HandshakeRequest, HandshakeResponse, ToolRequest, ToolResponse,
-/// CancelRequest, AcadEvent. See rule 17-pipe-protocol.mdc.
+/// CancelRequest, AcadEvent. See rule 17-pipe-protocol.md.
 /// </summary>
 public sealed record MessageEnvelope(
     [property: JsonPropertyName("kind")] MessageKind Kind,

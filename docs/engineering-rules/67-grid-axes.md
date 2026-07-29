@@ -1,0 +1,174 @@
+# 67. Column grid + vertical circulation (acad-grids / acad-verticals)
+
+Column grid + vertical circulation policy — letter/number axis convention, bubble geometry, snap-to-grid semantics, stair/ramp/elevator/escalator/handrail code limits (WT §54..§298). READ BEFORE editing GridsTools.cs / VerticalsTools.cs, before generating grid axes with draw_grid, before placing a stair / ramp / bed-lift in any plan, and before running validators under validators/architectural/grids-*.
+
+Companion to rule 35 (domain-categories-design), rule 36 (architecture-domain
+traps), rule 60 (architectural fidelity — upcoming) and rule 66 (dimension
+chains). This rule freezes two concerns that Polish architectural practice
+treats as a single layer of drawing discipline:
+
+1.  **The column grid** that every plan is dimensioned against (acad-grids).
+2.  **Vertical circulation** that must resolve on that grid and must obey the
+    Warunki Techniczne (WT) thresholds (acad-verticals).
+
+The `senior-architect-reviewer` persona awards **criterion #4** only if the
+plan has a visible grid with bubbles on at least two sides and assigns
+**criterion #12** solely on compliance of stairs + ramps + lifts with WT.
+
+## 1. Layer policy
+
+| Concern        | Layer name       | Colour (ACI) | Linetype     |
+|----------------|------------------|--------------|--------------|
+| axis — major   | `A-GRID`         | 8 (grey)     | CENTER       |
+| axis — minor   | `A-GRID-MINOR`   | 251          | DASHED       |
+| bubble circle  | `A-GRID-BUB`     | 8            | Continuous   |
+| bubble label   | `A-GRID-ID`      | 8            | Continuous   |
+| stair outline  | `A-STRS`         | 7            | Continuous   |
+| stair arrow    | `A-STRS-DIR`     | 2            | Continuous   |
+| ramp outline   | `A-RAMP`         | 7            | Continuous   |
+| ramp arrow     | `A-RAMP-DIR`     | 2            | Continuous   |
+| elevator shaft | `A-VTRN-ELEV`    | 4            | Continuous   |
+| escalator run  | `A-VTRN-ESCL`    | 4            | Continuous   |
+| platform lift  | `A-VTRN-LIFT`    | 4            | Continuous   |
+| handrail       | `A-RAIL`         | 141          | Continuous   |
+
+When `ensure_architectural_layers` lands Phase 7-ready it MUST register
+these entries together with the A-* key already defined in rule 36 §11.
+
+## 2. Axis label convention (Polish practice)
+
+* **X-direction** (vertical axis lines drawn along Y): **letters** `A`, `B`,
+  `C`, …, `Z`, `AA`, `AB`… in reading order from **west to east**.
+* **Y-direction** (horizontal axis lines drawn along X): **numbers** `1`, `2`,
+  `3`, … from **south to north**.
+
+`draw_grid` auto-generates these unless `xAxisLabels` / `yAxisLabels` are
+provided. Overriding is allowed but discouraged — the reviewer persona
+penalises non-standard letter streams (e.g. skipping `I` and `O` is
+acceptable; jumping `E → G` is not).
+
+Bubbles default to **north** (X-axes, top) and **west** (Y-axes, left). For
+reference plans and sections, add the mirror side with
+`bubblesSouth = true` / `bubblesEast = true`.
+
+## 3. Bubble geometry
+
+* Default radius `400 mm` (world units).
+* Text height = `0.9 × radius` — centred via DBText offset heuristic in
+  `DrawBubbleAsync`; centre of the circle, baseline sliding 0.5·h below.
+* Bubble sits **outside** the extended axis line — `draw_grid` pushes the
+  line past the grid box by `extendMm` (default 2 m) then places the bubble
+  centre an additional `bubbleRadiusMm` beyond.
+* **Do NOT** use `TextAlignmentPoint + AttachmentPoint = MiddleCenter` —
+  some AutoCAD 2019 installs render attachment points incorrectly at
+  DIMSCALE ≠ 1. Plain-offset DBText is portable.
+
+## 4. Module sizing
+
+| Building type  | Typical column grid | Notes |
+|----------------|---------------------|-------|
+| residential    | 4.5–6.0 m           | Fits room layouts on multiples of 30 cm |
+| office         | 7.2–8.1 m           | OH glass partitions at 1.35 m quanta |
+| hospital       | 7.2 or 8.4 m        | Matches 3×2400 mm bay spacing in our plans |
+| retail / mall  | 9.0–10.8 m          | Large escalator wells need clear spans |
+| parking garage | 7.5 m or 8.1 m      | Bay + drive-aisle bands |
+
+`Hospital2026_A0-001.dwg` uses a 7.2 m module letters A…F × numbers 1…8 —
+the canonical reference when testing `snap_to_grid` during validators.
+
+## 5. `snap_to_grid` semantics
+
+* Pure backend (no plugin call). Use **before** drawing so entities land on
+  the grid intersection closest to the mouse-picked point.
+* Returns `cellLabel` in the form `"{x}/{y}"` (e.g. `"C/3"`) — this is the
+  canonical way to express a location in a room schedule and in dimension
+  text overrides.
+* `distanceMm` is the 2D distance from the **input** point to the snapped
+  intersection. Validators fail the plan when any door centreline is
+  > 150 mm from its nearest grid intersection **unless** the door sits on
+  an explicitly non-modular sub-partition (layer `A-WALL-NONMOD`).
+
+## 6. Vertical circulation compliance (WT + PN)
+
+`acad-verticals` tools emit `complianceWarnings` — **never** hard-fail. The
+validator suite under `validators/architectural/verticals-*.md` is the
+authoritative enforcement layer. Summary of the WT thresholds wired into
+`VerticalsPalette`:
+
+| Concern                          | WT reference | Threshold |
+|----------------------------------|--------------|-----------|
+| public stair riser               | §54 ust. 1   | 150–175 mm |
+| public stair tread               | §54 ust. 1   | 250–350 mm |
+| public stair clear width         | §54 ust. 5   | ≥ 1200 mm |
+| Blondel ratio (2r + t)           | ergonomics   | 600–650 mm |
+| accessible ramp slope (rise>500) | §66 ust. 2   | ≤ 6 %     |
+| accessible ramp clear width      | §66 ust. 1   | ≥ 1200 mm |
+| bed-lift cabin (hospital)        | §193         | ≥ 1600 × 2600 mm |
+| passenger lift cabin (public)    | §54 ust. 3   | ≥ 1100 × 1400 mm |
+| handrail height (public stair)   | §298         | 900–1100 mm |
+
+Whenever a WT numeric is tightened by a local authority (Sanepid, straż
+pożarna), override the spec by **adding** a validator under
+`validators/architectural/` — **do NOT** change the palette constants,
+because those are interpreted as "baseline code minimum".
+
+## 7. U-shaped stair landing rule
+
+`draw_stair_u_shaped` requires `landingDepthMm ≥ widthMm` and
+`gapMm ≥ 100 mm`. The tool **does not** enforce a minimum because
+compact architectural stairs sometimes use `gap = 0` (closed stringer
+return), but the validator `verticals-landing-min.md` flags that as a
+finding on plans tagged `egress-rated: true`.
+
+## 8. Handrail coverage
+
+`draw_handrail` produces a polyline **only**; it does not attach to a
+specific stair run automatically. Wiring convention: for every
+`draw_stair_*` call, the orchestrator (Phase D12 regeneration script)
+must follow up with a `draw_handrail` on both sides **unless** the run
+is against a closed wall (in which case one handrail on the open side
+suffices per WT §298 ust. 2).
+
+## 9. Grid + dimensioning interplay (with rule 66)
+
+The **overall** dimension chain (level L3, `dimension_overall`) MUST
+measure **between the outermost grid axes**, NOT the outermost wall
+faces. The **axis** chain (L2, `dimension_cumulative_chain`) MUST pick
+its stations from the output of `draw_grid` (or a subset registered via
+`add_grid_axis`) so chain stations and bubble labels stay in lock-step.
+Validators fail the plan if more than 5 % of L2 stations do not match a
+grid bubble to within 50 mm.
+
+## 10. Delete semantics
+
+`delete_grid` without a `handles` list erases **every** entity on the
+axis + bubble layers. Do not point this at an inhabited drawing in
+production without first running `list_grid_axes` and reviewing the
+sweep. In tests, always run against a fresh drawing.
+
+## 11. Do NOT list
+
+- Do NOT draw grids with `DIMSCALE` baked into axis extension — the
+  extension is a world-space distance (`extendMm`). Scaling to the sheet
+  is the paper-space viewport's job.
+- Do NOT place bubbles on every axis when only corner bubbles are
+  requested — `draw_grid` already exposes `bubblesNorth/South/East/West`
+  toggles. Don't hack by overriding `xAxisLabels = [""]`.
+- Do NOT hard-code letter skip-lists (`I`, `O`, `Q`) inside callers — if
+  an office or hospital regulator requires this, add it via
+  `xAxisLabels` explicit list or extend `GridsPalette.LetterLabel` here.
+- Do NOT let the validator enforce "snap to grid 50 mm" on non-modular
+  sub-partition walls. Flag those on `A-WALL-NONMOD` first.
+- Do NOT downgrade `complianceWarnings` in verticals to `error` without
+  a corresponding validator — tool-level errors break concept-phase
+  flexibility (rule 35 §5).
+
+## 12. Further reading
+
+- Rule 35 — domain category design (composition of primitives).
+- Rule 36 — architecture domain traps (layer key).
+- Rule 60 — architectural fidelity (upcoming, Phase D10).
+- Rule 66 — dimension chains (sister rule).
+- Warunki Techniczne Dz.U. 2022 poz. 1225 §54, §66, §193, §298.
+- PN-EN 81-70:2021 — passenger-lift accessibility.
+- PN-ISO 128-23 — line conventions on architectural drawings.

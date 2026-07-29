@@ -16,7 +16,7 @@ Obecny stan (Phase C — ukończony):
 
 Cel Phase D — **rysunek wykonawczy 1:50/1:100 na poziomie biura projektowego**:
 - 7 nowych kategorii MCP (~48 nowych narzędzi), 3 rozszerzenia istniejących.
-- 10 nowych zasad `.cursor/rules/` (architektoniczna wierność, lineweighty, sanitariaty, meble, schodowiska, osi strukturalne, hatching, callouts, schedule, schematy podłogowe).
+- 10 nowych zasad `docs/engineering-rules/` (architektoniczna wierność, lineweighty, sanitariaty, meble, schodowiska, osi strukturalne, hatching, callouts, schedule, schematy podłogowe).
 - Nowa persona Vision `senior-architect-reviewer` (rubryka 17 kryteriów).
 - Biblioteka ~80 bloków dynamicznych (meble szpitalne, sanitariaty, stolarka, schody, windy).
 - Polityka plot-styles (`CTB`/`STB`) z 9-tier lineweightami.
@@ -27,7 +27,7 @@ Szacowany nakład: **~45-55 osobo-dni** (10 kategorii × 3-5 dni dev + testy + b
 
 ## 2. Gap analysis — co ma profesjonalny plan, czego nam brakuje
 
-Referencja: wycinek planu z `assets/c__Users_DELL_AppData_Roaming_Cursor_User_workspaceStorage_270173088dccd989b303ac9556b331ca_images_image-fdc7d536-5ae8-4d8a-9ff0-f5a0775c6343.png`.
+Referencja: wycinek planu z materiału referencyjnego (zrzut ekranu profesjonalnego planu projektowego).
 
 | # | Element rysunku wykonawczego | Biuro arch. (ref.) | Nasz Phase C | Gap |
 |---|---|---|---|---|
@@ -241,7 +241,7 @@ acad.plotstyles.set_layer_policy(layer, lineweight_mm, plot_color, screen_pct?, 
 acad.plotstyles.export_ctb(outputPath)
 ```
 
-Polityka 9-tier lineweight (patrz `61-lineweight-policy.mdc` niżej).
+Polityka 9-tier lineweight (patrz `61-lineweight-policy.md` niżej).
 
 ### 4.10 `acad-callouts` (P3)
 Cel: leader lines z kodem profilu (K1, K6, K10) + paski skali + strzałka północy.
@@ -337,24 +337,24 @@ assets/blocks/
 
 ---
 
-## 7. Nowe zasady (.cursor/rules/)
+## 7. Nowe zasady (docs/engineering-rules/)
 
-Wszystkie pliki tworzone zgodnie z rule `53-rules-update-mandate.mdc`.
+Wszystkie pliki tworzone zgodnie z rule `53-rules-update-mandate.md`.
 
 | # | Plik | `alwaysApply` | Zakres | Krótki opis |
 |---|---|---|---|---|
-| 60 | `60-architectural-fidelity.mdc` | true | cały projekt | Minimum detail per room-type (sypialnia → min. łóżko + stolik + szafa + światło; WC → min. WC + umywalka) |
-| 61 | `61-lineweight-policy.mdc` | true | cały projekt | 9-tier lineweights (0.05 → 1.4 mm) + mapping layer→lw→pen |
-| 62 | `62-hatching-policy.mdc` | true | cały projekt | Per-layer default hatch (A-WALL-EXT → AR-CONC @ scale=100, A-WALL-INT → AR-BRSTD, A-WALL-LEAD → ANSI38 + red...) |
-| 63 | `63-sanitary-fixtures-wt.mdc` | true | Architecture/Plumbing | Min. wyposażenie WC / łazienki per WT §78 + PN-EN 17210 (dostępność) |
-| 64 | `64-furniture-density-per-room.mdc` | true | Furniture | Min. meble per funkcja (sala OR → stół operacyjny + lampa + anestezjolog + stacja robocza) |
-| 65 | `65-door-window-schedule.mdc` | true | Openings/Schedules | Każde drzwi/okno MUSI mieć numer + typ + REI + szerokość (atrybuty bloku) |
-| 66 | `66-dimension-chains.mdc` | true | Dimensions | Min. 3 poziomy wymiarów (main/sub/cumulative), tick-marks 45° per PN-EN-ISO-129 |
-| 67 | `67-grid-axes.mdc` | true | Grids/Architecture | Wszystkie plany MUSZĄ mieć siatkę osi z bubble-labels |
-| 68 | `68-plan-symbols-standard.mdc` | true | Callouts | Każdy rysunek: północ + pasek skali + ramka tytułowa per PN-B-01025 |
-| 69 | `69-callouts-leaders.mdc` | false (opt-in per projekt) | Callouts | Konwencja K1/K6/K10 i system elevacji callouts |
+| 60 | `60-architectural-fidelity.md` | true | cały projekt | Minimum detail per room-type (sypialnia → min. łóżko + stolik + szafa + światło; WC → min. WC + umywalka) |
+| 61 | `61-lineweight-policy.md` | true | cały projekt | 9-tier lineweights (0.05 → 1.4 mm) + mapping layer→lw→pen |
+| 62 | `62-hatching-policy.md` | true | cały projekt | Per-layer default hatch (A-WALL-EXT → AR-CONC @ scale=100, A-WALL-INT → AR-BRSTD, A-WALL-LEAD → ANSI38 + red...) |
+| 63 | `63-sanitary-fixtures-wt.md` | true | Architecture/Plumbing | Min. wyposażenie WC / łazienki per WT §78 + PN-EN 17210 (dostępność) |
+| 64 | `64-furniture-density-per-room.md` | true | Furniture | Min. meble per funkcja (sala OR → stół operacyjny + lampa + anestezjolog + stacja robocza) |
+| 65 | `65-door-window-schedule.md` | true | Openings/Schedules | Każde drzwi/okno MUSI mieć numer + typ + REI + szerokość (atrybuty bloku) |
+| 66 | `66-dimension-chains.md` | true | Dimensions | Min. 3 poziomy wymiarów (main/sub/cumulative), tick-marks 45° per PN-EN-ISO-129 |
+| 67 | `67-grid-axes.md` | true | Grids/Architecture | Wszystkie plany MUSZĄ mieć siatkę osi z bubble-labels |
+| 68 | `68-plan-symbols-standard.md` | true | Callouts | Każdy rysunek: północ + pasek skali + ramka tytułowa per PN-B-01025 |
+| 69 | `69-callouts-leaders.md` | false (opt-in per projekt) | Callouts | Konwencja K1/K6/K10 i system elevacji callouts |
 
-Szablon pliku `60-architectural-fidelity.mdc` (skelet):
+Szablon pliku `60-architectural-fidelity.md` (skelet):
 ```markdown
 ---
 description: Minimalny poziom szczegółu architektonicznego per typ pomieszczenia. Bez tego plan jest "studencki".
@@ -364,7 +364,7 @@ alwaysApply: true
 # Minimum architectural detail per room type
 
 Plan NA POZIOMIE wykonawczym MUSI zawierać dla każdego pomieszczenia:
-- Ściany z hatchingiem (per `62-hatching-policy.mdc`)
+- Ściany z hatchingiem (per `62-hatching-policy.md`)
 - Wszystkie otwory drzwiowe i okienne z `acad-openings` (NIE raw line+arc)
 - Meble per tabela poniżej
 - Etykietę z numerem + nazwą + powierzchnią (auto z `acad-schedules.generate_room_schedule`)
@@ -478,7 +478,7 @@ D6  Rozszerzyć Architecture (+6 tooli), Dimensions (+5 tooli), Blocks (+4 tooli
 D7  Zaimplementować acad-verticals, acad-grids (P1 — 13 tooli) + biblioteka (15+ bloków)
 D8  Zaimplementować acad-schedules (P1 — 5 tooli) + TableStyle "HOSPITAL-DEF" + "OFFICE-DEF"
 D9  Zaimplementować acad-sections, acad-plotstyles, acad-callouts (P2-P3 — 11 tooli) + biblioteka symbols
-D10 Napisać 10 nowych rules `.mdc` + uzupełnić istniejące (62 hatching, 26 API traps)
+D10 Napisać 10 nowych rules `.md` + uzupełnić istniejące (62 hatching, 26 API traps)
 D11 Dodać persona senior-architect-reviewer + endpoint w Vision sidecar + manifest refresh
 D12 Re-generacja planu szpitala z Phase C checkpointu:
      - ckpt-phaseD-start
@@ -558,9 +558,9 @@ Pozostały +0.3 do „12/10" = renderowanie 3D + vizualizacja elewacji + BIM-exp
 ## 13. Referencje
 
 - `docs/HOSPITAL-2026-REVIEW-FINDINGS.md` §4e (Phase C finish)
-- `.cursor/rules/00-architecture-invariants.mdc` (invarianty)
-- `.cursor/rules/41-new-category-flow.mdc` (jak dodawać kategorie)
-- `.cursor/rules/53-rules-update-mandate.mdc` (jak dodawać rules)
+- `docs/engineering-rules/00-architecture-invariants.md` (invarianty)
+- `docs/engineering-rules/41-new-category-flow.md` (jak dodawać kategorie)
+- `docs/engineering-rules/53-rules-update-mandate.md` (jak dodawać rules)
 - AIA CAD Layer Guidelines 2017
 - PN-B-01025:2004
 - PN-EN-ISO 129, 128, 5457

@@ -1,5 +1,5 @@
 // Maps AutoCAD/CLR exceptions to AcadErrorCode + safe message. Never leaks stack traces.
-// See rule 12-acad-error-mapping.mdc.
+// See rule 12-acad-error-mapping.md.
 
 using System;
 using AcadMcp.Plugin.Logging;

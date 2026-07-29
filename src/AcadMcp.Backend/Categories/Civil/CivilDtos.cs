@@ -2,7 +2,7 @@
 // (rule 22). Every JsonPropertyName matches a field on a primitive plugin
 // handler used by CivilProxy.
 //
-// Rules: 35-domain-categories-design.mdc, 38-civil-domain-traps.mdc.
+// Rules: 35-domain-categories-design.md, 38-civil-domain-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

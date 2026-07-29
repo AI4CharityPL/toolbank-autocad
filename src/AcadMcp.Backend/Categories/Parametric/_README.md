@@ -2,7 +2,7 @@
 
 High-level **geometric constraints**, **constraint cleanup**, **constraint
 inventory**, and **dynamic block reference** property I/O. Implements rule
-**42** (`.cursor/rules/42-parametric-domain-traps.mdc`).
+**42** (`docs/engineering-rules/42-parametric-domain-traps.md`).
 
 ## Tools (12)
 

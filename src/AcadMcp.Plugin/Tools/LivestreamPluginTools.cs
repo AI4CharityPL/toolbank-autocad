@@ -1,6 +1,6 @@
 // Phase 7.1: server-pushed events (entity changes, command lifecycle).
 //
-// Honest scope note: rule 17-pipe-protocol.mdc describes `kind: "event"` +
+// Honest scope note: rule 17-pipe-protocol.md describes `kind: "event"` +
 // AcadEvent as pushable on the main pipe, and the Phase 7-8 roadmap calls for
 // a separate "livestream" pipe plus an "acad-livestream" category. In
 // practice, an MCP tool-calling agent has no channel for genuine

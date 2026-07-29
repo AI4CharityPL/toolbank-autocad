@@ -1,6 +1,6 @@
 # AutoCAD MCP Megasystem — Full Tool Reference
 
-Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 354 tools total.
+Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 340 tools total.
 
 ## Categories
 
@@ -24,7 +24,7 @@ Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 354 tools to
 - [acad-mechanical](#acad-mechanical) (14 tools)
 - [acad-modify](#acad-modify) (18 tools)
 - [acad-openings](#acad-openings) (10 tools)
-- [acad-parametric](#acad-parametric) (19 tools)
+- [acad-parametric](#acad-parametric) (5 tools)
 - [acad-plotstyles](#acad-plotstyles) (3 tools)
 - [acad-plumbing](#acad-plumbing) (9 tools)
 - [acad-router](#acad-router) (10 tools)
@@ -394,24 +394,10 @@ Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 354 tools to
 
 | Tool | Description |
 |---|---|
-| `apply_dim_aligned` | Apply an Aligned dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT (dimension line stays parallel to the point1-point2 line, unlike apply_dim_linear which is always horizontal/vertical), with its dimension text placed at placementPoint. |
-| `apply_dim_linear` | Apply a Linear dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT, with its dimension text placed at placementPoint. Unlike geometric constraints, a dimensional constraint carries a numeric value that DRIVES the geometry -- editing it after creation moves whatever it's attached to. Point-pair form only (not the 'Object' pick mode -- see plugin source comment for why). |
-| `apply_geom_coincident` | Apply a Coincident geometric constraint between two picks (handles a and b) via transparent -GEOCONSTRAINT. Works best on endpoints / points the solver can merge; whole-entity picks may fail depending on AutoCAD build. If the command rejects the pick set, constrain boundary polylines instead of hatch (rule 42 §8). |
-| `apply_geom_collinear` | Apply a Collinear geometric constraint between two line-like entities (handles a and b) via transparent -GEOCONSTRAINT -- forces them onto the same infinite line. |
-| `apply_geom_concentric` | Apply a Concentric geometric constraint between two circular/arc entities (handles a and b) via transparent -GEOCONSTRAINT -- forces their centre points to coincide. |
-| `apply_geom_equal` | Apply an Equal geometric constraint between two entities of the same kind (handles a and b) via transparent -GEOCONSTRAINT -- two lines get equal length, two circles/arcs get equal radius. |
-| `apply_geom_fix` | Apply a Fix geometric constraint to anchor one entity (datum behaviour per rule 42 §2). Call once per sketch for the construction corner — do not Fix every entity or the drawing becomes over-constrained. |
-| `apply_geom_horizontal` | Apply a Horizontal geometric constraint to one line-like entity in the current space using AutoCAD transparent -GEOCONSTRAINT. The entity handle must reference a Line, polyline segment, or other object the solver accepts for Horizontal. Runs outside an MCP transaction — AutoCAD owns the command transaction. |
-| `apply_geom_parallel` | Apply a Parallel geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Both entities must live in the same current space; mixed paper-space / block-context picks are undefined — resolve handles from the active viewport context first. |
-| `apply_geom_perpendicular` | Apply a Perpendicular geometric constraint between two curves via transparent -GEOCONSTRAINT. Common pitfall: picking two lines that are already parallel to the UCS axes — the solver may report redundant constraints (rule 42 §3). |
-| `apply_geom_symmetric` | Apply a Symmetric geometric constraint making entities a and b mirror images of each other about symmetryLine, via transparent -GEOCONSTRAINT. All three handles must already exist in the current space. |
-| `apply_geom_tangent` | Apply a Tangent geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Typical use: a line tangent to an arc/circle, or two arcs tangent to each other. |
-| `apply_geom_vertical` | Apply a Vertical geometric constraint to one line-like entity in the current space using transparent -GEOCONSTRAINT. Complements apply_geom_horizontal; do not stack both on the same line unless the office standard requires it. |
-| `delete_entity_constraints` | Run transparent -DELCONSTRAINT on one entity handle to strip geometric/dimensional constraints attached to that object. Use before explode-freeze workflows or when rebuilding a sketch (rule 42 §4 — explode orphans constraints differently). |
 | `ensure_parametric_layers` | Idempotently create the 6-layer parametric sketch key (P-CONSTRUCTION, P-SKETCH, P-CONSTRAINED, P-DYNAMIC, P-PARAM-LBL, P-NOTE) per rule 42 §9 with prescribed ACI colour, Continuous linetype, and lineweight. Existing layers are never overwritten. |
 | `get_dynamic_block_properties` | Read all DynamicBlockReferenceProperty entries from a BlockReference handle: names, read-only flags, UnitsType, CLR type, and current Value. isDynamicBlock=false returns an empty list — the handle is still a block insert but not dynamic. Use the reference handle, never hard-code anonymous *U block names (rule 42 §6). |
 | `list_constraint_entities` | Scan model space for database objects whose runtime class name contains 'Constraint' (constraint proxy / glyph entities). Optional layerFilter narrows results. Read-only with respect to geometry — still requires the plugin for DB access. |
-| `parametric_health` | Return the 6-layer P-* parametric key, planned Phase-7 block roster, and the dynamic-block angle value policy string. Does not open AutoCAD. |
+| `parametric_health` | Return the 6-layer P-* parametric key and the dynamic-block angle value policy string. Does not open AutoCAD. |
 | `set_dynamic_block_property` | Write one DynamicBlockReferenceProperty on a BlockReference by name. Pass JSON booleans as true/false, numbers as JSON numbers. For Angle-typed properties the numeric value is interpreted as degrees and converted to radians in the plugin (see parametric_health.dynamicAnglePolicy). Strings are for lookup / text parameters. Read-only properties throw. |
 
 ## acad-plotstyles

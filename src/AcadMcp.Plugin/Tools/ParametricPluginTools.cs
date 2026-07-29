@@ -1,10 +1,23 @@
-// AutoCAD plugin handlers for acad-parametric: geometric constraints via the
-// native transparent -GEOCONSTRAINT command (Editor.Command), DELCONSTRAINT
-// cleanup, constraint-entity inventory, and dynamic BlockReference property
-// get/set. Commands run with NO active transaction (rule 11 — AutoCAD
-// commands manage their own transactions).
+// AutoCAD plugin handlers for acad-parametric: constraint-entity inventory
+// and dynamic BlockReference property get/set are live and registered below.
 //
-// Rules: 10 (UI thread), 12 (error mapping), 42-parametric-domain-traps.mdc.
+// Geometric constraints (-GEOMCONSTRAINT), dimensional constraints
+// (-DIMCONSTRAINT), and DELCONSTRAINT cleanup are IMPLEMENTED below
+// (GeomHorizontal ... DeleteEntityConstraints) but NOT registered with the
+// ToolHost -- every one of them fails against real AutoCAD 2025 with
+// Autodesk.AutoCAD.Runtime.Exception: eInvalidInput, thrown from
+// Editor.Command itself, and four independent fix attempts (ObjectId
+// selection, point-on-entity selection, command-prefix order swap, and the
+// "GEOMCONSTRAINT" vs "GEOCONSTRAINT" command name) all reproduce the
+// identical failure. See the header comment on
+// src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs for the full
+// detail. Left here, unregistered, for whoever picks this back up -- do not
+// re-wire without live AutoCAD access to find the actual root cause first.
+//
+// Commands run with NO active transaction (rule 11 — AutoCAD commands manage
+// their own transactions).
+//
+// Rules: 10 (UI thread), 12 (error mapping), 42-parametric-domain-traps.md.
 
 using System;
 using System.Collections.Generic;
@@ -30,22 +43,14 @@ internal static class ParametricPluginTools
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    // Constraint-application primitives (GeomHorizontal ... DeleteEntityConstraints
+    // below) are implemented but deliberately NOT registered here -- see the header
+    // comment on src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs for
+    // why (every one of them fails against real AutoCAD with eInvalidInput; not
+    // wiring them to the pipe means they cannot be called even directly, matching
+    // ParametricTools.cs no longer advertising them as MCP tools).
     public static void Register(ToolHost host)
     {
-        host.Register("acad.parametric.geom_horizontal", GeomHorizontal);
-        host.Register("acad.parametric.geom_vertical", GeomVertical);
-        host.Register("acad.parametric.geom_parallel", GeomParallel);
-        host.Register("acad.parametric.geom_perpendicular", GeomPerpendicular);
-        host.Register("acad.parametric.geom_coincident", GeomCoincident);
-        host.Register("acad.parametric.geom_fix", GeomFix);
-        host.Register("acad.parametric.geom_tangent", GeomTangent);
-        host.Register("acad.parametric.geom_concentric", GeomConcentric);
-        host.Register("acad.parametric.geom_collinear", GeomCollinear);
-        host.Register("acad.parametric.geom_symmetric", GeomSymmetric);
-        host.Register("acad.parametric.geom_equal", GeomEqual);
-        host.Register("acad.parametric.dim_linear", DimLinear);
-        host.Register("acad.parametric.dim_aligned", DimAligned);
-        host.Register("acad.parametric.delete_entity_constraints", DeleteEntityConstraints);
         host.Register("acad.parametric.list_constraint_entities", ListConstraintEntities);
         host.Register("acad.parametric.get_dynamic_block_properties", GetDynamicBlockProperties);
         host.Register("acad.parametric.set_dynamic_block_property", SetDynamicBlockProperty);
@@ -129,10 +134,10 @@ internal static class ParametricPluginTools
         catch (Exception ex) { return AcadErrorMapper.Fail(toolKey, ex); }
     }
 
-    // ─────────── geometric constraints (-GEOCONSTRAINT) ───────────
+    // ─────────── geometric constraints (-GEOMCONSTRAINT) ───────────
     //
     // Verified live 2026-07-29: passing an ObjectId directly as the answer to
-    // GEOCONSTRAINT's "Select an object or [2Points]" prompt fails with
+    // GEOMCONSTRAINT's "Select an object or [2Points]" prompt fails with
     // eInvalidInput -- reproduced on EVERY constraint type including the
     // pre-existing Horizontal/Vertical/Parallel/Perpendicular/Coincident/Fix
     // ones, which had never actually been exercised against real AutoCAD
@@ -156,67 +161,67 @@ internal static class ParametricPluginTools
 
     private static Task<ToolDispatchResult> GeomHorizontal(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_horizontal", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Horizontal",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     private static Task<ToolDispatchResult> GeomVertical(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_vertical", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Vertical",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     private static Task<ToolDispatchResult> GeomParallel(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_parallel", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Parallel",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomPerpendicular(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_perpendicular", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Perpendicular",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomCoincident(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_coincident", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Coincident",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomFix(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_fix", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Fix",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     private static Task<ToolDispatchResult> GeomTangent(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_tangent", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Tangent",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomConcentric(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_concentric", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Concentric",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomCollinear(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_collinear", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Collinear",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomEqual(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_equal", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Equal",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
@@ -224,7 +229,7 @@ internal static class ParametricPluginTools
     // Symmetric takes THREE entities: the two symmetric objects plus the line of symmetry.
     private static Task<ToolDispatchResult> GeomSymmetric(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_symmetric", args, ct,
-            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_.-GEOMCONSTRAINT",
             (_, _) => "_Symmetric",
             (db, tr) => ResolvePointOnEntity(db, tr, Read<SymmetricArgsDto>(args).A),
             (db, tr) => ResolvePointOnEntity(db, tr, Read<SymmetricArgsDto>(args).B),

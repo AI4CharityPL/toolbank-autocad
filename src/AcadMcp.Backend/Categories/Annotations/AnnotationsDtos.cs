@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-annotations category.
 // Mirrors the wire shape consumed by the plugin under "acad.annotations.<verb>".
-// See rule 19-tool-implementation-pattern.mdc, rule 27-acad-text-and-table-traps.mdc.
+// See rule 19-tool-implementation-pattern.md, rule 27-acad-text-and-table-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

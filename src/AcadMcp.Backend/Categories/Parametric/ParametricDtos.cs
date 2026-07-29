@@ -26,34 +26,6 @@ public sealed record EnsureParametricLayersResult(
 
 #endregion
 
-#region geometric constraints (handles target entities in current space)
-
-public sealed record SingleHandleArgs(
-    [property: JsonPropertyName("handle")] string Handle);
-
-public sealed record TwoHandlesArgs(
-    [property: JsonPropertyName("a")] string A,
-    [property: JsonPropertyName("b")] string B);
-
-public sealed record SimpleOkResult(
-    [property: JsonPropertyName("ok")] bool Ok);
-
-public sealed record ThreeHandlesArgs(
-    [property: JsonPropertyName("a")] string A,
-    [property: JsonPropertyName("b")] string B,
-    [property: JsonPropertyName("symmetryLine")] string SymmetryLine);
-
-#endregion
-
-#region dimensional constraints
-
-public sealed record DimConstraintArgs(
-    [property: JsonPropertyName("point1")]         Point2dDto Point1,
-    [property: JsonPropertyName("point2")]         Point2dDto Point2,
-    [property: JsonPropertyName("placementPoint")] Point2dDto PlacementPoint);
-
-#endregion
-
 #region inventory
 
 public sealed record ListConstraintEntitiesArgs(

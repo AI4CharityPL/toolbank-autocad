@@ -5,7 +5,7 @@ acoustic and lead-shield ratings, automatic numbering (`D-001` / `W-001`),
 wall-cutting, quick-sketch alternatives and CSV/JSON schedule export.
 Replaces line+arc door hacks with atomic BlockReference + attribute calls.
 
-Phase D **D5** deliverable. See `.cursor/rules/65-door-window-schedule.mdc`
+Phase D **D5** deliverable. See `docs/engineering-rules/65-door-window-schedule.md`
 for the full attribute contract, layer split, numbering semantics and
 performance targets. Read it before adding new door / window families.
 

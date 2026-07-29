@@ -2,7 +2,7 @@
 // Owns one persistent connection. Reused across many ToolRequest calls per process.
 // Thread-safe: a single read loop demuxes responses by correlationId.
 //
-// See rule 17-pipe-protocol.mdc.
+// See rule 17-pipe-protocol.md.
 
 using System;
 using System.Collections.Concurrent;

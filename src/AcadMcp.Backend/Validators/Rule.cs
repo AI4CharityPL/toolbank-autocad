@@ -1,4 +1,4 @@
-// Parsed validator rule (one YAML file -> one Rule). See rule 33-validators-rule-format.mdc.
+// Parsed validator rule (one YAML file -> one Rule). See rule 33-validators-rule-format.md.
 
 using System.Collections.Generic;
 

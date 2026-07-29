@@ -2,7 +2,7 @@
 // layout viewport (entity) creation and scaling, and basic plot configuration
 // (plotter / paper size / plot style / rotation).
 //
-// Rules: 19, 28-acad-blocks-layers-files-traps.mdc.
+// Rules: 19, 28-acad-blocks-layers-files-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

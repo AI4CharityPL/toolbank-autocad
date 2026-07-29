@@ -4,7 +4,7 @@
 // the router can directly dispatch backend composite tools (no subprocess spawn,
 // no external MCPBank discovery needed).
 //
-// See section 1a of the plan and rule 00-architecture-invariants.mdc Invariant #6.
+// See section 1a of the plan and rule 00-architecture-invariants.md Invariant #6.
 
 using System;
 using System.Collections.Generic;

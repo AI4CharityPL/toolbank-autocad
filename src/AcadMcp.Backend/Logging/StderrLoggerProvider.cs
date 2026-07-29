@@ -1,7 +1,7 @@
 // Custom logger provider that writes ALL log output to Console.Error (stderr).
 //
 // WHY THIS EXISTS:
-// AcadMcp.Backend communicates via stdio JSON-RPC (MCP protocol). Cursor's MCP client
+// AcadMcp.Backend communicates via stdio JSON-RPC (MCP protocol). the MCP client
 // reads stdout and expects ONLY newline-delimited JSON. Any non-JSON bytes on stdout
 // (e.g. "18:02:02 info: AcadMcp...") cause the MCP parser to fail with "Not connected".
 //

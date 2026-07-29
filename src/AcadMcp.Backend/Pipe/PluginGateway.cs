@@ -1,6 +1,6 @@
 // Singleton gateway. Owns a single PluginPipeClient per Backend process.
 // Lazy-connects on first call, attempts ONE reconnect on dropped pipe.
-// See rule 18-backend-host-and-gateway.mdc.
+// See rule 18-backend-host-and-gateway.md.
 
 using System;
 using System.Text.Json.Nodes;

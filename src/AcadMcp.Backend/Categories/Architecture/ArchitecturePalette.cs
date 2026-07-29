@@ -1,5 +1,5 @@
 // Single source of truth for the AIA-style architectural layer key shipped with
-// acad-architecture. Mirrors rule 36 §11 (architecture-domain-traps.mdc).
+// acad-architecture. Mirrors rule 36 §11 (architecture-domain-traps.md).
 //
 // If you add a new layer here, also:
 //   1. Update rule 36 §11 (the table).

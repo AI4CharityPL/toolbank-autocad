@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Generates a new acad-<name> MCP category: stub C# folder, manifest, launcher, smoke test.
-    Single source of truth for category scaffolding (see rule 41-new-category-flow.mdc).
+    Single source of truth for category scaffolding (see rule 41-new-category-flow.md).
 
 .DESCRIPTION
     Creates EVERYTHING needed for a new MCP category in a uniform layout that

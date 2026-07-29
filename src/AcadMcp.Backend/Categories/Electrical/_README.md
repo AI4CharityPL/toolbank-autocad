@@ -4,7 +4,7 @@ High-level electrical-schematic + ladder-logic drafting in 11 tools.
 Composes primitives from `acad-geometry-2d`, `acad-layers`, and
 `acad-annotations` per rule 35 §2 (no duplicate plugin handlers).
 
-Read **rule 39 (`.cursor/rules/39-electrical-domain-traps.mdc`)** before
+Read **rule 39 (`docs/engineering-rules/39-electrical-domain-traps.md`)** before
 adding a tool here. It codifies the IEC/ANSI symbol-style choice, the
 NO-vs-NC slash rule, junction-dot semantics, ladder rail+rung numbering,
 the coil→contact cross-reference convention, and the IEC 81346 device-tag

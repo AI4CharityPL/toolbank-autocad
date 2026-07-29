@@ -2,7 +2,7 @@
 // state (frozen/locked/off/plottable), current-layer pick, rename, purge and named layer states.
 // Each method is a thin proxy through IPluginGateway to "acad.layers.<verb>".
 //
-// Rules: 19-tool-implementation-pattern.mdc, 28-acad-blocks-layers-files-traps.mdc.
+// Rules: 19-tool-implementation-pattern.md, 28-acad-blocks-layers-files-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

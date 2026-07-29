@@ -16,7 +16,7 @@ Model Context Protocol (MCP) zakłada, że klient (LLM) dostaje całą listę na
 | **Liniowy koszt tokenowy** | Każde kolejne MCP liniowo zjada okno; przy 30 kategoriach (nasz przypadek) agent nie ma już miejsca na rzeczywiste dane. |
 | **Degradacja jakości routingu** | Im dłuższa lista narzędzi, tym niżej LLM dopasowuje odpowiednie narzędzie do intencji. |
 
-**MCPBank** rozwiązuje to w jeden sposób: agent widzi minimalną powierzchnię (1 lub 4 meta‑toole), a pełne definicje narzędzi ładuje dopiero wtedy, kiedy faktycznie są potrzebne. `acad-router` stosuje ten sam wzorzec na najwyższym piętrze — agent ma w Cursorze cały czas tylko 9 narzędzi `acad_*`, a ~230 specjalistycznych toolów AutoCAD-a jest dociąganych lazy.
+**MCPBank** rozwiązuje to w jeden sposób: agent widzi minimalną powierzchnię (1 lub 4 meta‑toole), a pełne definicje narzędzi ładuje dopiero wtedy, kiedy faktycznie są potrzebne. `acad-router` stosuje ten sam wzorzec na najwyższym piętrze — agent ma w kliencie MCP cały czas tylko 9 narzędzi `acad_*`, a ~230 specjalistycznych toolów AutoCAD-a jest dociąganych lazy.
 
 ---
 
@@ -24,7 +24,7 @@ Model Context Protocol (MCP) zakłada, że klient (LLM) dostaje całą listę na
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                              Cursor / LLM                                │
+│                              Klient MCP / LLM                                │
 └──────────────┬──────────────────────┬──────────────────────┬──────────────┘
                │ MCP stdio            │ MCP stdio            │ MCP stdio
                ▼                      ▼                      ▼
@@ -123,7 +123,7 @@ Opcjonalnie (`pip install mcpbank[embeddings]`) włącza się `HybridSearch` —
 
 ## 4. Kontrakt manifestu — dlaczego nasze 19 kategorii są znajdowalne
 
-Każda kategoria AutoCAD-a ma plik `mcpbank-manifests/acad-<name>.json`. Kontrakt (reguła workspace `30-mcpbank-manifest.mdc`) wymusza:
+Każda kategoria AutoCAD-a ma plik `mcpbank-manifests/acad-<name>.json`. Kontrakt (reguła workspace `30-mcpbank-manifest.md`) wymusza:
 
 ```jsonc
 {
@@ -165,13 +165,13 @@ dotnet run --project src/AcadMcp.Backend -- --category annotations --regenerate-
 
 Potem `scripts/register-mcps.ps1` upsertuje 19 manifestów do `C:\Users\DELL\mcpbank\registry\mcpd-registry.json` (match po `id`), zachowując ręcznie dodane pola (`description`, rozszerzone `tags`, `metadata`).
 
-**Higiena wyszukiwania** (`31-mcpbank-discovery-hygiene.mdc`) jest egzekwowana pre‑commitem: description < 30 słów, scaffoldowe `TODO`/`(seed)` w `intent_examples`, opisy narzędzi < 25 znaków — blokują commit. Dzięki temu `mcpd_find` nigdy nie rankuje po placeholderach.
+**Higiena wyszukiwania** (`31-mcpbank-discovery-hygiene.md`) jest egzekwowana pre‑commitem: description < 30 słów, scaffoldowe `TODO`/`(seed)` w `intent_examples`, opisy narzędzi < 25 znaków — blokują commit. Dzięki temu `mcpd_find` nigdy nie rankuje po placeholderach.
 
 ---
 
 ## 5. `acad-router` — branżowy MCPBank dla AutoCAD-a
 
-`acad-router` (C# .NET 8, `src/AcadMcp.Backend/Mcp/RouterServer.cs`) jest **jedynym** serwerem AutoCAD-a, który stale siedzi w `~/.cursor/mcp.json`. Patrz niezmiennik architektoniczny #5 i #6 w [`00-architecture-invariants.mdc`](../.cursor/rules/00-architecture-invariants.mdc).
+`acad-router` (C# .NET 8, `src/AcadMcp.Backend/Mcp/RouterServer.cs`) jest **jedynym** serwerem AutoCAD-a, który stale siedzi w `~/.cursor/mcp.json`. Patrz niezmiennik architektoniczny #5 i #6 w [`00-architecture-invariants.md`](../docs/engineering-rules/00-architecture-invariants.md).
 
 ### 5.1 9 meta‑narzędzi
 
@@ -190,7 +190,7 @@ Potem `scripts/register-mcps.ps1` upsertuje 19 manifestów do `C:\Users\DELL\mcp
 ### 5.2 Dwupoziomowa pętla tokenowa
 
 ```
-Poziom 1 (Cursor):   3 MCPs × ~9 toolów = ~27 toolów, ~1 600 tokenów
+Poziom 1 (klient MCP):   3 MCPs × ~9 toolów = ~27 toolów, ~1 600 tokenów
                      (mcpbank-discovery + mcpbank-dynamic + acad-router)
 
 Poziom 2 (lazy):     dopiero po acad_load_category('geometry-2d')
@@ -214,7 +214,7 @@ To najlepsza ilustracja wzorca "router‑as‑composition". Sekwencja wywołania
 
 Dwie krytyczne konsekwencje inżynieryjne:
 
-- `StdioJsonRpcHost` używa `StderrLoggerProvider` (wszystkie logi idą na `stderr`), bo stdout musi pozostać czystym strumieniem JSON‑RPC — inaczej klient MCP Cursora traci sync i raportuje `Not connected`.
+- `StdioJsonRpcHost` używa `StderrLoggerProvider` (wszystkie logi idą na `stderr`), bo stdout musi pozostać czystym strumieniem JSON‑RPC — inaczej klient MCP traci sync i raportuje `Not connected`.
 - `PluginToolRunner.RunWriteAsync` akwiruje `doc.LockDocument()` na **wątku backgroundowym** PRZED wrzuceniem roboty na UI thread — to omija deadlock wywoływany niewidocznym modalem licencji Educational (znaleziony i naprawiony w Phase 7.0 podczas live‑testu budowy domu jednorodzinnego).
 
 ---
@@ -251,10 +251,10 @@ scripts/
   ├── register-mcps.ps1       ← upsert 19 manifestów → mcpd-registry.json
   ├── check-manifests.ps1     ← gate: MF1001-MF1004 (missing field / stale / dup)
   └── audit-discovery.ps1     ← 20 zapytań × 19 kategorii → raport hit-rate
-.cursor/rules/
-  ├── 00-architecture-invariants.mdc  ← 7 niezmienników (w tym #5: MCPBank = jedyny discovery)
-  ├── 30-mcpbank-manifest.mdc
-  └── 31-mcpbank-discovery-hygiene.mdc
+docs/engineering-rules/
+  ├── 00-architecture-invariants.md  ← 7 niezmienników (w tym #5: MCPBank = jedyny discovery)
+  ├── 30-mcpbank-manifest.md
+  └── 31-mcpbank-discovery-hygiene.md
 ```
 
 ### 7.2 Artefakty w `C:\Users\DELL\mcpbank`
@@ -302,7 +302,7 @@ registry/
 }
 ```
 
-**To jest cały kontakt Cursor ↔ AutoCAD MCP.** Wszystkie pozostałe 18 serwerów `acad-*` startują dopiero po `mcpd_connect("acad-<cat>", lazy_mode=true)` albo po `acad_load_category("<cat>")`.
+**To jest cały kontakt klient MCP ↔ AutoCAD MCP.** Wszystkie pozostałe 18 serwerów `acad-*` startują dopiero po `mcpd_connect("acad-<cat>", lazy_mode=true)` albo po `acad_load_category("<cat>")`.
 
 ### 7.4 E2E: projekt domu jednorodzinnego wykonany wyłącznie przez MCP
 
@@ -320,11 +320,11 @@ Audit loga (`%LOCALAPPDATA%\AcadMcp\logs\iterate-house-f1.json`, …-f2.json, �
 
 ## 8. Własności systemowe (invariants), które daje MCPBank
 
-Siedem niezmienników AutoCAD MCP (plik [`00-architecture-invariants.mdc`](../.cursor/rules/00-architecture-invariants.mdc)) opiera się o MCPBank w trzech miejscach:
+Siedem niezmienników AutoCAD MCP (plik [`00-architecture-invariants.md`](../docs/engineering-rules/00-architecture-invariants.md)) opiera się o MCPBank w trzech miejscach:
 
 - **#1 „ONE Backend binary":** wszystkie 19 kategorii to ten sam `AcadMcp.Backend.exe` parametryzowany `--category`. Launcher `.cmd` w manifeście = jedyna indirekcja. Bez MCPBank wymagałoby to 19 wpisów w `mcp.json`.
 - **#5 „MCPBank is the ONLY discovery":** zakaz rejestrowania kategorii bezpośrednio w `mcp.json`. Egzekwowane przez `check-manifests.ps1` + testy NetArchTest w `tests/AcadMcp.Tests/ArchitectureTests`.
-- **#6 „Router stays in Cursor permanently":** router jest jedynym toolowo‑ciężkim serwerem dopuszczonym w `mcp.json`. Dodawanie narzędzi AutoCAD-owych do routera = antypattern łapany w code review.
+- **#6 „Router stays connected permanently":** router jest jedynym toolowo‑ciężkim serwerem dopuszczonym w `mcp.json`. Dodawanie narzędzi AutoCAD-owych do routera = antypattern łapany w code review.
 
 Dzięki temu dodanie 20. kategorii (np. `acad-rendering`) to: nowy folder `Categories/Rendering`, nowe `[McpTool]` metody, `scripts/new-category.ps1`, auto‑gen manifestu, `register-mcps.ps1`. **Zero zmian w `mcp.json`, zero zmian w routerze, zero zmian w MCPBank.**
 
@@ -337,7 +337,7 @@ Dzięki temu dodanie 20. kategorii (np. `acad-rendering`) to: nowy folder `Categ
 | Serwery w rejestrze | 53 | `mcpd-registry.json` |
 | Kategorie AutoCAD | 19 | `mcpbank-manifests/` |
 | Narzędzia AutoCAD | 230 | suma `tools_summary[*].length` |
-| Meta‑narzędzia w Cursorze (MCPBank + router) | 9 + 4 + 1 = 14 | `mcp.json` |
+| Meta‑narzędzia w kliencie MCP (MCPBank + router) | 9 + 4 + 1 = 14 | `mcp.json` |
 | Startowy koszt kontekstu (bez MCPBank, 19 × 12 narzędzi) | ~17 000 tok. | benchmark formuła 65 tok/schema |
 | Startowy koszt kontekstu (z MCPBank + router) | ~1 600 tok. | `mcpbank-benchmark` |
 | **Oszczędność tokenowa** | **~91 %** | stosunek |
@@ -355,7 +355,7 @@ MCPBank jest **jedynym dostępnym rozwiązaniem**, które jednocześnie:
 1. Obcinaj̨e startowy koszt tokenowy do rzędu 1 % baseline (4 tools vs 78 tools na 6 serwerach, przeskalowanie do 0,1 % przy naszych 19 kategoriach AutoCAD).
 2. **Nie zostaje permanentnym proxy** — po `mcpd_connect` agent ma bezpośredni kontakt z serwerem, co eliminuje opóźnienie i SPOF.
 3. Działa offline, bez żadnego modelu ML w warstwie bazowej (TF‑IDF + tablica synonimów PL/EN pokrywa 92 % zapytań w naszym audycie).
-4. Ma **formalny kontrakt manifestu** pozwalający zewnętrznym zespołom wnosić swoje kategorie bez zmian w kodzie MCPBank ani klienta (Cursor).
+4. Ma **formalny kontrakt manifestu** pozwalający zewnętrznym zespołom wnosić swoje kategorie bez zmian w kodzie MCPBank ani klienta MCP.
 5. Integruje się z systemem branżowym (acad‑router) bez zmuszania go do używania Pythona — router jest w .NET 8, MCPBank w Pythonie, komunikują się przez czysty JSON‑RPC stdio.
 
 `acad-router` jest **referencyjną implementacją** wzorca „router‑over‑MCPBank": sam jest MCP, sam jest konsumentem MCPBank (wewnętrznie wywołuje `mcpd_find`/`mcpd_connect` dla dociągania kategorii), i sam wystawia branżowe meta‑narzędzia, które agent rozumie z opisu, a nie z listy 230 czystych toolów. W produkcji (projekt domu jednorodzinnego oraz audyt pliku `[REDACTED-REFERENCE-DWG]`) rozwiązanie potwierdziło, że agent LLM ze skończonym oknem kontekstu potrafi **poprawnie i bez halucynacji** operować na systemie, który bez MCPBank w ogóle by się w jego głowie nie mieścił.
@@ -366,5 +366,5 @@ MCPBank jest **jedynym dostępnym rozwiązaniem**, które jednocześnie:
 
 - Pełny kod MCPBank: `C:\Users\DELL\mcpbank` (MIT, PyPI `mcpbank>=0.3.0`).
 - Pełny kod acad‑routera i 19 kategorii: `C:\Users\DELL\Dev\autocad-mcp` (repo).
-- Reguły kontraktowe (egzekwowane pre‑commitem): `.cursor/rules/30-mcpbank-manifest.mdc`, `.cursor/rules/31-mcpbank-discovery-hygiene.mdc`, `.cursor/rules/00-architecture-invariants.mdc`.
+- Reguły kontraktowe (egzekwowane pre‑commitem): `docs/engineering-rules/30-mcpbank-manifest.md`, `docs/engineering-rules/31-mcpbank-discovery-hygiene.md`, `docs/engineering-rules/00-architecture-invariants.md`.
 - Specyfikacja protokołu MCPBank: `C:\Users\DELL\mcpbank\docs\specification.md` oraz `docs/architecture.md`.

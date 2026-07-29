@@ -1,5 +1,5 @@
 // Marker attribute for MCP tools. Source generator scans for this and validates Intent is non-empty.
-// See rule 20-mcp-tool-attribute.mdc.
+// See rule 20-mcp-tool-attribute.md.
 
 using System;
 

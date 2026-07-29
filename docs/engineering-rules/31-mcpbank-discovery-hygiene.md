@@ -1,0 +1,101 @@
+# MCPBank discovery hygiene
+
+Hygiene rules for MCPBank registry discovery. Tags, intent examples, descriptions.
+
+The agent finds tools via `mcpd_find(query)`. Quality of `tags`, `intent_examples`, and `description` determines whether your category gets discovered. Bad hygiene = invisible tools = wasted work.
+
+## Tags
+
+- **Minimum 10 tags per category.** More is better (within reason - cap ~30).
+- **Mix English and Polish.** ~50/50.
+- **Lowercase.** No spaces - use single words. Multi-word concepts go in `intent_examples`.
+- **Domain words first** (`autocad`, `cad`, `dwg`), then category-specific (`layer`, `block`, `dimension`), then synonyms (`warstwa`, `wymiar`, `rysunek`).
+- **Common misspellings welcome** if the user is likely to type them (`okrag` AND `okręg`).
+
+## intent_examples
+
+- **Minimum 5, recommended 10-15** per category.
+- **Real user phrases.** "draw a circle of radius 100 at origin" beats "circle drawing".
+- **Mix imperative and declarative.** Both "narysuj wymiar" and "potrzebuje zwymiarowac sciane".
+- **Cover variant terminology.** Polish: "okrag" vs "kolo", "warstwa" vs "layer", "blok" vs "block".
+- **Cover task framings.** "I need to label this room" → matches `acad-annotations`. "Add room labels" same.
+- **Don't repeat what's in `tags`.** Examples should be sentences/phrases.
+
+## Description
+
+- **One paragraph (40-100 words).** No fluff.
+- **Lead with what.** "AutoCAD MCP - 2D geometry primitives:". Not "Welcome to our amazing tool".
+- **List representative tools.** "line, polyline, circle, arc, ellipse, spline, point, text".
+- **Mention requirements.** "Requires .NET plugin (NETLOAD)" if `requires_plugin: true`.
+- **English.** Both LLMs and the registry-discovery layer are tuned for English.
+
+## What NOT to do
+
+- ❌ Generic tags: `mcp`, `tool`, `server`. Useless for matching.
+- ❌ Tags only in one language. Half the user base is locked out.
+- ❌ Marketing language: "fastest", "best", "advanced". Doesn't help search.
+- ❌ Examples that mention internal tool names: `"call draw_line"`. The user doesn't know our tool names.
+- ❌ Description that just lists tools without context.
+
+## Bad
+
+```json
+{
+  "tags": ["mcp", "tool", "fast", "best"],
+  "intent_examples": [
+    "call draw_line tool",
+    "use drawing methods",
+    "draw stuff",
+    "make things",
+    "do cad"
+  ],
+  "description": "Best CAD tool ever! Super fast! Use it!"
+}
+```
+
+## Good
+
+```json
+{
+  "tags": [
+    "autocad", "cad", "dwg", "geometry", "2d", "drawing", "drafting",
+    "line", "polyline", "circle", "arc", "ellipse", "spline", "rectangle",
+    "rysunek", "kreslenie", "geometria", "okrag", "linia", "polilinia", "luk", "elipsa", "splajn", "prostokat"
+  ],
+  "intent_examples": [
+    "narysuj linie od punktu 0,0 do 100,100",
+    "stworz okrag o promieniu 50 w punkcie 10,10",
+    "potrzebuje zamknieta polilinie z 4 wierzcholkow",
+    "wstaw splajn po punktach kontrolnych",
+    "rysuje plan budynku, zacznij od scian",
+    "draw a horizontal line 100 mm long",
+    "create a circle at origin with radius 25",
+    "make a polyline from a list of points and close it",
+    "I'm sketching a floor plan, start with the walls",
+    "add an arc tangent to two existing lines"
+  ],
+  "description": "AutoCAD MCP - 2D geometry primitives. Tools: line, polyline (open/closed), circle (by center+radius, by 2/3 points, by tangents), arc (3-point, center+angles), ellipse, spline (control points / fit points), rectangle, point. Honors current layer and INSUNITS. Requires .NET plugin loaded into AutoCAD via NETLOAD. Not available on AutoCAD LT - use ComBridge fallback for limited subset on LT."
+}
+```
+
+## Audit
+
+After writing tools for a new category, run:
+
+```powershell
+pwsh scripts/check-manifests.ps1
+pwsh scripts/audit-discovery.ps1 acad-<name>   # Phase 6: simulates 20 user queries and reports discovery hit rate
+```
+
+If hit rate < 80%, expand `intent_examples` and `tags` until it improves.
+
+## Enforcement (pre-commit gate)
+
+`scripts/pre-commit.ps1` blocks the commit if any manifest fails the discovery contract:
+
+- `description` is missing, contains the literal `TODO`, the auto-generated stub sentence, or is shorter than 30 words.
+- Any entry in `intent_examples` matches `TODO` or starts with `(seed)` (scaffold leftovers).
+- `metadata.phase` is still the literal `TODO` instead of a real phase id from `CHANGELOG.md`.
+- Any tool in `tools_summary` has a missing/`TODO`/`Placeholder tool` description, or one shorter than 25 characters.
+
+The scaffold (`scripts/new-category.ps1`) seeds an empty `intent_examples` array on purpose. Real examples are auto-populated by `BankAutoRegister.RegenerateManifest`, which also defensively strips any leftover `TODO`/`(seed)` placeholders that ever sneak in. Do not bypass either layer - the moment `mcpd_find` ranks our category by a placeholder string, the agent silently misroutes user requests.

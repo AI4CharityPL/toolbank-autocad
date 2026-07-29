@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file. Format: [Ke
 ### Added
 
 - New standalone product **in-app AutoCAD AI Assistant** (`src/Companion/`), a separate, installable WPF chat palette (command `ACADAI`) independent of the editor integration. Lets clients chat with OpenAI / Anthropic / Gemini directly inside AutoCAD using their own API key (BYOK, encrypted with Windows DPAPI), attach images/PDF/text to the chat, count elements and generate reports (layer/block schedules, BOM) with Markdown rendering and CSV export.
-  - `AcadMcp.Companion.Mcp`: embedded stdio MCP client that spawns the existing `AcadMcp.Backend --category router` as a child process and reuses the entire tool bank (router + composites + plugin primitives) with zero re-implementation. Coexists with the Cursor client (the plugin pipe server already accepts multiple sessions).
+  - `AcadMcp.Companion.Mcp`: embedded stdio MCP client that spawns the existing `AcadMcp.Backend --category router` as a child process and reuses the entire tool bank (router + composites + plugin primitives) with zero re-implementation. Coexists with any other MCP client (the plugin pipe server already accepts multiple sessions).
   - `AcadMcp.Companion.Agent`: provider-agnostic tool-calling loop with SSE streaming (`OpenAiProvider`, `AnthropicProvider`, `GeminiProvider`), multimodal message building per vendor, DPAPI key store, settings, and report flow templates.
   - `AcadMcp.Companion.Host`: `IExtensionApplication` + singleton `PaletteSet` hosting an MVVM WPF chat view (streaming, attachments, settings tab, quick reports). Does not load `AcadMcp.Backend` in-process (rule 16); does not surface the internal protocol name in the UI.
   - Packaging: `installer/PackageContents.companion.xml`, per-user Inno Setup installer `installer/AcadMcpCompanion.iss`, `scripts/deploy-companion.ps1` (dev deploy) and `scripts/build-companion-installer.ps1` (client `.exe`/zip). The bundle ships Host + tool host (`AcadMcp.Plugin`) + backend server so a single install is self-contained; the client enters their API key on first run.
@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
-- **Companion: multi-agent planning + autonomous continuation.** New "Tryb planowania" toggle: a planner pass produces a numbered step plan (inspecting the drawing read-only first), then executor passes run each step sequentially (Cursor-style plan/agent split). The agent loop now auto-continues when a response is truncated by the token limit (provider `finish_reason`/`stop_reason`/`finishReason` parsed for OpenAI/Anthropic/Gemini), so long builds and answers finish even past the per-response character limit. Raised default `MaxToolIterations` 12 → 24.
+- **Companion: multi-agent planning + autonomous continuation.** New "Tryb planowania" toggle: a planner pass produces a numbered step plan (inspecting the drawing read-only first), then executor passes run each step sequentially (a planner/executor split). The agent loop now auto-continues when a response is truncated by the token limit (provider `finish_reason`/`stop_reason`/`finishReason` parsed for OpenAI/Anthropic/Gemini), so long builds and answers finish even past the per-response character limit. Raised default `MaxToolIterations` 12 → 24.
 - **Companion: AI room visualizations in chat.** New client-side tool `render_visualization` lets the agent generate a rendered image of an indicated room from drawing data (dimensions, room type, furniture) + conversation context (e.g. hospital ward) using the active provider's image model (OpenAI `gpt-image-1`, Gemini `gemini-2.5-flash-image`). The image is shown inline in the chat (`MessageBubble.Image`, `IImageGenerator`, `OnImage` observer callback). Anthropic returns a hint to switch provider (no image model).
 
 - New read-only tool `get_room_data` in `acad-schedules`: locate ONE room by number or name (substring) and return its number, name, area (m²), bbox dimensions (width × depth mm), plus the doors, windows and furniture whose insertion point lies inside the room boundary (each opening tagged with its wall N/S/E/W). Backs accurate "find room A-304" lookups and grounds AI room visualizations. (#ACAD-26)
@@ -50,7 +50,7 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 - **Companion UI: theme-aware + live models.** Chat palette now reads AutoCAD `COLORTHEME` and applies a dark/light brush set so it stays readable in both modes (`ThemePalette` + DynamicResource brushes). The Settings model field is a live, editable dropdown populated from the provider's `/models` API using the user's key (`ModelCatalog`, with curated fallback), and saving the API key shows an explicit "saved" confirmation and refreshes the model list.
 - **Companion deploy:** `scripts/deploy-companion.ps1 -SkipPlugin` omits the duplicate `AcadMcp.Plugin.dll`/ComponentEntry on dev machines that already run the pipe via `AcadMcp.bundle`, avoiding a pipe-name conflict at AutoCAD startup.
-- Added always-on workflow rule `56-jira-for-important-work.mdc` requiring important work to be reflected in Jira and durable documentation, after Atlassian project setup drifted through chat/Confluence before the final Jira structure was corrected.
+- Added always-on workflow rule `56-jira-for-important-work.md` requiring important work to be reflected in Jira and durable documentation, after Atlassian project setup drifted through chat/Confluence before the final Jira structure was corrected.
 
 ### Changed - Phase D12 Hospital2026 regeneration with all new categories (2026-04-24)
 
@@ -257,7 +257,7 @@ Release both **0 err / 0 warn**.
 
 ### Added - Phase D D10: architectural-fidelity rubric + rule enrichments (2026-04-23)
 
-- **Rule `60-architectural-fidelity.mdc`** — the 17-criterion scorecard
+- **Rule `60-architectural-fidelity.md`** — the 17-criterion scorecard
   that `senior-architect-reviewer` (D11 Vision persona) applies to every
   floor plan before it qualifies as rysunek wykonawczy. Criteria span
   material expression (hatching), furnishing, sanitary fixtures, door +
@@ -268,12 +268,12 @@ Release both **0 err / 0 warn**.
   one detector tool + the matching category rule. Threshold policy:
   `< 10` = concept, `10-13` = technical study, `14-15` = executive with
   remark, `16-17` = full wykonawczy.
-- **Rule `26-acad-api-traps.mdc`** extended with **7 hatching pitfalls**
+- **Rule `26-acad-api-traps.md`** extended with **7 hatching pitfalls**
   (§11a-g): boundary orientation CCW, associativity + ghost hatches,
   pattern file (`.pat`) resolution via SupportPath, seed-point UCS
   rules, literal mm scale, clip-via-rebuild pattern, and `HatchStyle`
   = island detection (not clipping). Companion to rule 62.
-- **Rule `22-mcp-tool-args-results.mdc`** extended with the **block
+- **Rule `22-mcp-tool-args-results.md`** extended with the **block
   attribute contract**: tag constants in a single `static class`,
   exactly ONE visible tag + rest invisible, string values with strict
   encoding (`"900"` / `"0"` / `""`), DTO surface via
@@ -345,7 +345,7 @@ Release both **0 err / 0 warn**.
   table** (ACI 1-9 → 0.13–0.70 mm) for architectural drawings, and
   `AssetsDirectory()` which walks up from the test binary to find
   `<repo>/assets/plotstyles/` via the `AcadMcp.Backend.csproj` marker.
-- **`rule 61-lineweight-policy.mdc`** — 6-section policy covering the
+- **`rule 61-lineweight-policy.md`** — 6-section policy covering the
   scope of `acad-plotstyles`, the mandatory colour → lineweight tier
   table, canonical CTB presets, directory resolution strategy (best-
   effort probe + graceful fallback), `apply_plotstyle_to_layout`
@@ -428,7 +428,7 @@ own support paths and by reading `LOCALROOTPREFIX` system var.
   title underline / elevation triangle + baseline, and an 8-entry
   compass-direction map with `ResolveDirectionDeg` (accepts names or
   bare numeric strings).
-- **`rule 70-sections-elevations.mdc`** — 7-section policy covering the
+- **`rule 70-sections-elevations.md`** — 7-section policy covering the
   layer set, cut-line contract (DASHED2 + ticks + delegated end markers),
   section-title contract, elevation-marker contract, inventory contract,
   composite-of-composite pattern (Sections → Callouts is an explicit
@@ -472,7 +472,7 @@ the 4 new tools and retire the scaffolded `sections_placeholder`.
 - **`CalloutsPalette`** — canonical layer set (`A-ANNO-NORT/SBAR/SYMB/TTLB/
   BORD/TEXT`), ISO 5455 plotted sizes, ISO A0–A4 sheet table, scale-bar
   preset table, default 12-row title block keys, scale-factor resolver.
-- **`rule 69-callouts-leaders.mdc`** — layer / plotted-size / leader
+- **`rule 69-callouts-leaders.md`** — layer / plotted-size / leader
   hierarchy contract. Defines the PL title block rows, the section marker
   geometry (PN-EN ISO 128), the chequered scale bar rules, and test
   coverage expectations.
@@ -491,7 +491,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   that dispatches in-process to **any** backend composite (via
   `ToolRegistry` + reflection) or **any** plugin primitive by dotted name
   (`acad.<cat>.<name>` routed through `IPluginGateway`). Replaces the old
-  "lazy MCPBank connect" workflow: Cursor no longer needs `mcpbank-discovery`
+  "lazy MCPBank connect" workflow: the MCP client no longer needs `mcpbank-discovery`
   / `mcpbank-dynamic` to reach category tools — the router owns the full
   catalog directly. No subprocess spawn, single stdio hop, shared
   plugin/vision clients.
@@ -530,8 +530,8 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
 
 ### Notes
 
-- Cursor must restart the `user-acad-router` MCP server to pick up the new
-  binary (rebuild produced a fresh `AcadMcp.Backend.dll`; Cursor caches the
+- The MCP client must restart the `user-acad-router` MCP server to pick up the new
+  binary (rebuild produced a fresh `AcadMcp.Backend.dll`; the client caches the
   stdio process).
 - Plugin-side primitives are unchanged; `acad_call` only adds a new routing
   layer above them.
@@ -694,7 +694,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   `draw_circle` / `draw_arc` / `add_dbtext` / `dimension_linear` /
   `dimension_aligned` / `create_layer` gateways without duplicating
   JSON-object plumbing (rule 35 §2).
-- **rule 67-grid-axes.mdc** — single source of truth for the
+- **rule 67-grid-axes.md** — single source of truth for the
   column-grid + vertical-circulation policy: layer key (A-GRID /
   A-GRID-MINOR / A-GRID-BUB / A-GRID-ID / A-STRS / A-STRS-DIR /
   A-RAMP / A-RAMP-DIR / A-VTRN-ELEV / A-VTRN-ESCL / A-VTRN-LIFT /
@@ -752,7 +752,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   - `swap_block` — globally replaces every `BlockReference` of `oldName`
     with `newName`, preserving position/rotation/scale/layer and copying
     matching attribute tag/value pairs onto the new definition.
-- **rule 66-dimension-chains.mdc** — documents the 3-level chain
+- **rule 66-dimension-chains.md** — documents the 3-level chain
   hierarchy (L1 opening / L2 axis / L3 overall), ARCH-ISO DIM var table,
   continued vs baseline vs cumulative semantics, `auto_dim_walls`
   projection + T-junction-merge algorithm, layer conventions
@@ -810,7 +810,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
     `PluginEntryPoint.Initialize` and `ToolHost.Register(...)`; all
     handlers go through `PluginToolRunner.RunWriteAsync` (or `RunReadAsync`
     for read-only tools) per rules 10/11/19.
-- **Rule 62 (`.cursor/rules/62-hatching-policy.mdc`)**: authoritative
+- **Rule 62 (`docs/engineering-rules/62-hatching-policy.md`)**: authoritative
   material -> (pattern, scale, angle, color) table, drawing-unit mm
   assumption, associativity rules, `A-BNDRY-TEMP` layer contract,
   TraceBoundary failure modes, plot-lineweight decoupling from hatches,
@@ -875,7 +875,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
 - **Automatic numbering**: each insert scans model-space for max
   `D-nnn` / `W-nnn` and increments; callers can pin `number=` explicitly
   (e.g. `D-EVAC-01` for evacuation routes); `renumber_openings` resets.
-- **Rule 65 (`.cursor/rules/65-door-window-schedule.mdc`)**: block naming,
+- **Rule 65 (`docs/engineering-rules/65-door-window-schedule.md`)**: block naming,
   origin semantics, the 14-tag attribute contract (table form with
   visibility + per-kind applicability), numbering rules, layer split,
   wall-cutting projection semantics with cautionary notes about jamb
@@ -926,7 +926,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   `BlockTableRecord` named `<family>-<W>-<D>`.
 - **Layer split** (AIA-2017):
   `A-PLMB-WC / -BSN / -SHW / -BT / -UR`, fallback `A-PLMB`.
-- **Rule 63 (`.cursor/rules/63-sanitary-fixtures-wt.mdc`)**: canonical
+- **Rule 63 (`docs/engineering-rules/63-sanitary-fixtures-wt.md`)**: canonical
   block-name convention, fixed catalogue + sized-family tables,
   attribute contract (ACCESSIBLE flag fed to downstream schedules /
   validators), layer split table, the 6 populate_bathroom presets with
@@ -979,7 +979,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
     `TYPE` / `ROOM` / `NOTE` (hidden, editable) — schedule-ready (D8).
 - **Layer split** (AIA-2017): `A-FURN-BED / -CHR / -DSK / -CBT / -SFA / -TBL`
   auto-applied by block prefix, fallback `A-FURN`. Callers may override.
-- **Rule 64 (`.cursor/rules/64-furniture-density-per-room.mdc`)**:
+- **Rule 64 (`docs/engineering-rules/64-furniture-density-per-room.md`)**:
   drawing-unit (mm) assumption, block-name convention, attribute contract,
   layer split table, the 7 preset definitions with minimum room sizes,
   clearance budget per PN-EN 17210 / WT-2019 §95 / §234 (bed side access
@@ -1013,7 +1013,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   (10), `acad-plumbing` (8), `acad-openings` (10), `acad-verticals` (7),
   `acad-grids` (6), `acad-schedules` (5), `acad-sections` (4),
   `acad-plotstyles` (3), `acad-callouts` (4) — **48 new tools** respecting
-  the single-backend-per-category invariant (`00-architecture-invariants.mdc` §1).
+  the single-backend-per-category invariant (`00-architecture-invariants.md` §1).
 - **Extensions (3 existing categories)**: `Architecture` +6 tools (draw_window,
   draw_stair, draw_elevator, draw_ramp, draw_ceiling_grid, split_wall_at_opening),
   `Dimensions` +5 tools (chain, cumulative, baseline, tick policy, auto_dim_walls),
@@ -1021,7 +1021,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
 - **Block library (80+ DWG assets planned)**: `assets/blocks/{furniture-hospital,
   furniture-office, plumbing, openings, verticals, symbols}/` with per-folder
   `manifest.json`.
-- **10 new `.cursor/rules/` entries (60-69)**: architectural fidelity minimum,
+- **10 new `docs/engineering-rules/` entries (60-69)**: architectural fidelity minimum,
   9-tier lineweight policy, per-layer hatching policy, WT §78 sanitary fixtures,
   per-room furniture density, door/window schedule atts, 3-level dimension chains,
   grid axes with bubble labels, plan symbols (north + scale bar + title block
@@ -1143,11 +1143,11 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
   round-trip (20/20 with AutoCAD running).
 
 ### Added
-- Documented the development status log (`docs/PHASE-7-STATUS.md`), always-apply Cursor rule `54-development-status.mdc`, and README Status / onboarding section so agents treat the documented foundation as delivered and check current status before assuming a tool works.
+- Documented the development status log (`docs/PHASE-7-STATUS.md`), always-apply engineering rule `54-development-status.md`, and README Status / onboarding section so agents treat the documented foundation as delivered and check current status before assuming a tool works.
 
 ### Added - Phase 6.5 acad-parametric (rule 42 + 12 tools + plugin acad.parametric.* + parametric-baseline)
 
-- **Rule first** (rule 53): `42-parametric-domain-traps.mdc` — Block Editor vs
+- **Rule first** (rule 53): `42-parametric-domain-traps.md` — Block Editor vs
   model space, Fix as datum anchor, over-constraining, explode destroys
   constraints, dynamic-block value typing plus anonymous `*U` block names,
   geometric vs dimensional strategy, hatch vs boundary polylines, 6-layer
@@ -1179,7 +1179,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
 
 ### Added - Phase 6.4 acad-electrical (rule 39 + 12 tools + 5 paired validators + electrical-baseline)
 
-- **Rule first** (rule 53): `39-electrical-domain-traps.mdc` BEFORE any
+- **Rule first** (rule 53): `39-electrical-domain-traps.md` BEFORE any
   electrical code. 13 traps: IEC vs ANSI symbol style (rectangle vs zig-zag
   for resistors, rectangle vs circle for coils — pick one per drawing);
   NO vs NC contact symbols (the horizontal slash IS the NC marker, so the
@@ -1271,7 +1271,7 @@ draw_circle`, `acad.annotations.add_dbtext`, `acad.layers.create_layer`
 
 ### Added - Phase 6.3 acad-civil (rule 38 + 10 tools + 5 paired validators + civil-baseline)
 
-- **Rule first** (rule 53): `38-civil-domain-traps.mdc` BEFORE any civil
+- **Rule first** (rule 53): `38-civil-domain-traps.md` BEFORE any civil
   code. 11 traps: stationing notation (Polish/EU `0+020` vs US `0+20`,
   single-source `format_station`), surveyor bearings (`N 45° 30' 15" E`,
   quadrant-driven sign — never `degrees * π / 180`), parcel closure
@@ -1365,7 +1365,7 @@ runner) can flag out-of-tolerance parcels immediately.
 
 ### Added - Phase 6.2 acad-mechanical (rule 37 + 12 tools + 4 paired validators)
 
-- **Rule first** (rule 53): `37-mechanical-domain-traps.mdc` BEFORE any
+- **Rule first** (rule 53): `37-mechanical-domain-traps.md` BEFORE any
   mechanical code. 11 traps: edge-class linetypes (visible / hidden / centre
   each on its own layer + linetype), centreline shape (extension past the
   feature, not just a `+`), section cutting plane = thick PHANTOM polyline +
@@ -1451,14 +1451,14 @@ rule 37 §4a and the category `_README.md`.
 
 ### Added - Phase 6.1 acad-architecture (rule 35 + rule 36 + 10 tools)
 
-- **Rules first** (rule 53): two new `.mdc` files BEFORE any domain code:
-  - `35-domain-categories-design.mdc` — universal contract for the 5 planned
+- **Rules first** (rule 53): two new `.md` files BEFORE any domain code:
+  - `35-domain-categories-design.md` — universal contract for the 5 planned
     domain categories (`acad-architecture`, `acad-mechanical`, `acad-civil`,
     `acad-electrical`, `acad-parametric`): intent layer (not raw geometry),
     compose primitives, auto-create infrastructure, idempotent infrastructure
     + non-idempotent content, units check, paired validators, 30-tool budget,
     new-category checklist.
-  - `36-architecture-domain-traps.mdc` — 13 architecture-specific pitfalls
+  - `36-architecture-domain-traps.md` — 13 architecture-specific pitfalls
     (walls = centreline + 2 faces, mitre/butt/square wall ends, doors are
     panel + swing + opening, windows are sill + glass + header, columns belong
     on `S-COLS` not `A-WALL`, rooms = closed boundary + tag with computed
@@ -1501,9 +1501,9 @@ rule 37 §4a and the category `_README.md`.
 
 ### Added - Phase 5 phase5_validators (in progress)
 
-- **Rules first** (rule 53): two new `.mdc` files BEFORE any code:
-  - `33-validators-rule-format.mdc` - canonical YAML schema for validator rules (`id`, `discipline`, `severity`, `scope`, `checks`, `fix`), check + fix primitive tables, hard rules (no blanket fixes, ≥25-char descriptions), and the `--validators-self-check` workflow.
-  - `34-validators-engine-traps.mdc` - 11 documented engine pitfalls (collect entities once per run, read-only collectors, single grouped fix transaction, ACI-vs-true-color mapping, conditional geometric checks, regex compilation cache, separate doc snapshot, agent-actionable violation messages, last-report cache, baseline diffing, idempotent fixes).
+- **Rules first** (rule 53): two new `.md` files BEFORE any code:
+  - `33-validators-rule-format.md` - canonical YAML schema for validator rules (`id`, `discipline`, `severity`, `scope`, `checks`, `fix`), check + fix primitive tables, hard rules (no blanket fixes, ≥25-char descriptions), and the `--validators-self-check` workflow.
+  - `34-validators-engine-traps.md` - 11 documented engine pitfalls (collect entities once per run, read-only collectors, single grouped fix transaction, ACI-vs-true-color mapping, conditional geometric checks, regex compilation cache, separate doc snapshot, agent-actionable violation messages, last-report cache, baseline diffing, idempotent fixes).
 - **Backend validator engine** (`src/AcadMcp.Backend/Validators/`):
   - `Rule.cs` POCOs (`Severity`, `Discipline`, `RuleScope`, `CheckSpec`, `FixSpec`).
   - `RuleLoader.cs` - YamlDotNet-based parser enforcing rule 33 §7 hard rules (id format, severity enum, description length, no blanket-fix).
@@ -1526,9 +1526,9 @@ rule 37 §4a and the category `_README.md`.
 
 ### Added - Phase 4 phase4_vision_sidecar (in progress)
 
-- **Rules first** (rule 53): two new `.mdc` files BEFORE any code:
-  - `29-acad-vision-architecture.mdc` - HTTP/JSON not gRPC, 127.0.0.1-only bind, idle-shutdown sidecar lifecycle, `IVisionSidecarClient` not raw `HttpClient`, no AutoCAD-plugin dependency in v1, content-hash cache keys.
-  - `32-acad-vision-traps.mdc` - 11 documented vision/OCR/ML pitfalls (image normalisation, PDF page-by-page, OCR confidence cutoffs, per-discipline title-block templates, per-discipline YOLO weights, vision-LLM cost/latency budget, pixel coords vs drawing units, cross-validate is a string-set diff, lazy ML imports, single-engine semaphore, cache invalidation).
+- **Rules first** (rule 53): two new `.md` files BEFORE any code:
+  - `29-acad-vision-architecture.md` - HTTP/JSON not gRPC, 127.0.0.1-only bind, idle-shutdown sidecar lifecycle, `IVisionSidecarClient` not raw `HttpClient`, no AutoCAD-plugin dependency in v1, content-hash cache keys.
+  - `32-acad-vision-traps.md` - 11 documented vision/OCR/ML pitfalls (image normalisation, PDF page-by-page, OCR confidence cutoffs, per-discipline title-block templates, per-discipline YOLO weights, vision-LLM cost/latency budget, pixel coords vs drawing units, cross-validate is a string-set diff, lazy ML imports, single-engine semaphore, cache invalidation).
 - **AcadMcp.Vision Python sidecar (v0.2.0)** - real FastAPI HTTP API replaces Phase 0 stub:
   - `acadmcp_vision/app.py` - FastAPI wire-up, idle-shutdown watchdog (default 300 s), pid/port discovery files under `%LOCALAPPDATA%\AcadMcp\`, hard-refuses non-loopback `--host`, per-engine `asyncio.Semaphore(1)` queues.
   - `schemas.py` - Pydantic v2 request/response shapes for `ImageRef` / OCR / detect-symbols / titleblock / dimensions / classify / describe / segment / cross-validate plus health/version envelopes.
@@ -1582,7 +1582,7 @@ rule 37 §4a and the category `_README.md`.
 
 - Initial project skeleton: folder structure, `git init`, `.gitignore`, `README.md`, this `CHANGELOG.md`
 - `NuGet.config` pinning nuget.org as the only source
-- `.cursor/rules/` "growing rulebook":
+- `docs/engineering-rules/` "growing rulebook":
   - **Foundation (always-apply):** `00-architecture-invariants`, `01-folder-layout`, `02-no-breaking-changes`, `03-language-and-style`, `04-build-and-test-gates`, `50-task-flow`, `51-changelog`, `52-no-yolo-changes`, `53-rules-update-mandate`
   - **Plugin invariants (10-15):** `10-acad-ui-thread`, `11-acad-transactions`, `12-acad-error-mapping`, `13-acad-units-coords`, `14-acad-no-blocking-prompts`, `15-acad-sendcommand`
   - **MCP tool authoring (20-25):** `20-mcp-tool-attribute`, `21-mcp-tool-naming`, `22-mcp-tool-args-results`, `23-mcp-tool-idempotency`, `24-mcp-tool-category-binding`, `25-mcp-tool-tests`
@@ -1609,7 +1609,7 @@ rule 37 §4a and the category `_README.md`.
   - `scripts/register-mcps.ps1` - upserts every `acad-*.json` into the user's MCPBank registry (auto-detected from `~/.cursor/mcp.json` `mcpbank-dynamic.--registry` arg, fallback to `~/mcpbank/registry/mcpd-registry.json`). Validates required fields, supports `-DryRun`. Smoke-tested: detects acad-router as ADD with 8 tools.
   - `scripts/install-cursor-config.ps1` - inserts/updates ONLY `acad-router` in `~/.cursor/mcp.json`, leaves all other MCP servers untouched, takes timestamped backup. Smoke-tested: 30+ existing MCP servers preserved, acad-router appended cleanly.
 - Pre-commit gate + category scaffolder:
-  - **Rules:** `40-pre-commit-gates.mdc` (what the hook MUST/MUST NOT check, <60s budget), `41-new-category-flow.mdc` (mandatory naming map for adding any acad-* category)
+  - **Rules:** `40-pre-commit-gates.md` (what the hook MUST/MUST NOT check, <60s budget), `41-new-category-flow.md` (mandatory naming map for adding any acad-* category)
   - `scripts/pre-commit.ps1` - 5-section gate (rules YAML, manifest validation, forbidden C# patterns, secret regex, CHANGELOG gate), supports `-Install` (writes `.git/hooks/pre-commit` shim), `-All` (full tree), `-FailFast`. Smoke-tested at 0.62-0.74 s on warm cache.
   - `scripts/new-category.ps1` - single source of truth for adding `acad-<name>` categories. Generates: `Categories/<Folder>/<Folder>Tools.cs` (compilable stub `[McpTool]`), `_README.md`, `mcpbank-manifests/acad-<name>.json` (with TODO placeholders), `bin-launchers/acad-<name>.cmd`, `tests/AcadMcp.Tests/Categories/<Folder>Tests.cs`. Refuses to overwrite without `-Force`. Validates kebab-case input.
   - `scripts/check-manifests.ps1` fixed: now reads `tools_summary` (not the obsolete `tools` key), and reports the actual manifest filename (kebab-case) instead of the PascalCase folder name.
@@ -1667,7 +1667,7 @@ rule 37 §4a and the category `_README.md`.
   - `AcadMcp.Shared/Pipe/PipeFraming.cs` - shared length-prefixed JSON envelope reader/writer, 16 MiB max payload.
   - `AcadMcp.Shared/Contracts.cs` additive: `CancelRequest`, `MessageKind`, `MessageEnvelope` (kept backward-compatible per rule 02).
 - Backend stdio host + plugin gateway (`phase1_mcp_host`):
-  - **Rule 18-backend-host-and-gateway.mdc** - mandatory `IPluginGateway` abstraction, "no direct AutoCAD calls from Backend", lazy connect, single-reconnect policy, error mapping.
+  - **Rule 18-backend-host-and-gateway.md** - mandatory `IPluginGateway` abstraction, "no direct AutoCAD calls from Backend", lazy connect, single-reconnect policy, error mapping.
   - `IPluginGateway` + `PluginGateway` (singleton, lazy-connect, ONE reconnect on dropped pipe, typed `PluginUnavailableException` / `PluginToolException`).
   - Wired into DI: registered ONLY when `--category != router` (router is plugin-free).
   - `CategoryServer.BuildCallArgs` now injects `IPluginGateway` into any tool parameter typed as such; `RequiresPlugin = true` tools without a registered gateway return MCP error -32603.
@@ -1683,7 +1683,7 @@ rule 37 §4a and the category `_README.md`.
 
 ### Added - Phase 1 first real category: acad-geometry-2d (32 tools)
 
-- **Rule 19-tool-implementation-pattern.mdc** - mandatory Backend↔Plugin tool split, naming map (`draw_line` ↔ `acad.geometry2d.draw_line`), forbidden patterns (no `Autodesk.AutoCAD.*` in Backend), per-call timeout defaults.
+- **Rule 19-tool-implementation-pattern.md** - mandatory Backend↔Plugin tool split, naming map (`draw_line` ↔ `acad.geometry2d.draw_line`), forbidden patterns (no `Autodesk.AutoCAD.*` in Backend), per-call timeout defaults.
 - Backend declarations (`src/AcadMcp.Backend/Categories/Geometry2d/`):
   - `Geometry2dDtos.cs` - 27 typed records (creation args, query args, modify args, results) with `JsonPropertyName` matching the wire shape.
   - `Geometry2dProxy.cs` - one-line gateway proxy `CallAsync<TArgs,TResult>(gw, "acad.geometry2d.<verb>", args, timeoutMs, ct)`.

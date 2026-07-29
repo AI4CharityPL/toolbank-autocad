@@ -1,0 +1,118 @@
+# acad-parametric domain traps
+
+Parametric-discipline domain traps — model space vs Block Editor for constraints, Fix as the anchor, over-constraining (red DOCTOR), exploding destroys constraints, dynamic-block property units (bool vs real vs string vs lookup), anonymous block names after insert, dimensional vs geometric constraint strategy, associative hatch vs parametric geometry. Read BEFORE adding a tool to acad-parametric or validators under validators/parametric/.
+
+These are the mistakes drafters (human or AI) make when they turn on
+**geometric constraints**, **dimensional constraints**, or **dynamic
+blocks** without understanding AutoCAD's associative machinery. They sit on
+top of the universal domain rule 35.
+
+## 1. Block Editor vs model space — constraints are context-sensitive
+
+Geometric constraints on **block geometry** are authored inside **BEDIT**.
+Constraints dropped on the same entities in **model space** attach to the
+MSPACE `BlockTableRecord`, not to the block definition the user thinks they
+are editing. The agent MUST ask "are we editing a block definition or the
+assembly drawing?" before calling `apply_geom_*`.
+
+v1 `acad-parametric` tools operate on **handles in the current space** (MSPACE
+or the active layout's block as appropriate). Block-definition authoring
+inside BEDIT ships in Phase 7 with explicit `ownerBlockName` disambiguation.
+
+## 2. One Fix constraint is worth a thousand guesses
+
+Without a **Fix** (or a fully anchored UCS-locked frame), a constrained sketch
+drifts as a rigid body when the solver runs. Offices standardise on **one**
+Fix on construction geometry (origin corner, datum line endpoint) per
+sketch. Agents who stack three Fix constraints on unrelated entities create
+an over-constrained doctor state immediately.
+
+`apply_geom_fix` exists so the agent can anchor deliberately — never call it
+three times "just to be safe".
+
+## 3. Over-constraining — red circles in the constraint doctor
+
+AutoCAD's constraint solver flags **redundant** or **conflicting**
+constraints. Common AI failure mode: Horizontal + Parallel + Parallel on the
+same pair of lines → redundant. Another: EqualLength + fixed numeric
+dimension + parallel chain → conflict.
+
+There is **no** YAML validator for solver state in v1 — the human (or agent)
+reads the constraint doctor. Phase 7 may ship `acad.parametric.analyze_dof`
+once the plugin can query the associative network.
+
+## 4. EXPLODE / BURST kills constraints
+
+Constraints bind to `ObjectId`s. **Explode** replaces entities with new
+ids — all attached constraints either vanish or orphan. Agents who explode a
+parametric sketch to "clean it up" destroy the design intent.
+
+Paired validator `parametric.no-exploded-constraint-proxies` is deferred
+until the engine can detect orphan proxy entities; rule 28 (block traps)
+already warns about explode.
+
+## 5. Dynamic blocks — property types are not interchangeable
+
+`DynamicBlockReferenceProperty.Value` is typed at runtime: **bool** for
+visibility toggles, **double** for distances/angles (in drawing units /
+radians per AutoCAD rules), **string** for lookup tables, **int** for
+increment sets. Passing `"12.5"` (string) to a **double** property often
+throws or silently fails depending on build.
+
+`set_dynamic_block_property` accepts a JSON `value` node and coerces using
+the live property's `UnitsType` + `PropertyType` where AutoCAD exposes them;
+when ambiguous, pass numbers as JSON numbers and booleans as JSON booleans,
+never as quoted strings.
+
+## 6. Anonymous `*U###` blocks — never hard-code the name
+
+After editing a dynamic block in place, AutoCAD may substitute an **anonymous**
+block reference (`*U123`). Agents who stash the old block name and try to
+`insert_block` the human-readable name while the reference is anonymous get
+out-of-sync geometry. Always drive dynamic behaviour through
+`get_dynamic_block_properties` / `set_dynamic_block_property` on the
+**reference handle**, not the original DWG block name.
+
+## 7. Geometric vs dimensional — pick a ladder, don't interleave blindly
+
+**Geometric** constraints express *relationships* (parallel, tangent).
+**Dimensional** constraints (DIMCONSTRAINT) express *driven sizes* and feed
+the parameters manager. Mixing both on the same primitive without a plan
+creates circular solving graphs.
+
+v1 ships **geometric** constraints via native `-GEOCONSTRAINT` and defers
+**DIMCONSTRAINT** authoring macros to Phase 7 (needs pick-point disambiguation
+for aligned vs linear vs angular chains).
+
+## 8. Constraints attach to entities, not to hatch fill
+
+Associative hatch boundaries can update when polylines move, but **hatch
+itself** is not a primary constraint carrier. Agents who try to apply
+`Parallel` to a hatch fail or attach to edge proxies unpredictably. Constrain
+the **boundary polyline**; let the hatch stay associative.
+
+## 9. Layer key (office standard we ship — 6 layers)
+
+| layer            | colour | linetype   | weight | content                                      |
+| ---------------- | ------ | ---------- | ------ | -------------------------------------------- |
+| `P-CONSTRUCTION` | 8      | Continuous | 0.18   | construction geometry (datum frame, guides)  |
+| `P-SKETCH`       | 7      | Continuous | 0.25   | unconstrained / WIP sketch curves            |
+| `P-CONSTRAINED`  | 5      | Continuous | 0.35   | fully constrained profile curves           |
+| `P-DYNAMIC`      | 4      | Continuous | 0.30   | dynamic block references (optional target) |
+| `P-PARAM-LBL`    | 2      | Continuous | 0.18   | parameter / expression labels (Phase 7)      |
+| `P-NOTE`         | 2      | Continuous | 0.18   | parametric workflow notes                    |
+
+`ensure_parametric_layers` creates this key idempotently. Constraint **proxy
+glyphs** AutoCAD creates live on their own internal behaviour; we do not
+force a layer on native proxy objects in v1.
+
+## 10. Bundled blocks under `blocks/parametric/`
+
+Phase 7 ships canonical **parametric starter blocks** (adjustable door
+swing, flexible title strip, etc.). v1 relies on inline dynamic-block
+manipulation + geometric constraints on user geometry.
+
+## 11. Cross-reference with validators
+
+Each draw/helper tool pairs with YAML under `validators/parametric/` (rule 35
+§8). v1 ships layer hygiene rules only; solver-state rules wait on Phase 7.

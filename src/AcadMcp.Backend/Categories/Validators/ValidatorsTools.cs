@@ -6,7 +6,7 @@
 //
 // Engine: src/AcadMcp.Backend/Validators/.  Wire DTOs: ValidatorsDtos.cs.
 // Plugin handlers: src/AcadMcp.Plugin/Tools/ValidatorsPluginTools.cs ("acad.validators.*").
-// Rules: 19, 33-validators-rule-format.mdc, 34-validators-engine-traps.mdc.
+// Rules: 19, 33-validators-rule-format.md, 34-validators-engine-traps.md.
 
 using System;
 using System.Collections.Generic;

@@ -43,7 +43,7 @@ public sealed class CompanionSettings
 
     /// <summary>
     /// When true, a planner pass produces a step list first, then executor passes run each step
-    /// sequentially (like Cursor's plan/agent split). Off = single agent loop.
+    /// sequentially (a planner/executor split). Off = single agent loop.
     /// </summary>
     public bool PlanMode { get; set; }
 

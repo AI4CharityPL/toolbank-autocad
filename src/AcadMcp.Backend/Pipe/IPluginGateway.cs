@@ -1,5 +1,5 @@
 // IPluginGateway is THE only sanctioned way for tool implementations to reach the AutoCAD plugin.
-// See rule 18-backend-host-and-gateway.mdc.
+// See rule 18-backend-host-and-gateway.md.
 
 using System.Text.Json.Nodes;
 using System.Threading;

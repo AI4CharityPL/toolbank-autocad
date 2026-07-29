@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-vision category.
 // Mirrors the JSON wire shape of the AcadMcp.Vision Python sidecar HTTP API.
-// See rule 29-acad-vision-architecture.mdc and rule 32-acad-vision-traps.mdc.
+// See rule 29-acad-vision-architecture.md and rule 32-acad-vision-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

@@ -1,5 +1,5 @@
 // Single source of truth for the civil-engineering layer key shipped with
-// acad-civil. Mirrors rule 38 §9 (civil-domain-traps.mdc).
+// acad-civil. Mirrors rule 38 §9 (civil-domain-traps.md).
 //
 // If you add a new layer here, also:
 //   1. Update rule 38 §9 (the table).

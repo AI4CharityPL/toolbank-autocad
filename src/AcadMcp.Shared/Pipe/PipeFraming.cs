@@ -1,6 +1,6 @@
 // Length-prefixed JSON framing for the named pipe between Backend and Plugin.
 // 4-byte little-endian length + UTF-8 JSON payload. Multi-target compatible (net8.0 + net48).
-// See rule 17-pipe-protocol.mdc.
+// See rule 17-pipe-protocol.md.
 
 using System;
 using System.IO;

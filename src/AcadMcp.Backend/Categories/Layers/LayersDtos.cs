@@ -1,6 +1,6 @@
 // Typed DTOs for the acad-layers category.
 // Mirrors the wire shape consumed by the plugin under "acad.layers.<verb>".
-// See rule 19-tool-implementation-pattern.mdc.
+// See rule 19-tool-implementation-pattern.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

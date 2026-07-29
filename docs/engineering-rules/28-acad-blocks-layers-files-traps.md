@@ -1,0 +1,169 @@
+# AutoCAD blocks / layers / layouts / files traps
+
+AutoCAD block / layer / layout / file API landmines. Read BEFORE touching BlockTable, BlockTableRecord, LayerTable, Layout, ViewportTable, Database.SaveAs, WblockCloneObjects.
+
+These are the documented sharp edges encountered (or known up-front) while building `acad-blocks`, `acad-layers`, `acad-layouts` and `acad-files` in Phase 3. Same rules as 26 / 27: do not "fix" what is documented behaviour.
+
+## 1. Three special `BlockTableRecord` names are built-in
+
+You cannot delete or rename them, and they always exist:
+
+| name | role |
+| ---- | ---- |
+| `*Model_Space`  | model space (alias `BlockTableRecord.ModelSpace`)  |
+| `*Paper_Space`  | the *first* paper-space layout |
+| `*Paper_Space0..N` | additional paper-space layouts (one per layout tab) |
+
+For new layouts use `LayoutManager.Current.CreateLayout(name)` - it allocates the next `*Paper_Space<N>` BTR for you. Do not create paper-space BTRs by hand.
+
+## 2. Block names follow restrictive rules
+
+`SymbolUtilityServices.ValidateSymbolName(name, allowVerticalBar=false)` should be called before `BlockTable.Add`. Forbidden:
+
+- characters `<`, `>`, `/`, `\`, `"`, `:`, `;`, `?`, `,`, `*`, `|`, `=`, backtick
+- leading or trailing space
+- empty string
+- length > 255 chars
+
+Anonymous block definitions use a leading `*U` (e.g. `*U23`) - you can list them but the user should never name a block starting with `*`.
+
+## 3. `BlockReference` ≠ `BlockTableRecord`
+
+Inserting a block is two-step:
+
+```csharp
+var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+if (!bt.Has(name)) throw new EntityArgumentException("Unknown block: " + name);
+ObjectId defId = bt[name];
+var bref = new BlockReference(insertionPoint, defId);
+ms.AppendEntity(bref);
+tr.AddNewlyCreatedDBObject(bref, true);
+// Attributes:
+var btr = (BlockTableRecord)tr.GetObject(defId, OpenMode.ForRead);
+foreach (ObjectId id in btr) {
+    var ent = tr.GetObject(id, OpenMode.ForRead);
+    if (ent is AttributeDefinition ad && !ad.Constant) {
+        var ar = new AttributeReference();
+        ar.SetAttributeFromBlock(ad, bref.BlockTransform);
+        ar.TextString = lookupValue(ad.Tag) ?? ad.TextString;
+        bref.AttributeCollection.AppendAttribute(ar);
+        tr.AddNewlyCreatedDBObject(ar, true);
+    }
+}
+```
+
+Skipping the attribute-replication step inserts the block visually but leaves all attribute placeholders empty.
+
+## 4. Dynamic blocks: read `IsDynamicBlock`, not `XData`
+
+```csharp
+if (btr.IsDynamicBlock) {
+    var props = bref.DynamicBlockReferencePropertyCollection;
+    foreach (DynamicBlockReferenceProperty p in props) {
+        // p.PropertyName, p.Value, p.AllowedValues
+    }
+}
+```
+
+The values are typed as `object` and may be `int16`, `double`, `string`, depending on `p.PropertyTypeCode`. Always coerce defensively.
+
+## 5. `Database.WblockCloneObjects` is the *only* clean way to import blocks across DWGs
+
+`File.Copy` of a DWG into the user's drawing does NOT define a block. Use `WblockCloneObjects` to import a block definition from another database:
+
+```csharp
+using var sourceDb = new Database(false, true);
+sourceDb.ReadDwgFile(sourcePath, FileShare.Read, true, "");
+ObjectIdCollection ids = new ObjectIdCollection { sourceBtrId };
+var idMap = new IdMapping();
+db.WblockCloneObjects(ids, db.BlockTableId, idMap, DuplicateRecordCloning.Replace, false);
+```
+
+`DuplicateRecordCloning.Ignore` keeps the existing definition - choose `Replace` only if the user really wants the import to overwrite.
+
+## 6. Layer names: same character ban as block names
+
+Use `SymbolUtilityServices.ValidateSymbolName(name, false)`. Plus:
+
+- Layer `0` cannot be deleted or renamed.
+- Layer `Defpoints` is created by AutoCAD on first dimension; it cannot be plotted.
+- Setting `LayerTableRecord.IsFrozen = true` while it is the *current* layer throws. Switch current first.
+- `LayerTableRecord.IsLocked` blocks edits to entities on that layer until unlocked - your tool must surface this with a clear `EntityLockedException` rather than silently failing.
+
+## 7. Layer color: `Color` not `ColorIndex` for true colors
+
+```csharp
+ltr.Color = Color.FromColorIndex(ColorMethod.ByAci, 1);                 // ACI 1 (red)
+ltr.Color = Color.FromRgb(255, 128, 0);                                  // true RGB
+```
+
+Setting `ltr.Color = null` throws. Setting an out-of-range ACI (0 = ByBlock, 256 = ByLayer) is illegal on a layer record.
+
+## 8. Active layout switching is a UI operation
+
+`LayoutManager.Current.CurrentLayout = "Layout1"` works only on the foreground document and is implicitly UI-thread bound. Always run it inside `UiThreadDispatcher.Run`. Switching layouts also invalidates any open `Editor` zoom state - re-query if the next tool needs it.
+
+## 9. Viewports are entities, not layouts
+
+A "viewport on a layout" is a `Viewport` entity living in the layout's paper-space `BlockTableRecord`. Build them as:
+
+```csharp
+var vp = new Viewport();
+psBtr.AppendEntity(vp);
+tr.AddNewlyCreatedDBObject(vp, true);
+vp.Width = 200; vp.Height = 150; vp.CenterPoint = new Point3d(150, 100, 0);
+vp.On = true;                                  // enable rendering
+vp.CustomScale = 1.0 / 50.0;                   // 1:50
+vp.LayerId = noPlotLayerId;                    // optional: hide its border
+```
+
+**`Viewport.On = true` MUST be set after `AppendEntity`** or AutoCAD silently leaves it off. Do not set it in the constructor.
+
+## 10. `Database.SaveAs` is sync-on-UI-thread and rewrites file format
+
+```csharp
+db.SaveAs(path, DwgVersion.Current);                  // current AutoCAD's native version
+db.SaveAs(path, DwgVersion.AC1027);                   // 2013-2017 format
+```
+
+- The format enum names lag the marketing year by one cycle; always look up the right `DwgVersion.AC*` constant for the user's requested year.
+- Saving while the document is dirty + has open transactions throws. Commit / Dispose all transactions first.
+- For the *active* drawing, prefer `doc.Database.SaveAs(...)` over `doc.SendStringToExecute("_SAVEAS ...")` to avoid the file-dialog modal.
+
+## 11. Export to PDF / DWF: PlotEngine pipeline
+
+The PlotEngine API is verbose but the only stable way to plot programmatically:
+
+```csharp
+using var pe = PlotFactory.CreatePublishEngine();
+pe.BeginPlot(null, null);
+var psv = PlotSettingsValidator.Current;
+var ps = new PlotSettings(layout.ModelType);
+ps.CopyFrom(layout);
+psv.SetPlotConfigurationName(ps, "DWG To PDF.pc3", "ANSI_A_(8.50_x_11.00_Inches)");
+psv.SetPlotType(ps, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents);
+psv.SetUseStandardScale(ps, true);
+psv.SetStdScaleType(ps, StdScaleType.ScaleToFit);
+pe.BeginDocument(/* ... */);
+pe.BeginPage(/* ... */);
+pe.BeginGenerateGraphics();
+pe.EndGenerateGraphics();
+pe.EndPage();
+pe.EndDocument();
+pe.EndPlot();
+```
+
+- ALL `Begin*` calls must be matched by `End*` in reverse order or the next plot deadlocks.
+- `PlotFactory.ProcessPlotState` must be `NotPlotting` before you start; otherwise throw `BackendBusyException`.
+- The output `.pdf` is written when `pe.EndDocument()` returns - do not read it earlier.
+
+## 12. `Database.AuditDatabase` and `Purge` mutate the drawing
+
+- `db.Audit(report, fix:true)` will *fix* corrupt records, not just report them. Call with `fix:false` first when running as a query tool.
+- `db.Purge(idCollection)` removes only the IDs that the database considers truly unreferenced. Always re-call `db.Purge` until it returns 0 removed - dependencies cascade.
+
+## When in doubt
+
+1. Re-read this file before touching the involved class.
+2. Add a one-line `// trap #N (rule 28)` comment on any line that survives a "looks weird" review.
+3. If you discover a new trap, append it here in the same numbered format **before** committing the C# fix.

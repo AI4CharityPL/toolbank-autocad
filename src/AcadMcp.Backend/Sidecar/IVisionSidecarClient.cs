@@ -1,5 +1,5 @@
 // Sanctioned interface for talking to the AcadMcp.Vision Python sidecar.
-// See rule 29-acad-vision-architecture.mdc.
+// See rule 29-acad-vision-architecture.md.
 
 using System.Text.Json.Nodes;
 using System.Threading;

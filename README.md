@@ -6,7 +6,7 @@
 
 ## Architecture in one sentence
 
-Cursor / Claude only ever sees `acad-router` (meta-tools) plus MCP Nexus. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
+Your AI client only ever sees `acad-router` (meta-tools) plus MCP Nexus. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
 ```
 AI Agent ── static ──> acad-router (10 meta-tools)
@@ -34,7 +34,7 @@ This repository is actually three separable things sharing one execution engine.
 |---|---|---|---|
 | **What it is** | The execution engine: an AutoCAD extension NETLOAD'ed into AutoCAD, hosting a named-pipe server that makes real AutoCAD API calls | Standard stdio MCP servers (`AcadMcp.Backend.exe --category <name>`) that any MCP client can connect to | A self-contained, in-app chat panel (`ACADAI` command) with its own bundled AI provider integrations |
 | **Talks to AutoCAD via** | Directly — it *is* the in-process extension | Named pipe → the Plugin | Named pipe → the Plugin (its own private instance) |
-| **Talks to the AI via** | N/A | Your existing MCP client (Cursor, Claude Desktop, Claude Code, ...) — your subscription, your session | Its own built-in Anthropic/OpenAI/Gemini provider — bring your own API key (BYOK), entered once in its Settings tab |
+| **Talks to the AI via** | N/A | Your existing MCP client (Claude Desktop, Claude Code, or any other MCP-compatible client) — your subscription, your session | Its own built-in Anthropic/OpenAI/Gemini provider — bring your own API key (BYOK), entered once in its Settings tab |
 | **Required?** | Yes, always — every other path depends on it | Optional — only if you want to drive AutoCAD from an external AI client | Optional — a fully separate, alternative front door; doesn't require a separate AI client at all |
 | **Install guide** | [§1 below](#1-the-plugin--foundation-always-required) | [§2 below](#2-mcp-servers--for-your-own-ai-client) | [§3 below](#3-companion--standalone-in-app-assistant-byok) |
 
@@ -51,7 +51,7 @@ This repository is actually three separable things sharing one execution engine.
 | `AcadMcp.Vision`      | Python sidecar (FastAPI + gRPC, Claude Vision/GPT-4V, PaddleOCR)       |
 | `mcpbank-manifests/`  | JSON manifests for auto-registration in MCP Nexus                     |
 | `bin-launchers/`      | Per-category `.cmd` launch scripts                                    |
-| `.cursor/rules/`      | A growing rulebook enforcing architectural invariants                 |
+| `docs/engineering-rules/`      | A growing rulebook enforcing architectural invariants                 |
 
 ## Verified
 
@@ -64,7 +64,7 @@ Before this was closed off as its own repository, the full system was built and 
 - **Live AutoCAD integration, write path:** to avoid touching the real open drawing, a scratch document was created with `new_document`, a real line was drawn (`draw_line`, returned a real `AcDbLine` entity handle) and a real layer created (`create_layer`), both confirmed present via read-back (`list_entities_in_window`, `list_layers`), then the scratch document was closed without saving (`close_document`). `get_active_document` confirmed the original drawing was the active document before, during, and after — untouched throughout, `entityCount` unchanged.
 - **Checkpoint / restore rollback:** `acad_restore_checkpoint` performs a real rollback via a `.dwg` snapshot reopen (not an AutoCAD UNDO command — see "Checkpoint/restore rollback" below for why). Verified live across all three cases: (1) same-document restore — drew a line after a checkpoint, restored, `list_documents`/`entityCount` confirmed the line was genuinely gone (`strategy=reopened_snapshot`); (2) no-snapshot checkpoint (`fileSnapshot:false`) — restore honestly reports `strategy=no_snapshot` and leaves the drawing untouched rather than pretending to roll back; (3) active document changed since the checkpoint — restore left the unrelated active document untouched and opened the snapshot as a separate document instead (`strategy=reopened_snapshot_as_new_document`), confirmed via `list_documents`.
 - **Phase 7.1 livestream:** `acad_livestream.poll_events` captured real `command_will_start`/`command_ended` events fired by AutoCAD's own startup sequence before any test action ran, then a real `entity_appended` event for a `draw_line` call, with correct handle/dxfType/layer payload; `sinceSeq` correctly returned only new events on a second poll, not the whole backlog.
-- **Domain build-out (architecture, mechanical, civil, electrical):** every new tool — wall-cutting `insert_door`/`insert_window`, mechanical `draw_hole_side_view` (all 4 kinds) and `draw_section_hatch`, civil `draw_alignment_spiral` and `draw_vertical_profile`, electrical `place_din_rail`/`place_panel_device_outline`/`route_wireway` — was exercised live on AutoCAD 2025 and returned real entity handles with the expected geometry (e.g. the spiral's derived end-bearing and clothoid parameter, the vertical profile's parabola-sampled vertex count). Two real, pre-existing bugs were found and fixed in the process — see [docs/PHASE-7-STATUS.md](docs/PHASE-7-STATUS.md) for detail — and one new defect was found and is documented, not fixed: see [Known Limitations](#known-limitations).
+- **Domain build-out (architecture, mechanical, civil, electrical):** every new tool — wall-cutting `insert_door`/`insert_window`, mechanical `draw_hole_side_view` (all 4 kinds) and `draw_section_hatch`, civil `draw_alignment_spiral` and `draw_vertical_profile`, electrical `place_din_rail`/`place_panel_device_outline`/`route_wireway` — was exercised live on AutoCAD 2025 and returned real entity handles with the expected geometry (e.g. the spiral's derived end-bearing and clothoid parameter, the vertical profile's parabola-sampled vertex count). Two real, pre-existing bugs were found and fixed in the process — see [docs/PHASE-7-STATUS.md](docs/PHASE-7-STATUS.md) for detail — and one category (parametric constraint application) was found broken and pulled from the exposed tool set rather than shipped non-functional: see [Known Limitations](#known-limitations).
 
 ## Checkpoint/restore rollback
 
@@ -87,7 +87,7 @@ pwsh scripts/package.ps1
 # 4. Register every category with your local MCP Nexus instance
 pwsh scripts/register-mcps.ps1
 
-# 5. Inject ONLY acad-router into Cursor (MCP Nexus is assumed already configured)
+# 5. Inject ONLY acad-router into your MCP client (MCP Nexus is assumed already configured)
 pwsh scripts/install-cursor-config.ps1
 
 # 6. Install the plugin into AutoCAD -- see "Installing into AutoCAD 2025" below
@@ -167,7 +167,7 @@ Removes the bundle directory and cleans up any `acaddoc.lsp` snippet it added.
 
 ## 2. MCP servers — for your own AI client
 
-Use this path if you want to drive AutoCAD from an AI client you already use (Cursor, Claude Desktop, Claude Code, or any other MCP-compatible client), through your own subscription/session. This requires [the Plugin](#1-the-plugin--foundation-always-required) to already be installed and AutoCAD running.
+Use this path if you want to drive AutoCAD from an AI client you already use (Claude Desktop, Claude Code, or any other MCP-compatible client), through your own subscription/session. This requires [the Plugin](#1-the-plugin--foundation-always-required) to already be installed and AutoCAD running.
 
 ### 1. Build and package launchers
 
@@ -184,7 +184,7 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 31 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~354 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 31 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~340 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
 The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `nexus-gateway` or `nexus-server` entry (current MCP Nexus CLI names) and falling back to the older `mcpbank-dynamic` / `mcpbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. Verified against both a `nexus-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
@@ -237,7 +237,7 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**354 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
+**340 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
 
 ## Status
 
@@ -245,17 +245,17 @@ The system is built and live-verified end to end against real AutoCAD 2025: back
 
 ## Known Limitations
 
-Two things are genuinely open, called out here rather than left to be discovered by surprise:
+Called out here rather than left to be discovered by surprise:
 
-- **Parametric constraint application.** Every `apply_geom_*` (11 tools) and `apply_dim_*` (2 tools) constraint-application tool in `acad-parametric` fails against real AutoCAD with `Autodesk.AutoCAD.Runtime.Exception: eInvalidInput`, thrown from `Editor.Command` itself. This was never caught earlier because this category's test coverage was catalog/shape-level only — nothing had exercised these tools against a live drawing before this was found. Three independent fix attempts (passing the entity's ObjectId directly, resolving to a point on the entity's own geometry instead, and swapping the `"._-"` / `"_.-"` command-prefix character order) all reproduce the identical failure with no further diagnostic detail. Root cause is still open; see the header comment in `src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs` for what's been ruled out and what to try next. `list_constraint_entities`, `get_dynamic_block_properties`, `set_dynamic_block_property`, and `ensure_parametric_layers` are unaffected.
+- **`acad-parametric` covers layers, constraint inventory, and dynamic blocks — not constraint authoring.** `ensure_parametric_layers`, `list_constraint_entities`, `get_dynamic_block_properties`, and `set_dynamic_block_property` are implemented and live-verified. Applying new geometric or dimensional constraints via this category is not currently offered: every attempted implementation failed against real AutoCAD with `Autodesk.AutoCAD.Runtime.Exception: eInvalidInput` from `Editor.Command`, across four independent approaches, so those tools were removed rather than shipped in a broken state. See the header comment in `src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs` for the investigation detail, for whoever revisits this with live AutoCAD access.
 - **DWG block libraries.** The architecture (`blocks/architectural/`) and mechanical (`blocks/mechanical/`) bundled block libraries (door/window/room-tag blocks, standard fastener/bearing blocks) are not built — the domain tools synthesize geometry inline instead of inserting library blocks. Building these means authoring and `WBLOCK`-ing real geometry for dozens of standard parts per discipline, a separate content-creation effort.
 
 Per-discipline vision/YOLO detection is not part of this repository.
 
-## Development / where to start (Cursor)
+## Development / where to start
 
 1. Open [docs/PHASE-7-STATUS.md](docs/PHASE-7-STATUS.md) — the verification log and source of truth for what's implemented.
-2. The **always-apply** rule [`.cursor/rules/54-development-status.mdc`](.cursor/rules/54-development-status.mdc) keeps the agent from assuming a tool works just because it's in the manifest, and points to the Known Limitations above.
+2. The **always-apply** rule [`docs/engineering-rules/54-development-status.md`](docs/engineering-rules/54-development-status.md) keeps the agent from assuming a tool works just because it's in the manifest, and points to the Known Limitations above.
 
 ## Conventions
 

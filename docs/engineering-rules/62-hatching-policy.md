@@ -1,0 +1,112 @@
+# 62. Hatching policy (acad-hatches)
+
+Hatching policy for acad-hatches category. Fixes material->pattern->scale->angle->color mapping, ISO/PN-EN defaults, plot lineweight interaction, and associativity requirements. READ BEFORE editing HatchesPluginTools.cs or any caller in Architecture/Civil/Mechanical categories.
+
+Hatches in professional execution drawings are not decoration — they encode material, fire-rating, shielding and section intent per PN-EN-ISO 128-50, ISO 128-2, AIA-2017 and PN-EN-ISO 3098. This rule is the single source of truth for material-to-hatch mapping used by `acad-hatches.apply_material_preset(_by_point)` and by any higher-level category that auto-hatches rooms/walls.
+
+## 1. Drawing-unit assumption: millimeters
+
+All hatch pattern scales in this codebase assume the drawing is in **millimetres** (1 unit = 1 mm). The preset table in `HatchesPluginTools.s_materialPresets` pre-multiplies scale values accordingly. If you introduce a drawing in meters or inches, wrap the preset scale with an extra multiplier inside the caller — do NOT edit the table.
+
+Rationale: every ISO/PN plan uses mm; moving the preset-scale dependency out of the tool table would require every caller to know about it.
+
+## 2. Material -> (pattern, scale, angle°, ACI color) table
+
+This table is mirrored in `HatchesPluginTools.s_materialPresets` (authoritative) and in `docs/PLAN-PROFESSIONAL-UPGRADE-2026.md` (descriptive). If you add a row here you MUST add it in both places and regenerate the manifest (`dotnet run --project src/AcadMcp.Backend -- --category hatches --regenerate-manifest`).
+
+| material key             | pattern     | scale | angle | ACI | notes |
+|--------------------------|-------------|-------|-------|-----|-------|
+| `concrete`               | `AR-CONC`   | 50    | 0     | 8   | stone-aggregate look, gray |
+| `reinforced-concrete`    | `ANSI37`    | 5     | 0     | 8   | crosshatch denotes reinforcement |
+| `concrete-block`         | `AR-B816`   | 50    | 0     | 8   | 8x16 block (cinder) |
+| `brick`                  | `AR-BRSTD`  | 50    | 0     | 1   | red (standard bond) |
+| `brick-elm`              | `AR-BRELM`  | 50    | 0     | 1   | English bond (heritage) |
+| `insulation`             | `BATTING`   | 50    | 0     | 4   | cyan zigzag, PN-EN 13162..13171 |
+| `plaster`                | `ANSI31`    | 5     | 45    | 8   | fine diagonal |
+| `stone`                  | `AR-RROOF`  | 50    | 0     | 42  | irregular (brown) |
+| `earth` / `soil`         | `EARTH`     | 50    | 0     | 42  | native ground |
+| `steel`                  | `ANSI32`    | 5     | 45    | 7   | standard steel notation |
+| `glass`                  | `LINE`      | 1     | 45    | 4   | thin parallel lines |
+| `wood-cross`             | `ANSI32`    | 5     | 0     | 42  | end-grain view |
+| `wood-grain`             | `AR-HBONE`  | 1     | 0     | 42  | herringbone |
+| `parquet`                | `AR-PARQ1`  | 1     | 0     | 42  | floor pattern |
+| `tile`                   | `AR-B816`   | 1     | 0     | 8   | ceramic/floor tile |
+| `lead-shield`            | `SOLID`     | 1     | 0     | 6   | RTG/medical lead shielding — MUST be magenta for IEC-61331 flag |
+| `faraday`                | `NET`       | 50    | 0     | 3   | Faraday cage mesh — green for RF shielding |
+| `sand`                   | `AR-SAND`   | 50    | 0     | 40  | |
+| `cork`                   | `CORK`      | 50    | 0     | 42  | |
+| `gravel`                 | `GRAVEL`    | 50    | 0     | 8   | |
+| `grass`                  | `GRASS`     | 50    | 0     | 3   | |
+
+**Rules of engagement:**
+- `lead-shield` MUST stay `SOLID` magenta so the vision reviewer (rule 32 / `senior-architect-reviewer` persona) can flag it.
+- `faraday` MUST stay `NET` green — same reasoning, and matches IEC-61140 cable-grade color code.
+- Never swap `insulation -> ANSI31` — zigzag BATTING is the PN-EN-ISO 128-50 symbol and any other pattern means something else (steel, brick) to a reader.
+
+## 3. Default pattern per `A-*-*` layer (when no material given)
+
+When `apply_material_preset*` is called without a known material, callers should already know which layer they are hatching and pick the material themselves. As a fallback, `acad-architecture` uses this layer -> material heuristic (implemented inside the Architecture category, NOT the Hatches category — Hatches stays material-agnostic):
+
+| layer glob         | fallback material |
+|--------------------|-------------------|
+| `A-WALL-EXT`       | `concrete`        |
+| `A-WALL-INT`       | `concrete-block`  |
+| `A-WALL-FIRE`      | `reinforced-concrete` |
+| `A-WALL-INSUL`     | `insulation`      |
+| `A-FLOR`           | `tile`            |
+| `A-SHLD-LEAD`      | `lead-shield`     |
+| `A-SHLD-RF`        | `faraday`         |
+| `C-FNDN`           | `earth`           |
+| `C-ROAD-PAVE`      | `gravel`          |
+
+## 4. Associativity is MANDATORY for walls and shielding
+
+`draw_hatch` and `apply_material_preset*` default to `Associative=true`. Do NOT set it to false when hatching walls or shielded rooms — if someone later moves the wall polyline the hatch must follow. Non-associative is only permitted for soil/grass/background infills where the boundary will not move.
+
+`regenerate_hatches` is the escape hatch (pun intended) after a bulk wall-edit — call it with `allInModelSpace=true` at the end of a Phase D re-draw to clean up.
+
+## 5. BackgroundColor is for dual-material notation only
+
+Set `backgroundColor` ONLY when encoding two superimposed materials (e.g. brick + plaster on the same section). For everything else leave it null — a background color on a normal wall hatch makes prints muddy.
+
+## 6. Annotative hatches
+
+For schedules and details in paperspace viewports, set `annotative=true` on `draw_hatch`. The pattern then scales with the viewport annotation scale and does NOT need different per-viewport scale calls. For modelspace-only fills leave `annotative=false`.
+
+## 7. TraceBoundary gotchas (used by `_by_boundary` variants)
+
+`Editor.TraceBoundary(seedPoint, detectIslands)` has four failure modes the tool MUST translate into actionable errors:
+
+1. **Seed not inside a closed area** -> throw `InvalidOperationException("TraceBoundary found no closed region around seed point ...")`. Caller should re-seed or close gaps.
+2. **Seed inside a hatched area already** -> TraceBoundary returns the hatch itself as a boundary, which then breaks `AppendLoop`. The tool erases hatches in `found` before persisting.
+3. **Geometry is off-screen / frozen layer** -> TraceBoundary silently returns empty. The tool must `zoom_extents` equivalent is NOT its responsibility; throw a clear error and let the caller zoom first.
+4. **Seed on a corner / exactly on an edge** -> returns empty. Caller must nudge the seed by ≥1e-3 drawing units.
+
+## 8. Hidden boundary layer `A-BNDRY-TEMP`
+
+`draw_hatch_by_boundary` persists the traced boundaries to layer `A-BNDRY-TEMP` (created on demand, non-plottable). This layer MUST stay:
+- **On** (for associative hatch evaluation)
+- **Non-plotting** (so it never appears on prints)
+- **Thawed** (frozen = hatch will not re-evaluate)
+
+Never repurpose `A-BNDRY-TEMP` for anything else and never delete it automatically — other hatches may still reference it.
+
+## 9. Plot lineweight interaction
+
+The visual weight of a hatch on a plot is a function of its constituent line width which comes from **CTB/STB** (see rule 61-lineweight-policy). The Hatches category does not set lineweights directly — that is the Plotstyles category. Result: a hatch on color 8 (ACI gray) will plot at whatever `HOSPITAL-ISO.ctb` says for color 8 (default 0.05 mm). If you want thicker hatches, change the CTB, not the preset.
+
+## 10. Performance budget
+
+- Single `draw_hatch` on a 4 m² boundary: ≤ 120 ms.
+- `apply_material_preset_by_point` including TraceBoundary on a 20 m² room: ≤ 800 ms.
+- `regenerate_hatches` allInModelSpace on a 5 000 m² plan with ~200 hatches: ≤ 8 s. If you exceed this, partition by layer.
+
+## References
+
+- PN-EN-ISO 128-50:2020 (hatching for sections)
+- PN-EN-ISO 128-2:2022 (basic line types)
+- ISO 128-30 (views)
+- AIA-2017 CAD Layer Guidelines (A-WALL-* layer matrix)
+- Autodesk ObjectARX `HatchPatternType.PreDefined`, `Hatch.EvaluateHatch`
+- IEC-61331 (radiation protection — lead shield color flag)
+- IEC-61140 (color code for protective bonding — Faraday green)

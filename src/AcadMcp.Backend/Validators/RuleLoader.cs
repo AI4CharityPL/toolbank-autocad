@@ -1,4 +1,4 @@
-// YAML -> Rule loader. See rule 33-validators-rule-format.mdc.
+// YAML -> Rule loader. See rule 33-validators-rule-format.md.
 //
 // Hard rules enforced here:
 //   - id non-empty, lowercase, dot/kebab segments

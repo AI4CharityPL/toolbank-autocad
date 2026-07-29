@@ -12,8 +12,8 @@ description: |
   This rule scopes to common centreline-naming variants ('CENTERLINE',
   'CENTER', 'AXIS') so that legacy drawings can be migrated automatically.
 references:
-  - .cursor/rules/36-architecture-domain-traps.mdc#1-a-wall-is-not-a-single-line
-  - .cursor/rules/36-architecture-domain-traps.mdc#11-layer-key
+  - .cursor/rules/36-architecture-domain-traps.md#1-a-wall-is-not-a-single-line
+  - .cursor/rules/36-architecture-domain-traps.md#11-layer-key
 scope:
   entity_types: [Line, Polyline]
   layer_pattern: "^(CENTERLINE|CENTER|AXIS|WALL[-_]?CTRL|WALL[-_]?CL|A[-_]?WALL[-_]?CL|A[-_]?WALL[-_]?CENTER)$"

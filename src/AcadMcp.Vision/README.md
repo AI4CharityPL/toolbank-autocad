@@ -2,7 +2,7 @@
 
 Python sidecar for vision/OCR/segmentation/vision-LLM. Spoken to over **localhost HTTP/JSON** by the C# Backend's `Categories/Vision/` tools.
 
-> Architectural invariants: see `.cursor/rules/29-acad-vision-architecture.mdc` and `.cursor/rules/32-acad-vision-traps.mdc`. All vision LLM calls (Anthropic Claude / OpenAI GPT-4o) are made HERE, never from C#.
+> Architectural invariants: see `docs/engineering-rules/29-acad-vision-architecture.md` and `docs/engineering-rules/32-acad-vision-traps.md`. All vision LLM calls (Anthropic Claude / OpenAI GPT-4o) are made HERE, never from C#.
 
 ## Why a separate process?
 

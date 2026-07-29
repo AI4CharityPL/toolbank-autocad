@@ -2,7 +2,7 @@
 // 1-to-1 (rule 22). Every JsonPropertyName matches a field on a primitive
 // plugin handler used by ElectricalProxy.
 //
-// Rules: 35-domain-categories-design.mdc, 39-electrical-domain-traps.mdc.
+// Rules: 35-domain-categories-design.md, 39-electrical-domain-traps.md.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

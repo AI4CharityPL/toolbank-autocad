@@ -1,0 +1,164 @@
+# acad-civil domain traps
+
+Civil-engineering domain traps — stationing notation (X+YYY metric / X+YY US), surveyor bearings (N45°30'15"E ≠ atan2), parcel closure tolerance, contour intervals (major every 5 / 10 m, minor every 1 / 2 m), road centreline vs edge of pavement linetypes, north arrow that rotates with TRUE north not page north. Read BEFORE adding a tool to acad-civil or a validator under validators/civil/.
+
+These are the lessons learned drawing **plan-view civil / survey** content
+the way a Polish (and US) civil-engineering office wants to receive it. They
+sit on top of the universal domain rule 35.
+
+## 1. Stationing is a notation, not a number
+
+Civil engineers do NOT label road chainage as `"40 m"`. They write
+**`0+040`** (metric, the EU / PN convention used in Poland), where the
+`0+` is the kilometre mark and `040` is the offset in metres past it. Past
+1 km it becomes `1+020`, `2+345`, … In the US the same idea is
+`0+40` / `1+20` (stations of 100 ft).
+
+`format_station(metresFromStart, system)` is the single source of truth.
+Tools that emit text labels (`place_station_labels`, dimensions on a road
+centreline) MUST go through it; agents who concatenate `f"{m:.0f}m"` produce
+something a road inspector instantly rejects.
+
+## 2. Bearings are not angles
+
+A surveyor bearing is the four-symbol form **`N 45° 30' 15" E`** —
+quadrant letter, degrees, minutes, seconds, quadrant letter. Rotation
+direction is implicit in the quadrant pair (`NE` / `SE` / `SW` / `NW`).
+You CANNOT pass a degree number directly to a parcel-leg API and expect a
+correct closure check, because:
+
+- bearing `N 30 E` is mathematical angle 60° (measured CCW from +X);
+- bearing `S 30 E` is mathematical angle −60° (or 300°);
+- bearing `S 30 W` is mathematical angle 240°;
+- bearing `N 30 W` is mathematical angle 120°.
+
+`Bearing.ToVectorRadians()` lives in `CivilGeometry.cs` and is the only
+correct converter. Tools NEVER do `degrees * pi / 180` on a bearing
+input. Validator `civil.parcel.bearing-format` enforces the textual form.
+
+## 3. Parcel closure has a tolerance — and the failure is reportable
+
+A parcel polyline built by walking a list of `(bearing, distance)` legs
+must return within tolerance of its starting point. The Polish geodetic
+office accepts:
+
+- residential lot       → `< 0.02 m` closure error;
+- commercial lot        → `< 0.05 m`;
+- agricultural parcel   → `< 0.20 m`;
+- forest / large tract  → `< 0.50 m`.
+
+`draw_parcel` MUST compute the closure error and return it in its result,
+even when the polyline is auto-closed. If closure exceeds the tolerance the
+tool returns `closureStatus = "out_of_tolerance"` AND an explicit
+`closureError` in metres so the agent (or a downstream validator) can flag
+it. We do NOT silently snap the last vertex to the first — that hides the
+surveyor's data-entry mistake.
+
+## 4. Contour intervals are scale-dependent — major vs minor are layered
+
+Topographic plans use a TWO-layer contour system:
+
+- minor contours every **1 m** (or 2 m on rough terrain) → `C-TOPO-MINR`,
+  thin (0.13 mm), grey (ACI 9), no labels;
+- major contours every **5 m** (or 10 m at small scale) → `C-TOPO-MAJR`,
+  thicker (0.35 mm), darker (ACI 8), labelled with elevation.
+
+`draw_contour_line` takes an `elevationM` argument and routes to the
+correct layer based on `isMajor` flag (which the agent can compute via
+`isMajor = elevationM % majorIntervalM == 0`). Drawing a labelled minor
+contour is wrong; drawing an unlabelled major contour is wrong. Cross-check
+with the validator `civil.topo.major-must-be-labelled`.
+
+## 5. Spot elevations have a SIGN and a decimal — and they sit at a point
+
+A spot elevation is the elevation of a single surveyed point, written with
+its sign explicit (`+102.45`, `-1.23`) on layer `C-TOPO-SPOT` next to a small
+cross or dot at the actual point. The two-decimal format is the Polish
+geodetic standard (PN-EN ISO 6709). `place_spot_elevation` ALWAYS draws
+both: the cross/dot AND the labelled text. Agents who draw just the text
+break downstream automated takeoffs because the point geometry is missing.
+
+## 6. Road centreline vs edge of pavement use DIFFERENT linetypes
+
+Mirror of the mechanical convention (rule 37 §1). On a road plan:
+
+| element             | layer          | linetype     | colour | weight |
+| ------------------- | -------------- | ------------ | ------ | ------ |
+| road centreline     | `C-ROAD-CNTR`  | CENTER       | 4      | 0.30   |
+| edge of pavement    | `C-ROAD-EDGE`  | Continuous   | 7      | 0.50   |
+| lane line (broken)  | `C-ROAD-LANE`  | DASHED       | 3      | 0.18   |
+
+`draw_alignment_tangent` and `draw_alignment_curve` produce a CENTER-linetype
+centreline; `draw_road_corridor` produces TWO Continuous parallel edges
+offset by `widthM/2` to either side. Drawing the edges as CENTER (because
+"the centreline is CENTER") ruins the plan.
+
+## 7. Station tick marks are perpendicular to the alignment, not horizontal
+
+`place_station_labels` walks the alignment polyline, drops a small (~2-4 m
+in model space) tick PERPENDICULAR to the local tangent at each station,
+and places the station label parallel to the alignment, offset to one side.
+The tangent is recomputed at every vertex — a tool that places all ticks
+horizontally is correct only on a perfectly East-West road. We compute
+local tangent from the previous vertex (or the next one for the first
+vertex), not from the global +X axis.
+
+## 8. North arrow rotates with TRUE north, not page north
+
+A civil drawing's "north" is true north, which is offset from the page +Y
+axis by the **drawing rotation** angle (the angle by which the drawing is
+rotated to fit a standard sheet). `draw_north_arrow` accepts a
+`trueNorthDegFromPageNorth` argument (default 0°, meaning page-up = north).
+Inserting a north arrow with the default value when the drawing is rotated
+ruins all bearings on the plan. Tools that take a bearing or alignment
+direction MUST document whether they expect page-north or true-north
+orientation.
+
+## 9. Layer key (the office standard we ship — Polish PN + US NCS hybrid)
+
+| layer            | colour | linetype     | weight | content                              |
+| ---------------- | ------ | ------------ | ------ | ------------------------------------ |
+| `C-ROAD-CNTR`    | 4      | CENTER       | 0.30   | road centreline (alignment)          |
+| `C-ROAD-EDGE`    | 7      | Continuous   | 0.50   | edge of pavement                     |
+| `C-ROAD-LANE`    | 3      | DASHED       | 0.18   | lane lines                           |
+| `C-PROP`         | 6      | PHANTOM2     | 0.50   | property / parcel boundary           |
+| `C-ESMT`         | 6      | HIDDEN2      | 0.25   | easement                             |
+| `C-ROW`          | 6      | PHANTOM      | 0.50   | right of way                         |
+| `C-TOPO-MAJR`    | 8      | Continuous   | 0.35   | major contour line                   |
+| `C-TOPO-MINR`    | 9      | Continuous   | 0.13   | minor contour line                   |
+| `C-TOPO-SPOT`    | 2      | Continuous   | 0.18   | spot elevation marks + labels        |
+| `C-STAT`         | 2      | Continuous   | 0.18   | stationing tick marks + labels       |
+| `C-ANNO`         | 2      | Continuous   | 0.18   | civil annotations                    |
+| `C-NORTH`        | 7      | Continuous   | 0.50   | north arrow                          |
+
+`ensure_civil_layers` creates this key idempotently. Every civil draw tool
+calls it first.
+
+## 10. Bundled blocks under `blocks/civil/`
+
+Phase-6 v1 ships geometry inline (no DWG dependency). Phase 7 ships:
+
+- `NORTH_ARROW_BASIC.dwg` (the simple triangle + N letter);
+- `NORTH_ARROW_COMPASS.dwg` (4-point compass rose);
+- `BENCHMARK_GEODETIC.dwg`;
+- `MANHOLE_CIRCULAR.dwg`;
+- `CATCH_BASIN_GRATE.dwg`;
+- `TREE_DECIDUOUS.dwg`, `TREE_CONIFEROUS.dwg`;
+- `STATION_TICK_MAJOR.dwg` (the long centreline tick at major stations).
+
+Sanitise filenames before `Path.Combine` (rule 36 §12 carries over).
+
+## 11. Cross-reference with validators
+
+Each civil draw tool ships with a paired validator rule:
+- `draw_alignment_*`        → `civil.road.centerline-on-c-road-cntr`,
+                              `civil.road.centerline-must-be-dashed`;
+- `draw_road_corridor`      → `civil.road.edge-on-c-road-edge`;
+- `draw_parcel`             → `civil.parcel.must-close` (uses the closure
+                              error returned by the tool);
+- `draw_contour_line`       → `civil.topo.major-must-be-labelled`;
+- `place_spot_elevation`    → `civil.topo.spot-must-have-cross`;
+- `draw_north_arrow`        → `civil.north.must-exist` (drawing-level rule).
+
+When you add a draw tool, add or update the matching YAML under
+`validators/civil/` (rule 35 §8).

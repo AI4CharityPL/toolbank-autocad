@@ -4,7 +4,7 @@
 // invoked from the AutoCAD main UI thread. The plugin captures that thread's
 // SynchronizationContext at startup; every tool handler dispatches via Run/RunAsync.
 //
-// See rule 10-acad-ui-thread.mdc.
+// See rule 10-acad-ui-thread.md.
 
 using System;
 using System.Threading;

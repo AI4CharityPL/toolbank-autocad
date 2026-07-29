@@ -1,0 +1,80 @@
+# Folder Layout - allowed and FORBIDDEN content
+
+Map of project folders - what goes where and what is FORBIDDEN where.
+
+## `src/AcadMcp.Backend/`
+
+- `Program.cs` - entry point, parses `--category`, wires DI, starts stdio MCP host
+- `Mcp/` - MCP framework code: `ToolRegistry`, `CategoryServer`, `RouterServer`, `BankAutoRegister`, JSON-RPC plumbing
+  - **FORBIDDEN here:** any AutoCAD-specific code, any `[McpTool]` method, any helper that calls `acmgd.dll` or COM
+- `Categories/<Name>/` - one folder per category
+  - Allowed: `[McpTool]` methods, argument/result records, category-private helpers
+  - **FORBIDDEN here:** referencing types from another `Categories/<Other>/` folder. If shared, lift to `Categories/_Shared/`
+- `Categories/_Shared/` - cross-category helpers (geometry math, color/lineweight conversion, layer name normalization)
+  - **FORBIDDEN here:** `[McpTool]` methods (helpers only)
+- `PipeClient/` - named pipe client wrapper to talk to plugin
+
+## `src/AcadMcp.Plugin/`
+
+- `PluginEntry.cs` - implements `IExtensionApplication`, starts pipe server
+- `Pipe/` - pipe server, JSON-RPC dispatcher
+- `Execution/` - `UiThreadDispatcher`, `DocumentLockGuard`, transaction helpers
+- `Handlers/` - one handler per Backend tool (mirror of `Categories/`)
+- **FORBIDDEN anywhere in plugin:** stdio MCP code (plugin is in-proc AutoCAD, not an MCP server), any code path that bypasses `UiThreadDispatcher` for AutoCAD database access
+
+## `src/AcadMcp.ComBridge/`
+
+- COM Automation fallback used ONLY when plugin unavailable (AutoCAD LT detected)
+- **FORBIDDEN:** referencing `acmgd.dll` / `acdbmgd.dll` (those are plugin-only)
+
+## `src/AcadMcp.Lisp/`
+
+- `*.lsp` and `*.scr` files
+- `LispLoader.cs` to push them into AutoCAD via plugin
+- **FORBIDDEN:** `[McpTool]` methods (LISP is invoked from category tools as one of execution strategies)
+
+## `src/AcadMcp.Shared/`
+
+- DTOs: `ToolRequest`, `ToolResponse<T>`, `EntityHandle`, `Point2d`, `Point3d`, `Vector3d`, `LayerInfo`, `AcadErrorCode`
+- Pipe protocol contracts
+- **FORBIDDEN:** AutoCAD type references (this assembly must build standalone, no `acmgd` dependency), business logic, anything stateful
+
+## `src/AcadMcp.SourceGen/`
+
+- Roslyn analyzers + source generators
+- Enforces `[McpTool]` requirements (Intent field non-empty, name regex, etc.)
+- **FORBIDDEN:** runtime code (never referenced by Backend at runtime, only at build)
+
+## `src/AcadMcp.Vision/` (Python)
+
+- FastAPI app for `/health`
+- gRPC server for vision/OCR tools
+- `models/` - YOLO/SAM weights (gitignored)
+- **FORBIDDEN:** business logic for AutoCAD geometry (sidecar only does pixels → text/objects); cross-validation with DXF happens in C# `Categories/Vision/`
+
+## `mcpbank-manifests/`
+
+- `acad-<category>.json` - one per category
+- `acad-router.json` - router manifest
+- **FORBIDDEN:** anything that isn't a manifest matching the schema
+
+## `bin-launchers/`
+
+- `acad-<name>.cmd` - thin wrapper calling `AcadMcp.Backend.exe --category <name> --transport stdio`
+- **FORBIDDEN:** business logic in `.cmd` files (one-line wrapper, period)
+
+## `scripts/`
+
+- PowerShell only (`.ps1`), pwsh-compatible (`pwsh` not `powershell`)
+- **FORBIDDEN:** `.bat`, `.sh`, Python scripts (if you need Python tooling, put it in `src/AcadMcp.Vision/tools/`)
+
+## `tests/AcadMcp.Tests/`
+
+- xUnit unit tests + NetArchTest architecture tests
+- `tests/e2e/` for end-to-end tests with real AutoCAD (require AutoCAD installed)
+
+## `docs/`
+
+- `categories.md` - master map of categories
+- `tools/` - auto-generated per-tool docs
+- **FORBIDDEN:** hand-edited per-tool docs (regenerated from `[McpTool]` metadata)

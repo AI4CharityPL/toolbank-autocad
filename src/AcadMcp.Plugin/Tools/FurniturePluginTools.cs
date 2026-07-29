@@ -12,7 +12,7 @@
 // Block origin is at the geometric centre of the footprint so rotations spin
 // around the centre and placement is predictable. Every block carries three
 // attribute definitions: INV_ID, TYPE, ROOM (invisible / editable); plus an
-// optional NOTE depending on block. See rule 64-furniture-density-per-room.mdc
+// optional NOTE depending on block. See rule 64-furniture-density-per-room.md
 // and rule 28 (block traps) for naming / symbol-safety requirements.
 //
 // Rules: 10, 11, 12, 19, 28, 64.

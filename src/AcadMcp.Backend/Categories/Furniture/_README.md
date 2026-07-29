@@ -60,7 +60,7 @@ attribute definitions: `INV_ID` (visible), `TYPE`, `ROOM`, `NOTE` (hidden).
 - Every tool has `Category = "furniture"`; the source generator validates this
   matches the folder.
 - Policy, layer/attribute contract, preset clearance per PN-EN 17210 /
-  WT-2019: see `.cursor/rules/64-furniture-density-per-room.mdc`.
+  WT-2019: see `docs/engineering-rules/64-furniture-density-per-room.md`.
 
 ## How to regenerate the manifest from code
 

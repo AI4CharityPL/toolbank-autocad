@@ -4,7 +4,7 @@
 // plus sidecar health/version probes. None of these tools require AutoCAD to be running -
 // they consume image / PDF / string inputs and call the Python sidecar over loopback HTTP.
 //
-// Rules: 19, 22, 29-acad-vision-architecture.mdc, 32-acad-vision-traps.mdc.
+// Rules: 19, 22, 29-acad-vision-architecture.md, 32-acad-vision-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

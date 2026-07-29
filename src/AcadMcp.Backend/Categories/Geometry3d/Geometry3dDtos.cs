@@ -1,5 +1,5 @@
 // Typed DTOs for the acad-geometry-3d category. Mirrors plugin-side wire shape.
-// See rule 19-tool-implementation-pattern.mdc.
+// See rule 19-tool-implementation-pattern.md.
 
 using System.Text.Json.Serialization;
 using AcadMcp.Shared;

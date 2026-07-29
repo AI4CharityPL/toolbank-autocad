@@ -1,6 +1,6 @@
 // Generates / updates an MCPBank manifest for one category from [McpTool] metadata.
 // Used by `AcadMcp.Backend.exe --category <name> --regenerate-manifest`.
-// See rule 30-mcpbank-manifest.mdc.
+// See rule 30-mcpbank-manifest.md.
 
 using System;
 using System.Collections.Generic;
@@ -78,7 +78,7 @@ public static class BankAutoRegister
             var s = i.GetValue<string>();
             if (string.IsNullOrWhiteSpace(s)) continue;
             // Skip leftover scaffold placeholders so they don't accumulate forever.
-            // See rule 31-mcpbank-discovery-hygiene.mdc.
+            // See rule 31-mcpbank-discovery-hygiene.md.
             if (s.IndexOf("TODO", StringComparison.OrdinalIgnoreCase) >= 0) continue;
             if (s.StartsWith("(seed)", StringComparison.OrdinalIgnoreCase)) continue;
             intentBag.Add(s);
@@ -123,7 +123,7 @@ public static class BankAutoRegister
         {
             ["id"] = $"acad-{category}",
             ["name"] = $"acad-{category}",
-            ["description"] = $"AutoCAD MCP - category '{category}'. (Auto-generated stub - replace with a real description per rule 31-mcpbank-discovery-hygiene.mdc.)",
+            ["description"] = $"AutoCAD MCP - category '{category}'. (Auto-generated stub - replace with a real description per rule 31-mcpbank-discovery-hygiene.md.)",
             ["transport"] = new JsonObject
             {
                 ["type"] = "stdio",

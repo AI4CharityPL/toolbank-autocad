@@ -1,6 +1,6 @@
 // AutoCAD plugin entry point. Loaded via NETLOAD.
 //
-// Lifecycle (rule 16-acad-plugin-lifecycle.mdc):
+// Lifecycle (rule 16-acad-plugin-lifecycle.md):
 //   1. Initialize() runs on AutoCAD's UI thread. We capture SynchronizationContext,
 //      register built-in tools, start the named pipe server, write heartbeat file.
 //   2. ACADMCP_STATUS / ACADMCP_PING commands are exposed for in-AutoCAD diagnostics.

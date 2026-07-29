@@ -1,5 +1,5 @@
 // One-line gateway proxy. Keeps HatchesTools.cs readable.
-// See rule 19-tool-implementation-pattern.mdc.
+// See rule 19-tool-implementation-pattern.md.
 
 using System.Text.Json;
 using System.Text.Json.Nodes;

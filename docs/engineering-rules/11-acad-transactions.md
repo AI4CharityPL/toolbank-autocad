@@ -1,0 +1,64 @@
+# Transactions and DocumentLock are non-negotiable
+
+Plugin transaction and DocumentLock invariants.
+
+Every AutoCAD database **modification** must happen inside a `Transaction` AND a `DocumentLock`. Skipping either = `eLockViolation` exception or partially-corrupted DWG.
+
+## Rule
+
+Use this exact pattern for any DB write:
+
+```csharp
+return UiThread.RunAsync(() =>
+{
+    var doc = Application.DocumentManager.MdiActiveDocument
+              ?? throw new AcadException(AcadErrorCode.NoActiveDocument, "No active document");
+    using var docLock = doc.LockDocument();
+    using var tx = doc.Database.TransactionManager.StartTransaction();
+    try
+    {
+        // ... reads and writes ...
+        tx.Commit();
+        return Success(...);
+    }
+    catch (Exception ex) when (ex is not OperationCanceledException)
+    {
+        tx.Abort();
+        throw new AcadException(AcadErrorCode.TransactionAborted, ex.Message, ex);
+    }
+}, ct);
+```
+
+## Reads only
+
+Pure reads still need a transaction (to call `GetObject`) but DO NOT need `LockDocument`. Mark such methods `[McpTool(..., ReadOnly = true)]` so the registry can route faster.
+
+## Forbidden
+
+- Calling `Open(OpenMode.ForWrite)` outside a transaction
+- Holding a `Transaction` longer than one tool call (no statics, no field caches)
+- Catching `Exception` without `tx.Abort()` and rethrowing as `AcadException`
+- Mutating an `ObjectId` cache after the transaction commits (the underlying object is invalidated)
+
+## Bad
+
+```csharp
+var btr = (BlockTableRecord)bt[BlockTableRecord.ModelSpace].Open(OpenMode.ForWrite); // no transaction
+btr.AppendEntity(circle);
+```
+
+## Good
+
+```csharp
+using var docLock = doc.LockDocument();
+using var tx = doc.Database.TransactionManager.StartTransaction();
+var bt = (BlockTable)tx.GetObject(doc.Database.BlockTableId, OpenMode.ForRead);
+var btr = (BlockTableRecord)tx.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+btr.AppendEntity(circle);
+tx.AddNewlyCreatedDBObject(circle, true);
+tx.Commit();
+```
+
+## Document switches
+
+If the active document changes mid-call (rare, but possible), the transaction is invalid. The dispatcher captures `MdiActiveDocument` at queue-time; if it differs at execution-time, fail fast with `AcadErrorCode.NoActiveDocument`.

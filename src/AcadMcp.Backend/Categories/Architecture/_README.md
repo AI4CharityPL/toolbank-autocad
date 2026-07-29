@@ -5,7 +5,7 @@ High-level architectural plan-view domain category. Composes primitives from
 the agent never has to remember which layer or which linetype. Pairs with
 `acad-validators` rules under `validators/architectural/`.
 
-> Read **rule 35-domain-categories-design.mdc** and **rule 36-architecture-domain-traps.mdc** before changing anything in this folder.
+> Read **rule 35-domain-categories-design.md** and **rule 36-architecture-domain-traps.md** before changing anything in this folder.
 
 ## Tools (v1, 10)
 

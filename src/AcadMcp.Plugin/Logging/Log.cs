@@ -1,6 +1,6 @@
 // Lightweight file logger for the plugin. No System.Console (no console attached inside AutoCAD).
 // Writes to %LOCALAPPDATA%\AcadMcp\logs\plugin-yyyymmdd.log with daily rolling, 7-day retention.
-// See rule 16-acad-plugin-lifecycle.mdc.
+// See rule 16-acad-plugin-lifecycle.md.
 
 using System;
 using System.IO;

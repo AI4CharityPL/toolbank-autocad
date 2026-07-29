@@ -3,7 +3,7 @@
 // with attribute payload, explode, attribute read/write, listing of all defined blocks,
 // extracting all block-reference instances of a definition, and deletion / purge.
 //
-// Rules: 19, 28-acad-blocks-layers-files-traps.mdc.
+// Rules: 19, 28-acad-blocks-layers-files-traps.md.
 
 using System.Threading;
 using System.Threading.Tasks;

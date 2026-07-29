@@ -2,7 +2,7 @@
 // queries and modifications. Each method is a thin proxy through IPluginGateway
 // to the matching plugin handler under the key "acad.geometry2d.<verb>".
 //
-// Rules: 19-tool-implementation-pattern.mdc, 20..25 (tool authoring).
+// Rules: 19-tool-implementation-pattern.md, 20..25 (tool authoring).
 //
 // Timeouts:
 //   read-only queries     :  5 000 ms

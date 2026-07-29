@@ -2,7 +2,7 @@
 // window/crossing/fence/polygon picks, named selection sets and filtering.
 // All tools are read-only and idempotent.
 //
-// Rules: 19-tool-implementation-pattern.mdc, 20..25.
+// Rules: 19-tool-implementation-pattern.md, 20..25.
 
 using System.Threading;
 using System.Threading.Tasks;

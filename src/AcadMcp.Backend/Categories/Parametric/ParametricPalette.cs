@@ -1,5 +1,5 @@
 // Single source of truth for the parametric / constraint-sketch layer key.
-// Mirrors rule 42 §9 (42-parametric-domain-traps.mdc).
+// Mirrors rule 42 §9 (42-parametric-domain-traps.md).
 
 using System.Collections.Generic;
 

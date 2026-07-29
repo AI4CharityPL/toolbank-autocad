@@ -1,18 +1,20 @@
 <#
 .SYNOPSIS
-    Pushes all mcpbank-manifests/acad-*.json files into the local MCPBank registry.
+    Pushes all mcpbank-manifests/acad-*.json files into the local MCP Nexus registry.
 
 .DESCRIPTION
     Reads each acad-*.json from mcpbank-manifests/, validates required fields, then upserts
-    the entry (matched by id) into the MCPBank registry JSON.
-    
+    the entry (matched by id) into the MCP Nexus registry JSON.
+
     Default registry path matches the user's existing setup:
         C:\Users\DELL\mcpbank\registry\mcpd-registry.json
-    
+
     Override with -Registry. Use -DryRun to preview without writing.
 
 .PARAMETER Registry
-    Full path to the MCPBank registry JSON. Auto-detected from the user's mcp.json if not provided.
+    Full path to the MCP Nexus registry JSON. Auto-detected from the user's mcp.json if not provided
+    (looks for a "nexus-gateway" or "nexus-server" entry first; falls back to the older
+    "mcpbank-dynamic" / "mcpbank-discovery" names for configs that haven't been migrated yet).
 
 .PARAMETER RepoRoot
     Repository root. Defaults to parent of script directory.
@@ -60,12 +62,18 @@ if ([string]::IsNullOrWhiteSpace($Registry)) {
     if (Test-Path $cursorMcp) {
         try {
             $cfg = Get-Content $cursorMcp -Raw | ConvertFrom-Json
-            $bankDyn = $cfg.mcpServers.'mcpbank-dynamic'
-            if ($bankDyn -and $bankDyn.args) {
-                $idx = [array]::IndexOf($bankDyn.args, "--registry")
-                if ($idx -ge 0 -and $idx + 1 -lt $bankDyn.args.Count) {
-                    $Registry = $bankDyn.args[$idx + 1] -replace "/", "\"
-                    Write-Host "Detected MCPBank registry from mcp.json: $Registry" -ForegroundColor DarkGray
+            # Current MCP Nexus CLI names first; older "mcpbank-*" names kept as a
+            # fallback so configs that haven't been migrated yet still auto-detect.
+            $candidateKeys = @("nexus-gateway", "nexus-server", "mcpbank-dynamic", "mcpbank-discovery")
+            foreach ($key in $candidateKeys) {
+                $entry = $cfg.mcpServers.$key
+                if ($entry -and $entry.args) {
+                    $idx = [array]::IndexOf($entry.args, "--registry")
+                    if ($idx -ge 0 -and $idx + 1 -lt $entry.args.Count) {
+                        $Registry = $entry.args[$idx + 1] -replace "/", "\"
+                        Write-Host "Detected MCP Nexus registry from mcp.json ('$key'): $Registry" -ForegroundColor DarkGray
+                        break
+                    }
                 }
             }
         } catch { }
@@ -76,16 +84,15 @@ if ([string]::IsNullOrWhiteSpace($Registry)) {
     }
 }
 
+$registryObj = $null
 if (-not (Test-Path $Registry)) {
     Write-Warning "Registry file not found: $Registry"
-    Write-Warning "Will create a fresh one (mcpd_version 1.0)."
-    $registryDir = Split-Path -Parent $Registry
-    if (-not (Test-Path $registryDir)) { New-Item -ItemType Directory -Path $registryDir -Force | Out-Null }
+    Write-Warning $(if ($DryRun) { "Would create a fresh one (mcpd_version 1.0) -- skipped, -DryRun." } else { "Will create a fresh one (mcpd_version 1.0)." })
     $now = (Get-Date).ToString("o")
     $fresh = [PSCustomObject]@{
         mcpd_version = "1.0"
         metadata = [PSCustomObject]@{
-            name        = "MCPBank Registry"
+            name        = "MCP Nexus Registry"
             description = "Created by AutoCAD MCP register-mcps.ps1"
             created_at  = $now
             updated_at  = $now
@@ -93,12 +100,20 @@ if (-not (Test-Path $Registry)) {
         }
         servers = @()
     }
-    if (-not $DryRun) {
+    if ($DryRun) {
+        # Nothing on disk to read back from -- preview against the in-memory
+        # object instead of touching the filesystem at all.
+        $registryObj = $fresh
+    } else {
+        $registryDir = Split-Path -Parent $Registry
+        if (-not (Test-Path $registryDir)) { New-Item -ItemType Directory -Path $registryDir -Force | Out-Null }
         $fresh | ConvertTo-Json -Depth 20 | Set-Content -Path $Registry -Encoding UTF8
     }
 }
 
-$registryObj = Get-Content $Registry -Raw | ConvertFrom-Json
+if ($null -eq $registryObj) {
+    $registryObj = Get-Content $Registry -Raw | ConvertFrom-Json
+}
 if (-not $registryObj.servers) {
     Add-Member -InputObject $registryObj -MemberType NoteProperty -Name servers -Value @() -Force
 }

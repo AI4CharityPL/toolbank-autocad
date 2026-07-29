@@ -176,7 +176,7 @@ pwsh scripts/register-mcps.ps1
 
 This registers all 30 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~336 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
-**Known rough edge:** the script auto-detects your registry path by looking for an `mcpbank-dynamic` entry in `~/.cursor/mcp.json` — the old MCP Nexus CLI name. If your Cursor config uses the current name (`nexus-gateway`), that lookup silently misses and falls back to the default path `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. If that happens to be where your real registry already lives, nothing breaks; if you use a non-default registry path, pass it explicitly: `pwsh scripts/register-mcps.ps1 -Registry "<path>"`.
+The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `nexus-gateway` or `nexus-server` entry (current MCP Nexus CLI names) and falling back to the older `mcpbank-dynamic` / `mcpbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. Verified against both a `nexus-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
 ### 3. Point your MCP client at `acad-router` only
 

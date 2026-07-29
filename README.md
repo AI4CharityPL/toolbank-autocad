@@ -26,6 +26,18 @@ AI Agent ── static ──> acad-router (9 meta-tools)
               AcadMcp.Plugin (in-process AutoCAD, via NETLOAD)
 ```
 
+## Three ways to work with this
+
+This repository is actually three separable things sharing one execution engine. Don't conflate them:
+
+| | The Plugin | MCP servers | Companion |
+|---|---|---|---|
+| **What it is** | The execution engine: an AutoCAD extension NETLOAD'ed into AutoCAD, hosting a named-pipe server that makes real AutoCAD API calls | Standard stdio MCP servers (`AcadMcp.Backend.exe --category <name>`) that any MCP client can connect to | A self-contained, in-app chat panel (`ACADAI` command) with its own bundled AI provider integrations |
+| **Talks to AutoCAD via** | Directly — it *is* the in-process extension | Named pipe → the Plugin | Named pipe → the Plugin (its own private instance) |
+| **Talks to the AI via** | N/A | Your existing MCP client (Cursor, Claude Desktop, Claude Code, ...) — your subscription, your session | Its own built-in Anthropic/OpenAI/Gemini provider — bring your own API key (BYOK), entered once in its Settings tab |
+| **Required?** | Yes, always — every other path depends on it | Optional — only if you want to drive AutoCAD from an external AI client | Optional — a fully separate, alternative front door; doesn't require a separate AI client at all |
+| **Install guide** | [§1 below](#1-the-plugin--foundation-always-required) | [§2 below](#2-mcp-servers--for-your-own-ai-client) | [§3 below](#3-companion--standalone-in-app-assistant-byok) |
+
 ## Key components
 
 | Component            | Role                                                                 |
@@ -72,9 +84,9 @@ pwsh scripts/install-cursor-config.ps1
 pwsh scripts/install-plugin.ps1
 ```
 
-## Installing into AutoCAD 2025
+## 1. The Plugin — foundation (always required)
 
-This is the part that actually gets the plugin running inside AutoCAD. The steps below are the ones verified live on AutoCAD 2025 (see [Verified](#verified)) — not just what the scripts claim to do.
+This is the part that actually gets the plugin running inside AutoCAD. Every other path in this repository depends on it. The steps below are the ones verified live on AutoCAD 2025 (see [Verified](#verified)) — not just what the scripts claim to do.
 
 ### Prerequisites
 
@@ -142,6 +154,80 @@ pwsh scripts/install-plugin.ps1 -Uninstall
 ```
 
 Removes the bundle directory and cleans up any `acaddoc.lsp` snippet it added.
+
+## 2. MCP servers — for your own AI client
+
+Use this path if you want to drive AutoCAD from an AI client you already use (Cursor, Claude Desktop, Claude Code, or any other MCP-compatible client), through your own subscription/session. This requires [the Plugin](#1-the-plugin--foundation-always-required) to already be installed and AutoCAD running.
+
+### 1. Build and package launchers
+
+```powershell
+dotnet build src/AcadMcp.sln -c Release
+pwsh scripts/package.ps1
+```
+
+`package.ps1` generates one `.cmd` launcher per category under `bin-launchers/` (e.g. `acad-geometry-2d.cmd`), each wrapping `AcadMcp.Backend.exe --category <name>`.
+
+### 2. Register every category with MCP Nexus
+
+```powershell
+pwsh scripts/register-mcps.ps1
+```
+
+This registers all 30 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~336 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+
+**Known rough edge:** the script auto-detects your registry path by looking for an `mcpbank-dynamic` entry in `~/.cursor/mcp.json` — the old MCP Nexus CLI name. If your Cursor config uses the current name (`nexus-gateway`), that lookup silently misses and falls back to the default path `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. If that happens to be where your real registry already lives, nothing breaks; if you use a non-default registry path, pass it explicitly: `pwsh scripts/register-mcps.ps1 -Registry "<path>"`.
+
+### 3. Point your MCP client at `acad-router` only
+
+```powershell
+pwsh scripts/install-cursor-config.ps1
+```
+
+Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through MCP Nexus. This assumes MCP Nexus itself is already configured in your client — see the [MCP Nexus repository](https://github.com/KrzysztofAugiewicz/MCPNexus) if it isn't.
+
+### 4. Verify
+
+Ask your AI client to call `acad_status`. With AutoCAD running and the Plugin loaded, you should get back real drawing data (see the [Verified](#verified) section above for an example response).
+
+## 3. Companion — standalone in-app assistant (BYOK)
+
+A completely separate product from the MCP-client path above: a self-contained chat panel that lives inside AutoCAD itself. No external AI client, no MCP Nexus configuration needed — you bring your own API key (BYOK) for Anthropic, OpenAI, or Gemini, entered once inside the panel.
+
+It bundles its own copies of the Plugin and Backend, so it doesn't depend on the bundle installed in [§1](#1-the-plugin--foundation-always-required) — it runs independently, side by side with it if you have both installed.
+
+### For local development / testing
+
+```powershell
+pwsh scripts/deploy-companion.ps1 -Configuration Release -Kill
+```
+
+`-Kill` terminates any running `acad.exe` first (the bundle's DLLs are locked while AutoCAD has them loaded). This builds `Companion.Host` + `Companion.Agent` + `Companion.Mcp`, along with the Plugin and Backend, and stages everything into `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcpCompanion.bundle`.
+
+### Building a distributable installer
+
+```powershell
+pwsh scripts/build-companion-installer.ps1
+```
+
+Stages a complete, self-contained bundle under `dist\AcadMcpCompanion.bundle` and compiles it into `dist\AcadMcpCompanion-Setup-<version>.exe` (via Inno Setup, if `ISCC.exe` is available) — or a `.zip` fallback that can be dropped straight into `%APPDATA%\Autodesk\ApplicationPlugins` by hand. The installer is per-user, needs no admin rights, and asks for nothing at install time: API keys are entered inside the panel on first run.
+
+### Using it
+
+1. Start (or restart) AutoCAD so both bundle modules load.
+2. Type `ACADAI` at the AutoCAD command line to open the chat panel.
+3. On first run, open Settings and enter your API key for your preferred provider (Anthropic, OpenAI, or Gemini) plus, optionally, which model to use per provider.
+4. Chat normally — the assistant calls the same tool bank as the MCP-client path, through its own private connection to the Plugin.
+
+Uninstall the same way as §1, targeting the Companion bundle:
+
+```powershell
+pwsh scripts/deploy-companion.ps1 -Uninstall
+```
+
+## Full tool reference
+
+**336 tools across 30 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
 
 ## Status
 

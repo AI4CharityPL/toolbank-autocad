@@ -83,12 +83,15 @@ public static class CheckEvaluator
                 // Cross-entity check: every endpoint (first + last) of this polyline must coincide
                 // (within tolerance) with an entity matching the filter.
                 // Params: tolerance (double), block_name (string?, optional), layer (string?, optional),
+                //         dxf_type (string?, optional -- e.g. "Circle", for markers that aren't block
+                //         references, like the plain-Circle junction dots acad-electrical draws),
                 //         require (bool, default true). When require=false the check becomes "forbidden".
                 if (e.Vertices is null || e.Vertices.Length < 2)
                     return new(true, "endpoint sharing", "no vertex data (skipped)", Skipped: true);
                 var tol = AsDouble(check.Params, "tolerance");
                 string? blockName = check.Params.TryGetValue("block_name", out var bn) ? bn?.ToString() : null;
                 string? layer = check.Params.TryGetValue("layer", out var ln) ? ln?.ToString() : null;
+                string? dxfType = check.Params.TryGetValue("dxf_type", out var dt) ? dt?.ToString() : null;
                 bool require = !check.Params.TryGetValue("require", out var rq) || rq is not bool b || b;
 
                 var endpoints = new[] { e.Vertices[0], e.Vertices[^1] };
@@ -101,6 +104,7 @@ public static class CheckEvaluator
                         if (ReferenceEquals(other, e)) continue;
                         if (blockName is not null && !string.Equals(other.BlockName, blockName, StringComparison.OrdinalIgnoreCase)) continue;
                         if (layer is not null && !string.Equals(other.Layer, layer, StringComparison.OrdinalIgnoreCase)) continue;
+                        if (dxfType is not null && !string.Equals(other.DxfType, dxfType, StringComparison.OrdinalIgnoreCase)) continue;
 
                         double cx = (other.BboxMin[0] + other.BboxMax[0]) * 0.5;
                         double cy = (other.BboxMin[1] + other.BboxMax[1]) * 0.5;
@@ -109,8 +113,11 @@ public static class CheckEvaluator
                     }
                     if (match) satisfied++;
                 }
-                string filter = blockName is not null ? $"block '{blockName}'"
-                    : layer is not null ? $"layer '{layer}'" : "any entity";
+                var filterParts = new List<string>();
+                if (blockName is not null) filterParts.Add($"block '{blockName}'");
+                if (layer is not null) filterParts.Add($"layer '{layer}'");
+                if (dxfType is not null) filterParts.Add($"dxf_type '{dxfType}'");
+                string filter = filterParts.Count > 0 ? string.Join(" + ", filterParts) : "any entity";
                 bool pass = require ? satisfied == endpoints.Length : satisfied == 0;
                 return new(pass,
                     require ? $"both endpoints near {filter} (tol {tol})" : $"no endpoint near {filter} (tol {tol})",

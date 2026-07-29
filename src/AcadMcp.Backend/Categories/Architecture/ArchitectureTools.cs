@@ -159,7 +159,7 @@ public static class ArchitectureTools
     // ─────────── doors and windows ───────────
 
     [McpTool("insert_door",
-        "Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. NOTE v1: this tool DOES NOT cut a hole in the host wall — that step ships in Phase 7. Until then, use a follow-up acad-geometry2d.trim_curve / boolean op against the wall faces to punch the opening.",
+        "Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs (hinge -> hinge + widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
         "architecture",
         Intent = new[]
         {
@@ -175,6 +175,25 @@ public static class ArchitectureTools
         if (args.WidthMm <= 0) throw new ArgumentException("widthMm must be > 0");
         if (args.OpeningDeg <= 0 || args.OpeningDeg > 180) throw new ArgumentException("openingDeg must be in (0, 180]");
 
+        // Hinge axis = wall direction at the hinge. Door swings to the perpendicular
+        // side determined by swingDirection.
+        double hingeRad   = args.HingeAngleDeg * Math.PI / 180.0;
+        double openingRad = args.OpeningDeg    * Math.PI / 180.0;
+        int sign = string.Equals(args.SwingDirection, "right", StringComparison.OrdinalIgnoreCase) ? -1 : 1;
+
+        var v0 = args.Hinge;
+
+        SplitWallAtOpeningResult? wallOpening = null;
+        if (!string.IsNullOrWhiteSpace(args.WallHandle))
+        {
+            // Jambs run along the WALL axis (hingeAngleDeg), not the door's open
+            // swing angle -- the opening spans from the hinge to hinge + widthMm
+            // in the closed-door direction.
+            var jamb1 = v0;
+            var jamb2 = new Point2dDto(v0.X + Math.Cos(hingeRad) * args.WidthMm, v0.Y + Math.Sin(hingeRad) * args.WidthMm);
+            wallOpening = await SplitWallAtOpening(gw, new SplitWallAtOpeningArgs(args.WallHandle!, jamb1, jamb2), ct).ConfigureAwait(false);
+        }
+
         var existing = await ArchitectureProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
         var created = new List<string>();
         if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.DoorLayer, 30, "Continuous", ct).ConfigureAwait(false))
@@ -182,18 +201,11 @@ public static class ArchitectureTools
         if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.SwingLayer, 30, "DASHED", ct).ConfigureAwait(false))
             created.Add(args.SwingLayer);
 
-        // Hinge axis = wall direction at the hinge. Door swings to the perpendicular
-        // side determined by swingDirection.
-        double hingeRad   = args.HingeAngleDeg * Math.PI / 180.0;
-        double openingRad = args.OpeningDeg    * Math.PI / 180.0;
-        int sign = string.Equals(args.SwingDirection, "right", StringComparison.OrdinalIgnoreCase) ? -1 : 1;
-
         // Door panel = rectangle from hinge along the (hinge axis rotated by openingRad)
         // direction with width = WidthMm, perpendicular thickness = frameThicknessMm.
         double panelAngle = hingeRad + sign * openingRad;
         double cosA = Math.Cos(panelAngle), sinA = Math.Sin(panelAngle);
         double cosP = -sinA * sign, sinP = cosA * sign;  // perpendicular offset for thickness
-        var v0 = args.Hinge;
         var v1 = new Point2dDto(v0.X + cosA * args.WidthMm,                             v0.Y + sinA * args.WidthMm);
         var v2 = new Point2dDto(v1.X + cosP * args.FrameThicknessMm,                    v1.Y + sinP * args.FrameThicknessMm);
         var v3 = new Point2dDto(v0.X + cosP * args.FrameThicknessMm,                    v0.Y + sinP * args.FrameThicknessMm);
@@ -207,12 +219,14 @@ public static class ArchitectureTools
         var swing = await ArchitectureProxy.DrawArcAsync(
             gw, args.Hinge, args.WidthMm, startDeg, endDeg, args.SwingLayer, ct).ConfigureAwait(false);
 
-        return new InsertDoorResult(panel, swing, args.WidthMm, args.OpeningDeg, created,
-            "Door panel + swing arc drawn. Wall opening was NOT cut (v1 limitation).");
+        return new InsertDoorResult(panel, swing, args.WidthMm, args.OpeningDeg, created, wallOpening,
+            wallOpening is not null
+                ? "Door panel + swing arc drawn. Wall opening was cut at the door's jambs."
+                : "Door panel + swing arc drawn. No wallHandle was supplied, so no wall was cut.");
     }
 
     [McpTool("insert_window",
-        "Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. NOTE v1: this tool DOES NOT cut the host wall — see insert_door note. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up).",
+        "Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window's own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up).",
         "architecture",
         Intent = new[]
         {
@@ -228,11 +242,6 @@ public static class ArchitectureTools
         if (args.WidthMm <= 0)         throw new ArgumentException("widthMm must be > 0");
         if (args.WallThicknessMm <= 0) throw new ArgumentException("wallThicknessMm must be > 0");
 
-        var existing = await ArchitectureProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
-        var created = new List<string>();
-        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.Layer, 4, "Continuous", ct).ConfigureAwait(false))
-            created.Add(args.Layer);
-
         double rad = args.RotationDeg * Math.PI / 180.0;
         double cosA = Math.Cos(rad),  sinA = Math.Sin(rad);
         double half = args.WidthMm / 2.0;
@@ -241,6 +250,17 @@ public static class ArchitectureTools
         // Wall axis points (a -> b) along rotationDeg, centred on args.Center.
         var aOnAxis = new Point2dDto(args.Center.X - cosA * half, args.Center.Y - sinA * half);
         var bOnAxis = new Point2dDto(args.Center.X + cosA * half, args.Center.Y + sinA * half);
+
+        SplitWallAtOpeningResult? wallOpening = null;
+        if (!string.IsNullOrWhiteSpace(args.WallHandle))
+        {
+            wallOpening = await SplitWallAtOpening(gw, new SplitWallAtOpeningArgs(args.WallHandle!, aOnAxis, bOnAxis), ct).ConfigureAwait(false);
+        }
+
+        var existing = await ArchitectureProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created = new List<string>();
+        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.Layer, 4, "Continuous", ct).ConfigureAwait(false))
+            created.Add(args.Layer);
 
         // Perpendicular offsets give sill (-t) and header (+t).
         double nx = -sinA, ny = cosA;
@@ -254,8 +274,10 @@ public static class ArchitectureTools
         var leftJamb  = await ArchitectureProxy.DrawLineAsync(gw, sillA, headerA, args.Layer, ct).ConfigureAwait(false);
         var rightJamb = await ArchitectureProxy.DrawLineAsync(gw, sillB, headerB, args.Layer, ct).ConfigureAwait(false);
 
-        return new InsertWindowResult(sill, glass, header, leftJamb, rightJamb, args.WidthMm, created,
-            "Window primitives drawn. Wall opening was NOT cut (v1 limitation).");
+        return new InsertWindowResult(sill, glass, header, leftJamb, rightJamb, args.WidthMm, created, wallOpening,
+            wallOpening is not null
+                ? "Window primitives drawn. Wall opening was cut at the window's axis span."
+                : "Window primitives drawn. No wallHandle was supplied, so no wall was cut.");
     }
 
     // ─────────── columns ───────────

@@ -169,14 +169,67 @@ internal static class AcadEnv
         }
     }
 
-    /// <summary>Resolve a linetype by name (must already be loaded in the linetype table).</summary>
+    /// <summary>
+    /// Resolve a linetype by name. Tries, in order: (1) already loaded in this
+    /// drawing, (2) auto-load from the standard acadiso.lin/acad.lin support
+    /// file, (3) a built-in procedural definition for the handful of linetypes
+    /// this plugin actually uses (CENTER/HIDDEN/DASHED/PHANTOM + their "2"
+    /// half-scale variants).
+    ///
+    /// Step (3) exists because step (2) can fail for a reason that has nothing
+    /// to do with preloading: on a localized AutoCAD install (verified live on
+    /// a Polish install, 2026-07-29) the SUPPORT FILES THEMSELVES define these
+    /// linetypes under translated names -- "DASHED" ships as "KRESKOWA",
+    /// "CENTER" as "SRODEK", "HIDDEN" as "UKRYTE", "PHANTOM" as "POZORNA" --
+    /// so LoadLineTypeFile("DASHED", "acadiso.lin") can never find a match on
+    /// that install, no matter how the file is located. Defining the pattern
+    /// ourselves under the exact English name every domain category's palette
+    /// hardcodes sidesteps AutoCAD support-file localization entirely.
+    /// </summary>
     public static ObjectId ResolveLinetype(Database db, Transaction tr, string name)
     {
         var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
         if (!lt.Has(name))
-            throw new ArgumentException($"Linetype '{name}' is not loaded. Load it first via LINETYPE command or _-LINETYPE Load.");
+        {
+            if (!string.Equals(name, "Continuous", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var file in new[] { "acadiso.lin", "acad.lin" })
+                {
+                    try { db.LoadLineTypeFile(name, file); if (lt.Has(name)) break; }
+                    catch { /* not defined under this name in this file -- try the next, then the procedural fallback */ }
+                }
+            }
+            if (!lt.Has(name))
+            {
+                var pattern = StandardLinetypePattern(name);
+                if (pattern is null)
+                    throw new ArgumentException(
+                        $"Linetype '{name}' is not loaded, could not be auto-loaded from acadiso.lin/acad.lin (possibly a localized AutoCAD install), and has no built-in fallback pattern. Load it manually via LINETYPE command or _-LINETYPE Load.");
+                lt.UpgradeOpen();
+                var ltr = new LinetypeTableRecord { Name = name, AsciiDescription = name };
+                ltr.NumDashes = pattern.Length;
+                for (int i = 0; i < pattern.Length; i++) ltr.SetDashLengthAt(i, pattern[i]);
+                lt.Add(ltr);
+                tr.AddNewlyCreatedDBObject(ltr, true);
+            }
+        }
         return lt[name];
     }
+
+    /// <summary>Dash/gap pattern (mm, positive = dash, negative = gap) for the linetypes this
+    /// plugin's domain palettes hardcode. Roughly matches the standard acadiso.lin patterns.</summary>
+    private static double[]? StandardLinetypePattern(string name) => name.ToUpperInvariant() switch
+    {
+        "DASHED"   => new[] { 12.7, -6.35 },
+        "DASHED2"  => new[] { 6.35, -3.175 },
+        "CENTER"   => new[] { 31.75, -6.35, 6.35, -6.35 },
+        "CENTER2"  => new[] { 19.05, -3.175, 3.175, -3.175 },
+        "HIDDEN"   => new[] { 6.35, -3.175 },
+        "HIDDEN2"  => new[] { 3.175, -1.5875 },
+        "PHANTOM"  => new[] { 31.75, -6.35, 6.35, -6.35, 6.35, -6.35 },
+        "PHANTOM2" => new[] { 19.05, -3.175, 3.175, -3.175, 3.175, -3.175 },
+        _ => null,
+    };
 
     /// <summary>Resolve a text style by name; falls back to "Standard" if missing.</summary>
     public static ObjectId ResolveTextStyleOrStandard(Database db, Transaction tr, string? name)

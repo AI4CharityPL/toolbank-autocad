@@ -79,7 +79,14 @@ public sealed record InsertDoorArgs(
     [property: JsonPropertyName("hingeAngleDeg")] double HingeAngleDeg = 0.0,
     [property: JsonPropertyName("swingDirection")] string SwingDirection = "left",   // "left" | "right"
     [property: JsonPropertyName("doorLayer")]  string DoorLayer = ArchitecturePalette.LayerDoor,
-    [property: JsonPropertyName("swingLayer")] string SwingLayer = ArchitecturePalette.LayerDoorSwing);
+    [property: JsonPropertyName("swingLayer")] string SwingLayer = ArchitecturePalette.LayerDoorSwing,
+    // Optional: handle of the wall (Line or 2-vertex Polyline) this door sits in.
+    // When supplied, the wall is cut at the door's own jambs (hinge -> hinge +
+    // widthMm along hingeAngleDeg) BEFORE the door panel is drawn, via the same
+    // acad.openings.cut_wall_for_opening primitive split_wall_at_opening wraps --
+    // rule 36 §3 requires insert_door to punch the opening itself rather than
+    // leaving it as a manual two-step flow.
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
 
 public sealed record InsertDoorResult(
     [property: JsonPropertyName("panel")]      EntityHandle Panel,
@@ -87,6 +94,7 @@ public sealed record InsertDoorResult(
     [property: JsonPropertyName("widthMm")]    double WidthMm,
     [property: JsonPropertyName("openingDeg")] double OpeningDeg,
     [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers,
+    [property: JsonPropertyName("wallOpening")] SplitWallAtOpeningResult? WallOpening,
     [property: JsonPropertyName("notes")]      string Notes);
 
 public sealed record InsertWindowArgs(
@@ -94,7 +102,12 @@ public sealed record InsertWindowArgs(
     [property: JsonPropertyName("widthMm")]    double WidthMm = 1200.0,
     [property: JsonPropertyName("wallThicknessMm")] double WallThicknessMm = 200.0,
     [property: JsonPropertyName("rotationDeg")] double RotationDeg = 0.0,
-    [property: JsonPropertyName("layer")]      string Layer = ArchitecturePalette.LayerGlazing);
+    [property: JsonPropertyName("layer")]      string Layer = ArchitecturePalette.LayerGlazing,
+    // Optional: handle of the wall (Line or 2-vertex Polyline) this window sits
+    // in. When supplied, the wall is cut at the window's own axis span (the sill/
+    // glass/header line endpoints projected onto the wall axis) BEFORE the window
+    // primitives are drawn -- see InsertDoorArgs.WallHandle for the same rationale.
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
 
 public sealed record InsertWindowResult(
     [property: JsonPropertyName("sillLine")]   EntityHandle SillLine,
@@ -104,6 +117,7 @@ public sealed record InsertWindowResult(
     [property: JsonPropertyName("rightJamb")]  EntityHandle RightJamb,
     [property: JsonPropertyName("widthMm")]    double WidthMm,
     [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers,
+    [property: JsonPropertyName("wallOpening")] SplitWallAtOpeningResult? WallOpening,
     [property: JsonPropertyName("notes")]      string Notes);
 
 #endregion

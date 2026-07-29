@@ -45,16 +45,24 @@ A door insert is **3 things** in one tool call:
   position);
 - a swing arc (90° default, both directions allowed).
 
-`insert_door` MUST punch the wall opening AND draw the swing. Returning a
-door block reference without modifying the host wall is a bug — the agent
-cannot fix that without re-running expensive boolean ops.
+`insert_door` punches the wall opening AND draws the swing WHEN called with
+`wallHandle` (fixed 2026-07-29 — earlier builds always skipped the cut and
+left a note admitting it). `wallHandle` is opt-in, not auto-detected: the
+tool has no way to know which entity is "the wall" without being told, so a
+call without `wallHandle` still only draws the door primitives — that's a
+legitimate call shape (e.g. door not modeled against a specific wall
+entity yet), not the bug the tool used to have. Any agent placing a door
+into a real wall entity MUST pass `wallHandle` — returning a door block
+reference without attempting to cut its host wall, when the wall handle was
+available, is the bug this rule is about.
 
 ## 4. Windows have a sill and a header line
 
 A window in plan is a wall opening + 3 parallel lines (sill, glass,
 internally-divided panes) on layer `A-GLAZ`. Without the sill line the
 plan looks like a hole in the wall. The `insert_window` tool MUST draw the
-sill line and the glass line (on layer `A-GLAZ`) plus the wall-opening cut.
+sill line and the glass line (on layer `A-GLAZ`); pass `wallHandle` to also
+cut the wall (same opt-in rationale as `insert_door` above).
 
 ## 5. Columns are NEVER on the wall layer
 

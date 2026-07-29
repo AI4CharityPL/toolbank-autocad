@@ -11,18 +11,38 @@ description: |
 
   This is a cross-entity check. It reads the polyline vertex list shipped
   from the plugin snapshot (rule 34 §5, added in Phase 7.2) and for each
-  endpoint asks: is there a BlockReference named JUNCTION whose centre lies
-  within tolerance? The tolerance is intentionally generous (2.5 units) so
-  drawings whose block insertion point is not pixel-perfect still pass.
+  endpoint asks: is there a Circle on layer E-WIRE whose centre lies within
+  tolerance? The tolerance is intentionally generous (2.5 units) so drawings
+  whose junction dot is not pixel-perfect still pass.
 
-  Catches the opposite failure mode of `acad-electrical.place_junction`
-  which *draws* the junction; this rule *verifies* that one exists wherever
-  the schematic demands it.
+  Fixed 2026-07-29: this rule originally matched `block_name: JUNCTION`, but
+  `acad-electrical.draw_wire_junction` (the tool that *draws* the junction)
+  has always drawn a plain filled Circle, never a BlockReference — a real
+  mismatch that meant this rule could never fire, on any drawing, regardless
+  of whether junctions were actually missing. Matching on `dxf_type: Circle`
+  + `layer: E-WIRE` instead makes the rule match what the tool actually
+  produces. If a JUNCTION block library ships later (see `blocks/electrical/`
+  in the Phase 7-8 roadmap), add `block_name: JUNCTION` back as an `any_of`
+  alternative rather than replacing this check outright.
+
+  Second fix, same day, found while live-verifying the first one: `entity_types`
+  must list every dxf_type the checks reference, not just the type being
+  checked itself. ValidationEngine collects exactly ONE entity snapshot per
+  rule scope (`entity_types` + `layer_pattern`) and reuses it both as "the
+  entities this rule evaluates" AND as the candidate pool for cross-entity
+  checks like `polyline_endpoints_share` (see EvalContext.AllEntities in
+  ValidationEngine.cs). Scoping to `[Polyline, Line]` only means the junction
+  Circle is never even fetched from the drawing, so the check would report
+  0/2 matched even with a real junction dot sitting exactly on the wire
+  endpoint. Adding `Circle` here does not turn circles into "wires" -- they
+  still get skipped by `polyline_endpoints_share` itself (no vertex data) --
+  it only makes them visible as match candidates for other entities' checks.
 scope:
-  entity_types: [Polyline, Line]
+  entity_types: [Polyline, Line, Circle]
   layer_pattern: "^E[-_]?WIRE(?:[-_]?(CTRL|PWR|SIG|DATA))?$"
 checks:
   - type: polyline_endpoints_share
     tolerance: 2.5
-    block_name: JUNCTION
+    dxf_type: Circle
+    layer: E-WIRE
     require: true

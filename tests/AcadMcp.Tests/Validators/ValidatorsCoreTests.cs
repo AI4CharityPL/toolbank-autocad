@@ -202,6 +202,48 @@ public class ValidatorsCoreTests
         Assert.False(CheckEvaluator.Evaluate(check, wire, ctx).Pass);
     }
 
+    [Fact]
+    public void Polyline_endpoints_share_dxf_type_filter_matches_electrical_junction_dots()
+    {
+        // Regression for the real electrical bug found 2026-07-29: draw_wire_junction
+        // draws a plain filled Circle on E-WIRE, never a "JUNCTION" BlockReference, so
+        // the wire-crossing-needs-junction.yaml rule was rewritten to filter on
+        // dxf_type + layer instead of block_name. This proves that filter combination
+        // actually matches what the tool produces, and still rejects a same-layer
+        // entity of the wrong dxf_type (a stray Line end-to-end near the wire, which
+        // is NOT a junction marker).
+        var wire = Snapshot(dxf: "Polyline", layer: "E-WIRE", vertices: new[]
+        {
+            new[] { 0.0, 0.0, 0.0 },
+            new[] { 100.0, 0.0, 0.0 },
+        });
+        var dotA = Snapshot(dxf: "Circle", layer: "E-WIRE",
+            bboxMin: new[] { -1.0, -1.0, 0.0 }, bboxMax: new[] { 1.0, 1.0, 0.0 });
+        var dotB = Snapshot(dxf: "Circle", layer: "E-WIRE",
+            bboxMin: new[] { 99.0, -1.0, 0.0 }, bboxMax: new[] { 101.0, 1.0, 0.0 });
+        var strayLine = Snapshot(dxf: "Line", layer: "E-WIRE",
+            bboxMin: new[] { 99.0, -1.0, 0.0 }, bboxMax: new[] { 101.0, 1.0, 0.0 });
+
+        var check = new CheckSpec
+        {
+            Type = "polyline_endpoints_share",
+            Params = new Dictionary<string, object?>
+            {
+                ["tolerance"] = 2.5,
+                ["dxf_type"] = "Circle",
+                ["layer"] = "E-WIRE",
+                ["require"] = true,
+            },
+        };
+
+        var ctx = new EvalContext { AllEntities = new[] { wire, dotA, dotB } };
+        Assert.True(CheckEvaluator.Evaluate(check, wire, ctx).Pass);
+
+        // Same position, wrong dxf_type -> a Line standing in for a junction dot must NOT satisfy the check.
+        ctx.AllEntities = new[] { wire, dotA, strayLine };
+        Assert.False(CheckEvaluator.Evaluate(check, wire, ctx).Pass);
+    }
+
     // ─────────── helpers ───────────
 
     private static EntitySnapshotDto Snapshot(

@@ -136,6 +136,45 @@ public sealed record DrawThreadedHoleResult(
     [property: JsonPropertyName("threadArcSpanDeg")] double ThreadArcSpanDeg,
     [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
 
+// Side-view (vertical cross-section) hole profiles -- Phase 7.3. Y axis runs
+// DOWN into the material from the top surface (top = origin.y, bottom = origin.y - depthMm).
+// "through" has no bottom line (open both ends); the other three kinds are closed at
+// the bottom (blind = drill-point V, counterbore/countersink share the stepped-wall shape).
+public sealed record DrawHoleSideViewArgs(
+    [property: JsonPropertyName("kind")]                string Kind, // "through" | "blind" | "counterbore" | "countersink"
+    [property: JsonPropertyName("topCenter")]           Point2dDto TopCenter,
+    [property: JsonPropertyName("diameterMm")]          double DiameterMm,
+    [property: JsonPropertyName("depthMm")]             double DepthMm,
+    [property: JsonPropertyName("drillPointAngleDeg")]  double DrillPointAngleDeg = 118.0,      // "blind" only
+    [property: JsonPropertyName("counterboreDiameterMm")] double? CounterboreDiameterMm = null, // "counterbore" only
+    [property: JsonPropertyName("counterboreDepthMm")] double? CounterboreDepthMm = null,       // "counterbore" only
+    [property: JsonPropertyName("headDiameterMm")]      double? HeadDiameterMm = null,          // "countersink" only
+    [property: JsonPropertyName("countersinkAngleDeg")] double CountersinkAngleDeg = 90.0,      // "countersink" only, INCLUDED angle
+    [property: JsonPropertyName("centerlineExtensionMm")] double CenterlineExtensionMm = 4.0,
+    [property: JsonPropertyName("profileLayer")]        string ProfileLayer = MechanicalPalette.LayerVisible,
+    [property: JsonPropertyName("centerLayer")]         string CenterLayer  = MechanicalPalette.LayerCenter);
+
+public sealed record DrawHoleSideViewResult(
+    [property: JsonPropertyName("kind")]          string Kind,
+    [property: JsonPropertyName("profile")]       IReadOnlyList<EntityHandle> Profile,
+    [property: JsonPropertyName("centerline")]    EntityHandle Centerline,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
+public sealed record DrawSectionHatchArgs(
+    [property: JsonPropertyName("boundaryHandles")] IReadOnlyList<string> BoundaryHandles,
+    [property: JsonPropertyName("material")]        string Material,   // key into MechanicalPatterns.ByMaterial
+    [property: JsonPropertyName("scaleOverride")]   double? ScaleOverride = null,
+    [property: JsonPropertyName("angleOverrideDeg")] double? AngleOverrideDeg = null,
+    [property: JsonPropertyName("layer")]           string Layer = MechanicalPalette.LayerHatch);
+
+public sealed record DrawSectionHatchResult(
+    [property: JsonPropertyName("hatch")]         EntityHandle Hatch,
+    [property: JsonPropertyName("material")]      string Material,
+    [property: JsonPropertyName("pattern")]       string Pattern,
+    [property: JsonPropertyName("scale")]         double Scale,
+    [property: JsonPropertyName("angleDeg")]      double AngleDeg,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
 #endregion
 
 #region fasteners

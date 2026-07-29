@@ -32,31 +32,33 @@ No-spin summary — full detail in CHANGELOG:
 - **`acad_design_iterate`** — the design-loop meta-tool (plan → execute → validate → rollback if needed); requires staying in sync with the router's tool list (see **7.4**, ✅ resolved). Its `fileSnapshot:false` override on checkpoint creation was removed on 2026-07-29 so its auto-rollback-on-abort step has an actual snapshot to restore from — before this fix, the loop's rollback path had nothing to work with even once the restore mechanism itself was fixed.
 - **Step auditing** — logging agent decisions / tool call order for loop debugging and regression tracking.
 
-### 7.1 Livestream / events
+### 7.1 Livestream / events — ✅ IMPLEMENTED (verified live 2026-07-29)
 
-- **Separate `livestream` channel** — per `17-pipe-protocol.mdc`: streaming does **not** belong on the main JSON pipe; a separate pipe in Phase 7.
-- **`kind: "event"`** on the main protocol — `AcadEvent` for entity-change / command-lifecycle events (the plugin does not emit events before the handshake completes).
-- **`acad-livestream` category** (or an equivalent manifest name) — tools/contract for subscribing to or consuming the stream, consistent with MCP Nexus.
+- **Scope decision:** `kind: "event"` + `AcadEvent` on the main pipe is real, live, and verified — entity-change (append/modify/erase) and command-lifecycle events are captured via genuine AutoCAD `Database`/`Document` hooks into a bounded ring buffer (2000 events, oldest dropped first). Exposed to the agent as **poll-based** (`acad-livestream.poll_events(sinceSeq)`), not a raw second named pipe: an MCP tool-calling agent has no channel to receive an unsolicited server push regardless of which pipe it travels over, so a poll API is what "livestream" actually means for this kind of client. Building a second literal named pipe would add transport complexity without changing what the agent can consume. See the header comment in `src/AcadMcp.Plugin/Tools/LivestreamPluginTools.cs` for the full reasoning.
+- **`acad-livestream` category** — 3 tools: `poll_events` (returns events since a sequence number), `livestream_status` (buffer occupancy, drop count, hooked-document count), `clear_events`.
+- **Verified live:** `poll_events` captured real `command_will_start`/`command_ended` events fired by AutoCAD's own startup sequence (before any test action ran), then a real `entity_appended` event for a `draw_line` call with correct handle/dxfType/layer; a follow-up poll with `sinceSeq` set to the prior `nextSeq` returned only the new events, not the whole backlog.
 
-### 7.2 Validators — primitives (from the backlog)
+### 7.2 Validators — primitives (from the backlog) — ✅ ALREADY DONE (roadmap was stale, corrected 2026-07-29)
 
-Extend the rule engine with the missing primitives referenced in CHANGELOG / domain rules:
+All 4 primitives already existed in `src/AcadMcp.Backend/Validators/CheckEvaluator.cs`, shipped as part of the original squashed initial commit, with real regression tests (`tests/AcadMcp.Tests/Validators/ValidatorsCoreTests.cs`, header comment literally says "Phase 7.2 regression") and real YAML rules already using them (`validators/electrical/wire-crossing-needs-junction.yaml`, `validators/electrical/tag-format-iec-81346.yaml`, `validators/civil/parcel-closure-within-tolerance.yaml`, `validators/mechanical/thread-is-arc-not-circle.yaml`):
 
-- `entity_class_equals`
-- `text_matches_regex`
-- `polyline_closure_within`
-- `polyline_endpoints_share`
+- `entity_class_equals` ✅
+- `text_matches_regex` ✅
+- `polyline_closure_within` ✅
+- `polyline_endpoints_share` ✅ (fixed a real bug in it, see 7.3 electrical below)
 
-Goal: unblock validators that are currently deliberately deferred (e.g. tag-prefix formatting, missing junction dots) without resorting purely to "at-write-time" enforcement in the tools.
+This roadmap previously listed these as missing backlog — that was simply stale documentation, discovered and corrected while auditing 7.3 (see the same pattern as 7.4's drift, just doc-vs-code instead of manifest-vs-code).
 
-### 7.3 Domains — "Phase 7" backlog from manifests / rules
+### 7.3 Domains — "Phase 7" backlog from manifests / rules — mostly done, 2 items genuinely open (2026-07-29)
 
-- **DWG libraries** — blocks under `blocks/...` (e.g. electrical, mechanical, architecture) as shared assets with manifests.
-- **Architecture** — wall openings (details tied to layers/blocks), among others.
-- **Mechanical** — side views + blocks (extension of Phase 6).
-- **Civil** — profiles, spirals (per the civil manifest scope).
-- **Electrical** — panel, contact xrefs, junction/style validators (schematic ↔ layout).
-- **Parametric** — DIMCONSTRAINT, BEDIT, degrees of freedom (DOF) wherever the AutoCAD API allows; consistency with `42-parametric-domain-traps.mdc`.
+Every domain in this section was audited against the actual code (not assumed from the roadmap's own prior claims, which turned out to be partially wrong the same way 7.2 was) before doing any work. Two real, unrelated bugs were found and fixed along the way, plus one new defect was found and is documented, not fixed.
+
+- **Architecture — wall openings** ✅ FIXED. `insert_door`/`insert_window` never actually cut the host wall (a real bug, `.cursor/rules/36-architecture-domain-traps.mdc` §3 explicitly required it) — both now accept an optional `wallHandle` and cut the wall at their own jambs/axis span via `split_wall_at_opening` before drawing, verified live (real split wall segments with the correct gap length).
+- **Mechanical — side views + blocks**: side views ✅ FIXED (`draw_hole_side_view`: through/blind/counterbore/countersink, `draw_section_hatch` using the existing material→pattern table) — verified live, all 4 kinds. Bundled block library ❌ still not started (see "DWG libraries" below).
+- **Civil — profiles, spirals** ✅ FIXED. `draw_alignment_spiral` (2-term truncated clothoid power series, drafting-grade) and `draw_vertical_profile` (PVI list with optional parabolic vertical curves) — both verified live with plausible geometry (spiral end-bearing/clothoid parameter, profile vertex count matching the sampled parabola).
+- **Electrical — panel, junction/style validators**: panel tools ✅ FIXED (`place_din_rail`, `place_panel_device_outline`, `route_wireway`) — verified live. Junction validator ✅ FIXED a real, separate bug: `draw_wire_junction` has always drawn a plain `Circle`, never a `JUNCTION` `BlockReference`, but `wire-crossing-needs-junction.yaml` matched on `block_name: JUNCTION` — the rule could never fire, on any drawing, regardless of whether junctions were missing. A second bug was found fixing the first: `ValidationEngine` only collects one entity snapshot per rule's own `scope.entity_types`, reused both as "what to check" and as the cross-entity candidate pool — scoping to `[Polyline, Line]` meant the junction `Circle` was never even fetched. Fixed both (match on `dxf_type: Circle` + `layer: E-WIRE`; added `Circle` to `entity_types`) and verified live: 0/2 → 1/2 → 0 violations as dots were added one at a time.
+- **Parametric — DIMCONSTRAINT, DOF, 5 more geometric constraint types**: code for all of it shipped (Tangent/Concentric/Collinear/Equal/Symmetric geometric constraints, Linear/Aligned dimensional constraints) — but live-testing found that **every** constraint-application tool, including the 6 that predate this pass, fails against real AutoCAD 2025 with `eInvalidInput` from `Editor.Command`. Three independent fix attempts (ObjectId selection, point-on-entity selection, command-prefix order swap) all reproduce the identical failure. This is a genuine, newly-discovered, NOT-yet-fixed defect — see the "Known defect" section in the main README and the header comment in `src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs`. DOF reporting and BEDIT-scoped constraints remain unimplemented (see that same header comment for why: AutoCAD's .NET API doesn't expose the solver's DOF count directly, and BEDIT entry/exit hasn't been verified deadlock-safe).
+- **DWG libraries** ❌ still not started. Architecture (`blocks/architectural/*.dwg`: DOOR_SINGLE_900, ROOM_TAG, etc.) and mechanical (`blocks/mechanical/*.dwg`: BOLT_HEX_M6-M24, WASHER_FLAT_M*, BEARING_RADIAL_*, etc.) block libraries require actually authoring and `WBLOCK`-ing real geometry for dozens of standard parts per discipline — a genuinely large, separate content-creation task, not a quick addition. Rushing a low-effort placeholder library would be exactly the kind of "looks done, isn't" result this project explicitly avoids elsewhere; it's called out here as open rather than faked.
 
 ### 7.4 Router / invariants — documentation/code sync — ✅ RESOLVED (2026-07-29)
 

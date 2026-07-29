@@ -1,6 +1,7 @@
-﻿// Pluginless tests for acad-mechanical (Phase 6.2). Asserts the source
-// generator wired the 12 expected tools and that the ISO-mechanical layer
-// key + ISO 128 material→hatch lookup table stay in sync with rule 37.
+﻿// Pluginless tests for acad-mechanical (Phase 6.2, extended Phase 7.3 with
+// side-view holes + section hatch). Asserts the source generator wired the
+// 14 expected tools and that the ISO-mechanical layer key + ISO 128
+// material→hatch lookup table stay in sync with rule 37.
 
 using System.Linq;
 using AcadMcp.Backend.Categories.Mechanical;
@@ -24,11 +25,13 @@ public class MechanicalTests
         "draw_threaded_hole",
         "draw_bolt_head_top_view",
         "draw_revision_triangle",
+        "draw_hole_side_view",
+        "draw_section_hatch",
         "mechanical_health",
     };
 
     [Fact]
-    public void Catalog_contains_all_twelve_mechanical_tools()
+    public void Catalog_contains_all_fourteen_mechanical_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("mechanical").ToList();

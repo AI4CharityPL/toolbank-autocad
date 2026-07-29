@@ -50,6 +50,41 @@ public sealed record AlignmentSegmentResult(
     [property: JsonPropertyName("entity")]        EntityHandle Entity,
     [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
 
+public sealed record DrawAlignmentSpiralArgs(
+    [property: JsonPropertyName("start")]         Point2dDto Start,
+    [property: JsonPropertyName("startBearingDeg")] double StartBearingDeg, // tangent direction at Start, 0 = +X, CCW
+    [property: JsonPropertyName("lengthM")]       double LengthM,           // spiral (clothoid) length, along the curve
+    [property: JsonPropertyName("endRadiusM")]    double EndRadiusM,        // radius the spiral transitions INTO at its far end
+    [property: JsonPropertyName("turnDirection")] string TurnDirection = "left", // "left" | "right" -- which way the spiral curves
+    [property: JsonPropertyName("segments")]      int Segments = 20,
+    [property: JsonPropertyName("layer")]         string Layer = CivilPalette.LayerRoadCntr);
+
+public sealed record DrawAlignmentSpiralResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("end")]           Point2dDto End,
+    [property: JsonPropertyName("endBearingDeg")] double EndBearingDeg,
+    [property: JsonPropertyName("clothoidParameterA")] double ClothoidParameterA,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
+public sealed record ProfilePointArgs(
+    [property: JsonPropertyName("station")]         double Station,
+    [property: JsonPropertyName("elevation")]       double Elevation,
+    [property: JsonPropertyName("curveLengthStation")] double? CurveLengthStation = null); // parabolic VC length centred on this PVI; null/0 = sharp grade break
+
+public sealed record DrawVerticalProfileArgs(
+    [property: JsonPropertyName("points")]          IReadOnlyList<ProfilePointArgs> Points,
+    [property: JsonPropertyName("origin")]          Point2dDto Origin,      // where (station=points[0].station, elevation=datumElevation) is placed in drawing space
+    [property: JsonPropertyName("datumElevation")]  double DatumElevation = 0.0, // subtracted from every elevation before scaling -- pass e.g. the lowest PVI elevation minus a margin, like a real profile sheet's datum line
+    [property: JsonPropertyName("horizontalScale")] double HorizontalScale = 1.0, // drawing units per station unit
+    [property: JsonPropertyName("verticalScale")]   double VerticalScale = 10.0,  // drawing units per elevation unit (commonly exaggerated)
+    [property: JsonPropertyName("samplesPerCurve")] int SamplesPerCurve = 10,
+    [property: JsonPropertyName("layer")]           string Layer = CivilPalette.LayerRoadCntr);
+
+public sealed record DrawVerticalProfileResult(
+    [property: JsonPropertyName("gradeLine")]     EntityHandle GradeLine,
+    [property: JsonPropertyName("vertexCount")]   int VertexCount,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
 public sealed record DrawRoadCorridorArgs(
     [property: JsonPropertyName("centerline")]   IReadOnlyList<Point2dDto> Centerline,
     [property: JsonPropertyName("widthM")]       double WidthM,

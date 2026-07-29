@@ -325,6 +325,139 @@ public static class MechanicalTools
         return new DrawThreadedHoleResult(major, minorArc, h, v, spanDeg, created);
     }
 
+    [McpTool("draw_hole_side_view",
+        "Draw a hole's SIDE view (vertical cross-section through the hole axis) -- the plan-view hole tools (draw_through_hole etc.) only draw the top-down circle; this is the companion detail/section view. kind='through': two parallel wall lines, open at both ends (a through hole has no bottom). kind='blind': walls stepping down to a drill-point V at drillPointAngleDeg (118° standard). kind='counterbore': wider walls for counterboreDepthMm then narrower walls to depthMm (requires counterboreDiameterMm + counterboreDepthMm). kind='countersink': an angled flare from headDiameterMm down to diameterMm over countersinkAngleDeg (requires headDiameterMm), then straight walls to depthMm. Y runs downward from topCenter (the top surface) into the material. A centreline is always drawn on ME-CENTER (default) extending centerlineExtensionMm past both ends.",
+        "mechanical",
+        Intent = new[]
+        {
+            "widok boczny otworu",
+            "draw hole side view section",
+            "przekroj otworu z gwintem",
+            "blind hole side view drill point",
+            "countersink side view flare"
+        },
+        RequiresPlugin = true)]
+    public static async Task<DrawHoleSideViewResult> DrawHoleSideView(
+        IPluginGateway gw, DrawHoleSideViewArgs args, CancellationToken ct)
+    {
+        if (args.DiameterMm <= 0) throw new ArgumentException("diameterMm must be > 0");
+        if (args.DepthMm <= 0)    throw new ArgumentException("depthMm must be > 0");
+        string kind = args.Kind?.ToLowerInvariant() ?? throw new ArgumentException("kind must not be empty");
+        if (kind is not ("through" or "blind" or "counterbore" or "countersink"))
+            throw new ArgumentException("kind must be one of: through, blind, counterbore, countersink");
+
+        var existing = await MechanicalProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created = new List<string>();
+        await EnsureVisibleLayerAsync(gw, existing, args.ProfileLayer, created, ct).ConfigureAwait(false);
+        await EnsureCenterLayerAsync(gw, existing, args.CenterLayer, created, ct).ConfigureAwait(false);
+
+        double r = args.DiameterMm / 2.0;
+        double x0 = args.TopCenter.X, yTop = args.TopCenter.Y;
+        double yBottom = yTop - args.DepthMm;
+        var profile = new List<EntityHandle>();
+
+        switch (kind)
+        {
+            case "through":
+            {
+                profile.Add(await MechanicalProxy.DrawLineAsync(gw,
+                    new Point2dDto(x0 - r, yTop), new Point2dDto(x0 - r, yBottom), args.ProfileLayer, ct).ConfigureAwait(false));
+                profile.Add(await MechanicalProxy.DrawLineAsync(gw,
+                    new Point2dDto(x0 + r, yTop), new Point2dDto(x0 + r, yBottom), args.ProfileLayer, ct).ConfigureAwait(false));
+                break;
+            }
+            case "blind":
+            {
+                if (args.DrillPointAngleDeg <= 0 || args.DrillPointAngleDeg >= 180)
+                    throw new ArgumentException("drillPointAngleDeg must be in (0, 180)");
+                double halfAngleRad = args.DrillPointAngleDeg * Math.PI / 360.0;
+                double pointDepth = r / Math.Tan(halfAngleRad);
+                double yWallBottom = yBottom + pointDepth;
+                var tip = new Point2dDto(x0, yBottom);
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 - r, yTop), new Point2dDto(x0 - r, yWallBottom), tip },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 + r, yTop), new Point2dDto(x0 + r, yWallBottom), tip },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                break;
+            }
+            case "counterbore":
+            {
+                double cboreD = args.CounterboreDiameterMm ?? throw new ArgumentException("counterboreDiameterMm is required for kind=counterbore");
+                double cboreDepth = args.CounterboreDepthMm ?? throw new ArgumentException("counterboreDepthMm is required for kind=counterbore");
+                if (cboreD <= args.DiameterMm) throw new ArgumentException("counterboreDiameterMm must be greater than diameterMm");
+                if (cboreDepth <= 0 || cboreDepth >= args.DepthMm) throw new ArgumentException("counterboreDepthMm must be > 0 and less than depthMm");
+                double rCbore = cboreD / 2.0;
+                double yStep = yTop - cboreDepth;
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 - rCbore, yTop), new Point2dDto(x0 - rCbore, yStep), new Point2dDto(x0 - r, yStep), new Point2dDto(x0 - r, yBottom) },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 + rCbore, yTop), new Point2dDto(x0 + rCbore, yStep), new Point2dDto(x0 + r, yStep), new Point2dDto(x0 + r, yBottom) },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                break;
+            }
+            case "countersink":
+            {
+                double headD = args.HeadDiameterMm ?? throw new ArgumentException("headDiameterMm is required for kind=countersink");
+                if (headD <= args.DiameterMm) throw new ArgumentException("headDiameterMm must be greater than diameterMm");
+                if (args.CountersinkAngleDeg <= 0 || args.CountersinkAngleDeg >= 180)
+                    throw new ArgumentException("countersinkAngleDeg must be in (0, 180)");
+                double rHead = headD / 2.0;
+                double halfAngleRad = args.CountersinkAngleDeg * Math.PI / 360.0;
+                double csinkDepth = (rHead - r) / Math.Tan(halfAngleRad);
+                if (csinkDepth >= args.DepthMm) throw new ArgumentException("countersink depth (derived from headDiameterMm/countersinkAngleDeg) must be less than depthMm");
+                double yFlareEnd = yTop - csinkDepth;
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 - rHead, yTop), new Point2dDto(x0 - r, yFlareEnd), new Point2dDto(x0 - r, yBottom) },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                profile.Add(await MechanicalProxy.DrawPolylineAsync(gw,
+                    new[] { new Point2dDto(x0 + rHead, yTop), new Point2dDto(x0 + r, yFlareEnd), new Point2dDto(x0 + r, yBottom) },
+                    closed: false, args.ProfileLayer, ct).ConfigureAwait(false));
+                break;
+            }
+        }
+
+        double ext = args.CenterlineExtensionMm;
+        var centerline = await MechanicalProxy.DrawLineAsync(gw,
+            new Point2dDto(x0, yTop + ext), new Point2dDto(x0, yBottom - ext), args.CenterLayer, ct).ConfigureAwait(false);
+
+        return new DrawHoleSideViewResult(kind, profile, centerline, created);
+    }
+
+    [McpTool("draw_section_hatch",
+        "Apply a material-appropriate section hatch (ISO 128 §6 / rule 37 §8 convention -- steel ANSI31, cast iron ANSI32, aluminium ANSI37, etc., see mechanical_health.materials) over an existing closed boundary. This is the tool the header comment on this file used to say didn't exist in v1 -- it now looks up pattern/scale/angle from the same material table mechanical_health reports, so an agent doesn't have to hardcode hatch parameters per material. scaleOverride/angleOverrideDeg let you deviate from the table default for an unusual drawing scale.",
+        "mechanical",
+        Intent = new[]
+        {
+            "zakreskuj przekroj stali",
+            "draw section hatch steel",
+            "przekroj z materialem",
+            "hatch section by material",
+            "cross-section fill pattern"
+        },
+        RequiresPlugin = true)]
+    public static async Task<DrawSectionHatchResult> DrawSectionHatch(
+        IPluginGateway gw, DrawSectionHatchArgs args, CancellationToken ct)
+    {
+        if (args.BoundaryHandles is null || args.BoundaryHandles.Count == 0)
+            throw new ArgumentException("boundaryHandles must contain at least one entity handle");
+        if (!MechanicalPatterns.ByMaterial.TryGetValue(args.Material, out var spec))
+            throw new ArgumentException(
+                $"unknown material '{args.Material}'. Known materials: {string.Join(", ", MechanicalPatterns.ByMaterial.Keys)}");
+
+        var existing = await MechanicalProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, MechanicalPalette.LayerHatch, created, ct).ConfigureAwait(false);
+
+        double scale = args.ScaleOverride ?? spec.Scale;
+        double angle = args.AngleOverrideDeg ?? spec.AngleDeg;
+        var hatch = await MechanicalProxy.DrawHatchAsync(gw, args.BoundaryHandles, spec.Pattern, scale, angle, args.Layer, ct).ConfigureAwait(false);
+
+        return new DrawSectionHatchResult(hatch, args.Material, spec.Pattern, scale, angle, created);
+    }
+
     // ─────────── fasteners ───────────
 
     [McpTool("draw_bolt_head_top_view",

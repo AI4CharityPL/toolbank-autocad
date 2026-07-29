@@ -1,7 +1,8 @@
-﻿// Pluginless tests for acad-electrical (Phase 6.4). Asserts the source
-// generator wired the 12 expected tools, the palette ships the 12-layer
-// E-* key with the right metadata, electrical_health is pluginless+readonly,
-// and the IEC 81346 device-tag parser accepts/rejects the right inputs.
+﻿// Pluginless tests for acad-electrical (Phase 6.4, extended Phase 7.3 with
+// panel-layout tools). Asserts the source generator wired the 15 expected
+// tools, the palette ships the 12-layer E-* key with the right metadata,
+// electrical_health is pluginless+readonly, and the IEC 81346 device-tag
+// parser accepts/rejects the right inputs.
 
 using System;
 using System.Linq;
@@ -26,11 +27,14 @@ public class ElectricalTests
         "place_coil",
         "place_terminal_block",
         "place_device_tag",
+        "place_din_rail",
+        "place_panel_device_outline",
+        "route_wireway",
         "electrical_health",
     };
 
     [Fact]
-    public void Catalog_contains_all_twelve_electrical_tools()
+    public void Catalog_contains_all_fifteen_electrical_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("electrical").ToList();

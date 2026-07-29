@@ -1,5 +1,6 @@
-﻿// Pluginless tests for acad-parametric (Phase 6.5): catalog size, palette,
-// and parametric_health ReadOnly flag.
+﻿// Pluginless tests for acad-parametric (Phase 6.5, extended Phase 7.3 with
+// 5 more geometric constraint types + linear/aligned dimensional
+// constraints): catalog size, palette, and parametric_health ReadOnly flag.
 
 using System.Linq;
 using AcadMcp.Backend.Categories.Parametric;
@@ -19,6 +20,13 @@ public class ParametricTests
         "apply_geom_perpendicular",
         "apply_geom_coincident",
         "apply_geom_fix",
+        "apply_geom_tangent",
+        "apply_geom_concentric",
+        "apply_geom_collinear",
+        "apply_geom_equal",
+        "apply_geom_symmetric",
+        "apply_dim_linear",
+        "apply_dim_aligned",
         "delete_entity_constraints",
         "list_constraint_entities",
         "get_dynamic_block_properties",
@@ -27,7 +35,7 @@ public class ParametricTests
     };
 
     [Fact]
-    public void Catalog_contains_all_twelve_parametric_tools()
+    public void Catalog_contains_all_nineteen_parametric_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("parametric").ToList();

@@ -1,10 +1,48 @@
 ﻿// acad-parametric: geometric constraints (native -GEOCONSTRAINT via plugin
-// Editor.Command), DELCONSTRAINT cleanup, constraint-entity inventory, dynamic
+// Editor.Command) -- Horizontal/Vertical/Parallel/Perpendicular/Coincident/Fix
+// plus Tangent/Concentric/Collinear/Equal/Symmetric added Phase 7.3 -- linear
+// and aligned dimensional constraints (-DIMCONSTRAINT, point-pair form) added
+// Phase 7.3, DELCONSTRAINT cleanup, constraint-entity inventory, dynamic
 // BlockReference property get/set, and the P-* layer key (rule 42).
 //
-// v1 limitations: DIMCONSTRAINT authoring and BEDIT-scoped constraints ship
-// in Phase 7; angle dynamic properties accept JSON numbers in degrees (rule
-// 42 §5) and the plugin converts to radians internally.
+// KNOWN DEFECT, found live 2026-07-29, NOT YET FIXED: every constraint-
+// APPLICATION tool in this category (all 11 apply_geom_* + both apply_dim_*,
+// including the original 6 that predate Phase 7.3) fails against real
+// AutoCAD 2025 with Autodesk.AutoCAD.Runtime.Exception: eInvalidInput, thrown
+// from Editor.Command itself. This was never caught before because this
+// category's test coverage was catalog/shape-level only (tool names, arg
+// counts, palette contents) -- nothing exercised these tools against a live
+// drawing until this pass. Three independent fix attempts were tried and
+// ALL reproduce the identical failure: (1) passing the resolved ObjectId
+// directly as the entity-pick answer, (2) resolving to a Point3d on the
+// entity's own geometry (ResolvePointOnEntity in ParametricPluginTools.cs)
+// instead, and (3) swapping the "._-"/"_.-" command-prefix character order.
+// list_constraint_entities, get/set_dynamic_block_property, and
+// ensure_parametric_layers are UNAFFECTED (they don't drive Editor.Command
+// for GEOCONSTRAINT/DELCONSTRAINT/DIMCONSTRAINT). Root cause is still open --
+// candidates not yet tried: the AutoCAD Parametric extension/module may need
+// explicit loading (ARXLOAD) before these commands work via automation even
+// though they parse fine interactively; the prompt sequence may need a
+// trailing "" or "\n" terminator not currently sent; or -GEOCONSTRAINT may
+// simply not be scriptable via Editor.Command's object[] mechanism at all in
+// this AutoCAD build, requiring a different automation approach (e.g. driving
+// the dialog-based GEOMCONSTRAINT variant via COM, or a lower-level ObjectARX
+// call) than this file currently attempts. Do NOT re-attempt fixes here
+// without live AutoCAD access to inspect the ACTUAL failing prompt -- three
+// blind attempts already burned a full build/redeploy/relaunch cycle each
+// with no diagnostic detail beyond the bare eInvalidInput error code.
+//
+// v1/Phase 7.3 limitations, otherwise: dimensional constraints only support
+// the point-pair invocation form, not "Object" pick mode. BEDIT-scoped
+// constraint authoring and DOF (degrees-of-freedom) reporting remain
+// unimplemented -- BEDIT requires entering/exiting the block editor
+// transactionally in a way this plugin hasn't verified is deadlock-safe yet
+// (same class of risk as the checkpoint UNDO-command deadlock, rule 10), and
+// AutoCAD's .NET API does not expose the constraint solver's DOF count
+// directly -- computing it would mean reimplementing a chunk of the solver's
+// bookkeeping heuristically, which risks being confidently wrong rather than
+// honestly absent. Angle dynamic properties accept JSON numbers in degrees
+// (rule 42 §5) and the plugin converts to radians internally.
 
 using System;
 using System.Collections.Generic;
@@ -184,6 +222,141 @@ public static class ParametricTools
         IPluginGateway gw, SingleHandleArgs args, CancellationToken ct)
     {
         var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_fix", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_geom_tangent",
+        "Apply a Tangent geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Typical use: a line tangent to an arc/circle, or two arcs tangent to each other.",
+        "parametric",
+        Intent = new[]
+        {
+            "styczna do okregu constraint",
+            "tangent geom constraint",
+            "GC tangent",
+            "apply tangent constraint",
+            "line tangent to arc"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyGeomTangent(
+        IPluginGateway gw, TwoHandlesArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_tangent", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_geom_concentric",
+        "Apply a Concentric geometric constraint between two circular/arc entities (handles a and b) via transparent -GEOCONSTRAINT -- forces their centre points to coincide.",
+        "parametric",
+        Intent = new[]
+        {
+            "wspolosiowe okregi constraint",
+            "concentric geom constraint",
+            "GC concentric",
+            "apply concentric constraint",
+            "same center circles"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyGeomConcentric(
+        IPluginGateway gw, TwoHandlesArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_concentric", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_geom_collinear",
+        "Apply a Collinear geometric constraint between two line-like entities (handles a and b) via transparent -GEOCONSTRAINT -- forces them onto the same infinite line.",
+        "parametric",
+        Intent = new[]
+        {
+            "wspolliniowe odcinki constraint",
+            "collinear geom constraint",
+            "GC collinear",
+            "apply collinear constraint",
+            "two lines on same line"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyGeomCollinear(
+        IPluginGateway gw, TwoHandlesArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_collinear", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_geom_equal",
+        "Apply an Equal geometric constraint between two entities of the same kind (handles a and b) via transparent -GEOCONSTRAINT -- two lines get equal length, two circles/arcs get equal radius.",
+        "parametric",
+        Intent = new[]
+        {
+            "rowna dlugosc lub promien constraint",
+            "equal geom constraint",
+            "GC equal",
+            "apply equal constraint",
+            "same length two lines"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyGeomEqual(
+        IPluginGateway gw, TwoHandlesArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_equal", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_geom_symmetric",
+        "Apply a Symmetric geometric constraint making entities a and b mirror images of each other about symmetryLine, via transparent -GEOCONSTRAINT. All three handles must already exist in the current space.",
+        "parametric",
+        Intent = new[]
+        {
+            "symetria wzgledem osi constraint",
+            "symmetric geom constraint",
+            "GC symmetric",
+            "apply symmetric constraint",
+            "mirror constraint about line"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyGeomSymmetric(
+        IPluginGateway gw, ThreeHandlesArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.geom_symmetric", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    // ─────────── dimensional constraints ───────────
+
+    [McpTool("apply_dim_linear",
+        "Apply a Linear dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT, with its dimension text placed at placementPoint. Unlike geometric constraints, a dimensional constraint carries a numeric value that DRIVES the geometry -- editing it after creation moves whatever it's attached to. Point-pair form only (not the 'Object' pick mode -- see plugin source comment for why).",
+        "parametric",
+        Intent = new[]
+        {
+            "wymiar parametryczny liniowy",
+            "linear dimensional constraint",
+            "DC linear",
+            "apply dimensional constraint",
+            "parametric distance dimension"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyDimLinear(
+        IPluginGateway gw, DimConstraintArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.dim_linear", ToArgs(args), ct).ConfigureAwait(false);
+        return Deserialize<SimpleOkResult>(node);
+    }
+
+    [McpTool("apply_dim_aligned",
+        "Apply an Aligned dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT (dimension line stays parallel to the point1-point2 line, unlike apply_dim_linear which is always horizontal/vertical), with its dimension text placed at placementPoint.",
+        "parametric",
+        Intent = new[]
+        {
+            "wymiar parametryczny rownolegly",
+            "aligned dimensional constraint",
+            "DC aligned",
+            "apply aligned dimensional constraint",
+            "parametric aligned distance"
+        },
+        RequiresPlugin = true)]
+    public static async Task<SimpleOkResult> ApplyDimAligned(
+        IPluginGateway gw, DimConstraintArgs args, CancellationToken ct)
+    {
+        var node = await ParametricProxy.InvokeAsync(gw, "acad.parametric.dim_aligned", ToArgs(args), ct).ConfigureAwait(false);
         return Deserialize<SimpleOkResult>(node);
     }
 

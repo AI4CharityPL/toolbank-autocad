@@ -118,6 +118,126 @@ public static class CivilTools
         return new AlignmentSegmentResult(entity, created);
     }
 
+    [McpTool("draw_alignment_spiral",
+        "Draw a clothoid (Euler spiral) transition segment of a road horizontal alignment on layer C-ROAD-CNTR (default) -- the piece the v1 alignment tools were missing between a tangent and a circular curve. Approximated with the standard 2-term power-series clothoid expansion (drafting-grade accuracy, not survey-grade) sampled into `segments` points and drawn as a polyline. startBearingDeg is the tangent direction at Start (0 = +X, counter-clockwise); turnDirection picks which way it curves; endRadiusM is the circular-curve radius the spiral transitions INTO at its far end (the clothoid parameter A is derived as sqrt(endRadiusM * lengthM)). Returns the end point and end bearing so the next draw_alignment_curve call can continue tangent-to-curve without the agent doing the clothoid math itself.",
+        "civil",
+        Intent = new[]
+        {
+            "narysuj klotoide",
+            "draw spiral transition curve",
+            "krzywa przejsciowa drogi",
+            "clothoid alignment segment",
+            "euler spiral road curve"
+        },
+        RequiresPlugin = true)]
+    public static async Task<DrawAlignmentSpiralResult> DrawAlignmentSpiral(
+        IPluginGateway gw, DrawAlignmentSpiralArgs args, CancellationToken ct)
+    {
+        if (args.LengthM <= 0)    throw new ArgumentException("lengthM must be > 0");
+        if (args.EndRadiusM <= 0) throw new ArgumentException("endRadiusM must be > 0");
+        if (args.Segments < 2)    throw new ArgumentException("segments must be >= 2");
+        int sign = string.Equals(args.TurnDirection, "right", StringComparison.OrdinalIgnoreCase) ? -1 : 1;
+
+        var existing = await CivilProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created  = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, CivilPalette.LayerRoadCntr, created, ct).ConfigureAwait(false);
+
+        double a2 = args.EndRadiusM * args.LengthM;           // clothoid parameter A^2 = R * L
+        double a = Math.Sqrt(a2);
+        double bearingRad = args.StartBearingDeg * Math.PI / 180.0;
+        double cosB = Math.Cos(bearingRad), sinB = Math.Sin(bearingRad);
+
+        var verts = new Point2dDto[args.Segments + 1];
+        for (int i = 0; i <= args.Segments; i++)
+        {
+            double l = args.LengthM * i / args.Segments;
+            // 2-term truncated clothoid power series (standard drafting approximation).
+            double xLocal = l - (Math.Pow(l, 5) / (40.0 * a2 * a2));
+            double yLocal = sign * (Math.Pow(l, 3) / (6.0 * a2));
+            // Rotate local (tangent-frame) coordinates into world space and translate.
+            double wx = args.Start.X + xLocal * cosB - yLocal * sinB;
+            double wy = args.Start.Y + xLocal * sinB + yLocal * cosB;
+            verts[i] = new Point2dDto(wx, wy);
+        }
+
+        var entity = await CivilProxy.DrawPolylineAsync(gw, verts, closed: false, args.Layer, ct).ConfigureAwait(false);
+
+        double deflectionRad = (args.LengthM * args.LengthM) / (2.0 * a2); // tangent angle at l = L
+        double endBearingDeg = args.StartBearingDeg + sign * (deflectionRad * 180.0 / Math.PI);
+
+        return new DrawAlignmentSpiralResult(entity, verts[^1], endBearingDeg, a, created);
+    }
+
+    [McpTool("draw_vertical_profile",
+        "Draw a road vertical alignment (profile view) grade line from a list of PVI points (station, elevation, and an optional parabolic vertical-curve length centred on that PVI). Interior PVIs with a curveLengthStation get a sampled symmetric parabola instead of a sharp grade break; PVIs without one (or the first/last point) stay a straight grade line to their neighbour. Drawn as ONE polyline on C-ROAD-CNTR (default) in a local station/elevation coordinate frame: drawing X = origin.X + (station - firstStation) * horizontalScale, drawing Y = origin.Y + (elevation - datumElevation) * verticalScale -- pass datumElevation close to (but below) the lowest PVI so the profile doesn't end up thousands of drawing units above origin, exactly like a real profile sheet's datum line. verticalScale defaults to 10x (a common profile exaggeration) since 1:1 road grades read as nearly flat lines otherwise.",
+        "civil",
+        Intent = new[]
+        {
+            "narysuj profil podluzny drogi",
+            "draw vertical alignment profile",
+            "niweleta drogi",
+            "road profile grade line",
+            "PVI vertical curve profile"
+        },
+        RequiresPlugin = true)]
+    public static async Task<DrawVerticalProfileResult> DrawVerticalProfile(
+        IPluginGateway gw, DrawVerticalProfileArgs args, CancellationToken ct)
+    {
+        if (args.Points is null || args.Points.Count < 2)
+            throw new ArgumentException("points must contain at least 2 PVIs");
+        if (args.SamplesPerCurve < 2) throw new ArgumentException("samplesPerCurve must be >= 2");
+
+        var pvis = args.Points.OrderBy(p => p.Station).ToList();
+        double firstStation = pvis[0].Station;
+
+        Point2dDto ToDrawing(double station, double elevation) => new(
+            args.Origin.X + (station - firstStation) * args.HorizontalScale,
+            args.Origin.Y + (elevation - args.DatumElevation) * args.VerticalScale);
+
+        var verts = new List<Point2dDto> { ToDrawing(pvis[0].Station, pvis[0].Elevation) };
+
+        for (int i = 1; i < pvis.Count - 1; i++)
+        {
+            var prev = pvis[i - 1];
+            var cur  = pvis[i];
+            var next = pvis[i + 1];
+            double curveLen = cur.CurveLengthStation ?? 0;
+
+            if (curveLen <= 0)
+            {
+                verts.Add(ToDrawing(cur.Station, cur.Elevation));
+                continue;
+            }
+
+            double halfLen = curveLen / 2.0;
+            if (cur.Station - halfLen < prev.Station || cur.Station + halfLen > next.Station)
+                throw new ArgumentException(
+                    $"curveLengthStation at PVI station {cur.Station} extends past its neighbouring PVI -- shorten it or move the PVIs further apart");
+
+            double g1 = (cur.Elevation - prev.Elevation) / (cur.Station - prev.Station);
+            double g2 = (next.Elevation - cur.Elevation) / (next.Station - cur.Station);
+            double bvcStation = cur.Station - halfLen;
+            double bvcElevation = cur.Elevation - g1 * halfLen;
+            // Symmetric parabola: elev(x) = bvcElevation + g1*x + ((g2-g1)/(2*curveLen)) * x^2, x = distance from BVC.
+            double rate = (g2 - g1) / (2.0 * curveLen);
+            for (int s = 1; s <= args.SamplesPerCurve; s++)
+            {
+                double x = curveLen * s / args.SamplesPerCurve;
+                double elev = bvcElevation + g1 * x + rate * x * x;
+                verts.Add(ToDrawing(bvcStation + x, elev));
+            }
+        }
+
+        verts.Add(ToDrawing(pvis[^1].Station, pvis[^1].Elevation));
+
+        var existing = await CivilProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created  = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, CivilPalette.LayerRoadCntr, created, ct).ConfigureAwait(false);
+
+        var gradeLine = await CivilProxy.DrawPolylineAsync(gw, verts.ToArray(), closed: false, args.Layer, ct).ConfigureAwait(false);
+        return new DrawVerticalProfileResult(gradeLine, verts.Count, created);
+    }
+
     [McpTool("draw_road_corridor",
         "Given a road centreline polyline + a total widthM, draws the centreline on C-ROAD-CNTR (CENTER linetype) PLUS two parallel edge polylines on C-ROAD-EDGE (Continuous), each offset by widthM/2 to either side at every vertex (mitred at internal vertices using the average of the incoming and outgoing tangent normals). Per rule 38 §6 the edges are Continuous, NOT CENTER — the layer assignment is what makes the plan readable. Returns all 3 entity handles + the widthM used.",
         "civil",

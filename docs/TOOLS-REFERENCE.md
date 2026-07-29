@@ -1,47 +1,44 @@
-# MCP Nexus AutoCAD — Full Tool Reference
+# AutoCAD MCP Megasystem — Full Tool Reference
 
-Every MCP tool exposed by every category backend (`AcadMcp.Backend.exe --category <name>`), generated directly from the manifests in [`mcpbank-manifests/`](../mcpbank-manifests) so it can't drift from what's actually registered. Regenerate after adding/renaming tools.
-
-**Total: 30 categories, 337 tools.**
+Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 354 tools total.
 
 ## Categories
 
-- [`annotations`](#annotations) — 12 tool(s)
-- [`architecture`](#architecture) — 16 tool(s)
-- [`blocks`](#blocks) — 16 tool(s)
-- [`boolean-ops`](#boolean-ops) — 8 tool(s)
-- [`callouts`](#callouts) — 5 tool(s)
-- [`civil`](#civil) — 10 tool(s)
-- [`dimensions`](#dimensions) — 17 tool(s)
-- [`electrical`](#electrical) — 12 tool(s)
-- [`files`](#files) — 11 tool(s)
-- [`furniture`](#furniture) — 10 tool(s)
-- [`geometry-2d`](#geometry-2d) — 32 tool(s)
-- [`geometry-3d`](#geometry-3d) — 15 tool(s)
-- [`grids`](#grids) — 6 tool(s)
-- [`hatches`](#hatches) — 8 tool(s)
-- [`layers`](#layers) — 14 tool(s)
-- [`layouts`](#layouts) — 10 tool(s)
-- [`mechanical`](#mechanical) — 12 tool(s)
-- [`modify`](#modify) — 18 tool(s)
-- [`openings`](#openings) — 10 tool(s)
-- [`parametric`](#parametric) — 12 tool(s)
-- [`plotstyles`](#plotstyles) — 3 tool(s)
-- [`plumbing`](#plumbing) — 9 tool(s)
-- [`router`](#router) — 10 tool(s)
-- [`schedules`](#schedules) — 9 tool(s)
-- [`sections`](#sections) — 4 tool(s)
-- [`selection`](#selection) — 12 tool(s)
-- [`validators`](#validators) — 11 tool(s)
-- [`verticals`](#verticals) — 8 tool(s)
-- [`view`](#view) — 8 tool(s)
-- [`vision`](#vision) — 9 tool(s)
+- [acad-annotations](#acad-annotations) (12 tools)
+- [acad-architecture](#acad-architecture) (16 tools)
+- [acad-blocks](#acad-blocks) (16 tools)
+- [acad-boolean-ops](#acad-boolean-ops) (8 tools)
+- [acad-callouts](#acad-callouts) (5 tools)
+- [acad-civil](#acad-civil) (12 tools)
+- [acad-dimensions](#acad-dimensions) (17 tools)
+- [acad-electrical](#acad-electrical) (15 tools)
+- [acad-files](#acad-files) (11 tools)
+- [acad-furniture](#acad-furniture) (10 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (32 tools)
+- [acad-geometry-3d](#acad-geometry-3d) (15 tools)
+- [acad-grids](#acad-grids) (6 tools)
+- [acad-hatches](#acad-hatches) (8 tools)
+- [acad-layers](#acad-layers) (14 tools)
+- [acad-layouts](#acad-layouts) (10 tools)
+- [acad-livestream](#acad-livestream) (3 tools)
+- [acad-mechanical](#acad-mechanical) (14 tools)
+- [acad-modify](#acad-modify) (18 tools)
+- [acad-openings](#acad-openings) (10 tools)
+- [acad-parametric](#acad-parametric) (19 tools)
+- [acad-plotstyles](#acad-plotstyles) (3 tools)
+- [acad-plumbing](#acad-plumbing) (9 tools)
+- [acad-router](#acad-router) (10 tools)
+- [acad-schedules](#acad-schedules) (9 tools)
+- [acad-sections](#acad-sections) (4 tools)
+- [acad-selection](#acad-selection) (12 tools)
+- [acad-validators](#acad-validators) (11 tools)
+- [acad-verticals](#acad-verticals) (8 tools)
+- [acad-view](#acad-view) (8 tools)
+- [acad-vision](#acad-vision) (9 tools)
 
-## annotations
+---
 
-AutoCAD text and annotation entities: single-line DBText, multi-line MText with inline formatting, leaders and multi-leaders (MLeader) with text or block content, basic Tables built from row/column data, points with point styles, and text style management. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.
-
-**12 tools:**
+## acad-annotations
 
 | Tool | Description |
 |---|---|
@@ -58,11 +55,7 @@ AutoCAD text and annotation entities: single-line DBText, multi-line MText with 
 | `update_dbtext` | Replace the contents of an existing DBText entity by handle. |
 | `update_mtext` | Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written. |
 
-## architecture
-
-High-level architectural plan-view operations: walls (with centreline + two faces), doors (with wall opening + swing), windows (sill, glass, opening), columns, rooms (boundary + tag with computed area), floor slabs, stairs, and intelligent dimensioning. Composes primitives from acad-geometry-2d, acad-blocks, acad-layers, acad-annotations, and acad-dimensions while auto-creating the AIA-style architectural layer key. Pairs with acad-validators rules under validators/architectural/.
-
-**16 tools:**
+## acad-architecture
 
 | Tool | Description |
 |---|---|
@@ -74,20 +67,16 @@ High-level architectural plan-view operations: walls (with centreline + two face
 | `draw_wall` | Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset ±thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default — connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs. |
 | `draw_walls_chain` | Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex — joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall × N because it issues 3 polyline calls instead of 3·N line calls. |
 | `ensure_architectural_layers` | Idempotently create the AIA-style architectural + structural layer key (A-WALL, A-WALL-CTRL, A-DOOR, A-DOOR-SWING, A-GLAZ, A-ROOM-BNDY, A-ROOM-IDEN, A-CLNG, A-ROOF, A-STRS, A-ANNO-DIMS, A-ANNO-NOTE, plus structural S-COLS, S-COLS-CTRL, S-SLAB, S-SLAB-HATCH when includeStructural=true). Existing layers are left alone, never overwritten. Returns one outcome per layer (created \| already_exists \| failed). |
-| `insert_door` | Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. NOTE v1: this tool DOES NOT cut a hole in the host wall — that step ships in Phase 7. Until then, use a follow-up acad-geometry2d.trim_curve / boolean op against the wall faces to punch the opening. |
+| `insert_door` | Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs before drawing the panel -- omit it to only draw the door primitives without touching any wall. |
 | `insert_elevator` | Draw an elevator shaft on A-STRS as a rectangle with two diagonal lines (X) plus a centred label on A-ANNO-NOTE. No cab / mechanical details — use this as a plan-view placeholder for lifts/verticals. For more detail use acad-verticals in Phase D7. |
 | `insert_ramp` | Draw a simple rectangular ramp outline on A-STRS plus a slope arrow (shaft + head) along the travel direction and a text label reporting the gradient as 'N% RAMP' on A-ANNO-NOTE. widthMm runs perpendicular to directionDeg, lengthMm runs along it. |
 | `insert_rect_column` | Insert a rectangular structural column profile on layer S-COLS plus a small crosshair centre-mark on S-COLS-CTRL. width = X-axis, depth = Y-axis (before rotation). Column is auto-centered on the supplied point. |
 | `insert_round_column` | Insert a circular structural column on layer S-COLS plus a small crosshair centre-mark on S-COLS-CTRL. |
 | `insert_stair` | Draw a simple straight-run stair on A-STRS: outline rectangle (widthMm × runLengthMm), treadCount-1 perpendicular tread lines at equal spacing, and a travel-direction arrow (shaft + head). The arrow ends with an 'UP' label (configurable) on A-ANNO-NOTE. directionDeg points along the run (0 = +X). For multi-flight or spiral stairs use acad-verticals in Phase D7. |
-| `insert_window` | Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. NOTE v1: this tool DOES NOT cut the host wall — see insert_door note. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up). |
+| `insert_window` | Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window's own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up). |
 | `split_wall_at_opening` | Cut a hole for a door/window in a wall entity — wrapper around acad.openings.cut_wall_for_opening. Workflow: (1) call split_wall_at_opening(wallHandle, jamb1, jamb2) BEFORE insert_door / insert_window so the wall faces are trimmed at the jambs; (2) then call the opening tool. v1 inherits the wrapped primitive's limitation (Line + 2-vertex Polyline walls); multi-vertex polyline walls will be supported once acad-verticals lands in Phase D7. |
 
-## blocks
-
-AutoCAD block (BlockTableRecord) authoring and instancing: define a block from existing entities, list / inspect / rename / purge block definitions, insert BlockReference instances with explicit attribute values, list and update attributes on existing references, explode references back to entities, and import block definitions across DWG files via WblockCloneObjects. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.
-
-**16 tools:**
+## acad-blocks
 
 | Tool | Description |
 |---|---|
@@ -108,11 +97,7 @@ AutoCAD block (BlockTableRecord) authoring and instancing: define a block from e
 | `set_block_reference_attributes` | Update one or more attribute reference text strings on an existing BlockReference. Tags not present in the BlockReference are silently skipped. Returns the number of attributes that were actually updated. |
 | `swap_block` | Globally replace every BlockReference of oldName with newName, preserving position, rotation, scale and layer. When keepAttributes=true, compatible attribute tag/value pairs are copied onto the new BlockReference. If newName is not defined yet and autoImport=true, it is imported from the registered libraries first. |
 
-## boolean-ops
-
-Boolean (Constructive Solid Geometry) operations on AutoCAD 3D solids and 2D regions: union / subtract / intersect on Solid3d entities, the same set on Region entities, plus utilities for building Regions from closed planar curves and probing whether two entities intersect (boolean test or actual intersection points). All operations consume the 'tool' entity (it is removed from ModelSpace) just like the AutoCAD UNION / SUBTRACT / INTERSECT commands, and require the AcadMcp .NET plugin loaded inside an open AutoCAD session. Not supported on AutoCAD LT.
-
-**8 tools:**
+## acad-boolean-ops
 
 | Tool | Description |
 |---|---|
@@ -125,11 +110,7 @@ Boolean (Constructive Solid Geometry) operations on AutoCAD 3D solids and 2D reg
 | `union_regions` | Boolean union of 2D regions (target + tools). |
 | `union_solids` | Boolean union: merge one or more tool 3D solids into the target solid. Tool solids are erased by default. |
 
-## callouts
-
-Profile callouts (K1 column / K6 elevation profile / K10 stair step), north arrows (simple/compass/ISO-129), scale bars (1:50/1:100/1:200), finish callouts (floor/wall/ceiling codes). Optional per-project for architectural detail depth.
-
-**5 tools:**
+## acad-callouts
 
 | Tool | Description |
 |---|---|
@@ -139,30 +120,24 @@ Profile callouts (K1 column / K6 elevation profile / K10 stair step), north arro
 | `insert_section_callout` | Insert a section cut-line plus two end markers (circle + label letter) plus two view-direction arrows. Optional drawCutLine=true draws the dashed cut polyline between startPoint and endPoint; set it to false if the plan already has a cut line. label defaults to "A" and creates markers reading "A" on both ends (A-A section). viewDirection controls which side the triangle arrows point (right\|left relative to the start→end vector). |
 | `insert_title_block` | Draw an ISO 7200 sheet border plus a 12-row project title block in the lower-right corner. sheetSize accepts A0/A1/A2/A3/A4; the block is scaled so that the plotted paper size matches. Pass fields=[{key, value}, ...] to fill the standard rows (PROJEKT, INWESTOR, ADRES, BRANŻA, FAZA, STADIUM, RYSUNEK, SKALA, NR RYS., DATA, PROJEKTANT, SPRAWDZAJĄCY); missing rows are left empty. Shorthand projectName/sheetNumber/author/date/titleText populate the most common rows if fields is not supplied. |
 
-## civil
-
-High-level civil-engineering drafting: road alignments (tangent + circular curve segments on C-ROAD-CNTR with CENTER linetype), road corridor edges (C-ROAD-EDGE Continuous), stationing tick marks + labels in metric (0+020) or US (0+20) format perpendicular to the alignment, parcel polylines built from surveyor (bearing, distance) legs with closure tolerance check, major / minor topographic contours with elevation labels, spot elevations as cross + signed +XX.XX text, and a true-north arrow that respects drawing rotation. Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships a 12-layer Polish PN + US NCS hybrid civil layer key. Pairs with acad-validators rules under validators/civil/.
-
-**10 tools:**
+## acad-civil
 
 | Tool | Description |
 |---|---|
 | `civil_health` | Report the 12-layer civil engineering key, the parcel-closure tolerance presets (residential / commercial / agricultural / forest), the supported stationing systems ('metric_km' / 'us_feet'), and the planned bundled-block list. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults — e.g. which closure tolerance applies to a residential lot — without making a real call to AutoCAD. |
 | `draw_alignment_curve` | Draw a single circular curve segment of a road horizontal alignment as an Arc on layer C-ROAD-CNTR (default). Spirals / clothoid transitions are NOT in v1 — only tangents and circular curves. The arc spans from startAngleDeg to endAngleDeg around the centre with the given radius (in metres, in the drawing's current units). |
+| `draw_alignment_spiral` | Draw a clothoid (Euler spiral) transition segment of a road horizontal alignment on layer C-ROAD-CNTR (default) -- the piece the v1 alignment tools were missing between a tangent and a circular curve. Approximated with the standard 2-term power-series clothoid expansion (drafting-grade accuracy, not survey-grade) sampled into `segments` points and drawn as a polyline. startBearingDeg is the tangent direction at Start (0 = +X, counter-clockwise); turnDirection picks which way it curves; endRadiusM is the circular-curve radius the spiral transitions INTO at its far end (the clothoid parameter A is derived as sqrt(endRadiusM * lengthM)). Returns the end point and end bearing so the next draw_alignment_curve call can continue tangent-to-curve without the agent doing the clothoid math itself. |
 | `draw_alignment_tangent` | Draw a single straight (tangent) segment of a road horizontal alignment as a line on layer C-ROAD-CNTR (default) — picks up CENTER linetype because the layer carries it. Per rule 38 §6 the road centreline MUST be a CENTER linetype on C-ROAD-CNTR; agents who reach for acad-geometry2d.draw_line directly bypass the linetype assignment. |
 | `draw_contour_line` | Draw a topographic contour line as a polyline on layer C-TOPO-MAJR (when isMajor=true, default) or C-TOPO-MINR (when isMajor=false). When isMajor=true, also drops a labelled DBText with the elevation (formatted to 2 decimals) at the labelEvery-th vertex. Per rule 38 §4 minor contours are unlabelled; major contours MUST be labelled — agents who set isMajor=true on a 1 m contour break the visual hierarchy. |
 | `draw_north_arrow` | Draw a basic north arrow at `position`: an isoceles triangle pointing toward TRUE north (rotated by trueNorthDegFromPageNorth from the page +Y axis per rule 38 §8) with optional 'N' letter above the tip. The triangle apex is sizeM tall, the base is 0.4 × sizeM wide, drawn on layer C-NORTH (Continuous, default). Per rule 38 §8 a north arrow with the default 0° rotation when the drawing is rotated ruins all bearings on the plan — agents MUST pass the drawing rotation explicitly. The COMPASS variant ships with the Phase-7 block library. |
 | `draw_parcel` | Build a parcel polyline by walking from `start` along a list of (bearing, distance) legs and draw it on layer C-PROP (PHANTOM2 linetype, default). Bearings MUST be surveyor textual form: 'N 45 30 15 E' / 'N 45° 30\' 15" E' / 'S 30 W'. Computes the closure error (distance from the last vertex back to the start) and reports it in metres along with `closureStatus = 'in_tolerance' \| 'out_of_tolerance'`. Tolerance is set by `kind` ('residential' < 0.02 m, 'commercial' < 0.05 m, 'agricultural' < 0.20 m, 'forest' < 0.50 m per rule 38 §3) or via `toleranceMOverride`. Setting autoClose=true closes the polyline geometrically (last vertex snapped to first) but the original closure error is still reported. |
 | `draw_road_corridor` | Given a road centreline polyline + a total widthM, draws the centreline on C-ROAD-CNTR (CENTER linetype) PLUS two parallel edge polylines on C-ROAD-EDGE (Continuous), each offset by widthM/2 to either side at every vertex (mitred at internal vertices using the average of the incoming and outgoing tangent normals). Per rule 38 §6 the edges are Continuous, NOT CENTER — the layer assignment is what makes the plan readable. Returns all 3 entity handles + the widthM used. |
+| `draw_vertical_profile` | Draw a road vertical alignment (profile view) grade line from a list of PVI points (station, elevation, and an optional parabolic vertical-curve length centred on that PVI). Interior PVIs with a curveLengthStation get a sampled symmetric parabola instead of a sharp grade break; PVIs without one (or the first/last point) stay a straight grade line to their neighbour. Drawn as ONE polyline on C-ROAD-CNTR (default) in a local station/elevation coordinate frame: drawing X = origin.X + (station - firstStation) * horizontalScale, drawing Y = origin.Y + (elevation - datumElevation) * verticalScale -- pass datumElevation close to (but below) the lowest PVI so the profile doesn't end up thousands of drawing units above origin, exactly like a real profile sheet's datum line. verticalScale defaults to 10x (a common profile exaggeration) since 1:1 road grades read as nearly flat lines otherwise. |
 | `ensure_civil_layers` | Idempotently create the 12-layer civil-engineering key (C-ROAD-CNTR, C-ROAD-EDGE, C-ROAD-LANE, C-PROP, C-ESMT, C-ROW, C-TOPO-MAJR, C-TOPO-MINR, C-TOPO-SPOT, C-STAT, C-ANNO, C-NORTH) per rule 38 §9, with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. C-ROAD-CNTR = 0.30 mm CENTER, C-ROAD-EDGE = 0.50 mm Continuous, C-PROP = 0.50 mm PHANTOM2, C-TOPO-MAJR = 0.35 mm, C-TOPO-MINR = 0.13 mm). Existing layers are left alone, never overwritten. includeRoad / includeProperty / includeTopo flags skip the corresponding sub-set so a survey-only drawing does not get road layers it never uses. |
 | `place_spot_elevation` | Place a survey spot elevation at `position`: a small + cross (two perpendicular short lines on C-TOPO-SPOT) AND a signed elevation text formatted '+102.45' / '-1.23' (Polish PN-EN ISO 6709 conventional 2-decimal precision) offset by textOffsetM to the upper-right. Returns BOTH the cross handles and the text handle. Per rule 38 §5 drawing only the text breaks downstream takeoffs because the actual point is missing. |
 | `place_station_labels` | Walk the centreline polyline and at every interval (default 20 m) drop: (1) a small perpendicular tick mark on layer C-STAT and (2) a labelled DBText with the station notation parallel to the alignment, offset to one side. Notation respects the system flag: 'metric_km' → '0+020' (Polish / EU, default), 'us_feet' → '0+20' (US, where 1 station = 100 ft). Per rule 38 §7 ticks are perpendicular to the LOCAL tangent, recomputed at every vertex, NOT to the global +X axis. |
 
-## dimensions
-
-AutoCAD parametric dimension entities: linear (rotated and aligned), angular (3-point and 2-line), radial, diametric, arc-length, ordinate, plus baseline and continued chains derived from a prior dimension. Includes dimension style (DimStyle) lookup and assignment. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.
-
-**17 tools:**
+## acad-dimensions
 
 | Tool | Description |
 |---|---|
@@ -184,11 +159,7 @@ AutoCAD parametric dimension entities: linear (rotated and aligned), angular (3-
 | `list_dimstyles` | List all dimension styles defined in the active drawing plus the current Dimstyle. |
 | `set_entity_dimstyle` | Assign a dimension style to one or more existing dimension entities (by handle). |
 
-## electrical
-
-High-level electrical schematic + ladder-logic drafting: ladder rails (L1 / N labelled at top), numbered horizontal rungs, NO and NC contacts as TWO different tools (the slash matters per rule 39 §2), IEC-style coils with optional contact-rung cross-reference text, IEC vs ANSI resistor symbols (rectangle vs zig-zag), wire segments + explicit wire-junction dots (rule 39 §3), terminal blocks as numbered rectangles in a row, and IEC 81346 device tags with prefix validation (-K / -Q / -F / -S / -B / -M / -T / -G / -X / -W / -H). Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships an IEC + JIC hybrid 12-layer electrical key. Pairs with acad-validators rules under validators/electrical/.
-
-**12 tools:**
+## acad-electrical
 
 | Tool | Description |
 |---|---|
@@ -202,14 +173,13 @@ High-level electrical schematic + ladder-logic drafting: ladder rails (L1 / N la
 | `place_contact_nc` | Place a Normally-Closed contact symbol at `position`, rotated by rotationDeg. NC contact opens only when its controlling coil is energised. Geometry: identical to NO (rule 39 §2) PLUS a horizontal slash through the angled lever — the slash IS the NC marker. Exposes terminals 'in' (left) and 'out' (right). For NO use the SEPARATE place_contact_no tool. |
 | `place_contact_no` | Place a Normally-Open contact symbol at `position`, rotated by rotationDeg. NO contact bridges only when its controlling coil is energised. Geometry: a horizontal bottom terminal line plus a short angled lever pointing up-and-away from the right terminal — NO horizontal slash (rule 39 §2: the slash is what distinguishes NC from NO). Exposes terminals 'in' (left) and 'out' (right). For NC use the SEPARATE place_contact_nc tool — never call this with a `kind` flag. |
 | `place_device_tag` | Place an IEC 81346 device tag as DBText on layer E-LBL-DEV. Accepts the short form ('K1' / '-K1'), the location-qualified form ('+CAB1-K1') or the fully-qualified form ('=PWR+CAB1-K1') per rule 39 §6a. The PREFIX letter is validated against the IEC 81346-2 set (-K / -Q / -F / -S / -B / -M / -T / -G / -X / -W / -H per rule 39 §6) — agents who invent prefixes ('-A1' for a contactor) get a fail-fast error with the allowed list. Returns the canonical string + the prefix character + a one-line description of what that prefix means. |
+| `place_din_rail` | Draw a DIN rail (EN 50022 top-hat rail, 35 mm wide by default) as a rectangle on layer E-PANEL (default) from start, lengthMm long, at rotationDeg. Pass slotPitchMm to also draw perpendicular tick marks every slotPitchMm along the rail as a visual device-spacing reference (omit for a plain rail outline). Returns the end point so a device outline or the next rail segment can be placed flush against it. |
+| `place_panel_device_outline` | Draw a rectangular physical device footprint (breaker, contactor, relay body, etc.) on layer E-PANEL (default) for panel-layout drawings -- the physical counterpart to the schematic symbols above (place_coil etc. draw the SCHEMATIC symbol; this draws the PHYSICAL footprint you'd mount on a DIN rail). origin is the top-left corner. Pass tag to also place a device tag label centred below the outline on E-LBL-DEV. |
 | `place_resistor` | Place a resistor symbol at `position`, rotated by rotationDeg (0° = horizontal, terminals at left/right). style='iec' (default, Polish/EU) draws a rectangle of width 4×unitSize × height 1.5×unitSize; style='ansi' draws a zig-zag of 6 zags spanning the same width. Both styles expose two terminals named '1' (left / start) and '2' (right / end) with their EXACT coordinates so subsequent draw_wire calls snap to them (rule 39 §7). Default unitSize = 5 mm (rule 39 §10). |
 | `place_terminal_block` | Place a terminal block as `count` numbered rectangles in a horizontal row starting at `origin` (top-left corner), each rectangle of width pitchMm × height heightMm, with sequential numbers (startNumber, startNumber+1, …) labelled below. Per rule 39 §11 terminals live on layer E-TERM (ACI 6, 0.40 mm) and labels on E-LBL-WIRE. Returns each slot's body handle, label handle, AND its top + bottom centre points so wires can snap to either side of the block. |
+| `route_wireway` | Draw a wireway / trunking channel along `path` on layer E-PANEL (default) as a centreline plus two parallel edge lines offset ±widthMm/2 (mitred at interior vertices, same offset approach as acad-civil.draw_road_corridor / acad-architecture.draw_walls_chain). Use this for the physical cable-management channel between panel devices, distinct from the schematic wire routing of draw_wire. |
 
-## files
-
-AutoCAD drawing file lifecycle and conversion: open / save / save-as (with chosen DwgVersion) / close the active drawing, import DWG and DXF, export to DXF and downgraded DWG versions, plot the active layout to PDF or DWF via PlotEngine, render images, and run drawing maintenance (purge unused symbols, audit for corruption with optional fix). All operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session.
-
-**11 tools:**
+## acad-files
 
 | Tool | Description |
 |---|---|
@@ -225,11 +195,7 @@ AutoCAD drawing file lifecycle and conversion: open / save / save-as (with chose
 | `save_document` | Save the currently active document to its existing path (no-op if it has no path yet — call save_document_as instead). |
 | `save_document_as` | Save the currently active document to a new path. Optional dwgVersion is one of "AC1027" (2013), "AC1032" (2018), "AC1024" (2010), etc. Defaults to current AutoCAD's native format. |
 
-## furniture
-
-Insert and manage parametric furniture blocks for hospitals, offices and residential interiors. Covers beds, chairs, desks, cabinets, sofas, tables, and medical equipment with inventory attributes (inv_id, type, note) and room-preset populators.
-
-**10 tools:**
+## acad-furniture
 
 | Tool | Description |
 |---|---|
@@ -244,11 +210,7 @@ Insert and manage parametric furniture blocks for hospitals, offices and residen
 | `list_furniture_in_model` | Enumerate all furniture BlockReferences currently in model-space (block names starting with 'FURN-'). Optionally filter by layer or by exact block name. Returns handle, block name, layer, position, rotation and any {inv_id, type, note} attribute values. Read-only. |
 | `populate_room` | Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min+max). Presets: 'ward-room' (2 beds + 2 nightstands + 1 armchair), 'icu-room' (1 ICU-bed + monitor cabinet + visitor chair), 'or-room' (OR-table + anaesthesia + instrument trolley), 'office' (desk + chair + file cabinet), 'reception' (reception-desk + 3 waiting chairs), 'waiting' (3 sofas + 1 coffee-table), 'consult' (desk + 2 chairs + exam table + cabinet). Returns handles of inserted items plus per-item layer assignment warnings. |
 
-## geometry-2d
-
-AutoCAD 2D geometry primitives: create lines, polylines, circles, arcs, ellipses, rectangles, polygons, splines, points, donuts, xlines, rays, single- and multi-line text, hatches and revision clouds; query entities (entity descriptor, bounding box, length, area, intersections, distances) inside a rectangular window; modify with offset, trim, extend, join, explode, fillet, chamfer and delete. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session (NETLOAD or auto-bundle). Read-only tools are flagged ReadOnly = true.
-
-**32 tools:**
+## acad-geometry-2d
 
 | Tool | Description |
 |---|---|
@@ -285,11 +247,7 @@ AutoCAD 2D geometry primitives: create lines, polylines, circles, arcs, ellipses
 | `offset_curve` | Offset a curve by a signed distance, returning the new curve handle. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 
-## geometry-3d
-
-AutoCAD 3D solids and surfaces: create primitive solids (box, sphere, cylinder, cone, wedge, torus, pyramid), build solids by extruding or revolving closed planar curves, build planar surfaces (Region) from boundary curves, and query 3D mass properties (volume, surface area via Brep, centroid, principal moments and radii of gyration) plus axis-aligned 3D bounding boxes. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session (NETLOAD or auto-bundle); read-only query tools are flagged ReadOnly = true. Not supported on AutoCAD LT.
-
-**15 tools:**
+## acad-geometry-3d
 
 | Tool | Description |
 |---|---|
@@ -309,11 +267,7 @@ AutoCAD 3D solids and surfaces: create primitive solids (box, sphere, cylinder, 
 | `get_volume` | Return the volume of a 3D solid (single value, current units). |
 | `revolve_curve` | Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360). |
 
-## grids
-
-Axis grids with bubble labels (alpha A..Z + numeric 1..N), axis spacings (e.g. 7200 mm ISO default), per-axis spacing, grid snapping and rename/remove operations. Every professional plan requires a structural grid per PN-B-01025.
-
-**6 tools:**
+## acad-grids
 
 | Tool | Description |
 |---|---|
@@ -324,11 +278,7 @@ Axis grids with bubble labels (alpha A..Z + numeric 1..N), axis spacings (e.g. 7
 | `list_grid_axes` | Enumerate handles of all entities living on the grid axis and bubble layers. Read-only; used by validators + callouts to find grid bubbles for intersection queries. |
 | `snap_to_grid` | Snap a point to the nearest grid intersection given an origin + two spacing lists. Returns snapped XY, axis labels (A, B, 1, 2…) and distance from the input point. PURE maths, no plugin call — use before drawing to align entities to structural axes. Rule 67 §5. |
 
-## hatches
-
-Draw, manage and regenerate hatches (material fills) on architectural and engineering drawings per ISO 128 and PN-EN patterns. Covers boundary-based hatching, pattern presets (concrete/brick/insulation/plaster/stone), material-to-layer mapping, and regeneration after boundary edits.
-
-**8 tools:**
+## acad-hatches
 
 | Tool | Description |
 |---|---|
@@ -341,11 +291,7 @@ Draw, manage and regenerate hatches (material fills) on architectural and engine
 | `list_patterns` | Enumerate available hatch patterns with their category (ANSI, ISO, AR-architectural, PN-EN) and recommended default scale/angle. Read-only. Use to discover what patterns are installed before drawing. |
 | `regenerate_hatches` | Re-evaluate one or more associative hatches after their boundaries have been edited. Scope: explicit handles, layer filter, or entire model-space. Returns the count of successfully regenerated hatches plus a list of handles that failed (e.g. open boundaries). |
 
-## layers
-
-AutoCAD layer (LayerTableRecord) management: create, rename, delete and list layers; query and set per-layer state (color by ACI or RGB, linetype, lineweight, plot style, plottable, frozen, locked, on/off, transparency); pick the current layer; bulk move entities between layers; and basic layer-state save / restore via AutoCAD's layer state manager. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.
-
-**14 tools:**
+## acad-layers
 
 | Tool | Description |
 |---|---|
@@ -364,11 +310,7 @@ AutoCAD layer (LayerTableRecord) management: create, rename, delete and list lay
 | `set_layer_lineweight` | Set a layer's lineweight in millimeters; snaps to nearest standard AutoCAD value (e.g. 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm). |
 | `set_layer_state` | Toggle one or more layer state flags: frozen, locked, off, plottable. null = leave unchanged. Cannot freeze the current layer. |
 
-## layouts
-
-AutoCAD paper-space layout management: create, list, rename, delete and switch the current layout; create and configure floating Viewport entities (size, center, scale, layer, on/off, locked, frozen layers) on a layout; configure plot settings (page size, plotter, orientation, plot area). All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.
-
-**10 tools:**
+## acad-layouts
 
 | Tool | Description |
 |---|---|
@@ -383,11 +325,15 @@ AutoCAD paper-space layout management: create, list, rename, delete and switch t
 | `set_current_layout` | Switch the active layout to the named tab (use "Model" to return to model space). All subsequent draw / viewport tools target this layout. |
 | `set_viewport_scale` | Set the model-space-to-paper scale factor of an existing Viewport entity (e.g. 0.02 → 1:50, 0.01 → 1:100, 0.001 → 1:1000). |
 
-## mechanical
+## acad-livestream
 
-High-level mechanical drafting operations: visible / hidden / centre line classes (each pinned to its own layer + linetype), section cutting plane lines with arrow heads + labels, plan-view holes (through, counterbore, threaded with the canonical 3/4 minor-Ø arc), bolt-head top views as flat-to-flat hexagons, and revision triangles + tags. Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships an ISO-mechanical 11-layer key + ME-25 dim style. Pairs with acad-validators rules under validators/mechanical/.
+| Tool | Description |
+|---|---|
+| `clear_events` | Discard all currently buffered events (does not affect future capture, only the backlog). Use this to reset state, e.g. at the start of a design_iterate loop so old noise doesn't show up in the first poll. |
+| `livestream_status` | Report the event ring buffer's current size, capacity (2000), the highest sequence number issued so far (headSeq), how many older events have been dropped to stay within capacity, and how many documents currently have event hooks attached. |
+| `poll_events` | Return entity-change and command-lifecycle events captured since sinceSeq (default 0 = from the start of the current buffer, which holds the most recent 2000 events). Each event has a monotonic seq -- pass the previous response's nextSeq back in as sinceSeq to get only what happened since your last poll. maxCount caps how many are returned in one call (default 200). Events are captured live via AutoCAD Database.ObjectAppended/Modified/Erased and Document.CommandWillStart/CommandEnded hooks, not by re-scanning the drawing. |
 
-**12 tools:**
+## acad-mechanical
 
 | Tool | Description |
 |---|---|
@@ -396,19 +342,17 @@ High-level mechanical drafting operations: visible / hidden / centre line classe
 | `draw_centerline_cross` | Draw the canonical round-feature centreline crosshair: TWO perpendicular CENTER-linetype lines on layer ME-CENTER (default), each extending featureRadiusMm + extensionMm beyond the centre point in both directions, rotated by rotationDeg. Per rule 37 §2 this is what a circle's centreline SHOULD look like — agents who try to do it with two raw draw_centerline calls usually forget the extension and the drawing looks like a `+` glued to the circle. |
 | `draw_counterbore_hole` | Draw a plan-view counterbore hole: outer counterbore circle on layer ME-VISIBLE plus an inner through-hole circle on the same layer plus a centreline crosshair on ME-CENTER sized to the counterbore radius. counterboreDiameterMm MUST be greater than throughDiameterMm — the tool fails fast otherwise. |
 | `draw_hidden_edge` | Draw an occluded edge as a HIDDEN line on layer ME-HIDDEN (default). Per rule 37 §1 hidden geometry MUST live on its own layer — drafting it on ME-VISIBLE is the #1 'looks fine, fails inspection' bug. |
+| `draw_hole_side_view` | Draw a hole's SIDE view (vertical cross-section through the hole axis) -- the plan-view hole tools (draw_through_hole etc.) only draw the top-down circle; this is the companion detail/section view. kind='through': two parallel wall lines, open at both ends (a through hole has no bottom). kind='blind': walls stepping down to a drill-point V at drillPointAngleDeg (118° standard). kind='counterbore': wider walls for counterboreDepthMm then narrower walls to depthMm (requires counterboreDiameterMm + counterboreDepthMm). kind='countersink': an angled flare from headDiameterMm down to diameterMm over countersinkAngleDeg (requires headDiameterMm), then straight walls to depthMm. Y runs downward from topCenter (the top surface) into the material. A centreline is always drawn on ME-CENTER (default) extending centerlineExtensionMm past both ends. |
 | `draw_revision_triangle` | Draw the canonical revision marker per rule 37 §6: a filled equilateral triangle (closed polyline + SOLID hatch) on layer ME-REV with the revision letter or number drawn as DBText centred on the triangle. Returns BOTH the triangle handle and the text handle so the agent can later move them together. The triangle pointer sits at `position`; rotationDeg orients its tip (default 0° = pointing UP). |
 | `draw_section_cut_line` | Draw a section cutting plane line per ISO 128 type H: thick PHANTOM polyline on layer ME-SECTION (lineweight 0.70 mm by default via the ensured layer), arrow heads on each end pointing in the viewing direction (perpendicular to the cut, pointing OUTWARD from the start→end direction by rotating +90°), and a label DBText on layer ME-TEXT placed at each end. Returns all 5 entity handles. Per rule 37 §3 the sectioned hatch is NOT drawn here — call acad-geometry2d.draw_hatch on the resulting sectioned-view boundary separately. |
+| `draw_section_hatch` | Apply a material-appropriate section hatch (ISO 128 §6 / rule 37 §8 convention -- steel ANSI31, cast iron ANSI32, aluminium ANSI37, etc., see mechanical_health.materials) over an existing closed boundary. This is the tool the header comment on this file used to say didn't exist in v1 -- it now looks up pattern/scale/angle from the same material table mechanical_health reports, so an agent doesn't have to hardcode hatch parameters per material. scaleOverride/angleOverrideDeg let you deviate from the table default for an unusual drawing scale. |
 | `draw_threaded_hole` | Draw a plan-view threaded (tapped) hole per rule 37 §4 + §4a: a FULL outer circle at majorDiameterMm on layer ME-VISIBLE, an INNER 3/4 ARC at minorDiameterMm on layer ME-THREAD (HIDDEN linetype) — the gap demonstrates that the inner circle is the thread minor diameter, not a true geometric circle — plus a centreline crosshair on ME-CENTER. The arc gap is threadGapDeg wide (default 90°, so the arc spans 270°) starting at threadGapStartDeg (default 0° = +X axis). minorDiameterMm MUST be smaller than majorDiameterMm. |
 | `draw_through_hole` | Draw a plan-view through hole: profile circle on layer ME-VISIBLE (default) at the requested diameter PLUS a centreline crosshair on ME-CENTER (default) extending centerlineExtensionMm past the circle on each axis (rule 37 §4). Returns the profile circle and both centreline handles in one call. |
 | `draw_visible_edge` | Draw a visible feature edge as a Continuous line on layer ME-VISIBLE (default). Use this rather than acad-geometry2d.draw_line whenever the line has semantic meaning — the layer assignment is what makes the drawing readable per ISO 128. |
 | `ensure_mechanical_layers` | Idempotently create the ISO-mechanical 11-layer key (ME-VISIBLE, ME-HIDDEN, ME-CENTER, ME-DIMS, ME-TEXT, ME-SECTION, ME-HATCH, ME-THREAD, ME-CONSTRUCTION, ME-TITLE, ME-REV) per rule 37 §9, with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. ME-VISIBLE = 0.50 mm Continuous, ME-HIDDEN = 0.25 mm HIDDEN, ME-CENTER = 0.18 mm CENTER, ME-SECTION = 0.70 mm PHANTOM). Existing layers are left alone, never overwritten. ME-CONSTRUCTION is non-plottable. includeConstruction=false skips it; includeRevision=false skips ME-REV. |
 | `mechanical_health` | Report the ISO-mechanical layer key, the material → hatch pattern lookup table (rule 37 §8), and the planned bundled-block list. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults — e.g. which pattern to pass to acad-geometry2d.draw_hatch when sectioning steel — without making a real call to AutoCAD. |
 
-## modify
-
-AutoCAD entity edit and transform operations: rigid transforms (move, rotate, scale, mirror, align two-point), copy and array (rectangular and polar), erase, undo / redo, common-property updates (layer, color, linetype, lineweight) including bulk match-properties from a source entity, and AutoCAD Group management (create / add / remove / rename / dissolve / list members). All operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock so the AutoCAD UI stays consistent.
-
-**18 tools:**
+## acad-modify
 
 | Tool | Description |
 |---|---|
@@ -431,11 +375,7 @@ AutoCAD entity edit and transform operations: rigid transforms (move, rotate, sc
 | `undo` | Undo the last user/AI action by sending a SENDCOMMAND "_U". Counts the number of undo steps performed. |
 | `ungroup` | Delete a named Group (the underlying entities remain in the drawing). |
 
-## openings
-
-Professional-grade door and window tools that cut the wall, draw frame/leaf/swing-arc, attach attributes (number, width, REI/EI fire class, RC burglary class), and emit schedules. Replaces raw line+arc door hacks with a single atomic call.
-
-**10 tools:**
+## acad-openings
 
 | Tool | Description |
 |---|---|
@@ -450,19 +390,22 @@ Professional-grade door and window tools that cut the wall, draw frame/leaf/swin
 | `list_openings_in_model` | Enumerate all opening BlockReferences currently in model-space (block names starting with 'DOOR-' or 'WIN-'). kind='doors'\|'windows'\|'all'. Optional layerFilter. Returns handle, blockName, kind, number, type, width/height, rei, rc, fireClass, acousticDb, leadShielded, roomFrom, roomTo, position, rotation, layer. Read-only. |
 | `renumber_openings` | Rewrite NUMBER attribute across all doors and/or windows in model-space. kind='doors'\|'windows'\|'all'. order='insertion' (creation order) \| 'spatial' (sort by Y descending then X ascending so numbering reads 'room-by-room'). startAt starts sequence (default 1). Returns change log per entity. |
 
-## parametric
-
-Parametric drafting: geometric constraints via native -GEOMCONSTRAINT (Horizontal, Vertical, Parallel, Perpendicular, Coincident, Fix), DELCONSTRAINT cleanup, inventory of constraint proxy entities in model space, and dynamic BlockReference property get/set (visibility, lookup, distance, angle) without opening the Block Editor. Ships a dedicated P-* layer key for parametric annotation hygiene. Pairs with acad-validators under validators/parametric/. Full dimensional DIMCONSTRAINT workflows and Block Editor-only geometric constraints ship in Phase 7.
-
-**12 tools:**
+## acad-parametric
 
 | Tool | Description |
 |---|---|
+| `apply_dim_aligned` | Apply an Aligned dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT (dimension line stays parallel to the point1-point2 line, unlike apply_dim_linear which is always horizontal/vertical), with its dimension text placed at placementPoint. |
+| `apply_dim_linear` | Apply a Linear dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT, with its dimension text placed at placementPoint. Unlike geometric constraints, a dimensional constraint carries a numeric value that DRIVES the geometry -- editing it after creation moves whatever it's attached to. Point-pair form only (not the 'Object' pick mode -- see plugin source comment for why). |
 | `apply_geom_coincident` | Apply a Coincident geometric constraint between two picks (handles a and b) via transparent -GEOCONSTRAINT. Works best on endpoints / points the solver can merge; whole-entity picks may fail depending on AutoCAD build. If the command rejects the pick set, constrain boundary polylines instead of hatch (rule 42 §8). |
+| `apply_geom_collinear` | Apply a Collinear geometric constraint between two line-like entities (handles a and b) via transparent -GEOCONSTRAINT -- forces them onto the same infinite line. |
+| `apply_geom_concentric` | Apply a Concentric geometric constraint between two circular/arc entities (handles a and b) via transparent -GEOCONSTRAINT -- forces their centre points to coincide. |
+| `apply_geom_equal` | Apply an Equal geometric constraint between two entities of the same kind (handles a and b) via transparent -GEOCONSTRAINT -- two lines get equal length, two circles/arcs get equal radius. |
 | `apply_geom_fix` | Apply a Fix geometric constraint to anchor one entity (datum behaviour per rule 42 §2). Call once per sketch for the construction corner — do not Fix every entity or the drawing becomes over-constrained. |
 | `apply_geom_horizontal` | Apply a Horizontal geometric constraint to one line-like entity in the current space using AutoCAD transparent -GEOCONSTRAINT. The entity handle must reference a Line, polyline segment, or other object the solver accepts for Horizontal. Runs outside an MCP transaction — AutoCAD owns the command transaction. |
 | `apply_geom_parallel` | Apply a Parallel geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Both entities must live in the same current space; mixed paper-space / block-context picks are undefined — resolve handles from the active viewport context first. |
 | `apply_geom_perpendicular` | Apply a Perpendicular geometric constraint between two curves via transparent -GEOCONSTRAINT. Common pitfall: picking two lines that are already parallel to the UCS axes — the solver may report redundant constraints (rule 42 §3). |
+| `apply_geom_symmetric` | Apply a Symmetric geometric constraint making entities a and b mirror images of each other about symmetryLine, via transparent -GEOCONSTRAINT. All three handles must already exist in the current space. |
+| `apply_geom_tangent` | Apply a Tangent geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Typical use: a line tangent to an arc/circle, or two arcs tangent to each other. |
 | `apply_geom_vertical` | Apply a Vertical geometric constraint to one line-like entity in the current space using transparent -GEOCONSTRAINT. Complements apply_geom_horizontal; do not stack both on the same line unless the office standard requires it. |
 | `delete_entity_constraints` | Run transparent -DELCONSTRAINT on one entity handle to strip geometric/dimensional constraints attached to that object. Use before explode-freeze workflows or when rebuilding a sketch (rule 42 §4 — explode orphans constraints differently). |
 | `ensure_parametric_layers` | Idempotently create the 6-layer parametric sketch key (P-CONSTRUCTION, P-SKETCH, P-CONSTRAINED, P-DYNAMIC, P-PARAM-LBL, P-NOTE) per rule 42 §9 with prescribed ACI colour, Continuous linetype, and lineweight. Existing layers are never overwritten. |
@@ -471,11 +414,7 @@ Parametric drafting: geometric constraints via native -GEOMCONSTRAINT (Horizonta
 | `parametric_health` | Return the 6-layer P-* parametric key, planned Phase-7 block roster, and the dynamic-block angle value policy string. Does not open AutoCAD. |
 | `set_dynamic_block_property` | Write one DynamicBlockReferenceProperty on a BlockReference by name. Pass JSON booleans as true/false, numbers as JSON numbers. For Angle-typed properties the numeric value is interpreted as degrees and converted to radians in the plugin (see parametric_health.dynamicAnglePolicy). Strings are for lookup / text parameters. Read-only properties throw. |
 
-## plotstyles
-
-Manage CTB (color-dependent) and STB (named) plot-style tables. Apply 9-tier lineweight policy (0.05 mm hatches -> 1.4 mm outer building outline), per-layer plot color, screen percentage and plot flag. Ships AIA-2017 and PN-B-01025 presets.
-
-**3 tools:**
+## acad-plotstyles
 
 | Tool | Description |
 |---|---|
@@ -483,11 +422,7 @@ Manage CTB (color-dependent) and STB (named) plot-style tables. Apply 9-tier lin
 | `ensure_ctb` | Ensure a colour-dependent plot-style (CTB) is installed in AutoCAD's Plot Styles directory. Queries acad.layouts.list_plot_styles to resolve the target directory, then copies from sourcePath (caller override) or the repo asset folder <repo>/assets/plotstyles/<name>. If the CTB already exists and overwrite=false (default), reports existedBefore=true, copied=false. Calls list_plot_styles a second time to verify the refresh picked up the new sheet. Use this before apply_plotstyle_to_layout so the target sheet is guaranteed loaded. |
 | `list_plotstyles` | Enumerate all plot-styles currently visible to AutoCAD (CTB + STB). filter='ctb' or 'stb' narrows the returned names. Also returns repo presets (HOSPITAL-ISO, ISO-Standard, monochrome), the AutoCAD Plot Styles directory, and the backend asset directory so the caller can prep ensure_ctb calls. |
 
-## plumbing
-
-Insert sanitary fixtures (WC, sinks, bathtubs, showers, bidets, urinals, medical sinks) compliant with PN-EN 997, PN-EN 31, PN-EN 232, PN-EN 251 and PN-EN 17210 (accessibility). Includes bathroom populators for standard, disabled, ensuite and scrub-room presets.
-
-**9 tools:**
+## acad-plumbing
 
 | Tool | Description |
 |---|---|
@@ -501,30 +436,22 @@ Insert sanitary fixtures (WC, sinks, bathtubs, showers, bidets, urinals, medical
 | `list_plumbing_in_model` | Enumerate all sanitary BlockReferences currently in model-space (block names starting with 'PLMB-'). Filter by layer or exact block name. Returns handle, block name, layer, position, rotation, INV_ID / TYPE attribute values + ACCESSIBLE flag. Read-only. |
 | `populate_bathroom` | Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: 'wc-public' (WC + basin, single cubicle), 'wc-accessible' (PN-EN 17210 accessible WC + accessible basin + grab-bar markers, min 1500x1800), 'bathroom-residential' (WC + basin + bathtub OR shower), 'bathroom-hospital-patient' (wall-hung WC + basin + walk-in shower + grab bars), 'shower-room' (shower + basin), 'wc-block-staff' (2x WC + 2x basin + urinal). accessible=true overrides with accessible variants. |
 
-## router
-
-AutoCAD MCP router - the single permanent entry point to ~30 specialist AutoCAD MCP categories (geometry-2d/3d, modify, layers, blocks, annotations, dimensions, layouts, files, parametric, architecture, mechanical, civil, electrical, vision, validators, workflows, livestream). Exposes 9 meta-tools: status, find_tools, load_category, recommend_categories, explain_capabilities, describe_drawing, undo_checkpoint, restore_checkpoint, design_iterate. The actual category MCPs are loaded on demand via MCP Nexus's mcpd_find / mcpd_connect flow. Backend talks to the AutoCAD .NET plugin (NETLOAD'ed) over a single named pipe.
-
-**10 tools:**
+## acad-router
 
 | Tool | Description |
 |---|---|
-| `acad_call` | UNIVERSAL dispatch: invoke any backend composite (e.g. 'schedules/generate_door_schedule') OR any plugin primitive (e.g. tool='acad.annotations.add_table', category left empty). Routes in-process, no subprocess spawn. |
-| `acad_describe_drawing` | Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call. |
-| `acad_design_iterate` | Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop. |
-| `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |
+| `acad_status` | Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only). |
 | `acad_find_tools` | Semantic search across all acad-* MCP servers via MCP Nexus find_tools, filtered to our namespace. Returns ranked candidates with category and tool name. |
 | `acad_load_category` | Shortcut: connect to a single acad-<name> MCP server in lazy mode. Returns its tool list summary so you can pick the next call. |
 | `acad_recommend_categories` | Suggest the 1-3 most relevant categories for a free-text task description. Saves tokens by avoiding indiscriminate loading. |
-| `acad_restore_checkpoint` | Roll back to a previously created checkpoint (Phase 7). Used by the auto-design loop on validation failure. |
-| `acad_status` | Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only). |
+| `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |
+| `acad_call` | UNIVERSAL dispatch: invoke any backend composite (e.g. 'schedules/generate_door_schedule') OR any plugin primitive (e.g. tool='acad.annotations.add_table', category left empty). Routes in-process, no subprocess spawn. |
+| `acad_describe_drawing` | Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call. |
 | `acad_undo_checkpoint` | Create a named undo checkpoint so subsequent operations can be rolled back atomically (Phase 7). |
+| `acad_restore_checkpoint` | Roll back to a previously created checkpoint (Phase 7). Used by the auto-design loop on validation failure. |
+| `acad_design_iterate` | Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop. |
 
-## schedules
-
-Parametric AutoCAD Table entities in paperspace: door schedule, window schedule, room schedule (number/name/area/floor/wall/ceiling finish), finish legend. Pulls data from acad-openings attributes and room labels, supports update-in-place.
-
-**9 tools:**
+## acad-schedules
 
 | Tool | Description |
 |---|---|
@@ -538,11 +465,7 @@ Parametric AutoCAD Table entities in paperspace: door schedule, window schedule,
 | `get_room_data` | READ-ONLY, universal. Locate ONE space (room, office, apartment room, classroom, yard/garden, hall, …) by its number or name (substring, case-insensitive) and return a full dossier: number + name, MEASURED area (m², computed from a wall-aware flood-fill of the actual boundary) plus the labelled area (labelAreaM2, parsed from the label text) when present, bounding-box dimensions (width × depth in mm), the boundary detection method, and every door, window and furniture/equipment item that lies inside the room (furniture tested against the traced outline, openings against the perimeter). Scans labels on ALL layers by default (not just A-ROOM-*). Use this to gather accurate data BEFORE drawing a schedule or generating a visualization. Does NOT modify the drawing. |
 | `update_schedules` | Find existing schedule tables by their title cell (ZESTAWIENIE STOLARKI / POMIESZCZEŃ / LEGENDA WYKOŃCZEŃ) and rebuild each one from current drawing content. Old tables are erased and replaced at the same insertion point. Useful after inserting/removing openings or rooms; one call keeps every schedule in sync. |
 
-## sections
-
-Section cut lines (A-A, B-B) with cut-plane markers, directional arrows and depth ranges. Links to layout tabs for each section view. Conforms to PN-EN-ISO-128 and PN-B-01025 section symbol conventions.
-
-**4 tools:**
+## acad-sections
 
 | Tool | Description |
 |---|---|
@@ -551,11 +474,7 @@ Section cut lines (A-A, B-B) with cut-plane markers, directional arrows and dept
 | `insert_section_title` | Place a section/view title beneath a drawn section (e.g. "PRZEKRÓJ A-A" with "SKALA 1:50" under it and an underline). position is the insertion point — typically the centre-bottom of the view. Customise caption (defaults to "PRZEKRÓJ") for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line. |
 | `list_section_lines` | Inventory all entities on the A-DETL-SECT layer (or a caller-supplied layer via layerFilter). For every handle that is a curve, also queries acad.geometry2d.get_curve_length so the caller can sanity-check drawing-unit cut lengths against the target scale. |
 
-## selection
-
-Non-interactive entity selection over the active drawing's ModelSpace: pick by criteria (layer, color, type/DXF name, handle list), by geometry (rectangular window, fence polyline, polygon, all-in-modelspace), apply free-form filter predicates, build named selection sets stored as Xrecords in the NamedObjectsDictionary, and load/list/delete those sets later. Returns lists of entity handles that downstream tools (acad-modify, acad-geometry-2d, acad-geometry-3d, etc.) can consume directly. Never opens an interactive 'Select objects:' prompt - rule 14-acad-no-blocking-prompts. All read paths are flagged ReadOnly = true; only saving a named set writes to the database.
-
-**12 tools:**
+## acad-selection
 
 | Tool | Description |
 |---|---|
@@ -572,11 +491,7 @@ Non-interactive entity selection over the active drawing's ModelSpace: pick by c
 | `select_polygon` | Select entities inside (crossing=false) or intersecting (crossing=true) a closed polygonal region. |
 | `select_window` | Select entities fully inside (or, with crossing=true, intersecting) the WCS axis-aligned window from min to max. |
 
-## validators
-
-Rule-based validator for AutoCAD drawings. Loads YAML rules (id, severity, discipline, scope, checks, optional auto-fix) from a bundled library plus user contributions, runs them against the active document via the AcadMcp .NET plugin, and returns a structured ValidationReport: per-rule counts and per-violation entityHandle/dxfType/layer/expected/observed/fixAvailable. Supports primitive checks (layer_equals, layer_matches, color_equals, linetype_equals, lineweight_at_least, length/area/radius_at_least, text_matches, attribute_present, bbox_inside, ...) and composite ones (not / any_of / all_of), plus document-level checks (entity_count_at_least, layer_must_exist, units_must_be). Auto-fix recipes (move_to_layer, set_color, set_linetype, set_lineweight, delete_entity, set_attribute) run in a single grouped transaction so failures roll back atomically. Includes bundled "standards" (iso-cad-baseline, polish-arch-baseline) and an add_validator_rule tool for live extension. Architecture: rules 33-validators-rule-format and 34-validators-engine-traps.
-
-**11 tools:**
+## acad-validators
 
 | Tool | Description |
 |---|---|
@@ -592,11 +507,7 @@ Rule-based validator for AutoCAD drawings. Loads YAML rules (id, severity, disci
 | `validate_drawing` | Run a set of validator rules against the active document and return a structured report (per-rule counts, every violation with handle/dxfType/layer/expected/observed/fixAvailable). Optional filters: ruleIds (explicit list, overrides everything else), discipline, minSeverity, includePaperspace. |
 | `validate_with_rule` | Run exactly one validator rule (by id) against the active document and return a focused report. Throws if the ruleId is unknown. |
 
-## verticals
-
-Stairs (straight, spiral, U/L), ramps, elevators (passenger/bed/goods), escalators, platform lifts and handrails per PN-EN 13374 and WT §54. Bed-lift minimum 160x260 with 1600 kg capacity enforced for hospitals.
-
-**8 tools:**
+## acad-verticals
 
 | Tool | Description |
 |---|---|
@@ -609,28 +520,20 @@ Stairs (straight, spiral, U/L), ramps, elevators (passenger/bed/goods), escalato
 | `insert_escalator` | Draw an escalator run: rectangle outline, evenly-spaced step lines, direction arrow, UP/DN label. Rotation locates the lower landing at origin. |
 | `insert_platform_lift` | Draw a platform lift (wheelchair lift / stair-chair): rectangle outline + PL label. Default 1100×1400 mm matches PN-EN 81-41. |
 
-## view
-
-Model-space view control for the active AutoCAD document: zoom to an arbitrary drawing-unit rectangle (zoom_window), zoom to drawing extents / limits / named view, zoom by scale factor or around a named center point, and list / activate / describe stored named views. Used as a pre-step for acad.files.export_file scope=Display when the AI agent needs to frame a specific region before capturing a PNG + running describe_image on the result, and as a reset tool between regional captures in multi-tile visual review loops.
-
-**8 tools:**
+## acad-view
 
 | Tool | Description |
 |---|---|
-| `get_current_view` | Return the currently active view's center, width, height and paper-space flag. |
-| `list_views` | List all named views stored in the drawing's VIEW table with center, width, height and paper-space flag. |
-| `set_current_view` | Restore a named view by name. |
+| `zoom_window` | Zoom the active model-space view to the axis-aligned rectangle defined by two corner points (drawing units). Use before acad.files.export_file scope="Display" to capture a specific region as PNG, or to frame an area for visual inspection. |
+| `zoom_extents` | Zoom the active model-space view to fit the bounding box of all entities (ZOOM _E). Use as a reset between regional captures. |
 | `zoom_all` | Zoom the active view to the drawing limits + extents (ZOOM _A). |
 | `zoom_center` | Zoom to a specific center point with a requested view height in drawing units. |
-| `zoom_extents` | Zoom the active model-space view to fit the bounding box of all entities (ZOOM _E). Use as a reset between regional captures. |
 | `zoom_scale` | Zoom the active view by a relative scale factor. |
-| `zoom_window` | Zoom the active model-space view to the axis-aligned rectangle defined by two corner points (drawing units). Use before acad.files.export_file scope="Display" to capture a specific region as PNG, or to frame an area for visual inspection. |
+| `list_views` | List all named views stored in the drawing's VIEW table with center, width, height and paper-space flag. |
+| `set_current_view` | Restore a named view by name. |
+| `get_current_view` | Return the currently active view's center, width, height and paper-space flag. |
 
-## vision
-
-Vision pipeline for AutoCAD: OCR (PaddleOCR / EasyOCR / Tesseract) on raster drawings and PDF pages, custom YOLO CAD-symbol detection per discipline (arch / mech / elec / pid), title-block field extraction with per-discipline templates, dimension-callout OCR with mm normalisation, drawing-type classification via vision LLM, free-form vision-LLM image description (Anthropic Claude or OpenAI GPT-4o), and OCR-vs-DXF cross validation. Powered by the AcadMcp.Vision Python sidecar (FastAPI, localhost-only HTTP). Tools work without AutoCAD running and degrade gracefully with installHint when an ML dep is missing.
-
-**9 tools:**
+## acad-vision
 
 | Tool | Description |
 |---|---|

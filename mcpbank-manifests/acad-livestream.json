@@ -1,0 +1,82 @@
+{
+  "id": "acad-livestream",
+  "name": "acad-livestream",
+  "description": "Phase 7.1 event capture: entity-change (append/modify/erase) and command-lifecycle events captured live from real AutoCAD Database/Document hooks into a bounded ring buffer, exposed poll-style since MCP tool-calling agents have no channel for genuine unsolicited server push. poll_events(sinceSeq) returns what happened since the last check instead of re-scanning the drawing; livestream_status reports buffer occupancy and drop count; clear_events resets the backlog. See docs/PHASE-7-8-ROADMAP.md 7.1 for the scope decision (poll-based, not a raw second named pipe).",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-livestream.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "clear",
+    "dwg",
+    "events",
+    "livestream",
+    "poll",
+    "status"
+  ],
+  "intent_examples": [
+    "clear event buffer",
+    "co sie zmienilo od ostatniego razu",
+    "diagnostyka livestream",
+    "discard buffered events",
+    "event buffer diagnostics",
+    "get entity change events",
+    "how many events buffered",
+    "livestream buffer status",
+    "pobierz zdarzenia rysunku",
+    "poll recent events",
+    "reset livestream events",
+    "status bufora zdarzen",
+    "what changed since last check",
+    "wyczysc bufor zdarzen",
+    "wyczysc historie zdarzen"
+  ],
+  "tools_summary": [
+    {
+      "name": "clear_events",
+      "description": "Discard all currently buffered events (does not affect future capture, only the backlog). Use this to reset state, e.g. at the start of a design_iterate loop so old noise doesn't show up in the first poll.",
+      "tags": [
+        "clear",
+        "events"
+      ]
+    },
+    {
+      "name": "livestream_status",
+      "description": "Report the event ring buffer's current size, capacity (2000), the highest sequence number issued so far (headSeq), how many older events have been dropped to stay within capacity, and how many documents currently have event hooks attached.",
+      "tags": [
+        "livestream",
+        "status"
+      ]
+    },
+    {
+      "name": "poll_events",
+      "description": "Return entity-change and command-lifecycle events captured since sinceSeq (default 0 = from the start of the current buffer, which holds the most recent 2000 events). Each event has a monotonic seq -- pass the previous response's nextSeq back in as sinceSeq to get only what happened since your last poll. maxCount caps how many are returned in one call (default 200). Events are captured live via AutoCAD Database.ObjectAppended/Modified/Erased and Document.CommandWillStart/CommandEnded hooks, not by re-scanning the drawing.",
+      "tags": [
+        "poll",
+        "events"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "livestream",
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "tool_count_target": 3,
+    "last_regenerated_utc": "2026-07-29T20:52:41.8870798Z"
+  }
+}

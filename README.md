@@ -57,12 +57,14 @@ This repository is actually three separable things sharing one execution engine.
 
 Before this was closed off as its own repository, the full system was built and smoke-tested end to end:
 
-- **Build:** 0 errors, 0 warnings across the whole `.sln` (29 code categories / 30 manifests, consistency check clean).
-- **Unit tests:** 138/138 passing.
+- **Build:** 0 errors, 0 warnings across the whole `.sln` (30 code categories / 31 manifests, consistency check clean).
+- **Unit tests:** 139/139 passing.
 - **Category sweep:** all 30 MCP category backends spawned over stdio and checked against their manifests — **30/30 exact tool-count matches.** (`router`'s manifest was missing `acad_call`, the tool actually used to dispatch category tool calls — a real drift between the manifest and the code, found during this pass and fixed by adding the missing entry, not by adjusting the count to match.)
 - **Live AutoCAD integration, read path:** with AutoCAD 2025 actually running, `acad_status` confirmed a live named-pipe connection to the in-process plugin (real document, real layer data), `list_layers` returned the real layer table of the open drawing, and `list_entities_in_window` correctly validated required arguments and then returned real (empty) results for the active drawing.
 - **Live AutoCAD integration, write path:** to avoid touching the real open drawing, a scratch document was created with `new_document`, a real line was drawn (`draw_line`, returned a real `AcDbLine` entity handle) and a real layer created (`create_layer`), both confirmed present via read-back (`list_entities_in_window`, `list_layers`), then the scratch document was closed without saving (`close_document`). `get_active_document` confirmed the original drawing was the active document before, during, and after — untouched throughout, `entityCount` unchanged.
 - **Checkpoint / restore rollback:** `acad_restore_checkpoint` performs a real rollback via a `.dwg` snapshot reopen (not an AutoCAD UNDO command — see "Checkpoint/restore rollback" below for why). Verified live across all three cases: (1) same-document restore — drew a line after a checkpoint, restored, `list_documents`/`entityCount` confirmed the line was genuinely gone (`strategy=reopened_snapshot`); (2) no-snapshot checkpoint (`fileSnapshot:false`) — restore honestly reports `strategy=no_snapshot` and leaves the drawing untouched rather than pretending to roll back; (3) active document changed since the checkpoint — restore left the unrelated active document untouched and opened the snapshot as a separate document instead (`strategy=reopened_snapshot_as_new_document`), confirmed via `list_documents`.
+- **Phase 7.1 livestream:** `acad_livestream.poll_events` captured real `command_will_start`/`command_ended` events fired by AutoCAD's own startup sequence before any test action ran, then a real `entity_appended` event for a `draw_line` call, with correct handle/dxfType/layer payload; `sinceSeq` correctly returned only new events on a second poll, not the whole backlog.
+- **Phase 7.3 domain tools:** every new tool across architecture (wall-cutting `insert_door`/`insert_window`), mechanical (`draw_hole_side_view` all 4 kinds, `draw_section_hatch`), civil (`draw_alignment_spiral`, `draw_vertical_profile`), and electrical (`place_din_rail`, `place_panel_device_outline`, `route_wireway`) was exercised live on AutoCAD 2025 and returned real entity handles with the expected geometry (e.g. the spiral's derived end-bearing and clothoid parameter, the vertical profile's parabola-sampled vertex count). Two real, pre-existing bugs were found and fixed in the process — see [docs/PHASE-7-8-ROADMAP.md](docs/PHASE-7-8-ROADMAP.md) 7.3 for detail — and one new defect was found and is documented, not fixed: see "Known defect" below.
 
 ## Checkpoint/restore rollback
 
@@ -182,7 +184,7 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 30 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~337 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 31 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~354 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
 The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `nexus-gateway` or `nexus-server` entry (current MCP Nexus CLI names) and falling back to the older `mcpbank-dynamic` / `mcpbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. Verified against both a `nexus-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
@@ -235,13 +237,19 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**337 tools across 30 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
+**354 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
 
 ## Status
 
 **Phases 0-6** are delivered per this repository's roadmap (backend, plugin, categories, validators, Phase 6 domains, vision scaffold). Version details and full history: [CHANGELOG.md](CHANGELOG.md).
 
-**Active development track: Phases 7-8** — the design iteration loop (iterate, checkpoints), livestream/events, validator and domain extensions, per-discipline vision/YOLO, E2E and runbook work. **Start here:** [docs/PHASE-7-8-ROADMAP.md](docs/PHASE-7-8-ROADMAP.md).
+**Phase 7** is done except for the two items called out below: the design iteration loop with real checkpoint rollback, the poll-based `acad-livestream` event channel, validator primitives, and the architecture/mechanical/civil/electrical/parametric domain backlog are all implemented and live-verified on AutoCAD 2025 (see [Verified](#verified) and [docs/PHASE-7-8-ROADMAP.md](docs/PHASE-7-8-ROADMAP.md) for the item-by-item detail). Two things remain genuinely open: the architecture and mechanical bundled DWG block libraries (`blocks/architectural/`, `blocks/mechanical/`), and a newly-found defect where every parametric constraint-application tool fails against real AutoCAD (see "Known defect" below) — both need dedicated further work, not something this pass could respectably rush.
+
+**Phase 8** (per-discipline YOLO vision, prompt library, ops runbook, E2E/telemetry) remains an open backlog, deliberately not started — see [docs/PHASE-7-8-ROADMAP.md](docs/PHASE-7-8-ROADMAP.md).
+
+## Known defect: parametric constraint application fails against real AutoCAD
+
+Live-tested 2026-07-29: every `apply_geom_*` (11 tools, including the 6 that predate this pass) and `apply_dim_*` (2 tools) constraint-application tool in `acad-parametric` fails with `Autodesk.AutoCAD.Runtime.Exception: eInvalidInput`, thrown from `Editor.Command` itself. This was never caught earlier because this category's test coverage was catalog/shape-level only — nothing had exercised these tools against a live drawing until now. Three independent fix attempts (passing the entity's ObjectId directly, resolving to a point on the entity's own geometry instead, and swapping the `"._-"` / `"_.-"` command-prefix character order) all reproduce the identical failure with no further diagnostic detail. Root cause is still open; see the header comment in `src/AcadMcp.Backend/Categories/Parametric/ParametricTools.cs` for what's been ruled out and what to try next. `list_constraint_entities`, `get_dynamic_block_properties`, `set_dynamic_block_property`, and `ensure_parametric_layers` are unaffected.
 
 ## Development / where to start (Cursor)
 

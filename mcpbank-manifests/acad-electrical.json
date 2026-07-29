@@ -16,6 +16,7 @@
     "coil",
     "contact",
     "device",
+    "din",
     "draw",
     "dwg",
     "electrical",
@@ -26,15 +27,22 @@
     "layers",
     "nc",
     "no",
+    "outline",
+    "panel",
     "place",
+    "rail",
     "rails",
     "resistor",
+    "route",
     "rung",
     "tag",
     "terminal",
-    "wire"
+    "wire",
+    "wireway"
   ],
   "intent_examples": [
+    "breaker outline on rail",
+    "cable duct panel layout",
     "cewka stycznika z xref",
     "closed contact",
     "co potrafi electrical",
@@ -42,30 +50,37 @@
     "contactor coil symbol",
     "control wiring",
     "create electrical schematic layer standard",
+    "device footprint panel layout",
     "device tag with prefix validation",
     "diagnostyka kategorii electrical",
+    "din rail layout",
     "draw ladder rails L1 N",
     "draw ladder rung with number",
     "draw wire junction dot",
     "draw wire signal control power",
     "electrical category metadata",
     "ensure schematic E-* layers",
+    "fizyczny obrys stycznika",
     "horizontal control wire between rails",
+    "kanal kablowy w rozdzielni",
     "kropka polaczenia przewodow",
     "ladder diagram power rails",
     "ladder rung",
     "list electrical layer key",
     "list IEC tag prefixes",
     "listwa zaciskowa numerowana",
+    "narysuj koryto kablowe",
     "narysuj przewod",
     "narysuj rung 5 schematu",
     "narysuj szyny ladder L1 N",
     "NC contact schematic symbol",
     "NO contact schematic symbol",
     "open contact",
+    "place din rail panel",
     "place IEC 81346 device tag",
     "place normally closed contact",
     "place normally open contact",
+    "place panel device outline",
     "place relay coil schematic",
     "place resistor schematic symbol",
     "place terminal block 8 way",
@@ -73,6 +88,7 @@
     "punkt polaczenia",
     "resistor symbol with terminals",
     "rezystor zigzag ANSI",
+    "route wireway trunking",
     "schematic resistor R1",
     "schematic wire between terminals",
     "schematic wire junction marker",
@@ -81,18 +97,23 @@
     "styk rozwierajacy NC",
     "styk zwierajacy NO",
     "szczebel drabiny z numerem",
+    "szyna montazowa 35mm",
     "szyny zasilajace w schemacie",
     "T joint dot",
     "tag -F1 fuse",
     "tag stycznika -K1",
     "terminal strip with numbers",
+    "top-hat rail outline",
     "vertical schematic rails",
+    "wireway channel",
     "wlacz standardowe warstwy E-* w projekcie",
     "wstaw cewke K1",
     "wstaw listwe zaciskowa 8 pin",
+    "wstaw obrys urzadzenia w rozdzielni",
     "wstaw rezystor IEC prostokat",
     "wstaw styk NC normalnie zamkniety",
     "wstaw styk NO normalnie otwarty",
+    "wstaw szyne din",
     "wstaw tag urzadzenia -K1",
     "X1-X8 terminals"
   ],
@@ -185,6 +206,25 @@
       ]
     },
     {
+      "name": "place_din_rail",
+      "description": "Draw a DIN rail (EN 50022 top-hat rail, 35 mm wide by default) as a rectangle on layer E-PANEL (default) from start, lengthMm long, at rotationDeg. Pass slotPitchMm to also draw perpendicular tick marks every slotPitchMm along the rail as a visual device-spacing reference (omit for a plain rail outline). Returns the end point so a device outline or the next rail segment can be placed flush against it.",
+      "tags": [
+        "place",
+        "din",
+        "rail"
+      ]
+    },
+    {
+      "name": "place_panel_device_outline",
+      "description": "Draw a rectangular physical device footprint (breaker, contactor, relay body, etc.) on layer E-PANEL (default) for panel-layout drawings -- the physical counterpart to the schematic symbols above (place_coil etc. draw the SCHEMATIC symbol; this draws the PHYSICAL footprint you\u0027d mount on a DIN rail). origin is the top-left corner. Pass tag to also place a device tag label centred below the outline on E-LBL-DEV.",
+      "tags": [
+        "place",
+        "panel",
+        "device",
+        "outline"
+      ]
+    },
+    {
       "name": "place_resistor",
       "description": "Place a resistor symbol at \u0060position\u0060, rotated by rotationDeg (0\u00B0 = horizontal, terminals at left/right). style=\u0027iec\u0027 (default, Polish/EU) draws a rectangle of width 4\u00D7unitSize \u00D7 height 1.5\u00D7unitSize; style=\u0027ansi\u0027 draws a zig-zag of 6 zags spanning the same width. Both styles expose two terminals named \u00271\u0027 (left / start) and \u00272\u0027 (right / end) with their EXACT coordinates so subsequent draw_wire calls snap to them (rule 39 \u00A77). Default unitSize = 5 mm (rule 39 \u00A710).",
       "tags": [
@@ -200,11 +240,19 @@
         "terminal",
         "block"
       ]
+    },
+    {
+      "name": "route_wireway",
+      "description": "Draw a wireway / trunking channel along \u0060path\u0060 on layer E-PANEL (default) as a centreline plus two parallel edge lines offset \u00B1widthMm/2 (mitred at interior vertices, same offset approach as acad-civil.draw_road_corridor / acad-architecture.draw_walls_chain). Use this for the physical cable-management channel between panel devices, distinct from the schematic wire routing of draw_wire.",
+      "tags": [
+        "route",
+        "wireway"
+      ]
     }
   ],
   "metadata": {
     "category": "electrical",
-    "tool_count_target": 12,
+    "tool_count_target": 15,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -231,6 +279,6 @@
       "Bundled blocks under blocks/electrical/ (RES_*, COIL_*, CONTACT_*, MOTOR_*, FUSE_*, LAMP_*, TRANSFORMER_*, JUNCTION_DOT, TERMINAL_BLOCK_*WAY) ship in Phase 7; v1 tools synthesise geometry inline.",
       "Wire-numbering schemes (sequential per IEC 60204 vs rung-position per JIC NFPA 79) are the agent\u0027s responsibility \u2014 the wire labels themselves are placed via acad-annotations.add_dbtext on layer E-LBL-WIRE."
     ],
-    "last_regenerated_utc": "2026-04-22T16:16:58.5948986Z"
+    "last_regenerated_utc": "2026-07-29T21:05:50.0770909Z"
   }
 }

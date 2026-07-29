@@ -462,6 +462,151 @@ public static class ElectricalTools
         return new PlaceTerminalBlockResult(slots, created);
     }
 
+    // ─────────── panel layout ───────────
+    // The three tools the header comment used to list as "ship in Phase 7":
+    // DIN rail, panel device footprints, and wireway routing -- the physical
+    // panel-layout side of a project, as opposed to the schematic side above.
+
+    [McpTool("place_din_rail",
+        "Draw a DIN rail (EN 50022 top-hat rail, 35 mm wide by default) as a rectangle on layer E-PANEL (default) from start, lengthMm long, at rotationDeg. Pass slotPitchMm to also draw perpendicular tick marks every slotPitchMm along the rail as a visual device-spacing reference (omit for a plain rail outline). Returns the end point so a device outline or the next rail segment can be placed flush against it.",
+        "electrical",
+        Intent = new[]
+        {
+            "wstaw szyne din",
+            "place din rail panel",
+            "szyna montazowa 35mm",
+            "din rail layout",
+            "top-hat rail outline"
+        },
+        RequiresPlugin = true)]
+    public static async Task<PlaceDinRailResult> PlaceDinRail(
+        IPluginGateway gw, PlaceDinRailArgs args, CancellationToken ct)
+    {
+        if (args.LengthMm <= 0)   throw new ArgumentException("lengthMm must be > 0");
+        if (args.RailWidthMm <= 0) throw new ArgumentException("railWidthMm must be > 0");
+
+        var existing = await ElectricalProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created  = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, ElectricalPalette.LayerPanel, created, ct).ConfigureAwait(false);
+
+        double rad = args.RotationDeg * Math.PI / 180.0;
+        double cosA = Math.Cos(rad), sinA = Math.Sin(rad);
+        double nx = -sinA, ny = cosA; // perpendicular (rail width direction)
+        double halfW = args.RailWidthMm / 2.0;
+
+        Point2dDto Along(double d) => new(args.Start.X + cosA * d, args.Start.Y + sinA * d);
+        Point2dDto Offset(Point2dDto p, double s) => new(p.X + nx * s, p.Y + ny * s);
+
+        var a = Along(0);
+        var b = Along(args.LengthMm);
+        var rect = new[]
+        {
+            Offset(a, -halfW), Offset(b, -halfW), Offset(b, halfW), Offset(a, halfW),
+        };
+        var outline = await ElectricalProxy.DrawPolylineAsync(gw, rect, closed: true, args.Layer, ct).ConfigureAwait(false);
+
+        var ticks = new List<EntityHandle>();
+        if (args.SlotPitchMm is > 0)
+        {
+            for (double d = args.SlotPitchMm.Value; d < args.LengthMm; d += args.SlotPitchMm.Value)
+            {
+                var p = Along(d);
+                ticks.Add(await ElectricalProxy.DrawLineAsync(
+                    gw, Offset(p, -halfW), Offset(p, halfW), args.Layer, ct).ConfigureAwait(false));
+            }
+        }
+
+        return new PlaceDinRailResult(outline, ticks, b, created);
+    }
+
+    [McpTool("place_panel_device_outline",
+        "Draw a rectangular physical device footprint (breaker, contactor, relay body, etc.) on layer E-PANEL (default) for panel-layout drawings -- the physical counterpart to the schematic symbols above (place_coil etc. draw the SCHEMATIC symbol; this draws the PHYSICAL footprint you'd mount on a DIN rail). origin is the top-left corner. Pass tag to also place a device tag label centred below the outline on E-LBL-DEV.",
+        "electrical",
+        Intent = new[]
+        {
+            "wstaw obrys urzadzenia w rozdzielni",
+            "place panel device outline",
+            "fizyczny obrys stycznika",
+            "device footprint panel layout",
+            "breaker outline on rail"
+        },
+        RequiresPlugin = true)]
+    public static async Task<PlacePanelDeviceOutlineResult> PlacePanelDeviceOutline(
+        IPluginGateway gw, PlacePanelDeviceOutlineArgs args, CancellationToken ct)
+    {
+        if (args.WidthMm <= 0)  throw new ArgumentException("widthMm must be > 0");
+        if (args.HeightMm <= 0) throw new ArgumentException("heightMm must be > 0");
+
+        var existing = await ElectricalProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created  = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, ElectricalPalette.LayerPanel, created, ct).ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(args.Tag))
+            await EnsureLayerExactAsync(gw, existing, args.TagLayer, ElectricalPalette.LayerLblDev, created, ct).ConfigureAwait(false);
+
+        var rect = new[]
+        {
+            new Point2dDto(args.Origin.X,               args.Origin.Y),
+            new Point2dDto(args.Origin.X + args.WidthMm, args.Origin.Y),
+            new Point2dDto(args.Origin.X + args.WidthMm, args.Origin.Y - args.HeightMm),
+            new Point2dDto(args.Origin.X,                args.Origin.Y - args.HeightMm),
+        };
+        var outline = await ElectricalProxy.DrawPolylineAsync(gw, rect, closed: true, args.Layer, ct).ConfigureAwait(false);
+
+        EntityHandle? tagText = null;
+        if (!string.IsNullOrEmpty(args.Tag))
+        {
+            var tagPos = new Point2dDto(args.Origin.X + args.WidthMm / 2.0, args.Origin.Y - args.HeightMm / 2.0);
+            tagText = await ElectricalProxy.AddDBTextAsync(
+                gw, tagPos, args.Tag, args.TextHeightMm, args.TagLayer, 0.0, "Middle", ct).ConfigureAwait(false);
+        }
+
+        return new PlacePanelDeviceOutlineResult(outline, tagText, created);
+    }
+
+    [McpTool("route_wireway",
+        "Draw a wireway / trunking channel along `path` on layer E-PANEL (default) as a centreline plus two parallel edge lines offset ±widthMm/2 (mitred at interior vertices, same offset approach as acad-civil.draw_road_corridor / acad-architecture.draw_walls_chain). Use this for the physical cable-management channel between panel devices, distinct from the schematic wire routing of draw_wire.",
+        "electrical",
+        Intent = new[]
+        {
+            "narysuj koryto kablowe",
+            "route wireway trunking",
+            "kanal kablowy w rozdzielni",
+            "cable duct panel layout",
+            "wireway channel"
+        },
+        RequiresPlugin = true)]
+    public static async Task<RouteWirewayResult> RouteWireway(
+        IPluginGateway gw, RouteWirewayArgs args, CancellationToken ct)
+    {
+        if (args.Path is null || args.Path.Count < 2) throw new ArgumentException("path must contain at least 2 points");
+        if (args.WidthMm <= 0) throw new ArgumentException("widthMm must be > 0");
+
+        var existing = await ElectricalProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
+        var created  = new List<string>();
+        await EnsureLayerExactAsync(gw, existing, args.Layer, ElectricalPalette.LayerPanel, created, ct).ConfigureAwait(false);
+
+        double half = args.WidthMm / 2.0;
+        var left = new Point2dDto[args.Path.Count];
+        var right = new Point2dDto[args.Path.Count];
+        for (int i = 0; i < args.Path.Count; i++)
+        {
+            var prev = args.Path[Math.Max(i - 1, 0)];
+            var next = args.Path[Math.Min(i + 1, args.Path.Count - 1)];
+            double dx = next.X - prev.X, dy = next.Y - prev.Y;
+            double len = Math.Sqrt(dx * dx + dy * dy);
+            double nx = len < 1e-9 ? 0 : -dy / len, ny = len < 1e-9 ? 0 : dx / len;
+            var p = args.Path[i];
+            left[i]  = new Point2dDto(p.X + nx * half, p.Y + ny * half);
+            right[i] = new Point2dDto(p.X - nx * half, p.Y - ny * half);
+        }
+
+        var centerline = await ElectricalProxy.DrawPolylineAsync(gw, args.Path.ToArray(), closed: false, args.Layer, ct).ConfigureAwait(false);
+        var leftEdge   = await ElectricalProxy.DrawPolylineAsync(gw, left,  closed: false, args.Layer, ct).ConfigureAwait(false);
+        var rightEdge  = await ElectricalProxy.DrawPolylineAsync(gw, right, closed: false, args.Layer, ct).ConfigureAwait(false);
+
+        return new RouteWirewayResult(centerline, leftEdge, rightEdge, args.WidthMm, created);
+    }
+
     // ─────────── device tag ───────────
 
     [McpTool("place_device_tag",

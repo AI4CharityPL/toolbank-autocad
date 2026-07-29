@@ -38,6 +38,13 @@ internal static class ParametricPluginTools
         host.Register("acad.parametric.geom_perpendicular", GeomPerpendicular);
         host.Register("acad.parametric.geom_coincident", GeomCoincident);
         host.Register("acad.parametric.geom_fix", GeomFix);
+        host.Register("acad.parametric.geom_tangent", GeomTangent);
+        host.Register("acad.parametric.geom_concentric", GeomConcentric);
+        host.Register("acad.parametric.geom_collinear", GeomCollinear);
+        host.Register("acad.parametric.geom_symmetric", GeomSymmetric);
+        host.Register("acad.parametric.geom_equal", GeomEqual);
+        host.Register("acad.parametric.dim_linear", DimLinear);
+        host.Register("acad.parametric.dim_aligned", DimAligned);
         host.Register("acad.parametric.delete_entity_constraints", DeleteEntityConstraints);
         host.Register("acad.parametric.list_constraint_entities", ListConstraintEntities);
         host.Register("acad.parametric.get_dynamic_block_properties", GetDynamicBlockProperties);
@@ -123,90 +130,135 @@ internal static class ParametricPluginTools
     }
 
     // ─────────── geometric constraints (-GEOCONSTRAINT) ───────────
+    //
+    // Verified live 2026-07-29: passing an ObjectId directly as the answer to
+    // GEOCONSTRAINT's "Select an object or [2Points]" prompt fails with
+    // eInvalidInput -- reproduced on EVERY constraint type including the
+    // pre-existing Horizontal/Vertical/Parallel/Perpendicular/Coincident/Fix
+    // ones, which had never actually been exercised against real AutoCAD
+    // before (their test coverage was catalog/shape-level only). The prompt
+    // wants a PICK POINT that resolves to an entity, not the entity's
+    // ObjectId directly, so every constraint below now resolves its handle(s)
+    // to a real point ON the entity (ResolvePointOnEntity) instead.
+
+    private static Point3d ResolvePointOnEntity(Database db, Transaction tr, string handleStr)
+    {
+        var id = AcadEnv.ResolveHandle(db, handleStr);
+        var ent = (Entity)tr.GetObject(id, OpenMode.ForRead);
+        if (ent is Curve curve)
+        {
+            try { return curve.GetPointAtParameter(curve.StartParam); }
+            catch { /* fall through to bbox-based fallback below */ }
+        }
+        var ext = ent.GeometricExtents;
+        return new Point3d((ext.MinPoint.X + ext.MaxPoint.X) / 2.0, (ext.MinPoint.Y + ext.MaxPoint.Y) / 2.0, 0);
+    }
 
     private static Task<ToolDispatchResult> GeomHorizontal(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_horizontal", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Horizontal",
-            (db, tr) =>
-            {
-                var a = Read<HandleArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.Handle);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     private static Task<ToolDispatchResult> GeomVertical(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_vertical", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Vertical",
-            (db, tr) =>
-            {
-                var a = Read<HandleArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.Handle);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     private static Task<ToolDispatchResult> GeomParallel(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_parallel", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Parallel",
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.A);
-            },
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.B);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomPerpendicular(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_perpendicular", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Perpendicular",
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.A);
-            },
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.B);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomCoincident(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_coincident", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Coincident",
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.A);
-            },
-            (db, tr) =>
-            {
-                var a = Read<TwoHandlesArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.B);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
 
     private static Task<ToolDispatchResult> GeomFix(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.geom_fix", args, ct,
-            (_, _) => "._-GEOCONSTRAINT",
+            (_, _) => "_.-GEOCONSTRAINT",
             (_, _) => "_Fix",
-            (db, tr) =>
-            {
-                var a = Read<HandleArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.Handle);
-            });
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
+
+    private static Task<ToolDispatchResult> GeomTangent(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.geom_tangent", args, ct,
+            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_Tangent",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
+
+    private static Task<ToolDispatchResult> GeomConcentric(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.geom_concentric", args, ct,
+            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_Concentric",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
+
+    private static Task<ToolDispatchResult> GeomCollinear(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.geom_collinear", args, ct,
+            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_Collinear",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
+
+    private static Task<ToolDispatchResult> GeomEqual(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.geom_equal", args, ct,
+            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_Equal",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<TwoHandlesArgDto>(args).B));
+
+    // Symmetric takes THREE entities: the two symmetric objects plus the line of symmetry.
+    private static Task<ToolDispatchResult> GeomSymmetric(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.geom_symmetric", args, ct,
+            (_, _) => "_.-GEOCONSTRAINT",
+            (_, _) => "_Symmetric",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<SymmetricArgsDto>(args).A),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<SymmetricArgsDto>(args).B),
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<SymmetricArgsDto>(args).SymmetryLine));
+
+    // ─────────── dimensional constraints (-DIMCONSTRAINT) ───────────
+    //
+    // Point-pair form only (subcommand + first extension origin + second extension
+    // origin + dimension line location) -- deliberately NOT using the "Object" pick
+    // mode, whose prompt sequence differs enough across AutoCAD versions that it
+    // would need live verification per version to trust. The point-pair form is the
+    // same shape DIMLINEAR/DIMALIGNED have always used, just with a value that
+    // drives the geometry instead of a static annotation.
+
+    private static Task<ToolDispatchResult> DimLinear(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.dim_linear", args, ct,
+            (_, _) => "_.-DIMCONSTRAINT",
+            (_, _) => "_Linear",
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).Point1),
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).Point2),
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).PlacementPoint));
+
+    private static Task<ToolDispatchResult> DimAligned(JsonObject args, CancellationToken ct) =>
+        RunEditorCommand("acad.parametric.dim_aligned", args, ct,
+            (_, _) => "_.-DIMCONSTRAINT",
+            (_, _) => "_Aligned",
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).Point1),
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).Point2),
+            (_, _) => AcadEnv.ToPoint3d(Read<DimConstraintArgsDto>(args).PlacementPoint));
 
     private static Task<ToolDispatchResult> DeleteEntityConstraints(JsonObject args, CancellationToken ct) =>
         RunEditorCommand("acad.parametric.delete_entity_constraints", args, ct,
-            (_, _) => "._-DELCONSTRAINT",
-            (db, tr) =>
-            {
-                var a = Read<HandleArgDto>(args);
-                return AcadEnv.ResolveHandle(db, a.Handle);
-            });
+            (_, _) => "_.-DELCONSTRAINT",
+            (db, tr) => ResolvePointOnEntity(db, tr, Read<HandleArgDto>(args).Handle));
 
     // ─────────── inventory ───────────
 
@@ -355,6 +407,16 @@ internal static class ParametricPluginTools
     private static bool UnitsLookAngular(DynamicBlockReferencePropertyUnitsType u) =>
         u.ToString().Contains("angl", StringComparison.OrdinalIgnoreCase);
 }
+
+internal sealed record SymmetricArgsDto(
+    [property: JsonPropertyName("a")] string A,
+    [property: JsonPropertyName("b")] string B,
+    [property: JsonPropertyName("symmetryLine")] string SymmetryLine);
+
+internal sealed record DimConstraintArgsDto(
+    [property: JsonPropertyName("point1")] Point2dDto Point1,
+    [property: JsonPropertyName("point2")] Point2dDto Point2,
+    [property: JsonPropertyName("placementPoint")] Point2dDto PlacementPoint);
 
 internal sealed record ListConstraintsArgsDto(
     [property: JsonPropertyName("layerFilter")] string? LayerFilter);

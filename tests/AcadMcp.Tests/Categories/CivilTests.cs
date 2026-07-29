@@ -1,6 +1,7 @@
-﻿// Pluginless tests for acad-civil (Phase 6.3). Asserts the source generator
-// wired the 10 expected tools and exercises the pure CivilGeometry numerics
-// (bearings, stationing, parcel closure) without touching AutoCAD.
+﻿// Pluginless tests for acad-civil (Phase 6.3, extended Phase 7.3 with spiral
+// alignments + vertical profiles). Asserts the source generator wired the 12
+// expected tools and exercises the pure CivilGeometry numerics (bearings,
+// stationing, parcel closure) without touching AutoCAD.
 
 using System.Linq;
 using AcadMcp.Backend.Categories.Civil;
@@ -17,6 +18,8 @@ public class CivilTests
         "ensure_civil_layers",
         "draw_alignment_tangent",
         "draw_alignment_curve",
+        "draw_alignment_spiral",
+        "draw_vertical_profile",
         "draw_road_corridor",
         "place_station_labels",
         "draw_parcel",
@@ -27,7 +30,7 @@ public class CivilTests
     };
 
     [Fact]
-    public void Catalog_contains_all_ten_civil_tools()
+    public void Catalog_contains_all_twelve_civil_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("civil").ToList();

@@ -190,6 +190,50 @@ public sealed record PlaceDeviceTagResult(
 
 #endregion
 
+#region panel layout
+
+public sealed record PlaceDinRailArgs(
+    [property: JsonPropertyName("start")]       Point2dDto Start,
+    [property: JsonPropertyName("lengthMm")]    double LengthMm,
+    [property: JsonPropertyName("rotationDeg")] double RotationDeg = 0.0,
+    [property: JsonPropertyName("railWidthMm")] double RailWidthMm = 35.0,  // standard EN 50022 top-hat rail width
+    [property: JsonPropertyName("slotPitchMm")] double? SlotPitchMm = null, // draw tick marks every N mm if set
+    [property: JsonPropertyName("layer")]       string Layer = ElectricalPalette.LayerPanel);
+
+public sealed record PlaceDinRailResult(
+    [property: JsonPropertyName("outline")]       EntityHandle Outline,
+    [property: JsonPropertyName("slotTicks")]     IReadOnlyList<EntityHandle> SlotTicks,
+    [property: JsonPropertyName("end")]           Point2dDto End,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
+public sealed record PlacePanelDeviceOutlineArgs(
+    [property: JsonPropertyName("origin")]      Point2dDto Origin,   // top-left corner
+    [property: JsonPropertyName("widthMm")]     double WidthMm,
+    [property: JsonPropertyName("heightMm")]    double HeightMm,
+    [property: JsonPropertyName("tag")]         string? Tag = null,
+    [property: JsonPropertyName("textHeightMm")] double TextHeightMm = 2.5,
+    [property: JsonPropertyName("layer")]       string Layer = ElectricalPalette.LayerPanel,
+    [property: JsonPropertyName("tagLayer")]    string TagLayer = ElectricalPalette.LayerLblDev);
+
+public sealed record PlacePanelDeviceOutlineResult(
+    [property: JsonPropertyName("outline")]       EntityHandle Outline,
+    [property: JsonPropertyName("tagText")]       EntityHandle? TagText,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
+public sealed record RouteWirewayArgs(
+    [property: JsonPropertyName("path")]        IReadOnlyList<Point2dDto> Path,
+    [property: JsonPropertyName("widthMm")]     double WidthMm = 40.0,
+    [property: JsonPropertyName("layer")]       string Layer = ElectricalPalette.LayerPanel);
+
+public sealed record RouteWirewayResult(
+    [property: JsonPropertyName("centerline")]    EntityHandle Centerline,
+    [property: JsonPropertyName("leftEdge")]      EntityHandle LeftEdge,
+    [property: JsonPropertyName("rightEdge")]     EntityHandle RightEdge,
+    [property: JsonPropertyName("widthMm")]       double WidthMm,
+    [property: JsonPropertyName("createdLayers")] IReadOnlyList<string> CreatedLayers);
+
+#endregion
+
 #region introspection
 
 public sealed record ElectricalHealthArgs();

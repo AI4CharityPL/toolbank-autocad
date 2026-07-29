@@ -29,10 +29,13 @@
     "north",
     "parcel",
     "place",
+    "profile",
     "road",
+    "spiral",
     "spot",
     "station",
-    "tangent"
+    "tangent",
+    "vertical"
   ],
   "intent_examples": [
     "alignment arc segment",
@@ -40,6 +43,7 @@
     "chainage labels along centerline",
     "civil category metadata",
     "civil parcel tolerances",
+    "clothoid alignment segment",
     "co potrafi civil",
     "contour line topograficzna",
     "create civil layer standard",
@@ -51,28 +55,37 @@
     "draw parcel from bearing distance legs",
     "draw road corridor edges",
     "draw road with width",
+    "draw spiral transition curve",
+    "draw vertical alignment profile",
     "ensure civil engineering layers",
     "etykiety stacjonowania",
+    "euler spiral road curve",
     "geodetic point with elevation",
     "kompas N",
     "krawedzie jezdni offset",
+    "krzywa przejsciowa drogi",
     "list civil layer key",
     "lot polygon from surveyor traverse",
     "luk poziomy drogi",
     "narysuj dzialke z bearings",
+    "narysuj klotoide",
     "narysuj korytarz drogowy",
     "narysuj luk osi drogi",
     "narysuj odcinek prostej drogi",
+    "narysuj profil podluzny drogi",
     "narysuj warstwice glowna",
+    "niweleta drogi",
     "north indicator",
     "parcel closure check",
     "place spot elevation cross \u002B text",
     "place stationing labels along road",
     "polyline dzialki geodezyjnej",
     "punkt wysokosciowy \u002B102.45",
+    "PVI vertical curve profile",
     "road centerline curve",
     "road centerline tangent",
     "road pavement edges",
+    "road profile grade line",
     "rzedna terenu",
     "setup C-* layer key",
     "spot elevation marker",
@@ -102,6 +115,15 @@
         "draw",
         "alignment",
         "curve"
+      ]
+    },
+    {
+      "name": "draw_alignment_spiral",
+      "description": "Draw a clothoid (Euler spiral) transition segment of a road horizontal alignment on layer C-ROAD-CNTR (default) -- the piece the v1 alignment tools were missing between a tangent and a circular curve. Approximated with the standard 2-term power-series clothoid expansion (drafting-grade accuracy, not survey-grade) sampled into \u0060segments\u0060 points and drawn as a polyline. startBearingDeg is the tangent direction at Start (0 = \u002BX, counter-clockwise); turnDirection picks which way it curves; endRadiusM is the circular-curve radius the spiral transitions INTO at its far end (the clothoid parameter A is derived as sqrt(endRadiusM * lengthM)). Returns the end point and end bearing so the next draw_alignment_curve call can continue tangent-to-curve without the agent doing the clothoid math itself.",
+      "tags": [
+        "draw",
+        "alignment",
+        "spiral"
       ]
     },
     {
@@ -149,6 +171,15 @@
       ]
     },
     {
+      "name": "draw_vertical_profile",
+      "description": "Draw a road vertical alignment (profile view) grade line from a list of PVI points (station, elevation, and an optional parabolic vertical-curve length centred on that PVI). Interior PVIs with a curveLengthStation get a sampled symmetric parabola instead of a sharp grade break; PVIs without one (or the first/last point) stay a straight grade line to their neighbour. Drawn as ONE polyline on C-ROAD-CNTR (default) in a local station/elevation coordinate frame: drawing X = origin.X \u002B (station - firstStation) * horizontalScale, drawing Y = origin.Y \u002B (elevation - datumElevation) * verticalScale -- pass datumElevation close to (but below) the lowest PVI so the profile doesn\u0027t end up thousands of drawing units above origin, exactly like a real profile sheet\u0027s datum line. verticalScale defaults to 10x (a common profile exaggeration) since 1:1 road grades read as nearly flat lines otherwise.",
+      "tags": [
+        "draw",
+        "vertical",
+        "profile"
+      ]
+    },
+    {
       "name": "ensure_civil_layers",
       "description": "Idempotently create the 12-layer civil-engineering key (C-ROAD-CNTR, C-ROAD-EDGE, C-ROAD-LANE, C-PROP, C-ESMT, C-ROW, C-TOPO-MAJR, C-TOPO-MINR, C-TOPO-SPOT, C-STAT, C-ANNO, C-NORTH) per rule 38 \u00A79, with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. C-ROAD-CNTR = 0.30 mm CENTER, C-ROAD-EDGE = 0.50 mm Continuous, C-PROP = 0.50 mm PHANTOM2, C-TOPO-MAJR = 0.35 mm, C-TOPO-MINR = 0.13 mm). Existing layers are left alone, never overwritten. includeRoad / includeProperty / includeTopo flags skip the corresponding sub-set so a survey-only drawing does not get road layers it never uses.",
       "tags": [
@@ -178,7 +209,7 @@
   ],
   "metadata": {
     "category": "civil",
-    "tool_count_target": 10,
+    "tool_count_target": 12,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -201,10 +232,10 @@
     "paired_validators_dir": "validators/civil/",
     "v1_limitations": [
       "Vertical alignments / profile views ship in Phase 7.",
-      "Spirals / clothoid transitions are NOT in v1 — only tangents and circular curves on horizontal alignments.",
+      "Spirals / clothoid transitions are NOT in v1 \u2014 only tangents and circular curves on horizontal alignments.",
       "draw_road_corridor mitres internal vertices using the average-normal method without acute-corner self-intersection check; this is fine for v1 alignments, sharper corners arrive with the spiral support in Phase 7.",
       "draw_north_arrow synthesises a basic triangle inline; the COMPASS variant ships with the Phase-7 block library under blocks/civil/."
     ],
-    "last_regenerated_utc": "2026-04-22T15:49:18.6866844Z"
+    "last_regenerated_utc": "2026-07-29T21:05:49.7799395Z"
   }
 }

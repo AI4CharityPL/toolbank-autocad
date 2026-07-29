@@ -1,7 +1,7 @@
 {
   "id": "acad-parametric",
   "name": "acad-parametric",
-  "description": "Parametric drafting: geometric constraints via native -GEOMCONSTRAINT (Horizontal, Vertical, Parallel, Perpendicular, Coincident, Fix), DELCONSTRAINT cleanup, inventory of constraint proxy entities in model space, and dynamic BlockReference property get/set (visibility, lookup, distance, angle) without opening the Block Editor. Ships a dedicated P-* layer key for parametric annotation hygiene. Pairs with acad-validators under validators/parametric/. Full dimensional DIMCONSTRAINT workflows and Block Editor-only geometric constraints ship in Phase 7.",
+  "description": "Parametric drafting: geometric constraints via native -GEOMCONSTRAINT (Horizontal, Vertical, Parallel, Perpendicular, Coincident, Fix), DELCONSTRAINT cleanup, inventory of constraint proxy entities in model space, and dynamic BlockReference property get/set (visibility, lookup, distance, angle) without opening the Block Editor. Ships a dedicated P-* layer key for parametric annotation hygiene. Pairs with acad-validators under validators/parametric/. Full dimensional DIMCONSTRAINT workflows and Block Editor-only geometric constraints ship in Phase 7. KNOWN DEFECT (found 2026-07-29, live-tested): every apply_geom_* and apply_dim_* constraint-application tool currently fails against real AutoCAD with eInvalidInput from Editor.Command -- root cause not yet identified after three independent fix attempts. list_constraint_entities, get/set_dynamic_block_property, and ensure_parametric_layers are unaffected. See ParametricTools.cs header comment.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-parametric.cmd",
@@ -10,25 +10,31 @@
   },
   "lazy_mode": true,
   "tags": [
+    "aligned",
     "apply",
     "autocad",
     "block",
     "cad",
     "coincident",
+    "collinear",
+    "concentric",
     "constraint",
     "constraints",
     "delete",
+    "dim",
     "dwg",
     "dynamic",
     "ensure",
     "entities",
     "entity",
+    "equal",
     "fix",
     "geom",
     "get",
     "health",
     "horizontal",
     "layers",
+    "linear",
     "list",
     "parallel",
     "parametric",
@@ -36,45 +42,70 @@
     "properties",
     "property",
     "set",
+    "symmetric",
+    "tangent",
     "vertical"
   ],
   "intent_examples": [
     "90 degree constraint two lines",
+    "aligned dimensional constraint",
     "anchor sketch fix constraint",
+    "apply aligned dimensional constraint",
     "apply coincident constraint",
+    "apply collinear constraint",
+    "apply concentric constraint",
+    "apply dimensional constraint",
+    "apply equal constraint",
     "apply horizontal constraint",
     "apply parallel constraint",
     "apply perpendicular constraint",
+    "apply symmetric constraint",
+    "apply tangent constraint",
     "apply vertical constraint",
     "co potrafi parametric",
     "coincident geom constraint",
+    "collinear geom constraint",
+    "concentric geom constraint",
     "datum fix one entity",
+    "DC aligned",
+    "DC linear",
     "DELCONSTRAINT handle",
     "delete constraints on entity",
     "dynamic block angle degrees policy",
     "ensure parametric layer key",
+    "equal geom constraint",
     "find geom constraints in drawing",
     "fix geom constraint",
     "force two lines parallel",
     "GC coincident",
+    "GC collinear",
+    "GC concentric",
+    "GC equal",
     "GC fix",
     "GC horizontal",
     "GC parallel",
     "GC perpendicular",
+    "GC symmetric",
+    "GC tangent",
     "GC vertical",
     "get BlockReference parameters",
     "horizontal geom constraint",
     "inspect dynamic block handle",
     "inventory parametric constraints",
     "jakie ma wlasciwosci dynamiczny blok",
+    "line tangent to arc",
+    "linear dimensional constraint",
     "list constraint proxies",
     "list dynamic block properties",
     "lista encji constraint",
     "make line vertical parametric",
     "merge endpoints coincident",
+    "mirror constraint about line",
     "P-SKETCH layer list",
     "parallel geom constraint",
+    "parametric aligned distance",
     "parametric category metadata",
+    "parametric distance dimension",
     "parametric drafting layers",
     "parametric MCP info",
     "perpendicular geom constraint",
@@ -82,19 +113,31 @@
     "prostopadle linie constraint",
     "read dynamic visibility distance",
     "remove geometric constraints from line",
+    "rowna dlugosc lub promien constraint",
     "rownolegle do osi X",
     "rownolegle dwie linie constraint",
+    "same center circles",
+    "same length two lines",
     "set dynamic block distance",
     "setup P-CONSTRAINED layer",
     "strip parametric constraints",
     "stworz warstwy P- parametric",
+    "styczna do okregu constraint",
+    "symetria wzgledem osi constraint",
+    "symmetric geom constraint",
+    "tangent geom constraint",
     "toggle dynamic block visibility state",
+    "two lines on same line",
     "ustaw visibility dynamic block",
     "usun constrainty z obiektu",
     "vertical geom constraint",
     "warstwy szkicu parametrycznego",
     "which constraints exist model space",
     "write BlockReference dynamic property",
+    "wspolliniowe odcinki constraint",
+    "wspolosiowe okregi constraint",
+    "wymiar parametryczny liniowy",
+    "wymiar parametryczny rownolegly",
     "wymus pionowa linie",
     "wymus pozioma linie constraint",
     "zablokuj punkt odniesienia fix",
@@ -102,8 +145,26 @@
   ],
   "tools_summary": [
     {
+      "name": "apply_dim_aligned",
+      "description": "Apply an Aligned dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT (dimension line stays parallel to the point1-point2 line, unlike apply_dim_linear which is always horizontal/vertical), with its dimension text placed at placementPoint.",
+      "tags": [
+        "apply",
+        "dim",
+        "aligned"
+      ]
+    },
+    {
+      "name": "apply_dim_linear",
+      "description": "Apply a Linear dimensional constraint between point1 and point2 via transparent -DIMCONSTRAINT, with its dimension text placed at placementPoint. Unlike geometric constraints, a dimensional constraint carries a numeric value that DRIVES the geometry -- editing it after creation moves whatever it's attached to. Point-pair form only (not the 'Object' pick mode -- see plugin source comment for why).",
+      "tags": [
+        "apply",
+        "dim",
+        "linear"
+      ]
+    },
+    {
       "name": "apply_geom_coincident",
-      "description": "Apply a Coincident geometric constraint between two picks (handles a and b) via transparent -GEOCONSTRAINT. Works best on endpoints / points the solver can merge; whole-entity picks may fail depending on AutoCAD build. If the command rejects the pick set, constrain boundary polylines instead of hatch (rule 42 \u00A78).",
+      "description": "Apply a Coincident geometric constraint between two picks (handles a and b) via transparent -GEOCONSTRAINT. Works best on endpoints / points the solver can merge; whole-entity picks may fail depending on AutoCAD build. If the command rejects the pick set, constrain boundary polylines instead of hatch (rule 42 §8).",
       "tags": [
         "apply",
         "geom",
@@ -111,8 +172,35 @@
       ]
     },
     {
+      "name": "apply_geom_collinear",
+      "description": "Apply a Collinear geometric constraint between two line-like entities (handles a and b) via transparent -GEOCONSTRAINT -- forces them onto the same infinite line.",
+      "tags": [
+        "apply",
+        "geom",
+        "collinear"
+      ]
+    },
+    {
+      "name": "apply_geom_concentric",
+      "description": "Apply a Concentric geometric constraint between two circular/arc entities (handles a and b) via transparent -GEOCONSTRAINT -- forces their centre points to coincide.",
+      "tags": [
+        "apply",
+        "geom",
+        "concentric"
+      ]
+    },
+    {
+      "name": "apply_geom_equal",
+      "description": "Apply an Equal geometric constraint between two entities of the same kind (handles a and b) via transparent -GEOCONSTRAINT -- two lines get equal length, two circles/arcs get equal radius.",
+      "tags": [
+        "apply",
+        "geom",
+        "equal"
+      ]
+    },
+    {
       "name": "apply_geom_fix",
-      "description": "Apply a Fix geometric constraint to anchor one entity (datum behaviour per rule 42 \u00A72). Call once per sketch for the construction corner \u2014 do not Fix every entity or the drawing becomes over-constrained.",
+      "description": "Apply a Fix geometric constraint to anchor one entity (datum behaviour per rule 42 §2). Call once per sketch for the construction corner — do not Fix every entity or the drawing becomes over-constrained.",
       "tags": [
         "apply",
         "geom",
@@ -121,7 +209,7 @@
     },
     {
       "name": "apply_geom_horizontal",
-      "description": "Apply a Horizontal geometric constraint to one line-like entity in the current space using AutoCAD transparent -GEOCONSTRAINT. The entity handle must reference a Line, polyline segment, or other object the solver accepts for Horizontal. Runs outside an MCP transaction \u2014 AutoCAD owns the command transaction.",
+      "description": "Apply a Horizontal geometric constraint to one line-like entity in the current space using AutoCAD transparent -GEOCONSTRAINT. The entity handle must reference a Line, polyline segment, or other object the solver accepts for Horizontal. Runs outside an MCP transaction — AutoCAD owns the command transaction.",
       "tags": [
         "apply",
         "geom",
@@ -130,7 +218,7 @@
     },
     {
       "name": "apply_geom_parallel",
-      "description": "Apply a Parallel geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Both entities must live in the same current space; mixed paper-space / block-context picks are undefined \u2014 resolve handles from the active viewport context first.",
+      "description": "Apply a Parallel geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Both entities must live in the same current space; mixed paper-space / block-context picks are undefined — resolve handles from the active viewport context first.",
       "tags": [
         "apply",
         "geom",
@@ -139,11 +227,29 @@
     },
     {
       "name": "apply_geom_perpendicular",
-      "description": "Apply a Perpendicular geometric constraint between two curves via transparent -GEOCONSTRAINT. Common pitfall: picking two lines that are already parallel to the UCS axes \u2014 the solver may report redundant constraints (rule 42 \u00A73).",
+      "description": "Apply a Perpendicular geometric constraint between two curves via transparent -GEOCONSTRAINT. Common pitfall: picking two lines that are already parallel to the UCS axes — the solver may report redundant constraints (rule 42 §3).",
       "tags": [
         "apply",
         "geom",
         "perpendicular"
+      ]
+    },
+    {
+      "name": "apply_geom_symmetric",
+      "description": "Apply a Symmetric geometric constraint making entities a and b mirror images of each other about symmetryLine, via transparent -GEOCONSTRAINT. All three handles must already exist in the current space.",
+      "tags": [
+        "apply",
+        "geom",
+        "symmetric"
+      ]
+    },
+    {
+      "name": "apply_geom_tangent",
+      "description": "Apply a Tangent geometric constraint between two curve entities (handles a and b) via transparent -GEOCONSTRAINT. Typical use: a line tangent to an arc/circle, or two arcs tangent to each other.",
+      "tags": [
+        "apply",
+        "geom",
+        "tangent"
       ]
     },
     {
@@ -157,7 +263,7 @@
     },
     {
       "name": "delete_entity_constraints",
-      "description": "Run transparent -DELCONSTRAINT on one entity handle to strip geometric/dimensional constraints attached to that object. Use before explode-freeze workflows or when rebuilding a sketch (rule 42 \u00A74 \u2014 explode orphans constraints differently).",
+      "description": "Run transparent -DELCONSTRAINT on one entity handle to strip geometric/dimensional constraints attached to that object. Use before explode-freeze workflows or when rebuilding a sketch (rule 42 §4 — explode orphans constraints differently).",
       "tags": [
         "delete",
         "entity",
@@ -166,7 +272,7 @@
     },
     {
       "name": "ensure_parametric_layers",
-      "description": "Idempotently create the 6-layer parametric sketch key (P-CONSTRUCTION, P-SKETCH, P-CONSTRAINED, P-DYNAMIC, P-PARAM-LBL, P-NOTE) per rule 42 \u00A79 with prescribed ACI colour, Continuous linetype, and lineweight. Existing layers are never overwritten.",
+      "description": "Idempotently create the 6-layer parametric sketch key (P-CONSTRUCTION, P-SKETCH, P-CONSTRAINED, P-DYNAMIC, P-PARAM-LBL, P-NOTE) per rule 42 §9 with prescribed ACI colour, Continuous linetype, and lineweight. Existing layers are never overwritten.",
       "tags": [
         "ensure",
         "parametric",
@@ -175,7 +281,7 @@
     },
     {
       "name": "get_dynamic_block_properties",
-      "description": "Read all DynamicBlockReferenceProperty entries from a BlockReference handle: names, read-only flags, UnitsType, CLR type, and current Value. isDynamicBlock=false returns an empty list \u2014 the handle is still a block insert but not dynamic. Use the reference handle, never hard-code anonymous *U block names (rule 42 \u00A76).",
+      "description": "Read all DynamicBlockReferenceProperty entries from a BlockReference handle: names, read-only flags, UnitsType, CLR type, and current Value. isDynamicBlock=false returns an empty list — the handle is still a block insert but not dynamic. Use the reference handle, never hard-code anonymous *U block names (rule 42 §6).",
       "tags": [
         "get",
         "dynamic",
@@ -185,7 +291,7 @@
     },
     {
       "name": "list_constraint_entities",
-      "description": "Scan model space for database objects whose runtime class name contains \u0027Constraint\u0027 (constraint proxy / glyph entities). Optional layerFilter narrows results. Read-only with respect to geometry \u2014 still requires the plugin for DB access.",
+      "description": "Scan model space for database objects whose runtime class name contains 'Constraint' (constraint proxy / glyph entities). Optional layerFilter narrows results. Read-only with respect to geometry — still requires the plugin for DB access.",
       "tags": [
         "list",
         "constraint",
@@ -213,7 +319,7 @@
   ],
   "metadata": {
     "category": "parametric",
-    "tool_count_target": 12,
+    "tool_count_target": 19,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -239,6 +345,6 @@
       "list_constraint_entities scans model space only (not every layout) and matches class names containing 'Constraint' — not a full associative-graph export.",
       "Dynamic-block angle inputs are JSON numbers in degrees at the MCP boundary; the plugin converts to radians when UnitsType looks angular (substring 'angl')."
     ],
-    "last_regenerated_utc": "2026-04-22T16:32:06.4918489Z"
+    "last_regenerated_utc": "2026-07-29T21:05:50.3357653Z"
   }
 }

@@ -68,9 +68,80 @@ pwsh scripts/register-mcps.ps1
 # 5. Inject ONLY acad-router into Cursor (MCP Nexus is assumed already configured)
 pwsh scripts/install-cursor-config.ps1
 
-# 6. In AutoCAD: NETLOAD -> point to src/AcadMcp.Plugin/bin/Release/<tfm>/AcadMcp.Plugin.dll
-#    Or: pwsh scripts/install-plugin.ps1   (adds it to the APPLOAD startup suite)
+# 6. Install the plugin into AutoCAD -- see "Installing into AutoCAD 2025" below
+pwsh scripts/install-plugin.ps1
 ```
+
+## Installing into AutoCAD 2025
+
+This is the part that actually gets the plugin running inside AutoCAD. The steps below are the ones verified live on AutoCAD 2025 (see [Verified](#verified)) — not just what the scripts claim to do.
+
+### Prerequisites
+
+- AutoCAD 2025 installed (`SeriesMin="R25"` in the plugin manifest — this targets 2025 and later; run `pwsh scripts/detect-autocad.ps1` to confirm your install is detected).
+- .NET SDK 8.0 or later (`dotnet --version`).
+
+### 1. Build the plugin
+
+```powershell
+dotnet build src/AcadMcp.sln -c Release
+```
+
+This produces `src/AcadMcp.Plugin/bin/Release/net8.0-windows/AcadMcp.Plugin.dll`.
+
+### 2. Install as an auto-loading bundle (recommended)
+
+```powershell
+pwsh scripts/install-plugin.ps1
+```
+
+This copies the built plugin DLL (and its dependencies) into `%APPDATA%\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents\` and writes a `PackageContents.xml` with `LoadOnAutoCADStartup="True"`. AutoCAD reads this location on every launch — no manual `NETLOAD` needed from here on.
+
+If a bundle is already installed, add `-Force` to overwrite it:
+
+```powershell
+pwsh scripts/install-plugin.ps1 -Force
+```
+
+Prefer to load it once per drawing instead of on every AutoCAD startup? Use `-Mode Acaddoc` instead — it patches `acaddoc.lsp` to `NETLOAD` the plugin whenever a drawing is opened.
+
+### 3. Start (or restart) AutoCAD 2025
+
+The bundle only takes effect on the next AutoCAD launch. If AutoCAD is already running, restart it once after installing.
+
+### 4. Verify it's actually loaded
+
+Inside AutoCAD, type at the command line:
+
+```
+ACADMCP_PING
+```
+Expected: `AcadMcp pong`.
+
+```
+ACADMCP_STATUS
+```
+Expected: pipe state, uptime, and the count of registered tools.
+
+From outside AutoCAD, in a separate terminal, you can verify the same thing without touching the AutoCAD UI at all — this is exactly how the live checks in [Verified](#verified) were run:
+
+```powershell
+src\AcadMcp.Backend\bin\Release\net8.0\AcadMcp.Backend.exe --category router --ping-plugin
+```
+
+Or drive it through the actual MCP protocol (`acad_status` is one of `acad-router`'s meta-tools) — send `initialize` then `tools/call acad_status` over stdio to the same executable with `--category router`. A real response looks like:
+
+```json
+{"alive": true, "acadProductName": "AutoCAD", "acadVersion": "25.0.0.0", "documentName": "Drawing1.dwg", ...}
+```
+
+### Uninstalling
+
+```powershell
+pwsh scripts/install-plugin.ps1 -Uninstall
+```
+
+Removes the bundle directory and cleans up any `acaddoc.lsp` snippet it added.
 
 ## Status
 

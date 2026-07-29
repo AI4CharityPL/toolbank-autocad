@@ -250,9 +250,9 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Authors
 
-- **Krzysztof Augiewicz** — Lead Architect & Creator
-- **Kacper Pisarczyk** — Core Contributor
-- **Sebastian Pawłowski** — Advisory & QA Support (testing, hardware/software provisioning)
+- **Krzysztof Augiewicz** — Lead Architect & Creator — [LinkedIn](https://www.linkedin.com/in/krzysztof-a-97a170185/) · [GitHub](https://github.com/KrzysztofAugiewicz)
+- **Kacper Pisarczyk** — Core Contributor — [LinkedIn](https://www.linkedin.com/in/kacper-pisarczyk-b165311aa/)
+- **Sebastian Pawłowski** — Advisory & QA Support (testing, hardware/software provisioning) — [LinkedIn](https://www.linkedin.com/in/sebastianpawlowski/)
 
 Full details in [AUTHORS.md](AUTHORS.md).
 

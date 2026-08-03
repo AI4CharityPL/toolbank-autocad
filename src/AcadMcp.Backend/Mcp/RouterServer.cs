@@ -396,24 +396,9 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
             }
             if (includeSchema)
             {
-                var props = new JsonObject();
-                var required = new JsonArray();
-                foreach (var p in t.Parameters)
-                {
-                    props[p.JsonName] = new JsonObject
-                    {
-                        ["type"] = ClrToJsonType(p.ClrType),
-                        ["description"] = p.Description ?? "",
-                    };
-                    if (p.Required) required.Add((JsonNode?)JsonValue.Create(p.JsonName));
-                }
-                node["inputSchema"] = new JsonObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = props,
-                    ["required"] = required,
-                    ["additionalProperties"] = false,
-                };
+                // Same builder as CategoryServer's tools/list. These two used to construct
+                // the schema independently, which is how they could have drifted apart.
+                node["inputSchema"] = JsonSchemaBuilder.BuildToolSchema(t);
             }
             arr.Add(node);
         }

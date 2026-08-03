@@ -148,35 +148,5 @@ public sealed class CategoryServer : ICategoryServer, IJsonRpcDispatcher
         return sb.ToString();
     }
 
-    private static JsonObject BuildInputSchema(McpToolMetadata t)
-    {
-        var props = new JsonObject();
-        var required = new JsonArray();
-        foreach (var p in t.Parameters)
-        {
-            props[p.JsonName] = new JsonObject
-            {
-                ["type"] = MapClrTypeToJson(p.ClrType),
-                ["description"] = p.Description ?? "",
-            };
-            if (p.Required) required.Add(p.JsonName);
-        }
-        return new JsonObject
-        {
-            ["type"] = "object",
-            ["properties"] = props,
-            ["required"] = required,
-            ["additionalProperties"] = false,
-        };
-    }
-
-    private static string MapClrTypeToJson(Type t) => t switch
-    {
-        _ when t == typeof(string) => "string",
-        _ when t == typeof(int) || t == typeof(long) => "integer",
-        _ when t == typeof(double) || t == typeof(float) || t == typeof(decimal) => "number",
-        _ when t == typeof(bool) => "boolean",
-        _ when t.IsArray => "array",
-        _ => "object",
-    };
+    private static JsonObject BuildInputSchema(McpToolMetadata t) => JsonSchemaBuilder.BuildToolSchema(t);
 }

@@ -223,26 +223,53 @@ internal static class LayoutsPluginTools
             var lm = LayoutManager.Current;
             if (!lm.LayoutExists(a.LayoutName)) throw new ArgumentException($"Layout '{a.LayoutName}' does not exist.");
 
-            var layout = (Layout)tr.GetObject(lm.GetLayoutId(a.LayoutName), OpenMode.ForRead);
-            var paper  = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForWrite);
+            // Viewport.On can only be set while its own layout is the current one - otherwise
+            // AutoCAD throws eNotInPaperspace, which is what this did on every call made from
+            // model space (i.e. the normal case: draw in model, then lay out sheets). The tool
+            // is given a layoutName, so it switches there itself and puts the user back.
+            var previousLayout = lm.CurrentLayout;
+            bool switched = !string.Equals(previousLayout, a.LayoutName, StringComparison.OrdinalIgnoreCase);
+            if (switched) lm.CurrentLayout = a.LayoutName;
 
-            var vp = new Viewport
+            try
             {
-                CenterPoint = AcadEnv.ToPoint3d(a.Center),
-                Width       = a.Width,
-                Height      = a.Height,
-            };
-            if (!string.IsNullOrWhiteSpace(a.Layer))
-                vp.LayerId = AcadEnv.EnsureLayer(db, tr, a.Layer);
-            if (a.Scale > 0)
-            {
-                vp.CustomScale = a.Scale;
+                var layout = (Layout)tr.GetObject(lm.GetLayoutId(a.LayoutName), OpenMode.ForRead);
+                var paper  = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForWrite);
+
+                var vp = new Viewport
+                {
+                    CenterPoint = AcadEnv.ToPoint3d(a.Center),
+                    Width       = a.Width,
+                    Height      = a.Height,
+                };
+                if (!string.IsNullOrWhiteSpace(a.Layer))
+                    vp.LayerId = AcadEnv.EnsureLayer(db, tr, a.Layer);
+                if (a.Scale > 0)
+                {
+                    vp.CustomScale = a.Scale;
+                }
+                paper.AppendEntity(vp);
+                tr.AddNewlyCreatedDBObject(vp, true);
+
+                // Still guarded: a viewport that exists but is off is far better than losing
+                // the whole call, and the caller can turn it on later.
+                try { vp.On = true; }
+                catch (Exception ex)
+                {
+                    Logging.Log.Warn($"create_viewport: could not switch viewport on ({ex.Message}); " +
+                                     "it was created in the off state.");
+                }
+
+                return Wrap(new { entity = AcadEnv.ToHandle(vp), layout = a.LayoutName });
             }
-            paper.AppendEntity(vp);
-            tr.AddNewlyCreatedDBObject(vp, true);
-            vp.On = true;
-
-            return Wrap(new { entity = AcadEnv.ToHandle(vp) });
+            finally
+            {
+                if (switched)
+                {
+                    try { lm.CurrentLayout = previousLayout; }
+                    catch (Exception ex) { Logging.Log.Warn($"create_viewport: could not restore layout '{previousLayout}': {ex.Message}"); }
+                }
+            }
         });
 
     private static Task<ToolDispatchResult> SetViewportScale(JsonObject args, CancellationToken ct) =>

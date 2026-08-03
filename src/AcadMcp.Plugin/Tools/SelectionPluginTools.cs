@@ -105,8 +105,15 @@ internal static class SelectionPluginTools
     private static bool MatchColor(Entity e, ColorDto c, bool matchAci)
     {
         var col = e.Color;
-        if (matchAci && c.AciIndex.HasValue && col.IsByAci)
-            return col.ColorIndex == c.AciIndex.Value;
+
+        // An ACI request must be answered on ACI terms only. This used to fall through to the
+        // RGB comparison whenever the entity was not ByAci - and since a caller asking by ACI
+        // supplies no r/g/b, those default to 0,0,0, which is exactly what every ByLayer
+        // entity reports. The filter matched the entire drawing: asking for ACI 4 on a
+        // drawing of 8 objects returned all 8, of which 3 were actually that colour.
+        if (matchAci && c.AciIndex.HasValue)
+            return col.IsByAci && col.ColorIndex == c.AciIndex.Value;
+
         return col.Red == (byte)c.R && col.Green == (byte)c.G && col.Blue == (byte)c.B;
     }
 

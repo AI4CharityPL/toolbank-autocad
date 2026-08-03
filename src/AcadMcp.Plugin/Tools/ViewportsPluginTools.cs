@@ -301,7 +301,12 @@ internal static class ViewportsPluginTools
             var btr = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForRead);
             foreach (ObjectId id in btr)
             {
-                if (tr.GetObject(id, OpenMode.ForRead) is Viewport vp && vp.Number != 1)
+                // Not filtered on Number: it is unassigned (1 or -1) until AutoCAD activates
+                // the layout, so filtering on it hides every viewport an agent just created -
+                // the same unreliable signal that had to come out of OpenVp. The layout's own
+                // pseudo-viewport is instead identified structurally: it is the first Viewport
+                // in the block table record and the only one with no width.
+                if (tr.GetObject(id, OpenMode.ForRead) is Viewport vp && vp.Width > 0)
                     yield return vp;
             }
         }

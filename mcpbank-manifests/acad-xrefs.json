@@ -1,0 +1,382 @@
+{
+  "id": "acad-xrefs",
+  "name": "acad-xrefs",
+  "description": "Attach, manage, clip and bind external references (XREFs): the mechanism every multi-file project is built on. Covers attach/overlay, reload/unload, bind and insert-bind, path repair, rectangular/polygonal/object clipping, nested xref inspection and per-xref layer overrides.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-xrefs.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "all",
+    "attach",
+    "autocad",
+    "bind",
+    "cad",
+    "clip",
+    "delete",
+    "dependent",
+    "detach",
+    "display",
+    "dwg",
+    "find",
+    "get",
+    "info",
+    "invert",
+    "layer",
+    "list",
+    "missing",
+    "nested",
+    "overlay",
+    "override",
+    "overrides",
+    "path",
+    "polygonal",
+    "rect",
+    "reload",
+    "repath",
+    "reset",
+    "set",
+    "symbols",
+    "unload",
+    "xref",
+    "xrefs"
+  ],
+  "intent_examples": [
+    "attach as overlay",
+    "attach external reference",
+    "attach xref",
+    "bind xref",
+    "broken external references",
+    "bulk fix xref paths",
+    "change xref layer colour",
+    "clear reference layer overrides",
+    "clip xref polygon",
+    "clip xref rectangle",
+    "cofnij wyszarzenie",
+    "convert xref to block",
+    "crop external reference",
+    "crop reference to shape",
+    "delete xref clip",
+    "describe external reference",
+    "detach xref",
+    "dolacz plik dwg jako referencje",
+    "dolacz xref jako overlay",
+    "find missing xrefs",
+    "flip clip boundary",
+    "gdzie jest wstawiony ten xref",
+    "get rid of xref",
+    "get xref details",
+    "grey out reference layer",
+    "hide clipping frame",
+    "informacje o referencji",
+    "invert xref clip",
+    "jakie podklady sa dolaczone",
+    "jakie style przychodza z referencji",
+    "ktore referencje sa nierozwiazane",
+    "limit xref to window",
+    "list external references",
+    "list nested xrefs",
+    "list xref dependent symbols",
+    "make xref permanent",
+    "move xref folder",
+    "nadpisz warstwe z xrefa",
+    "napraw sciezke referencji",
+    "napraw wszystkie sciezki xrefow",
+    "obetnij referencje do obszaru",
+    "obetnij referencje po obrysie",
+    "odblokuj caly podklad",
+    "odlacz xref",
+    "odswiez referencje",
+    "odswiez wszystkie referencje",
+    "odwroc obszar podkladu",
+    "odwroc przyciecie xrefa",
+    "ogranicz widoczny fragment podkladu",
+    "overlay external reference",
+    "override xref layer",
+    "podlacz jako nakladka",
+    "podlacz rysunek jako xref",
+    "podmien prefiks sciezek podkladow",
+    "point xref at another file",
+    "pokaz caly xref",
+    "pokaz ramke przyciecia",
+    "pokaz referencje w referencjach",
+    "pokaz referencje zewnetrzne",
+    "pokaz szczegoly xrefa",
+    "polygonal xref clip",
+    "przekieruj podklad",
+    "przeladuj wszystkie xrefy",
+    "przeladuj xref",
+    "przytnij podklad do konturu",
+    "przytnij xref prostokatem",
+    "przytnij xref wielokatem",
+    "przywroc oryginalne wlasciwosci podkladu",
+    "pull latest xref changes",
+    "reference another drawing",
+    "reference without propagating",
+    "refresh every external reference",
+    "refresh external reference",
+    "reload all xrefs",
+    "reload xref",
+    "remove clip boundary",
+    "remove external reference",
+    "repath all xrefs",
+    "repath external reference",
+    "reset xref layer overrides",
+    "restore xref layer properties",
+    "scal podklad z rysunkiem",
+    "set xref clip frame visibility",
+    "set xref path",
+    "show all references",
+    "show clip boundary",
+    "show nested external references",
+    "show outside instead of inside",
+    "show whole reference",
+    "skasuj podklad",
+    "stop loading xref",
+    "symbole zalezne od xrefa",
+    "temporarily hide external reference",
+    "ukryj obrys obciecia xrefa",
+    "ukryj referencje bez usuwania",
+    "unload xref",
+    "update all references",
+    "usun nadpisania warstw xrefa",
+    "usun przyciecie xrefa",
+    "usun referencje zewnetrzna",
+    "wbuduj referencje w rysunek",
+    "what layers does this xref bring",
+    "what xrefs are in this drawing",
+    "which xrefs are not found",
+    "which xrefs come from other xrefs",
+    "widocznosc ramki podkladu",
+    "wstaw podklad z innego pliku",
+    "wylacz podklad",
+    "wyladuj xref",
+    "wylistuj warstwy z xrefa",
+    "wylistuj xrefy",
+    "wylistuj zagniezdzone xrefy",
+    "wyszarz podklad",
+    "xref info",
+    "xref nakladkowy",
+    "xref symbol table entries",
+    "xrefy posrednie",
+    "zaktualizuj podklad",
+    "zaktualizuj wszystkie podklady",
+    "zamien wnetrze z zewnetrzem obciecia",
+    "zepsute sciezki podkladow",
+    "zmien katalog referencji hurtowo",
+    "zmien kolor warstwy referencji",
+    "zmien sciezke xrefa",
+    "znajdz brakujace xrefy",
+    "zwiaz xref na stale"
+  ],
+  "tools_summary": [
+    {
+      "name": "attach_xref",
+      "description": "Attach an external drawing as an XREF (attachment). Attachments are carried into any drawing that in turn references this one - use attach_xref_overlay when you do not want that. Block name defaults to the file name; insertion, scale and rotation default to origin/1/0.",
+      "tags": [
+        "attach",
+        "xref"
+      ]
+    },
+    {
+      "name": "attach_xref_overlay",
+      "description": "Attach an external drawing as an OVERLAY. Overlays are NOT carried through when this drawing is itself referenced elsewhere, which is what stops circular and duplicated references in a multi-discipline set. Prefer this for cross-discipline backgrounds.",
+      "tags": [
+        "attach",
+        "xref",
+        "overlay"
+      ]
+    },
+    {
+      "name": "bind_xref",
+      "description": "Bind an XREF into this drawing, making it a permanent local block. Default (bind mode) renames dependent symbols to blockName$0$LAYER; insertMode=true merges them into existing local symbols instead, which is usually what you want for issue-ready files but can collide with local names.",
+      "tags": [
+        "bind",
+        "xref"
+      ]
+    },
+    {
+      "name": "clip_xref_polygonal",
+      "description": "Clip one XREF insert to an arbitrary closed polygon given as an ordered vertex list in WCS. Needs at least 3 vertices; the polygon is closed automatically.",
+      "tags": [
+        "clip",
+        "xref",
+        "polygonal"
+      ]
+    },
+    {
+      "name": "clip_xref_rect",
+      "description": "Clip one XREF insert to a rectangle given by two opposite corners in WCS. inverted=true hides what is inside the rectangle instead of outside. Clipping is per-insert, so pass a handle from get_xref_info, not a block name.",
+      "tags": [
+        "clip",
+        "xref",
+        "rect"
+      ]
+    },
+    {
+      "name": "delete_xref_clip",
+      "description": "Remove the clip boundary from an XREF insert so the whole reference displays again. Succeeds quietly when there was no clip.",
+      "tags": [
+        "delete",
+        "xref",
+        "clip"
+      ]
+    },
+    {
+      "name": "detach_xref",
+      "description": "Detach an XREF completely: removes the definition and every insert of it. Fails if the xref is nested under another reference - detach the parent instead.",
+      "tags": [
+        "detach",
+        "xref"
+      ]
+    },
+    {
+      "name": "find_missing_xrefs",
+      "description": "List every XREF whose file cannot be resolved at its saved path. Read-only; pair with set_xref_path or repath_all_xrefs to fix them.",
+      "tags": [
+        "find",
+        "missing",
+        "xrefs"
+      ]
+    },
+    {
+      "name": "get_xref_info",
+      "description": "Full descriptor of one XREF by block name, plus the handles of every BlockReference insert of it. Use the returned handles for clipping, which is per-insert.",
+      "tags": [
+        "get",
+        "xref",
+        "info"
+      ]
+    },
+    {
+      "name": "invert_xref_clip",
+      "description": "Flip an existing clip boundary inside-out: what was hidden becomes visible and the reverse. Errors if the insert has no clip.",
+      "tags": [
+        "invert",
+        "xref",
+        "clip"
+      ]
+    },
+    {
+      "name": "list_nested_xrefs",
+      "description": "List XREFs that are referenced by another XREF rather than directly by this drawing, with their parent. Nested references cannot be detached or repathed here - do that in the parent drawing.",
+      "tags": [
+        "list",
+        "nested",
+        "xrefs"
+      ]
+    },
+    {
+      "name": "list_xref_dependent_symbols",
+      "description": "List the layers, linetypes, text styles, dimension styles and blocks that arrive in this drawing through one XREF. These are the names that get renamed on bind - check here before binding to predict collisions.",
+      "tags": [
+        "list",
+        "xref",
+        "dependent",
+        "symbols"
+      ]
+    },
+    {
+      "name": "list_xrefs",
+      "description": "List every XREF in the drawing with its path, resolution status, overlay/attachment kind, nesting and insert count. Read-only. This is the tool to call first when a drawing does not look right.",
+      "tags": [
+        "list",
+        "xrefs"
+      ]
+    },
+    {
+      "name": "reload_all_xrefs",
+      "description": "Reload every resolved XREF in the drawing. Reports per-xref status so partial failures are visible.",
+      "tags": [
+        "reload",
+        "all",
+        "xrefs"
+      ]
+    },
+    {
+      "name": "reload_xref",
+      "description": "Reload one XREF from disk, picking up changes another author has saved. Returns the resolved status so a failure to find the file is visible rather than silent.",
+      "tags": [
+        "reload",
+        "xref"
+      ]
+    },
+    {
+      "name": "repath_all_xrefs",
+      "description": "Bulk path repair: replace oldPrefix with newPrefix in every XREF path. dryRun=true reports what would change, including whether each new path actually resolves, without writing anything. Run the dry run first.",
+      "tags": [
+        "repath",
+        "all",
+        "xrefs"
+      ]
+    },
+    {
+      "name": "reset_xref_layer_overrides",
+      "description": "Drop layer overrides for one XREF, returning its layers to the properties defined in the source drawing. Pass a layer name to reset just that one, or omit it to reset all of them.",
+      "tags": [
+        "reset",
+        "xref",
+        "layer",
+        "overrides"
+      ]
+    },
+    {
+      "name": "set_xref_clip_display",
+      "description": "Show or hide the clip boundary frame itself, without changing what the clip hides. Frames are useful while laying out and wrong on an issued sheet.",
+      "tags": [
+        "set",
+        "xref",
+        "clip",
+        "display"
+      ]
+    },
+    {
+      "name": "set_xref_layer_override",
+      "description": "Override colour, linetype, lineweight, on/off or frozen state for one layer coming from an XREF, without touching the source drawing. This is how a background reference is greyed back on a plan.",
+      "tags": [
+        "set",
+        "xref",
+        "layer",
+        "override"
+      ]
+    },
+    {
+      "name": "set_xref_path",
+      "description": "Point one XREF at a different file. relativePath=true stores it relative to this drawing, which is what survives moving the project folder. Reloads by default so the result is immediately verifiable.",
+      "tags": [
+        "set",
+        "xref",
+        "path"
+      ]
+    },
+    {
+      "name": "unload_xref",
+      "description": "Unload an XREF: its geometry stops displaying and stops loading, but the definition and inserts stay so it can be reloaded later. Use this rather than detach for temporarily hiding a heavy reference.",
+      "tags": [
+        "unload",
+        "xref"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "xrefs",
+    "tool_count_target": 21,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-03T21:43:24.4029908Z"
+  }
+}

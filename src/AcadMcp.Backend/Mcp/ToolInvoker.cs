@@ -113,6 +113,37 @@ internal static class ToolInvoker
             logger.LogWarning("Vision sidecar HTTP {Code} for '{Name}': {Msg}", vtx.StatusCode, meta.Name, vtx.Message);
             return new InvokeResult(vtx.Message, IsError: true);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            logger.LogWarning("Tool '{Name}' was cancelled", meta.Name);
+            return new InvokeResult($"Tool '{meta.Name}' was cancelled.", IsError: true);
+        }
+        catch (Exception ex)
+        {
+            // Catch-all, and it has to be here. Everything above catches a SPECIFIC type, so
+            // any exception not on that list escaped this method, unwound through
+            // CategoryServer.HandleToolsCallAsync and StdioJsonRpcHost.RunAsync, and killed
+            // the process - the client got no JSON-RPC response at all and lost the whole
+            // session, not just the call.
+            //
+            // Note TargetInvocationException above does NOT cover this: it only wraps throws
+            // from the synchronous part of MethodInfo.Invoke. An async tool that throws after
+            // its first await surfaces the original exception type at `await task`, so a plain
+            // InvalidOperationException walked straight past every clause.
+            //
+            // Found live: validators/list_violations and validators/auto_fix_violations both
+            // throw InvalidOperationException with a genuinely useful message ("call
+            // validate_drawing first"). That message never reached anyone; the server just
+            // died with exit code 1.
+            //
+            // FullToolAuditTests' own header states the invariant this restores: "No tool
+            // throws an uncaught exception (ToolInvoker is expected to catch and surface every
+            // failure as InvokeResult.IsError)". It could not detect the breach because it
+            // calls every tool with EMPTY arguments, and these two fail on session state
+            // rather than on arguments.
+            logger.LogError(ex, "Tool '{Name}' threw an unhandled {Type}", meta.Name, ex.GetType().Name);
+            return new InvokeResult(FormatToolError(ex), IsError: true);
+        }
     }
 
     private static string FormatToolError(Exception ex) => ex switch

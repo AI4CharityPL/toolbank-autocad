@@ -1,0 +1,53 @@
+# Normalise line endings in the repository, leave working copies native.
+# Deliberately not forcing eol=lf globally: this is a Windows-first project and
+# renormalising every file would produce a diff touching the whole tree.
+* text=auto
+
+# Windows batch launchers. CMD.EXE mis-parses labels and goto targets in files
+# with LF endings, so these must stay CRLF on disk no matter the platform.
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# Visual Studio writes these with CRLF and rewrites them if it finds otherwise.
+*.sln    text eol=crlf
+
+# Keep LF for everything that crosses platforms or is consumed by tooling.
+*.cs     text eol=lf
+*.py     text eol=lf
+*.ps1    text eol=lf
+*.psm1   text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.toml   text eol=lf
+*.xml    text eol=lf
+*.csproj text eol=lf
+*.props  text eol=lf
+*.lsp    text eol=lf
+*.scr    text eol=lf
+
+# Inno Setup reads its own scripts as ANSI/CRLF.
+*.iss    text eol=crlf
+
+# Binary assets. Marking these explicitly stops Git from attempting line-ending
+# conversion (which corrupts DWGs) and keeps them out of grep/diff output.
+*.dwg    binary
+*.dxf    binary
+*.pdf    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.ico    binary
+*.pt     binary
+*.onnx   binary
+*.bin    binary
+
+# Sample drawings and generated reports are project material, not source. Collapse
+# them in PR diffs so review focuses on code.
+assets/**        linguist-documentation
+docs/reports/**  linguist-documentation
+
+# Report the repository as what it mostly is. Without this, the 15 MB of sample
+# drawings and the generated tool reference skew GitHub's language stats.
+docs/TOOLS-REFERENCE.md linguist-generated

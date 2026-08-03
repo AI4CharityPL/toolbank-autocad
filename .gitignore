@@ -66,6 +66,10 @@ docs/tools/_generated/
 *.local.json
 # Per-machine MCP client config: contains absolute paths to this checkout's build output.
 .mcp.json
+# Output of scripts/detect-autocad.ps1 - records THIS machine's AutoCAD install.
+# Nothing reads it back; committing it just ships one developer's install layout
+# to everyone who clones.
+scripts/.autocad-detection.json
 .env
 .env.*
 !.env.example

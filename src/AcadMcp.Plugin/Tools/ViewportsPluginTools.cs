@@ -69,11 +69,12 @@ internal static class ViewportsPluginTools
             throw new ArgumentException(
                 $"Handle {handle} is a {ent.GetRXClass().Name}, not a Viewport. " +
                 "Use list_viewports to get a viewport handle.");
-        // Viewport number 1 is the paper-space "sheet" pseudo-viewport, not a window.
-        if (vp.Number == 1 || vp.Number < 0)
-            throw new ArgumentException(
-                $"Handle {handle} is the layout's own paper-space viewport (number 1), not a " +
-                "drawing window. It cannot be scaled, locked or layer-overridden.");
+        // No Number-based guard here, deliberately. Viewport.Number is assigned when AutoCAD
+        // activates and regenerates a layout, so a viewport that was just created reads 1 or
+        // -1 until then - exactly like the layout's own paper-space pseudo-viewport. Using it
+        // to tell the two apart rejected every freshly created viewport, which is to say every
+        // viewport an agent makes. Number is reported in the info payload so a caller can see
+        // it; it is not used to refuse work.
         return vp;
     }
 

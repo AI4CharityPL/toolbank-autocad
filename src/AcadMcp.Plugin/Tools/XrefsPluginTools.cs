@@ -82,6 +82,41 @@ internal static class XrefsPluginTools
         Func<Document, Database, Transaction, JsonObject> work)
         => PluginToolRunner.RunWriteAsync(key, ct, work);
 
+    /// <summary>
+    /// For operations that MUST NOT run inside a caller-owned transaction: DetachXref and
+    /// BindXrefs rewrite the symbol tables wholesale.
+    ///
+    /// The first version of detach/bind called tr.Commit() from inside the Run delegate and
+    /// then invoked them - which crashed AutoCAD outright ("Pipe is broken", plugin gone).
+    /// Committing a transaction the runner still owns and then mutating the symbol tables it
+    /// was scoped to is not survivable. Any lookup here opens and disposes its own short
+    /// transaction first, then the operation runs with none open.
+    /// </summary>
+    private static async Task<ToolDispatchResult> RunNoTransaction(string key, CancellationToken ct,
+        Func<Document, Database, JsonObject> work)
+    {
+        try
+        {
+            var doc = Application.DocumentManager.MdiActiveDocument
+                      ?? throw new InvalidOperationException("No active document open in AutoCAD.");
+            using var docLock = doc.LockDocument();
+            var json = await UiThreadDispatcher.Run(() => work(doc, doc.Database), ct).ConfigureAwait(false);
+            return new ToolDispatchResult(true, json, null);
+        }
+        catch (Exception ex) { return AcadErrorMapper.Fail(key, ex); }
+    }
+
+    /// <summary>Resolve an xref block name to its BTR id in a short, self-contained transaction.</summary>
+    private static (ObjectId Id, bool Nested) LookupXrefId(Database db, string blockName)
+    {
+        using var tr = db.TransactionManager.StartTransaction();
+        var btr = FindXrefBtr(db, tr, blockName, OpenMode.ForRead);
+        var id = btr.ObjectId;
+        var nested = TryNode(db, btr)?.IsNested == true;
+        tr.Commit();
+        return (id, nested);
+    }
+
     // ─────────── helpers ───────────
 
     /// <summary>Locate an xref definition by block name, or throw with the names that do exist.</summary>
@@ -264,18 +299,14 @@ internal static class XrefsPluginTools
         });
 
     private static Task<ToolDispatchResult> DetachXref(JsonObject args, CancellationToken ct) =>
-        Run("acad.xrefs.detach_xref", args, ct, (doc, db, tr) =>
+        RunNoTransaction("acad.xrefs.detach_xref", ct, (doc, db) =>
         {
             var a = Read<XrefRefArgsDto>(args);
-            var btr = FindXrefBtr(db, tr, a.BlockName, OpenMode.ForRead);
-            var node = TryNode(db, btr);
-            if (node?.IsNested == true)
+            var (id, nested) = LookupXrefId(db, a.BlockName);
+            if (nested)
                 throw new ArgumentException(
                     $"'{a.BlockName}' is nested under another reference and cannot be detached here. " +
                     "Detach it in the parent drawing instead.");
-
-            var id = btr.ObjectId;
-            tr.Commit();                 // DetachXref works outside the open transaction
             db.DetachXref(id);
             return Wrap(new { affected = 1, blockName = a.BlockName });
         });
@@ -323,18 +354,13 @@ internal static class XrefsPluginTools
         });
 
     private static Task<ToolDispatchResult> BindXref(JsonObject args, CancellationToken ct) =>
-        Run("acad.xrefs.bind_xref", args, ct, (doc, db, tr) =>
+        RunNoTransaction("acad.xrefs.bind_xref", ct, (doc, db) =>
         {
             var a = Read<XrefBindArgsDto>(args);
-            var btr = FindXrefBtr(db, tr, a.BlockName, OpenMode.ForRead);
-            var node = TryNode(db, btr);
-            if (node?.IsNested == true)
-                throw new ArgumentException(
-                    $"'{a.BlockName}' is nested; bind its parent instead.");
-
-            var ids = new ObjectIdCollection { btr.ObjectId };
-            tr.Commit();                 // BindXrefs rewrites the symbol tables
-            db.BindXrefs(ids, a.InsertMode);
+            var (id, nested) = LookupXrefId(db, a.BlockName);
+            if (nested)
+                throw new ArgumentException($"'{a.BlockName}' is nested; bind its parent instead.");
+            db.BindXrefs(new ObjectIdCollection { id }, a.InsertMode);
             return Wrap(new { affected = 1, blockName = a.BlockName });
         });
 

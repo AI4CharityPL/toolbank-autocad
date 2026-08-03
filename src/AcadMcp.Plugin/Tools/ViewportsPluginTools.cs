@@ -38,6 +38,8 @@ internal static class ViewportsPluginTools
 
     public static void Register(ToolHost host)
     {
+        host.Register("acad.viewports.create_viewport", CreateRect);
+        host.Register("acad.viewports.set_viewport_scale", SetScale);
         host.Register("acad.viewports.create_polygonal_viewport", CreatePolygonal);
         host.Register("acad.viewports.delete_viewport", DeleteViewport);
         host.Register("acad.viewports.list_viewports", ListViewports);
@@ -68,7 +70,7 @@ internal static class ViewportsPluginTools
                 $"Handle {handle} is a {ent.GetRXClass().Name}, not a Viewport. " +
                 "Use list_viewports to get a viewport handle.");
         // Viewport number 1 is the paper-space "sheet" pseudo-viewport, not a window.
-        if (vp.Number == 1)
+        if (vp.Number == 1 || vp.Number < 0)
             throw new ArgumentException(
                 $"Handle {handle} is the layout's own paper-space viewport (number 1), not a " +
                 "drawing window. It cannot be scaled, locked or layer-overridden.");
@@ -168,6 +170,54 @@ internal static class ViewportsPluginTools
     }
 
     // ─────────── creation / deletion ───────────
+
+    /// <summary>
+    /// Rectangular viewport. This exists rather than reusing acad.layouts.create_viewport
+    /// because that handler answers with {entity:...} while this category's contract is
+    /// {viewport:...}. Pointing the backend at it produced a null handle and took nine
+    /// downstream tools with it - a declared-vs-actual shape mismatch, the same class of
+    /// defect the sweep spent its time removing. The layout switch/restore is kept.
+    /// </summary>
+    private static Task<ToolDispatchResult> CreateRect(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.create_viewport", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<CreateRectViewportArgsDto>(args);
+            if (a.Width <= 0 || a.Height <= 0) throw new ArgumentException("width and height must be > 0.");
+            var lm = LayoutManager.Current;
+            if (!lm.LayoutExists(a.LayoutName)) throw new ArgumentException($"Layout '{a.LayoutName}' does not exist.");
+
+            var prev = lm.CurrentLayout;
+            bool switched = !string.Equals(prev, a.LayoutName, StringComparison.OrdinalIgnoreCase);
+            if (switched) lm.CurrentLayout = a.LayoutName;
+            try
+            {
+                var layout = (Layout)tr.GetObject(lm.GetLayoutId(a.LayoutName), OpenMode.ForRead);
+                var paper = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForWrite);
+                var vp = new Viewport
+                {
+                    CenterPoint = AcadEnv.ToPoint3d(a.Center),
+                    Width = a.Width,
+                    Height = a.Height,
+                };
+                if (!string.IsNullOrWhiteSpace(a.Layer)) vp.LayerId = AcadEnv.EnsureLayer(db, tr, a.Layer!);
+                paper.AppendEntity(vp);
+                tr.AddNewlyCreatedDBObject(vp, true);
+                if (a.Scale is > 0) vp.CustomScale = a.Scale.Value;
+                try { vp.On = true; } catch { }
+                return Wrap(new { viewport = Info(db, tr, vp) });
+            }
+            finally { if (switched) { try { lm.CurrentLayout = prev; } catch { } } }
+        });
+
+    private static Task<ToolDispatchResult> SetScale(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_scale", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpScaleArgsDto>(args);
+            if (a.Scale <= 0) throw new ArgumentException("scale must be > 0.");
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            vp.CustomScale = a.Scale;
+            return Wrap(new { viewport = Info(db, tr, vp) });
+        });
 
     private static Task<ToolDispatchResult> CreatePolygonal(JsonObject args, CancellationToken ct) =>
         Run("acad.viewports.create_polygonal_viewport", args, ct, (doc, db, tr) =>

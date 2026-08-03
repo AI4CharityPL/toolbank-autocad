@@ -1,4 +1,4 @@
-// Plugin-side DTOs for acad-viewports. Wire names must match the backend's ViewportsDtos.cs.
+﻿// Plugin-side DTOs for acad-viewports. Wire names must match the backend's ViewportsDtos.cs.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -41,3 +41,15 @@ internal sealed record VpLayerOverrideArgsDto(
 internal sealed record VpClearArgsDto(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("layer")]  string? Layer = null);
+
+internal sealed record CreateRectViewportArgsDto(
+    [property: JsonPropertyName("layoutName")] string LayoutName,
+    [property: JsonPropertyName("center")]     Point3dDto Center,
+    [property: JsonPropertyName("width")]      double Width,
+    [property: JsonPropertyName("height")]     double Height,
+    [property: JsonPropertyName("scale")]      double? Scale = null,
+    [property: JsonPropertyName("layer")]      string? Layer = null);
+
+internal sealed record VpScaleArgsDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("scale")]  double Scale);

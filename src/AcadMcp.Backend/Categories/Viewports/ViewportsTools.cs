@@ -9,9 +9,11 @@
 // model serves an architectural plan, a fire plan and a furniture plan. Without it every
 // "view" needs its own duplicated geometry.
 //
-// create_viewport and set_viewport_scale reuse the acad.layouts.* plugin handlers rather
-// than duplicating them - those already carry the model-space fix (the layout is switched
-// and restored around the call), and one implementation cannot drift from itself.
+// create_viewport and set_viewport_scale have their own handlers here. Reusing the
+// acad.layouts.* ones looked cheaper and was wrong: those answer with {entity:...} while
+// this category's contract is {viewport:...}, so the returned handle was null and nine
+// downstream tools failed on it. Sharing an implementation is only free when the two
+// contracts match; here they did not.
 //
 // Deliberately deferred (see docs/COVERAGE-ROADMAP.md):
 //   set_viewport_ucs               - waits for acad-ucs (Phase 1.2)
@@ -49,7 +51,7 @@ public static class ViewportsTools
                          "add paperspace viewport", "make a viewport on the layout", "wstaw rzutnie na uklad" },
         RequiresPlugin = true)]
     public static Task<ViewportResult> CreateViewport(IPluginGateway gw, CreateViewportArgs args, CancellationToken ct)
-        => ViewportsProxy.CallAsync<CreateViewportArgs, ViewportResult>(gw, "acad.layouts.create_viewport", args, T_NORMAL, ct);
+        => ViewportsProxy.CallAsync<CreateViewportArgs, ViewportResult>(gw, "acad.viewports.create_viewport", args, T_NORMAL, ct);
 
     [McpTool("create_polygonal_viewport", "Create a non-rectangular paperspace viewport from an ordered vertex list in paper-space coordinates. Needs at least 3 vertices; the outline is closed automatically. Use this for L-shaped or angled sheet windows.", "viewports",
         Intent = new[] { "utworz rzutnie wielokatna", "nieprostokatne okno widokowe", "create polygonal viewport",
@@ -95,7 +97,7 @@ public static class ViewportsTools
                          "scale viewport to 1:50", "change drawing scale of viewport", "skala rzutni 1 do 100" },
         RequiresPlugin = true)]
     public static Task<ViewportResult> SetViewportScale(IPluginGateway gw, SetViewportScaleArgs args, CancellationToken ct)
-        => ViewportsProxy.CallAsync<SetViewportScaleArgs, ViewportResult>(gw, "acad.layouts.set_viewport_scale", args, T_NORMAL, ct);
+        => ViewportsProxy.CallAsync<SetViewportScaleArgs, ViewportResult>(gw, "acad.viewports.set_viewport_scale", args, T_NORMAL, ct);
 
     [McpTool("set_viewport_lock", "Lock or unlock a viewport. A locked viewport cannot have its zoom or scale changed by panning inside it, which is the single most common way an issued sheet silently ends up at the wrong scale.", "viewports",
         Intent = new[] { "zablokuj rzutnie", "odblokuj okno widokowe", "lock viewport",

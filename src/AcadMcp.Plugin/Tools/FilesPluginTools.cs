@@ -738,6 +738,18 @@ internal static class FilesPluginTools
         // PublishToWeb PNG.pc3 ships with a discrete list of canonical medias; we pick the
         // closest pre-defined one, then AutoCAD rasterises at that exact pixel resolution.
         // If no widthPx supplied, fall back to the layout's current media name.
+        // Bind the device BEFORE asking what paper it offers. GetCanonicalMediaNameList throws
+        // eInvalidInput on a PlotSettings with no device attached, which is what made
+        // scope="Window" + widthPx look like a windowing bug: the failure was in the media
+        // picker, before any window code ran.
+        try { psv.SetPlotConfigurationName(ps, device, null); }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"AutoCAD does not have plot device '{device}'. Installed devices: " +
+                SafeJoin(psv.GetPlotDeviceList()) + ".", ex);
+        }
+
         string paper;
         if ((fmt == "IMAGE" || fmt == "PNG") && (a.WidthPx is int wp && a.HeightPx is int hp))
         {
@@ -785,20 +797,16 @@ internal static class FilesPluginTools
         psv.SetStdScaleType(ps, StdScaleType.ScaleToFit);
         psv.SetPlotCentered(ps, true);
 
-        using var pe = PlotFactory.CreatePublishEngine();
-        var pi = new PlotInfo { Layout = layout.ObjectId, OverrideSettings = ps };
-        var piv = new PlotInfoValidator { MediaMatchingPolicy = MatchingPolicy.MatchEnabled };
-        piv.Validate(pi);
-
-        // Force foreground plotting for the duration. With BACKGROUNDPLOT left at its default
-        // the engine hands the job to a background worker: EndPlot returns before the file
-        // exists (so an agent that exports and immediately reads gets "file not found"), and
-        // the engine stays busy long enough to reject the next export. Plotting synchronously
-        // makes the tool's contract honest - when it returns, the file is on disk.
-        // BACKGROUNDPLOT is an Int16 sysvar. Passing a plain int throws eInvalidInput, and the
-        // first version of this swallowed that in a bare catch - so background plotting stayed
-        // on, the file kept appearing seconds after the tool returned, and the engine kept
-        // blocking the next export. Silent catch, silent regression; hence the logging below.
+        // Force foreground plotting BEFORE the engine is created. Order is the whole point:
+        // PlotFactory captures the plotting mode when the engine is constructed, so setting
+        // BACKGROUNDPLOT afterwards - as this did on the first attempt - changes nothing. The
+        // background worker then writes the file after EndPlot has already returned (measured
+        // here: PNG ~10s late, PDF ~5s late) and holds the engine long enough to reject the
+        // next export.
+        //
+        // BACKGROUNDPLOT is an Int16 sysvar: passing a plain int throws eInvalidInput, and an
+        // earlier version swallowed that in a bare catch, so the whole mechanism silently did
+        // nothing. Hence (short) and the logging - a silent catch is what hid this twice.
         object? prevBgPlot = null;
         try { prevBgPlot = Application.GetSystemVariable("BACKGROUNDPLOT"); }
         catch (Exception ex) { Log.Warn($"export_file: cannot read BACKGROUNDPLOT: {ex.Message}"); }
@@ -812,8 +820,13 @@ internal static class FilesPluginTools
         catch (Exception ex)
         {
             Log.Warn("export_file: could not disable background plotting " +
-                           $"({ex.Message}). The output file may appear after this call returns.");
+                     $"({ex.Message}). The output file may appear after this call returns.");
         }
+
+        using var pe = PlotFactory.CreatePublishEngine();
+        var pi = new PlotInfo { Layout = layout.ObjectId, OverrideSettings = ps };
+        var piv = new PlotInfoValidator { MediaMatchingPolicy = MatchingPolicy.MatchEnabled };
+        piv.Validate(pi);
 
         var pp = new PlotProgressDialog(false, 1, true);
         try

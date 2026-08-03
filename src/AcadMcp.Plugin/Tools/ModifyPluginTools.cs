@@ -292,10 +292,7 @@ internal static class ModifyPluginTools
         {
             var a = Read<SetLinetypeArgsDto>(args);
             if (string.IsNullOrWhiteSpace(a.Linetype)) throw new ArgumentException("linetype name required.");
-            var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
-            if (!lt.Has(a.Linetype))
-                throw new ArgumentException($"linetype '{a.Linetype}' is not loaded - load it first via the Linetype manager.");
-            var ltId = lt[a.Linetype];
+            var ltId = EnsureLinetypeLoaded(db, tr, a.Linetype);
             var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
             foreach (var e in ents)
             {
@@ -304,6 +301,49 @@ internal static class ModifyPluginTools
             }
             return Wrap(new { affected = ents.Count });
         });
+
+    /// <summary>
+    /// Resolve a linetype by name, loading it from the standard definition file if the drawing
+    /// does not have it yet.
+    ///
+    /// This used to throw "load it first via the Linetype manager" - advice an agent cannot
+    /// act on, because nothing in the 340-tool bank loads a linetype and there is no UI in
+    /// reach. A fresh drawing has only Continuous / ByLayer / ByBlock, so set_linetype and
+    /// set_layer_linetype could not produce a dashed line at all: no hidden lines, no
+    /// centrelines, no road centrelines, and the mechanical/civil validators that check for
+    /// exactly those had nothing that could ever satisfy them. Loading on demand is what
+    /// AutoCAD's own LINETYPE command does.
+    /// </summary>
+    internal static ObjectId EnsureLinetypeLoaded(Database db, Transaction tr, string name)
+    {
+        var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
+        if (lt.Has(name)) return lt[name];
+
+        // acadiso.lin for metric drawings, acad.lin for imperial. Try the one matching the
+        // drawing's units first, then the other - installs vary and both ship the usual names.
+        bool metric = false;
+        try { metric = db.Measurement == MeasurementValue.Metric; } catch { }
+        var files = metric ? new[] { "acadiso.lin", "acad.lin" } : new[] { "acad.lin", "acadiso.lin" };
+
+        var attempts = new List<string>();
+        foreach (var file in files)
+        {
+            try
+            {
+                db.LoadLineTypeFile(name, file);
+                lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
+                if (lt.Has(name)) return lt[name];
+                attempts.Add($"{file}: not found in file");
+            }
+            catch (Exception ex) { attempts.Add($"{file}: {ex.Message}"); }
+        }
+
+        throw new ArgumentException(
+            $"linetype '{name}' is not in the drawing and could not be loaded from " +
+            string.Join("; ", attempts) +
+            ". Check the name against the .lin file (common ones: DASHED, HIDDEN, CENTER, " +
+            "PHANTOM, DOT, DASHDOT).");
+    }
 
     private static Task<ToolDispatchResult> SetLineweight(JsonObject args, CancellationToken ct) =>
         Run("acad.modify.set_lineweight", args, ct, (doc, db, tr) =>
@@ -391,15 +431,39 @@ internal static class ModifyPluginTools
     private static Task<ToolDispatchResult> Undo(JsonObject args, CancellationToken ct) =>
         Run("acad.modify.undo", args, ct, (doc, db, tr) =>
         {
+            // SendStringToExecute QUEUES the command; it runs after this dispatch returns.
+            // So nothing has been undone at the point we answer, and the old
+            // `affected = 1` was fabricated - it reported success identically whether one
+            // object, twenty, or nothing at all got rolled back. Verified live: a circle
+            // drawn immediately before undo was still present when get_entity ran right
+            // after this returned "affected: 1".
+            //
+            // The count cannot be known from here, so it is no longer claimed. See rule 15
+            // and docs/PHASE-7-STATUS.md - the same queued-command mechanism is what
+            // deadlocked checkpoint rollback, which is why that moved to .dwg snapshots.
             doc.SendStringToExecute("_U ", true, false, false);
-            return Wrap(new { affected = 1 });
+            return Wrap(new
+            {
+                queued = true,
+                note = "AutoCAD's UNDO was queued and runs after this call returns; its effect " +
+                       "is not observable here and no object count can be reported. For a " +
+                       "rollback you can verify, use acad_undo_checkpoint / " +
+                       "acad_restore_checkpoint, which snapshot the drawing.",
+            });
         });
 
     private static Task<ToolDispatchResult> Redo(JsonObject args, CancellationToken ct) =>
         Run("acad.modify.redo", args, ct, (doc, db, tr) =>
         {
+            // Same queued-command caveat as Undo above: nothing has happened yet when this
+            // returns, so no count is claimed.
             doc.SendStringToExecute("_REDO ", true, false, false);
-            return Wrap(new { affected = 1 });
+            return Wrap(new
+            {
+                queued = true,
+                note = "AutoCAD's REDO was queued and runs after this call returns; its effect " +
+                       "is not observable here.",
+            });
         });
 
     // ─────────────── grouping ───────────────

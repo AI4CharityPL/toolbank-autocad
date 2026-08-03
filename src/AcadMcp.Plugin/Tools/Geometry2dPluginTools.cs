@@ -593,15 +593,95 @@ internal static class Geometry2dPluginTools
             var a = Read<HandlesArgDto>(args);
             if (a.Handles is null || a.Handles.Count < 2)
                 throw new ArgumentException("join needs >= 2 handles");
-            var first = (Curve)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handles[0]), OpenMode.ForWrite);
-            for (int i = 1; i < a.Handles.Count; i++)
+            var curves = a.Handles
+                .Select(h => (Curve)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite))
+                .ToList();
+
+            // Curve.JoinEntity only works when the geometry stays representable as the first
+            // curve's own type - two collinear Lines, arcs on one circle, a polyline being
+            // extended. Two Lines meeting at a corner throw eNotApplicable, which is the most
+            // common join there is and what this tool's own description promises ("into a
+            // single polyline"). So: try the native join, and on eNotApplicable fall back to
+            // stitching the endpoints into a real Polyline, which is what AutoCAD's own JOIN
+            // command does in that situation.
+            // Strategy is chosen BEFORE anything is mutated. Discovering mid-loop that
+            // JoinEntity cannot continue would leave some curves already joined and erased,
+            // with no clean way back inside the caller's transaction.
+            var chain = TryOrderIntoChain(curves);
+            if (chain is not null && curves.All(c => c is Line or Arc or Polyline))
             {
-                var other = (Curve)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handles[i]), OpenMode.ForWrite);
-                try { first.JoinEntity(other); other.Erase(); }
-                catch (AcadRt.Exception ex) { throw new InvalidOperationException($"join failed for handle {a.Handles[i]}: {ex.Message}", ex); }
+                var pl = new Polyline();
+                for (int i = 0; i < chain.Count; i++)
+                    pl.AddVertexAt(i, new Point2d(chain[i].X, chain[i].Y), 0, 0, 0);
+
+                // A chain whose ends coincide is a closed loop, not a doubled-up vertex.
+                if (chain.Count > 2 && chain[0].DistanceTo(chain[^1]) < 1e-6)
+                {
+                    pl.RemoveVertexAt(pl.NumberOfVertices - 1);
+                    pl.Closed = true;
+                }
+
+                var layer = curves[0].Layer;
+                foreach (var c in curves) c.Erase();
+                return Wrap(new
+                {
+                    entity = AcadEnv.Persist(db, tr, pl, layer),
+                    strategy = "polyline",
+                    vertices = pl.NumberOfVertices,
+                });
             }
-            return Wrap(new { entity = AcadEnv.ToHandle(first) });
+
+            var first = curves[0];
+            for (int i = 1; i < curves.Count; i++)
+            {
+                try { first.JoinEntity(curves[i]); curves[i].Erase(); }
+                catch (AcadRt.Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"join failed for handle {a.Handles[i]}: {ex.Message}. " +
+                        "The curves must either be joinable in place (collinear lines, arcs on " +
+                        "one circle) or form an end-to-end chain that can become a polyline.", ex);
+                }
+            }
+            return Wrap(new { entity = AcadEnv.ToHandle(first), strategy = "join_entity" });
         });
+
+    /// <summary>
+    /// Order curves into a single open or closed chain of points, or null when they do not
+    /// connect end-to-end. Greedy walk: start at the first curve and repeatedly attach
+    /// whichever unused curve touches the current free end.
+    /// </summary>
+    private static List<Point3d>? TryOrderIntoChain(List<Curve> curves)
+    {
+        const double Tol = 1e-6;
+        if (curves.Count < 2) return null;
+
+        var ends = new List<(Point3d a, Point3d b)>();
+        foreach (var c in curves)
+        {
+            try { ends.Add((c.StartPoint, c.EndPoint)); }
+            catch { return null; }   // closed curves (circle, ellipse) have no usable ends
+        }
+
+        var used = new bool[curves.Count];
+        var pts = new List<Point3d> { ends[0].a, ends[0].b };
+        used[0] = true;
+
+        for (int placed = 1; placed < curves.Count; placed++)
+        {
+            var tail = pts[^1];
+            int found = -1;
+            for (int i = 0; i < curves.Count; i++)
+            {
+                if (used[i]) continue;
+                if (tail.DistanceTo(ends[i].a) < Tol) { pts.Add(ends[i].b); found = i; break; }
+                if (tail.DistanceTo(ends[i].b) < Tol) { pts.Add(ends[i].a); found = i; break; }
+            }
+            if (found < 0) return null;   // not a single connected chain
+            used[found] = true;
+        }
+        return pts;
+    }
 
     private static Task<ToolDispatchResult> ExplodeEntity(JsonObject args, CancellationToken ct) =>
         Run("acad.geometry2d.explode_entity", args, ct, (doc, db, tr) =>

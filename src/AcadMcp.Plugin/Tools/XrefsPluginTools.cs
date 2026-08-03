@@ -653,16 +653,20 @@ internal static class XrefsPluginTools
         {
             var a = Read<XrefHandleArgsDto>(args);
             var br = OpenInsert(db, tr, a.Handle, OpenMode.ForWrite);
-            var sf = OpenFilter(tr, br, OpenMode.ForWrite)
+            var sf = OpenFilter(tr, br, OpenMode.ForRead)
                      ?? throw new ArgumentException($"Insert {a.Handle} has no clip boundary to invert.");
-            sf.Inverted = !sf.Inverted;
-            return Wrap(new
-            {
-                handle = a.Handle,
-                clipped = true,
-                inverted = sf.Inverted,
-                vertexCount = sf.Definition.GetPoints().Count,
-            });
+
+            // SpatialFilter.Inverted is settable while the filter is being CREATED and inert
+            // afterwards: assigning it on a filter already in the extension dictionary is
+            // accepted silently and changes nothing. Verified live - invert returned
+            // inverted:false twice running, while clip_xref_rect with inverted:true worked.
+            // So invert rebuilds the filter from the existing boundary with the flag flipped,
+            // rather than reporting a toggle that did not happen.
+            var pts = new Point2dCollection();
+            foreach (Point2d p in sf.Definition.GetPoints()) pts.Add(p);
+            bool want = !sf.Inverted;
+
+            return ApplyClip(db, tr, br, pts, want);
         });
 
     private static Task<ToolDispatchResult> DeleteClip(JsonObject args, CancellationToken ct) =>
@@ -726,9 +730,21 @@ internal static class XrefsPluginTools
 
             var lt = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
             if (!lt.Has(full))
+            {
+                // An unresolved xref has no dependent layers in this drawing at all - they are
+                // dropped when it fails to load and only come back on a successful reload.
+                // Saying "no such layer" there sends the caller hunting for a name problem
+                // that does not exist.
+                var status = StatusOf(btr);
+                if (!string.Equals(status, "Resolved", StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException(
+                        $"XREF '{btr.Name}' is {status}, so none of its layers are present in this " +
+                        "drawing. Fix the path (set_xref_path / repath_all_xrefs) and reload it first.");
+
                 throw new ArgumentException(
                     $"XREF '{btr.Name}' has no layer '{a.Layer}'. " +
                     "Use list_xref_dependent_symbols to see the layers it brings.");
+            }
 
             var ltr = (LayerTableRecord)tr.GetObject(lt[full], OpenMode.ForWrite);
             if (a.Color is not null) ltr.Color = AcadEnv.FromColorDto(a.Color);

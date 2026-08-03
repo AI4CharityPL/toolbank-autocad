@@ -1,4 +1,4 @@
-// AutoCAD plugin entry point. Loaded via NETLOAD.
+﻿// AutoCAD plugin entry point. Loaded via NETLOAD.
 //
 // Lifecycle (rule 16-acad-plugin-lifecycle.md):
 //   1. Initialize() runs on AutoCAD's UI thread. We capture SynchronizationContext,
@@ -70,6 +70,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             LayoutsPluginTools.Register(_toolHost);
             FilesPluginTools.Register(_toolHost);
             XrefsPluginTools.Register(_toolHost);
+            ViewportsPluginTools.Register(_toolHost);
             ValidatorsPluginTools.Register(_toolHost);
             ParametricPluginTools.Register(_toolHost);
             CheckpointPluginTools.Register(_toolHost);

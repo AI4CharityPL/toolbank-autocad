@@ -101,14 +101,6 @@
       ]
     },
     {
-      "name": "create_viewport",
-      "description": "Create a paper-space Viewport entity on the named layout: a rectangular window of width \u00D7 height centred at \u0027center\u0027 (paper-space coords). Optionally set a custom standard scale (e.g. 0.02 for 1:50, 0.01 for 1:100). Returns the Viewport entity handle.",
-      "tags": [
-        "create",
-        "viewport"
-      ]
-    },
-    {
       "name": "delete_layout",
       "description": "Delete a paper-space layout. Cannot delete the Model tab; cannot delete the last remaining paper-space tab.",
       "tags": [
@@ -157,20 +149,11 @@
         "current",
         "layout"
       ]
-    },
-    {
-      "name": "set_viewport_scale",
-      "description": "Set the model-space-to-paper scale factor of an existing Viewport entity (e.g. 0.02 \u2192 1:50, 0.01 \u2192 1:100, 0.001 \u2192 1:1000).",
-      "tags": [
-        "set",
-        "viewport",
-        "scale"
-      ]
     }
   ],
   "metadata": {
     "category": "layouts",
-    "tool_count_target": 10,
+    "tool_count_target": 8,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -184,6 +167,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-04-24T15:01:41.4014747Z"
+    "last_regenerated_utc": "2026-08-03T22:09:39.8760805Z"
   }
 }

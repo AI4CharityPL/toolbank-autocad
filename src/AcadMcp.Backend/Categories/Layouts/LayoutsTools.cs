@@ -1,4 +1,4 @@
-// AutoCAD acad-layouts category. 9 tools covering paper-space layout (tab) lifecycle,
+﻿// AutoCAD acad-layouts category. 9 tools covering paper-space layout (tab) lifecycle,
 // layout viewport (entity) creation and scaling, and basic plot configuration
 // (plotter / paper size / plot style / rotation).
 //
@@ -47,17 +47,7 @@ public static class LayoutsTools
     public static Task<LayoutResult> RenameLayout(IPluginGateway gw, RenameLayoutArgs args, CancellationToken ct)
         => LayoutsProxy.CallAsync<RenameLayoutArgs, LayoutResult>(gw, "acad.layouts.rename_layout", args, T_NORMAL, ct);
 
-    [McpTool("create_viewport", "Create a paper-space Viewport entity on the named layout: a rectangular window of width × height centred at 'center' (paper-space coords). Optionally set a custom standard scale (e.g. 0.02 for 1:50, 0.01 for 1:100). Returns the Viewport entity handle.", "layouts",
-        Intent = new[] { "stworz viewport", "dodaj rzutnie", "create viewport", "add viewport on layout", "rzutnia w layoucie" },
-        RequiresPlugin = true)]
-    public static Task<LayoutEntityResult> CreateViewport(IPluginGateway gw, CreateViewportArgs args, CancellationToken ct)
-        => LayoutsProxy.CallAsync<CreateViewportArgs, LayoutEntityResult>(gw, "acad.layouts.create_viewport", args, T_NORMAL, ct);
 
-    [McpTool("set_viewport_scale", "Set the model-space-to-paper scale factor of an existing Viewport entity (e.g. 0.02 → 1:50, 0.01 → 1:100, 0.001 → 1:1000).", "layouts",
-        Intent = new[] { "ustaw skale rzutni", "set viewport scale", "change viewport scale", "skala rzutni 1 do 50", "viewport scale to 1:100" },
-        RequiresPlugin = true)]
-    public static Task<LayoutEntityResult> SetViewportScale(IPluginGateway gw, SetViewportScaleArgs args, CancellationToken ct)
-        => LayoutsProxy.CallAsync<SetViewportScaleArgs, LayoutEntityResult>(gw, "acad.layouts.set_viewport_scale", args, T_FAST, ct);
 
     [McpTool("configure_plot", "Configure a layout's plot settings: plotter / device name, paper size (accepts canonical 'ISO_full_bleed_A0_(1189.00_x_841.00_MM)', locale 'ISO A0 (841.00 x 1189.00 MM)', or fuzzy alias 'A0' / 'ISO A0' / 'a0' — all three resolve to the plotter's canonical name), named plot style table, and 0/90/180/270 plot rotation. Pass null on any field to leave it untouched. Call layouts.list_paper_sizes first if you're unsure which media strings the installed plotter accepts.", "layouts",
         Intent = new[] { "konfiguruj plot", "ustaw drukarke layoutu", "configure plot settings", "set plotter and paper", "ustaw rozmiar arkusza" },

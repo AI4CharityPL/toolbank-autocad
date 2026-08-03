@@ -1,0 +1,243 @@
+{
+  "id": "acad-viewports",
+  "name": "acad-viewports",
+  "description": "Paperspace viewport control: creation (rectangular and polygonal), scale, lock, shade plot, and the per-viewport layer overrides that let one model serve an architectural plan, a fire plan and a furniture plan from the same geometry.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-viewports.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "create",
+    "delete",
+    "dwg",
+    "extents",
+    "freeze",
+    "get",
+    "in",
+    "info",
+    "layer",
+    "list",
+    "lock",
+    "model",
+    "off",
+    "on",
+    "plot",
+    "polygonal",
+    "scale",
+    "set",
+    "shade",
+    "thaw",
+    "viewport",
+    "viewports"
+  ],
+  "intent_examples": [
+    "add paperspace viewport",
+    "change drawing scale of viewport",
+    "create polygonal viewport",
+    "create viewport",
+    "delete viewport",
+    "describe viewport",
+    "dodaj okno widokowe na arkuszu",
+    "freeze layers in viewport",
+    "get rid of viewport",
+    "get viewport details",
+    "hide layers in this viewport only",
+    "hide viewport contents",
+    "informacje o oknie widokowym",
+    "irregular viewport shape",
+    "jaki obszar modelu pokazuje rzutnia",
+    "jakie rzutnie sa na arkuszu",
+    "L-shaped viewport",
+    "list viewports",
+    "lock viewport",
+    "make a viewport on the layout",
+    "model area covered by viewport",
+    "nieprostokatne okno widokowe",
+    "odblokuj okno widokowe",
+    "odmroz warstwy w rzutni",
+    "per viewport layer freeze",
+    "plot viewport as hidden",
+    "pokaz okna widokowe",
+    "pokaz ponownie warstwy na arkuszu",
+    "pokaz szczegoly rzutni",
+    "prevent viewport zoom",
+    "remove paperspace viewport",
+    "rzutnia niewidoczna",
+    "rzutnia o dowolnym ksztalcie",
+    "rzutnia z ukrytymi krawedziami",
+    "scale viewport to 1:50",
+    "set viewport scale",
+    "set viewport shade plot",
+    "show all paperspace views",
+    "show layer again in viewport",
+    "skala rzutni 1 do 100",
+    "skasuj okno widokowe",
+    "sposob plotowania rzutni",
+    "thaw layers in viewport",
+    "turn viewport off",
+    "turn viewport on",
+    "ukryj warstwy tylko na tym arkuszu",
+    "unfreeze layers in this viewport",
+    "unlock viewport",
+    "ustaw skale rzutni",
+    "ustaw tryb wydruku rzutni",
+    "usun rzutnie",
+    "utworz rzutnie",
+    "utworz rzutnie wielokatna",
+    "viewport extents in model space",
+    "viewport properties",
+    "what does this viewport show",
+    "what viewports are on this layout",
+    "wireframe plot mode",
+    "wlacz rzutnie",
+    "wlacz warstwe w rzutni",
+    "wlasciwosci rzutni",
+    "wspolrzedne widoku rzutni",
+    "wstaw rzutnie na uklad",
+    "wykasuj rzutnie z arkusza",
+    "wylacz okno widokowe",
+    "wylacz warstwe w jednej rzutni",
+    "wylistuj rzutnie",
+    "zabezpiecz skale rzutni",
+    "zablokuj rzutnie",
+    "zakres rzutni w modelu",
+    "zamroz warstwy w rzutni",
+    "zmien skale okna widokowego"
+  ],
+  "tools_summary": [
+    {
+      "name": "create_polygonal_viewport",
+      "description": "Create a non-rectangular paperspace viewport from an ordered vertex list in paper-space coordinates. Needs at least 3 vertices; the outline is closed automatically. Use this for L-shaped or angled sheet windows.",
+      "tags": [
+        "create",
+        "polygonal",
+        "viewport"
+      ]
+    },
+    {
+      "name": "create_viewport",
+      "description": "Create a rectangular paperspace viewport on the named layout: a window width x height centred at \u0027center\u0027 in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50).",
+      "tags": [
+        "create",
+        "viewport"
+      ]
+    },
+    {
+      "name": "delete_viewport",
+      "description": "Delete a paperspace viewport by handle. The model geometry it showed is untouched - only the window is removed.",
+      "tags": [
+        "delete",
+        "viewport"
+      ]
+    },
+    {
+      "name": "get_viewport_extents_in_model",
+      "description": "Return the model-space rectangle a viewport is currently showing, derived from its centre, paper size and scale. Use this to work out what geometry a sheet window actually covers before annotating it.",
+      "tags": [
+        "get",
+        "viewport",
+        "extents",
+        "in",
+        "model"
+      ]
+    },
+    {
+      "name": "get_viewport_info",
+      "description": "Full descriptor of one viewport by handle, including its frozen layers and which layers carry property overrides.",
+      "tags": [
+        "get",
+        "viewport",
+        "info"
+      ]
+    },
+    {
+      "name": "list_viewports",
+      "description": "List paperspace viewports with handle, layout, paper geometry, scale, lock state and how many layer overrides each carries. Pass layoutName to restrict to one tab, omit it for the whole drawing. Read-only.",
+      "tags": [
+        "list",
+        "viewports"
+      ]
+    },
+    {
+      "name": "set_viewport_layer_freeze",
+      "description": "Freeze layers in ONE viewport only. This is the mechanism that lets a single model produce an architectural plan and a fire plan: freeze the layers each sheet must not show, in that sheet\u0027s viewport, without touching the model or any other viewport.",
+      "tags": [
+        "set",
+        "viewport",
+        "layer",
+        "freeze"
+      ]
+    },
+    {
+      "name": "set_viewport_layer_thaw",
+      "description": "Thaw layers that were frozen in one viewport, so they display there again. Layers not frozen in that viewport are left alone.",
+      "tags": [
+        "set",
+        "viewport",
+        "layer",
+        "thaw"
+      ]
+    },
+    {
+      "name": "set_viewport_lock",
+      "description": "Lock or unlock a viewport. A locked viewport cannot have its zoom or scale changed by panning inside it, which is the single most common way an issued sheet silently ends up at the wrong scale.",
+      "tags": [
+        "set",
+        "viewport",
+        "lock"
+      ]
+    },
+    {
+      "name": "set_viewport_on_off",
+      "description": "Turn a viewport\u0027s display on or off. An off viewport keeps its position, size and scale but renders nothing - useful for sheets under construction without deleting the window.",
+      "tags": [
+        "set",
+        "viewport",
+        "on",
+        "off"
+      ]
+    },
+    {
+      "name": "set_viewport_scale",
+      "description": "Set the model-to-paper scale of a viewport (0.02 = 1:50, 0.01 = 1:100, 0.001 = 1:1000). Locking the viewport afterwards is what stops an accidental zoom changing the drawn scale of an issued sheet.",
+      "tags": [
+        "set",
+        "viewport",
+        "scale"
+      ]
+    },
+    {
+      "name": "set_viewport_shade_plot",
+      "description": "Set how a viewport plots: \u0027AsDisplayed\u0027, \u0027Wireframe\u0027, \u0027Hidden\u0027 or \u0027Rendered\u0027. Hidden is what removes obscured 3D edges on a plotted sheet without changing the model.",
+      "tags": [
+        "set",
+        "viewport",
+        "shade",
+        "plot"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "viewports",
+    "tool_count_target": 12,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-03T22:09:38.9216354Z"
+  }
+}

@@ -135,14 +135,26 @@ internal static class DimensionsPluginTools
         {
             var a = Read<DiametricDimArgsDto>(args);
             var ent = ResolveEntity(db, tr, a.CurveHandle);
-            // DiametricDimension(chordPoint, farChordPoint, leaderLength, text, dimStyleId)
-            // chordPoint = nearest point on curve from farPoint; we approximate using GetClosestPointTo.
-            var farPt = AcadEnv.ToPoint3d(a.FarPoint);
-            Point3d chordPt;
-            if (ent is Curve c) chordPt = c.GetClosestPointTo(farPt, false);
-            else throw new ArgumentException($"diametric dimension expects a Curve entity, got {ent.GetRXClass().Name}.");
+            if (ent is not Curve c)
+                throw new ArgumentException($"diametric dimension expects a Curve entity, got {ent.GetRXClass().Name}.");
+
+            // DiametricDimension(chordPoint, farChordPoint, ...) measures the distance BETWEEN
+            // its two points, and both must lie on the circle, diametrically opposite.
+            //
+            // This used to pass (GetClosestPointTo(farPoint), farPoint). When the caller does
+            // the natural thing and gives a point already on the circle - as the description
+            // asks for - the closest point on the circle to it is itself, so both arguments
+            // were the same point and the dimension measured zero. Verified live: a circle of
+            // radius 3000 was annotated "0" instead of 6000.
+            var centre = CenterOfCurve(ent);
+            var onCurve = c.GetClosestPointTo(AcadEnv.ToPoint3d(a.FarPoint), false);
+
+            // Antipode through the centre. Works whether the caller's point was on the circle
+            // or merely near it, since it is projected first.
+            var opposite = centre + (centre - onCurve);
+
             var dim = new DiametricDimension(
-                chordPt, farPt, a.LeaderLength, "",
+                onCurve, opposite, a.LeaderLength, "",
                 AcadEnv.ResolveDimStyleOrCurrent(db, tr, a.DimStyle));
             return Wrap(new { entity = AcadEnv.Persist(db, tr, dim, a.Layer) });
         });

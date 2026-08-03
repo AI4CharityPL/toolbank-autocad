@@ -8,13 +8,30 @@
 
 param(
     [switch]$Kill,
-    [string]$Configuration = 'Debug'
+    # Default follows what README, setup.ps1 and the Quickstart all tell you to build.
+    # It used to be Debug, which meant deploying after the documented Release build
+    # silently pushed whatever stale Debug DLL happened to be on disk - a plugin months
+    # old, with no warning, presenting as a successful deploy.
+    [ValidateSet('Release', 'Debug')]
+    [string]$Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
 $repo   = Split-Path -Parent $PSScriptRoot
 $src    = Join-Path $repo ("src\AcadMcp.Plugin\bin\$Configuration\net8.0-windows")
 $bundle = "$env:APPDATA\Autodesk\ApplicationPlugins\AcadMcp.bundle\Contents"
+
+# Deploying a build older than the source is almost never intended, so say so loudly.
+$dll = Join-Path $src 'AcadMcp.Plugin.dll'
+if (Test-Path $dll) {
+    $newestSource = Get-ChildItem (Join-Path $repo 'src\AcadMcp.Plugin') -Recurse -Filter *.cs -ErrorAction SilentlyContinue |
+                    Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($newestSource -and $newestSource.LastWriteTime -gt (Get-Item $dll).LastWriteTime) {
+        Write-Warning ("$Configuration build is OLDER than the source " +
+            "($((Get-Item $dll).LastWriteTime) vs $($newestSource.LastWriteTime) in $($newestSource.Name)). " +
+            "Run: dotnet build src\AcadMcp.sln -c $Configuration")
+    }
+}
 
 if (-not (Test-Path $src)) {
     Write-Error "Build output missing: $src. Run: dotnet build src\AcadMcp.sln -c $Configuration"

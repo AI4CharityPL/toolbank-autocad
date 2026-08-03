@@ -752,17 +752,11 @@ internal static class FilesPluginTools
         ApplyPlotConfiguration(psv, ps, device, paper);
 
         var scope = wantsWindow ? "WINDOW" : (a.Scope ?? "Extents").Trim().ToUpperInvariant();
-        psv.SetPlotType(ps, scope switch
-        {
-            "DISPLAY"  => Autodesk.AutoCAD.DatabaseServices.PlotType.Display,
-            "EXTENTS"  => Autodesk.AutoCAD.DatabaseServices.PlotType.Extents,
-            "LIMITS"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Limits,
-            "VIEW"     => Autodesk.AutoCAD.DatabaseServices.PlotType.View,
-            "WINDOW"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Window,
-            "LAYOUT"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Layout,
-            _          => Autodesk.AutoCAD.DatabaseServices.PlotType.Extents,
-        });
 
+        // Order matters and is not obvious: SetPlotWindowArea must come BEFORE
+        // SetPlotType(Window). Setting the type first leaves the rectangle unset for a
+        // moment, and the validator rejects the settings with eInvalidInput - which is
+        // exactly how scope="Window" failed on every call while Display and Extents worked.
         if (scope == "WINDOW")
         {
             if (a.Window is null)
@@ -775,6 +769,17 @@ internal static class FilesPluginTools
                 new Extents2d(a.Window.XMin, a.Window.YMin, a.Window.XMax, a.Window.YMax));
         }
 
+        psv.SetPlotType(ps, scope switch
+        {
+            "DISPLAY"  => Autodesk.AutoCAD.DatabaseServices.PlotType.Display,
+            "EXTENTS"  => Autodesk.AutoCAD.DatabaseServices.PlotType.Extents,
+            "LIMITS"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Limits,
+            "VIEW"     => Autodesk.AutoCAD.DatabaseServices.PlotType.View,
+            "WINDOW"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Window,
+            "LAYOUT"   => Autodesk.AutoCAD.DatabaseServices.PlotType.Layout,
+            _          => Autodesk.AutoCAD.DatabaseServices.PlotType.Extents,
+        });
+
         psv.SetUseStandardScale(ps, true);
         psv.SetStdScaleType(ps, StdScaleType.ScaleToFit);
         psv.SetPlotCentered(ps, true);
@@ -783,6 +788,15 @@ internal static class FilesPluginTools
         var pi = new PlotInfo { Layout = layout.ObjectId, OverrideSettings = ps };
         var piv = new PlotInfoValidator { MediaMatchingPolicy = MatchingPolicy.MatchEnabled };
         piv.Validate(pi);
+
+        // Force foreground plotting for the duration. With BACKGROUNDPLOT left at its default
+        // the engine hands the job to a background worker: EndPlot returns before the file
+        // exists (so an agent that exports and immediately reads gets "file not found"), and
+        // the engine stays busy long enough to reject the next export. Plotting synchronously
+        // makes the tool's contract honest - when it returns, the file is on disk.
+        object? prevBgPlot = null;
+        try { prevBgPlot = Application.GetSystemVariable("BACKGROUNDPLOT"); } catch { }
+        try { Application.SetSystemVariable("BACKGROUNDPLOT", 0); } catch { }
 
         var pp = new PlotProgressDialog(false, 1, true);
         try
@@ -800,7 +814,16 @@ internal static class FilesPluginTools
         finally
         {
             pp.Destroy();
+            if (prevBgPlot is not null)
+            {
+                try { Application.SetSystemVariable("BACKGROUNDPLOT", prevBgPlot); } catch { }
+            }
         }
         tr.Commit();
+
+        // Belt and braces: even foreground plots can finish writing a moment after EndPlot.
+        // Never fail the export over this - the plot itself already succeeded.
+        for (int i = 0; i < 50 && !File.Exists(a.Path); i++)
+            System.Threading.Thread.Sleep(100);
     }
 }

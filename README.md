@@ -74,25 +74,44 @@ The mechanism actually shipped instead: `acad_undo_checkpoint` takes a full `.dw
 
 ## Quickstart
 
+One command. It runs the whole chain — preflight, build, launchers, plugin bundle,
+client config — and finishes with a live handshake against a running AutoCAD:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+`-Client cursor` (default), `claude-desktop` or `claude-code` picks which MCP client
+gets configured. Add `-DryRun` to see every action first, `-SkipBuild` / `-SkipPlugin`
+to skip stages. It is idempotent — safe to re-run — and backs up any config it edits.
+
+Works on the Windows PowerShell 5.1 that ships with Windows; PowerShell 7 (`pwsh`) is
+optional.
+
+<details>
+<summary>The same thing step by step, if you would rather drive it yourself</summary>
+
 ```powershell
 # 1. Detect the installed AutoCAD
-pwsh scripts/detect-autocad.ps1
+powershell -ExecutionPolicy Bypass -File scripts\detect-autocad.ps1
 
 # 2. Build everything
 dotnet build src/AcadMcp.sln -c Release
 
-# 3. Generate launchers for every category
-pwsh scripts/package.ps1
+# 3. Generate a launcher for any category that is missing one
+powershell -ExecutionPolicy Bypass -File scripts\package.ps1
 
 # 4. Register every category with your local MCP Nexus instance
-pwsh scripts/register-mcps.ps1
+powershell -ExecutionPolicy Bypass -File scripts\register-mcps.ps1
 
-# 5. Inject ONLY acad-router into your MCP client (MCP Nexus is assumed already configured)
-pwsh scripts/install-cursor-config.ps1
+# 5. Inject ONLY acad-router into your MCP client (MCP Nexus assumed already configured)
+powershell -ExecutionPolicy Bypass -File scripts\install-cursor-config.ps1
 
 # 6. Install the plugin into AutoCAD -- see "Installing into AutoCAD 2025" below
-pwsh scripts/install-plugin.ps1
+powershell -ExecutionPolicy Bypass -File scripts\install-plugin.ps1
 ```
+
+</details>
 
 ## 1. The Plugin — foundation (always required)
 

@@ -1,4 +1,4 @@
-// AutoCAD plugin handlers for the acad-modify category.
+﻿// AutoCAD plugin handlers for the acad-modify category.
 // Registered under "acad.modify.<verb>"; everything runs on the UI thread.
 //
 // Rules: 10 (UI thread), 11 (transactions), 12 (error mapping), 19 (impl pattern).
@@ -292,7 +292,10 @@ internal static class ModifyPluginTools
         {
             var a = Read<SetLinetypeArgsDto>(args);
             if (string.IsNullOrWhiteSpace(a.Linetype)) throw new ArgumentException("linetype name required.");
-            var ltId = EnsureLinetypeLoaded(db, tr, a.Linetype);
+            // Shared resolver in AcadEnv: tries the name, then the .lin files, then the same
+            // linetype under its name in another language, then a built-in pattern. The
+            // duplicate loader that used to live here knew none of that.
+            var ltId = AcadEnv.ResolveLinetype(db, tr, a.Linetype);
             var ents = ResolveAll(db, tr, a.Handles, OpenMode.ForWrite);
             foreach (var e in ents)
             {
@@ -301,49 +304,6 @@ internal static class ModifyPluginTools
             }
             return Wrap(new { affected = ents.Count });
         });
-
-    /// <summary>
-    /// Resolve a linetype by name, loading it from the standard definition file if the drawing
-    /// does not have it yet.
-    ///
-    /// This used to throw "load it first via the Linetype manager" - advice an agent cannot
-    /// act on, because nothing in the 340-tool bank loads a linetype and there is no UI in
-    /// reach. A fresh drawing has only Continuous / ByLayer / ByBlock, so set_linetype and
-    /// set_layer_linetype could not produce a dashed line at all: no hidden lines, no
-    /// centrelines, no road centrelines, and the mechanical/civil validators that check for
-    /// exactly those had nothing that could ever satisfy them. Loading on demand is what
-    /// AutoCAD's own LINETYPE command does.
-    /// </summary>
-    internal static ObjectId EnsureLinetypeLoaded(Database db, Transaction tr, string name)
-    {
-        var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
-        if (lt.Has(name)) return lt[name];
-
-        // acadiso.lin for metric drawings, acad.lin for imperial. Try the one matching the
-        // drawing's units first, then the other - installs vary and both ship the usual names.
-        bool metric = false;
-        try { metric = db.Measurement == MeasurementValue.Metric; } catch { }
-        var files = metric ? new[] { "acadiso.lin", "acad.lin" } : new[] { "acad.lin", "acadiso.lin" };
-
-        var attempts = new List<string>();
-        foreach (var file in files)
-        {
-            try
-            {
-                db.LoadLineTypeFile(name, file);
-                lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
-                if (lt.Has(name)) return lt[name];
-                attempts.Add($"{file}: not found in file");
-            }
-            catch (Exception ex) { attempts.Add($"{file}: {ex.Message}"); }
-        }
-
-        throw new ArgumentException(
-            $"linetype '{name}' is not in the drawing and could not be loaded from " +
-            string.Join("; ", attempts) +
-            ". Check the name against the .lin file (common ones: DASHED, HIDDEN, CENTER, " +
-            "PHANTOM, DOT, DASHDOT).");
-    }
 
     private static Task<ToolDispatchResult> SetLineweight(JsonObject args, CancellationToken ct) =>
         Run("acad.modify.set_lineweight", args, ct, (doc, db, tr) =>

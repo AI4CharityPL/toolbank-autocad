@@ -107,17 +107,21 @@ public static class ModifyTools
     public static Task<AffectedCount> Erase(IPluginGateway gw, HandlesArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<HandlesArgs, AffectedCount>(gw, "acad.modify.erase", args, T_NORMAL, ct);
 
-    [McpTool("undo", "Undo the last user/AI action by sending a SENDCOMMAND \"_U\". Counts the number of undo steps performed.", "modify",
+    [McpTool("undo", "Queue AutoCAD's UNDO command. The command runs AFTER this call returns, so " +
+        "its effect cannot be observed or counted here - the result reports only that it was queued. " +
+        "For a rollback you can verify, use acad_undo_checkpoint / acad_restore_checkpoint, which " +
+        "snapshot the drawing.", "modify",
         Intent = new[] { "cofnij operacje", "undo last", "undo last action", "rollback last edit", "wycofaj ostatnia akcje" },
         RequiresPlugin = true)]
-    public static Task<AffectedCount> Undo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
-        => ModifyProxy.CallAsync<HandlesArgs, AffectedCount>(gw, "acad.modify.undo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
+    public static Task<QueuedCommandResult> Undo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
+        => ModifyProxy.CallAsync<HandlesArgs, QueuedCommandResult>(gw, "acad.modify.undo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
 
-    [McpTool("redo", "Redo the most recently undone action via SENDCOMMAND \"_REDO\".", "modify",
+    [McpTool("redo", "Queue AutoCAD's REDO command. The command runs AFTER this call returns, so its " +
+        "effect cannot be observed or counted here - the result reports only that it was queued.", "modify",
         Intent = new[] { "ponow operacje", "redo last", "redo last undo", "redo last edit", "ponow akcje" },
         RequiresPlugin = true)]
-    public static Task<AffectedCount> Redo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
-        => ModifyProxy.CallAsync<HandlesArgs, AffectedCount>(gw, "acad.modify.redo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
+    public static Task<QueuedCommandResult> Redo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
+        => ModifyProxy.CallAsync<HandlesArgs, QueuedCommandResult>(gw, "acad.modify.redo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
 
     // ─────────────── grouping ───────────────
 

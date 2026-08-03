@@ -100,6 +100,16 @@ public sealed record CopiedEntities(
 public sealed record AffectedCount(
     [property: JsonPropertyName("affected")] int Affected);
 
+/// <summary>
+/// Result of a tool that hands work to AutoCAD's command queue instead of doing it inline.
+/// There is deliberately no count: the command has not run when this is returned, so any
+/// number here would be invented. undo/redo previously returned AffectedCount and reported
+/// "affected": 1 unconditionally, including when nothing was undone at all.
+/// </summary>
+public sealed record QueuedCommandResult(
+    [property: JsonPropertyName("queued")] bool Queued,
+    [property: JsonPropertyName("note")]   string Note);
+
 public sealed record GroupNameResult(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("memberCount")] int MemberCount);

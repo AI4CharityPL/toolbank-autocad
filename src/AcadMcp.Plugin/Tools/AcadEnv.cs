@@ -189,45 +189,148 @@ internal static class AcadEnv
     public static ObjectId ResolveLinetype(Database db, Transaction tr, string name)
     {
         var lt = (LinetypeTable)tr.GetObject(db.LinetypeTableId, OpenMode.ForRead);
-        if (!lt.Has(name))
+        if (lt.Has(name)) return lt[name];
+
+        if (string.Equals(name, "Continuous", StringComparison.OrdinalIgnoreCase))
+            return lt["Continuous"];
+
+        // (2a) The name as given. Works for an English install, and for a caller who
+        //      already passes the local name (a Polish user asking for KRESKOWA).
+        foreach (var file in new[] { "acadiso.lin", "acad.lin" })
         {
-            if (!string.Equals(name, "Continuous", StringComparison.OrdinalIgnoreCase))
+            try { db.LoadLineTypeFile(name, file); if (lt.Has(name)) return lt[name]; }
+            catch { /* not under this name in this file */ }
+        }
+
+        // (2b) The same linetype under its name in another language. Preferred over the
+        //      procedural fallback below because it uses AutoCAD's own definition rather
+        //      than our approximation of it - identical dash lengths, correct description.
+        //      Works in both directions: DASHED resolves to KRESKOWA on a Polish install,
+        //      KRESKOWA resolves to DASHED on an English one.
+        foreach (var alias in LinetypeAliases(name))
+        {
+            if (lt.Has(alias)) return lt[alias];
+            foreach (var file in new[] { "acadiso.lin", "acad.lin" })
             {
-                foreach (var file in new[] { "acadiso.lin", "acad.lin" })
-                {
-                    try { db.LoadLineTypeFile(name, file); if (lt.Has(name)) break; }
-                    catch { /* not defined under this name in this file -- try the next, then the procedural fallback */ }
-                }
-            }
-            if (!lt.Has(name))
-            {
-                var pattern = StandardLinetypePattern(name);
-                if (pattern is null)
-                    throw new ArgumentException(
-                        $"Linetype '{name}' is not loaded, could not be auto-loaded from acadiso.lin/acad.lin (possibly a localized AutoCAD install), and has no built-in fallback pattern. Load it manually via LINETYPE command or _-LINETYPE Load.");
-                lt.UpgradeOpen();
-                var ltr = new LinetypeTableRecord { Name = name, AsciiDescription = name };
-                ltr.NumDashes = pattern.Length;
-                for (int i = 0; i < pattern.Length; i++) ltr.SetDashLengthAt(i, pattern[i]);
-                lt.Add(ltr);
-                tr.AddNewlyCreatedDBObject(ltr, true);
+                try { db.LoadLineTypeFile(alias, file); if (lt.Has(alias)) return lt[alias]; }
+                catch { }
             }
         }
+
+        // (3) Define it ourselves under the exact name asked for. Last resort, but it means
+        //     an English name always works no matter how the install is localized.
+        var pattern = StandardLinetypePattern(name);
+        if (pattern is null)
+            throw new ArgumentException(
+                $"Linetype '{name}' is not in the drawing, could not be loaded from " +
+                "acadiso.lin / acad.lin under that name or any known translation of it, and has " +
+                "no built-in fallback pattern. Loaded in this drawing: " +
+                string.Join(", ", LoadedLinetypeNames(lt, tr)) + ".");
+
+        lt.UpgradeOpen();
+        var ltr = new LinetypeTableRecord { Name = name, AsciiDescription = name };
+        ltr.NumDashes = pattern.Length;
+        for (int i = 0; i < pattern.Length; i++) ltr.SetDashLengthAt(i, pattern[i]);
+        lt.Add(ltr);
+        tr.AddNewlyCreatedDBObject(ltr, true);
         return lt[name];
     }
+
+    private static IEnumerable<string> LoadedLinetypeNames(LinetypeTable lt, Transaction tr)
+    {
+        var names = new List<string>();
+        foreach (ObjectId id in lt)
+        {
+            try { names.Add(((LinetypeTableRecord)tr.GetObject(id, OpenMode.ForRead)).Name); }
+            catch { }
+        }
+        names.Sort(StringComparer.OrdinalIgnoreCase);
+        return names;
+    }
+
+    /// <summary>
+    /// Equivalent names for one linetype across localized AutoCAD support files.
+    /// Bidirectional: given either side, returns the others.
+    ///
+    /// Read off a real Polish AutoCAD 2025 install
+    /// (%APPDATA%\Autodesk\AutoCAD 2025\R25.0\plk\support\acadiso.lin). Note CENTER2 is NOT
+    /// translated there even though CENTER and CENTERX2 are, so this cannot be derived by
+    /// rule - it has to be a table.
+    /// </summary>
+    private static IEnumerable<string> LinetypeAliases(string name)
+    {
+        foreach (var group in LinetypeNameGroups)
+        {
+            if (group.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                foreach (var n in group)
+                    if (!string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
+                        yield return n;
+                yield break;
+            }
+        }
+    }
+
+    private static readonly string[][] LinetypeNameGroups =
+    {
+        new[] { "BORDER",     "OBRAMOWANIE"     },
+        new[] { "BORDER2",    "OBRAMOWANIE2"    },
+        new[] { "BORDERX2",   "OBRAMOWANIEX2"   },
+        new[] { "CENTER",     "SRODEK", "ŚRODEK" },
+        new[] { "CENTERX2",   "SRODEKX2", "ŚRODEKX2" },
+        new[] { "DASHDOT",    "KRESKAKROPKA"    },
+        new[] { "DASHDOT2",   "KRESKAKROPKA2"   },
+        new[] { "DASHDOTX2",  "KRESKAKROPKAX2"  },
+        new[] { "DASHED",     "KRESKOWA"        },
+        new[] { "DASHED2",    "KRESKOWA2"       },
+        new[] { "DASHEDX2",   "KRESKOWAX2"      },
+        new[] { "DIVIDE",     "PODZIEL"         },
+        new[] { "DIVIDE2",    "PODZIEL2"        },
+        new[] { "DIVIDEX2",   "PODZIELX2"       },
+        new[] { "DOT",        "KROPKA"          },
+        new[] { "DOT2",       "KROPKA2"         },
+        new[] { "DOTX2",      "KROPKAX2"        },
+        new[] { "HIDDEN",     "UKRYTE"          },
+        new[] { "HIDDEN2",    "UKRYTE2"         },
+        new[] { "HIDDENX2",   "UKRYTEX2"        },
+        new[] { "PHANTOM",    "POZORNA"         },
+        new[] { "PHANTOM2",   "POZORNA2"        },
+        new[] { "PHANTOMX2",  "POZORNAX2"       },
+        new[] { "FENCELINE1", "OGRODZENIE1"     },
+        new[] { "FENCELINE2", "OGRODZENIE2"     },
+        new[] { "TRACKS",     "ŚLADY", "SLADY" },
+        new[] { "BATTING",    "GRADZINOWANIE"   },
+        new[] { "ZIGZAG",     "ZYGZAK"          },
+    };
 
     /// <summary>Dash/gap pattern (mm, positive = dash, negative = gap) for the linetypes this
     /// plugin's domain palettes hardcode. Roughly matches the standard acadiso.lin patterns.</summary>
     private static double[]? StandardLinetypePattern(string name) => name.ToUpperInvariant() switch
     {
-        "DASHED"   => new[] { 12.7, -6.35 },
-        "DASHED2"  => new[] { 6.35, -3.175 },
-        "CENTER"   => new[] { 31.75, -6.35, 6.35, -6.35 },
-        "CENTER2"  => new[] { 19.05, -3.175, 3.175, -3.175 },
-        "HIDDEN"   => new[] { 6.35, -3.175 },
-        "HIDDEN2"  => new[] { 3.175, -1.5875 },
-        "PHANTOM"  => new[] { 31.75, -6.35, 6.35, -6.35, 6.35, -6.35 },
-        "PHANTOM2" => new[] { 19.05, -3.175, 3.175, -3.175, 3.175, -3.175 },
+        "DASHED"    => new[] { 12.7, -6.35 },
+        "DASHED2"   => new[] { 6.35, -3.175 },
+        "DASHEDX2"  => new[] { 25.4, -12.7 },
+        "CENTER"    => new[] { 31.75, -6.35, 6.35, -6.35 },
+        "CENTER2"   => new[] { 19.05, -3.175, 3.175, -3.175 },
+        "CENTERX2"  => new[] { 63.5, -12.7, 12.7, -12.7 },
+        "HIDDEN"    => new[] { 6.35, -3.175 },
+        "HIDDEN2"   => new[] { 3.175, -1.5875 },
+        "HIDDENX2"  => new[] { 12.7, -6.35 },
+        "PHANTOM"   => new[] { 31.75, -6.35, 6.35, -6.35, 6.35, -6.35 },
+        "PHANTOM2"  => new[] { 19.05, -3.175, 3.175, -3.175, 3.175, -3.175 },
+        "PHANTOMX2" => new[] { 63.5, -12.7, 12.7, -12.7, 12.7, -12.7 },
+        "DASHDOT"   => new[] { 12.7, -6.35, 0.0, -6.35 },
+        "DASHDOT2"  => new[] { 6.35, -3.175, 0.0, -3.175 },
+        "DASHDOTX2" => new[] { 25.4, -12.7, 0.0, -12.7 },
+        "DOT"       => new[] { 0.0, -6.35 },
+        "DOT2"      => new[] { 0.0, -3.175 },
+        "DOTX2"     => new[] { 0.0, -12.7 },
+        "BORDER"    => new[] { 12.7, -6.35, 12.7, -6.35, 0.0, -6.35 },
+        "BORDER2"   => new[] { 6.35, -3.175, 6.35, -3.175, 0.0, -3.175 },
+        "BORDERX2"  => new[] { 25.4, -12.7, 25.4, -12.7, 0.0, -12.7 },
+        "DIVIDE"    => new[] { 12.7, -6.35, 0.0, -6.35, 0.0, -6.35 },
+        "DIVIDE2"   => new[] { 6.35, -3.175, 0.0, -3.175, 0.0, -3.175 },
+        "DIVIDEX2"  => new[] { 25.4, -12.7, 0.0, -12.7, 0.0, -12.7 },
         _ => null,
     };
 

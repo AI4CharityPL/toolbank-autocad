@@ -8,12 +8,17 @@
     <WarningsAsErrors />
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
-    <Authors>AutoCAD MCP Megasystem</Authors>
-    <Company>AutoCAD MCP Megasystem</Company>
-    <Product>AutoCAD MCP Megasystem</Product>
-    <Copyright>(c) AutoCAD MCP Megasystem</Copyright>
-    <Version>0.1.0-alpha</Version>
+    <Authors>Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors</Authors>
+    <Company>MCP Nexus AutoCAD</Company>
+    <Product>MCP Nexus AutoCAD</Product>
+    <Copyright>Copyright (c) 2026 Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors</Copyright>
+    <Version>1.0.0</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
 
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>

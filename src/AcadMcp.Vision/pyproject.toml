@@ -3,9 +3,9 @@ name = "acadmcp-vision"
 version = "0.2.0"
 description = "AutoCAD MCP Vision sidecar - FastAPI HTTP API for OCR / vision LLM / YOLO / SAM."
 requires-python = ">=3.11"
-authors = [{ name = "AutoCAD MCP Megasystem" }]
+authors = [{ name = "Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors" }]
 readme = "README.md"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -16,9 +16,14 @@ dependencies = [
     "httpx>=0.27",
     "pillow>=10.4",
     "pypdfium2>=4.30",
-    # Heavy deps installed on demand by setup-vision-models.ps1:
-    #   "paddlepaddle", "paddleocr", "torch", "ultralytics", "segment-anything-2",
-    #   "anthropic", "openai"
+    # Heavy deps are NOT installed here - see the [ml] extra and setup-vision-models.ps1.
+    # Every one of them is resolved lazily via importlib at call time, so the core
+    # install stays light and pulls in no ML stack. Engines degrade to a clear error
+    # when their backend is absent.
+    #   engines/ocr.py        -> paddleocr | easyocr | pytesseract (first one available)
+    #   engines/yolo.py       -> ultralytics  (AGPL-3.0 - see THIRD-PARTY-NOTICES.md)
+    #   engines/vision_llm.py -> anthropic | openai | google-genai
+    # (_loaders.py also resolves pypdfium2 lazily, but that one IS a core dep above.)
 ]
 
 [project.optional-dependencies]
@@ -29,6 +34,11 @@ dev = [
     "mypy>=1.13",
     "types-protobuf",
 ]
+# WARNING - licence: this extra pulls in ultralytics, which is AGPL-3.0, not MIT.
+# acadmcp-vision itself is MIT and never imports ultralytics unless you install this
+# extra: engines/yolo.py resolves it lazily via importlib at call time, so a default
+# install links no AGPL code. Installing `[ml]` puts AGPL obligations on YOUR
+# deployment. See THIRD-PARTY-NOTICES.md in the repository root.
 ml = [
     "torch>=2.5",
     "torchvision>=0.20",

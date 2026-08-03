@@ -8,14 +8,18 @@
   #define StagingDir "..\dist\AcadMcpCompanion.bundle"
 #endif
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "1.0.0"
 #endif
 
 [Setup]
 AppId={{A7E5C9B2-8D14-49F1-AB73-2C9E1F0A6B55}
 AppName=AutoCAD AI Assistant
 AppVersion={#AppVersion}
-AppPublisher=AutoCAD MCP Megasystem
+AppPublisher=MCP Nexus AutoCAD contributors
+AppPublisherURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD
+AppSupportURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/issues
+AppUpdatesURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/releases
+LicenseFile=..\LICENSE
 DefaultDirName={userappdata}\Autodesk\ApplicationPlugins\AcadMcpCompanion.bundle
 DisableDirPage=yes
 DisableProgramGroupPage=yes

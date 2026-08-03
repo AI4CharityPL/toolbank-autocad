@@ -3,10 +3,12 @@
                     AppVersion="${VERSION}"
                     Name="AutoCAD AI Assistant"
                     Description="Wbudowany asystent AI dla AutoCAD - czat, zliczanie elementow, raporty"
-                    Author="AutoCAD MCP Megasystem"
+                    Author="MCP Nexus AutoCAD contributors"
                     ProductType="Application"
                     AutodeskProduct="AutoCAD">
-  <CompanyDetails Name="AutoCAD MCP Megasystem" Url="" Email="" />
+  <CompanyDetails Name="MCP Nexus AutoCAD contributors"
+                  Url="https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD"
+                  Email="" />
   <Components Description="In-app AI assistant + AutoCAD tool host">
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25" />
     <ComponentEntry AppName="AcadMcpCompanion"

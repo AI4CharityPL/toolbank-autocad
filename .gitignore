@@ -64,6 +64,8 @@ docs/tools/_generated/
 
 # Local secrets / configs
 *.local.json
+# Per-machine MCP client config: contains absolute paths to this checkout's build output.
+.mcp.json
 .env
 .env.*
 !.env.example

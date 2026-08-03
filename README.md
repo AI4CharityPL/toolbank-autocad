@@ -275,4 +275,16 @@ Full details in [AUTHORS.md](AUTHORS.md).
 
 ## License
 
-Proprietary. All rights reserved.
+[MIT](LICENSE) — use it, fork it, ship it, no strings attached.
+
+Two caveats worth knowing before you build, both covered in full in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md):
+
+- **You need your own licensed AutoCAD 2025+.** The plugin compiles against Autodesk's
+  managed assemblies by `HintPath` with `Private=false` / `ExcludeAssets=runtime` —
+  nothing from Autodesk is redistributed here, and the MIT licence on this repository
+  grants you no rights to Autodesk software.
+- **The optional `[ml]` extra of the vision sidecar pulls in Ultralytics YOLO, which is
+  AGPL-3.0.** A default install never imports it (`engines/yolo.py` resolves it lazily at
+  call time), so the code as shipped links no AGPL. Installing that extra puts AGPL
+  obligations on your deployment.

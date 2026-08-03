@@ -184,10 +184,25 @@ internal static class PlumbingPluginTools
             w = sizedW ?? wI;
             d = sizedD ?? dI;
         }
+        else if (s_sizedFamilies.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase))
+                 is { } bareFamily)
+        {
+            // A bare family name, exactly as list_plumbing_catalog reports it. The catalog
+            // publishes PLMB-BSN-ACC together with widthMm 700 / depthMm 550, but this only
+            // consulted s_sizedFamilies AFTER demanding a -W-D suffix, so the very names the
+            // catalog hands out were rejected: 6 of its 14 entries (accessible basin, all
+            // three bathtubs, both showers) could not be inserted through insert_plumbing at
+            // all. Use the family's own defaults, overridable by the caller.
+            family = bareFamily.Name;
+            w = sizedW ?? bareFamily.WidthMm;
+            d = sizedD ?? bareFamily.DepthMm;
+        }
         else
         {
             throw new ArgumentException(
-                $"Block '{name}' is neither in the fixed catalog nor a sized-family name (expected format PLMB-FAMILY-SUBTYPE-W-D).");
+                $"Block '{name}' is neither in the fixed catalog, a known sized family, nor a " +
+                "sized-family name (expected format PLMB-FAMILY-SUBTYPE-W-D). " +
+                "Names accepted here are exactly those returned by list_plumbing_catalog.");
         }
         var famHit = s_sizedFamilies.FirstOrDefault(e => string.Equals(e.Name, family, StringComparison.OrdinalIgnoreCase));
         BuildSizedBlock(tr, btr, family, w, d);

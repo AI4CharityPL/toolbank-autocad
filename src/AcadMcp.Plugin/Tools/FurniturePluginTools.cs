@@ -185,6 +185,22 @@ internal static class FurniturePluginTools
             return (fixedHit.WidthMm, fixedHit.DepthMm);
         }
 
+        // A bare family name, exactly as list_furniture_catalog reports it. That listing is
+        // s_fixedCatalog.Concat(s_sizedFamilies), so it publishes family names together with
+        // their default width/depth - but this used to go straight to ParseSizedName, which
+        // demands a -W-D suffix and threw before any family lookup happened. 11 of the 26
+        // names the catalogue hands out (every desk, cabinet and table) could not be inserted
+        // through insert_furniture at all. Same defect as insert_plumbing.
+        var bareFamily = s_sizedFamilies.FirstOrDefault(
+            e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (bareFamily is not null)
+        {
+            double bw = sizedW ?? bareFamily.WidthMm;
+            double bd = sizedD ?? bareFamily.DepthMm;
+            BuildSizedBlock(tr, btr, bareFamily.Name, bw, bd);
+            return (bw, bd);
+        }
+
         // sized family: strip the -W-D suffix
         var (family, wMm, dMm) = ParseSizedName(name, sizedW, sizedD);
         BuildSizedBlock(tr, btr, family, wMm, dMm);

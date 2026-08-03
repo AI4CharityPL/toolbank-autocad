@@ -105,23 +105,94 @@ internal static class ViewPluginTools
             return Wrap(new { affected = 1 });
         });
 
+    /// <summary>
+    /// Frame a model-space rectangle, with a small margin so geometry is not flush against
+    /// the viewport edge (what ZOOM _E does implicitly).
+    /// </summary>
+    private static JsonObject SetViewToRect(Document doc, double xMin, double yMin, double xMax, double yMax)
+    {
+        double w = xMax - xMin, h = yMax - yMin;
+
+        // A single point, or a drawing containing one zero-length entity, has no extent to
+        // frame. Give it an arbitrary but sane window rather than throwing.
+        if (w <= 1e-9 && h <= 1e-9) { w = h = 100.0; }
+        else if (w <= 1e-9) { w = h; }
+        else if (h <= 1e-9) { h = w; }
+
+        double cx = (xMin + xMax) / 2.0, cy = (yMin + yMax) / 2.0;
+        const double margin = 1.04;
+
+        using var vtr = new ViewTableRecord
+        {
+            CenterPoint = new Point2d(cx, cy),
+            Width = w * margin,
+            Height = h * margin,
+        };
+        doc.Editor.SetCurrentView(vtr);
+        return Wrap(new
+        {
+            affected = 1,
+            window = new { xMin, yMin, xMax, yMax },
+        });
+    }
+
+    /// <summary>
+    /// True model-space extents. Database.Extmin/Extmax go stale after edits and are
+    /// inverted on an empty drawing, so refresh first and sanity-check the result.
+    /// </summary>
+    private static bool TryGetDrawingExtents(Database db, out double xMin, out double yMin, out double xMax, out double yMax)
+    {
+        xMin = yMin = xMax = yMax = 0;
+        try { db.UpdateExt(true); } catch { /* nothing drawable yet */ }
+
+        var lo = db.Extmin;
+        var hi = db.Extmax;
+        if (lo.X > hi.X || lo.Y > hi.Y) return false;   // the empty-drawing sentinel
+        xMin = lo.X; yMin = lo.Y; xMax = hi.X; yMax = hi.Y;
+        return true;
+    }
+
     private static Task<ToolDispatchResult> ZoomExtents(JsonObject args, CancellationToken ct) =>
         RunUi("acad.view.zoom_extents", ct, (doc, db) =>
         {
-            // No managed equivalent; use _-prefixed ZOOM _E. CMDECHO is toggled so the
-            // command doesn't spam the command line during automated inspection loops.
-            // SendCommand justification: AutoCAD .NET API exposes no ViewTableRecord that
-            // auto-fits all entities; Database.Extmin/Extmax can be stale after edits, so
-            // ZOOM _E is the canonical operation.
-            RunAcadCommand(doc, "_.ZOOM", "_E");
-            return Wrap(new { affected = 1 });
+            // Was RunAcadCommand(doc, "_.ZOOM", "_E"). That failed with eInvalidInput on every
+            // call from a pipe dispatch - the same failure mode rule 15 and rule 26 §9 warn
+            // about for the command layer, and the one that took out the parametric tools.
+            // zoom_center / zoom_window already prove the managed route works, so use it here
+            // too: refresh the extents, then frame them with a ViewTableRecord.
+            if (!TryGetDrawingExtents(db, out var xMin, out var yMin, out var xMax, out var yMax))
+                throw new InvalidOperationException(
+                    "Drawing has no extents to zoom to (it contains no drawable geometry).");
+
+            return SetViewToRect(doc, xMin, yMin, xMax, yMax);
         });
 
     private static Task<ToolDispatchResult> ZoomAll(JsonObject args, CancellationToken ct) =>
         RunUi("acad.view.zoom_all", ct, (doc, db) =>
         {
-            RunAcadCommand(doc, "_.ZOOM", "_A");
-            return Wrap(new { affected = 1 });
+            // ZOOM _A frames the drawing limits, or the extents when geometry spills past them.
+            bool hasExt = TryGetDrawingExtents(db, out var xMin, out var yMin, out var xMax, out var yMax);
+
+            var lmin = db.Limmin;
+            var lmax = db.Limmax;
+            bool hasLimits = lmax.X > lmin.X && lmax.Y > lmin.Y;
+
+            if (hasLimits && hasExt)
+            {
+                xMin = Math.Min(xMin, lmin.X); yMin = Math.Min(yMin, lmin.Y);
+                xMax = Math.Max(xMax, lmax.X); yMax = Math.Max(yMax, lmax.Y);
+            }
+            else if (hasLimits)
+            {
+                xMin = lmin.X; yMin = lmin.Y; xMax = lmax.X; yMax = lmax.Y;
+            }
+            else if (!hasExt)
+            {
+                throw new InvalidOperationException(
+                    "Drawing has neither limits nor extents to zoom to.");
+            }
+
+            return SetViewToRect(doc, xMin, yMin, xMax, yMax);
         });
 
     private static Task<ToolDispatchResult> ZoomCenter(JsonObject args, CancellationToken ct) =>

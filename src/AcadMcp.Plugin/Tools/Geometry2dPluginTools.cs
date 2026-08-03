@@ -299,10 +299,50 @@ internal static class Geometry2dPluginTools
             var a = Read<DrawRevcloudArgsDto>(args);
             if (a.Vertices is null || a.Vertices.Count < 3)
                 throw new ArgumentException("revcloud needs >= 3 vertices");
+
+            // This used to add every vertex with bulge 0 and ignore arcMin/arcMax entirely,
+            // so it produced a plain closed polygon - not a revision cloud. Each edge is now
+            // subdivided into scallops whose chord length lands inside [arcMin, arcMax], and
+            // every segment gets a bulge so it renders as an arc.
+            double min = a.ArcMin > 0 ? a.ArcMin : 0;
+            double max = a.ArcMax > 0 ? a.ArcMax : 0;
+            if (min <= 0 && max <= 0) { min = 300; max = 500; }      // AutoCAD's own defaults
+            else if (min <= 0) min = max / 2;
+            else if (max <= 0) max = min * 2;
+            if (max < min) (min, max) = (max, min);
+            double target = (min + max) / 2.0;
+
+            var pts = a.Vertices.Select(AcadEnv.ToPoint2d).ToList();
+
+            // Arcs must bulge away from the enclosed area. Positive bulge turns to the left of
+            // travel, which is inward on a CCW ring, so the sign follows the signed area.
+            double twiceArea = 0;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                var p = pts[i];
+                var q = pts[(i + 1) % pts.Count];
+                twiceArea += (p.X * q.Y) - (q.X * p.Y);
+            }
+            // tan(theta/4) for theta ~= 106 deg: the shallow scallop AutoCAD draws.
+            double bulge = (twiceArea >= 0 ? -1.0 : 1.0) * 0.5;
+
             var pl = new Polyline { Closed = true };
-            for (int i = 0; i < a.Vertices.Count; i++)
-                pl.AddVertexAt(i, AcadEnv.ToPoint2d(a.Vertices[i]), 0, 0, 0);
-            return Wrap(new { entity = AcadEnv.Persist(db, tr, pl, a.Layer) });
+            int idx = 0;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                var p = pts[i];
+                var q = pts[(i + 1) % pts.Count];
+                double len = p.GetDistanceTo(q);
+                int steps = Math.Max(1, (int)Math.Round(len / target));
+
+                for (int s = 0; s < steps; s++)
+                {
+                    double f = (double)s / steps;
+                    var v = new Point2d(p.X + (q.X - p.X) * f, p.Y + (q.Y - p.Y) * f);
+                    pl.AddVertexAt(idx++, v, bulge, 0, 0);
+                }
+            }
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, pl, a.Layer), scallops = idx });
         });
 
     // ─────────── query handlers ───────────

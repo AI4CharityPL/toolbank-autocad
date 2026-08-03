@@ -373,8 +373,22 @@ internal static class FilesPluginTools
             return Wrap(new { affected = affected < 0 ? 0 : affected });
         });
 
-    private static Task<ToolDispatchResult> ExportFile(JsonObject args, CancellationToken ct) =>
-        RunUiWithLock("acad.files.export_file", args, ct, (doc, db) =>
+    private static async Task<ToolDispatchResult> ExportFile(JsonObject args, CancellationToken ct)
+    {
+        // Plotting is serialised process-wide and the engine takes a moment to settle after a
+        // job ends, so two exports in a row used to fail outright with "plot engine is busy".
+        // Exporting a PNG and then a PDF is an entirely normal sequence for an agent, so wait
+        // rather than pushing the retry onto the caller. Deliberately before the UI dispatch -
+        // see WaitForPlotEngineAsync for why waiting on the UI thread cannot work.
+        try
+        {
+            var fmtPeek = (args["format"]?.GetValue<string>() ?? "").Trim().ToUpperInvariant();
+            if (fmtPeek is "PDF" or "DWF" or "DWFX" or "IMAGE" or "PNG")
+                await WaitForPlotEngineAsync(TimeSpan.FromSeconds(20), ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) { return AcadErrorMapper.Fail("acad.files.export_file", ex); }
+
+        return await RunUiWithLock("acad.files.export_file", args, ct, (doc, db) =>
         {
             var a = Read<ExportFileArgsDto>(args);
             if (string.IsNullOrWhiteSpace(a.Path))   throw new ArgumentException("path is required.");
@@ -405,7 +419,8 @@ internal static class FilesPluginTools
                         $"Unsupported format '{a.Format}'. Use DWG, DXF, PDF, DWF, DWFX, IMAGE/PNG.");
             }
             return Wrap(new { path = a.Path });
-        });
+        }).ConfigureAwait(false);
+    }
 
     private static Task<ToolDispatchResult> PurgeDatabase(JsonObject args, CancellationToken ct) =>
         RunUiWithLock("acad.files.purge_database", args, ct, (doc, db) =>
@@ -612,10 +627,86 @@ internal static class FilesPluginTools
 
     // ─────────── plot helper (trap #11) ───────────
 
+    /// <summary>
+    /// Wait for the process-wide plot engine to go idle. MUST be awaited from the background
+    /// thread, before dispatching to the UI thread: the previous plot finishes its teardown
+    /// ON the UI thread, so blocking there would starve the very work we are waiting for and
+    /// guarantee a timeout.
+    /// </summary>
+    private static async Task WaitForPlotEngineAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (PlotFactory.ProcessPlotState != ProcessPlotState.NotPlotting)
+        {
+            if (DateTime.UtcNow >= deadline)
+                throw new InvalidOperationException(
+                    $"AutoCAD plot engine still busy after {timeout.TotalSeconds:0}s. " +
+                    "Another plot or publish job is running - wait for it to finish and retry.");
+
+            await Task.Delay(100, ct).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Select device + paper, falling back to whatever the device actually offers.
+    /// Media availability varies per install and per printer driver, so a hardcoded canonical
+    /// name is not portable - and failing the whole export over the paper size, when the
+    /// caller only asked for "a PNG of this area", is the wrong trade.
+    /// </summary>
+    private static void ApplyPlotConfiguration(PlotSettingsValidator psv, PlotSettings ps, string device, string paper)
+    {
+        try
+        {
+            psv.SetPlotConfigurationName(ps, device, paper);
+            return;
+        }
+        catch (Exception first)
+        {
+            // Does the device exist at all? If not, no paper name will help.
+            try { psv.SetPlotConfigurationName(ps, device, null); }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"AutoCAD does not have plot device '{device}'. Installed devices: " +
+                    SafeJoin(psv.GetPlotDeviceList()) + ".", ex);
+            }
+
+            // Device is fine, so the paper name was the problem. Take the device's own list.
+            var medias = SafeList(psv.GetCanonicalMediaNameList(ps));
+            var pick = medias.FirstOrDefault(m => string.Equals(m, paper, StringComparison.OrdinalIgnoreCase))
+                       ?? medias.FirstOrDefault();
+
+            if (pick is null)
+                throw new InvalidOperationException(
+                    $"Plot device '{device}' reports no usable paper sizes.", first);
+
+            try { psv.SetPlotConfigurationName(ps, device, pick); }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Plot device '{device}' rejected both '{paper}' and its own '{pick}'. " +
+                    "Available: " + SafeJoin(psv.GetCanonicalMediaNameList(ps)) + ".", ex);
+            }
+        }
+    }
+
+    private static List<string> SafeList(System.Collections.Specialized.StringCollection? c)
+    {
+        var list = new List<string>();
+        if (c is null) return list;
+        foreach (string? s in c) if (s is not null) list.Add(s);
+        return list;
+    }
+
+    private static string SafeJoin(System.Collections.Specialized.StringCollection? c)
+    {
+        var list = SafeList(c);
+        if (list.Count == 0) return "(none reported)";
+        return string.Join(", ", list.Take(12)) + (list.Count > 12 ? $", ... (+{list.Count - 12})" : "");
+    }
+
     private static void PlotToDevice(Document doc, Database db, ExportFileArgsDto a, string fmt)
     {
-        if (PlotFactory.ProcessPlotState != ProcessPlotState.NotPlotting)
-            throw new InvalidOperationException("AutoCAD plot engine is busy; retry shortly.");
 
         // If caller supplied a window rectangle but forgot scope="Window", infer it so
         // the workflow "give me a PNG of this area" needs only one argument.
@@ -658,12 +749,7 @@ internal static class FilesPluginTools
                 : "ANSI_A_(8.50_x_11.00_Inches)";
         }
 
-        try { psv.SetPlotConfigurationName(ps, device, paper); }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"AutoCAD does not have plot device '{device}' (or paper '{paper}'): {ex.Message}", ex);
-        }
+        ApplyPlotConfiguration(psv, ps, device, paper);
 
         var scope = wantsWindow ? "WINDOW" : (a.Scope ?? "Extents").Trim().ToUpperInvariant();
         psv.SetPlotType(ps, scope switch

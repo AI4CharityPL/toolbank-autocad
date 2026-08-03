@@ -1,4 +1,4 @@
-// AutoCAD plugin handlers for the acad-files category.
+﻿// AutoCAD plugin handlers for the acad-files category.
 // Registered under "acad.files.<verb>"; everything runs on the UI thread.
 //
 // Rules: 10, 11, 12, 19, 28-acad-blocks-layers-files-traps.md
@@ -20,6 +20,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using AcadMcp.Plugin.Logging;
 using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
 using Autodesk.AutoCAD.ApplicationServices;
@@ -794,9 +795,25 @@ internal static class FilesPluginTools
         // exists (so an agent that exports and immediately reads gets "file not found"), and
         // the engine stays busy long enough to reject the next export. Plotting synchronously
         // makes the tool's contract honest - when it returns, the file is on disk.
+        // BACKGROUNDPLOT is an Int16 sysvar. Passing a plain int throws eInvalidInput, and the
+        // first version of this swallowed that in a bare catch - so background plotting stayed
+        // on, the file kept appearing seconds after the tool returned, and the engine kept
+        // blocking the next export. Silent catch, silent regression; hence the logging below.
         object? prevBgPlot = null;
-        try { prevBgPlot = Application.GetSystemVariable("BACKGROUNDPLOT"); } catch { }
-        try { Application.SetSystemVariable("BACKGROUNDPLOT", 0); } catch { }
+        try { prevBgPlot = Application.GetSystemVariable("BACKGROUNDPLOT"); }
+        catch (Exception ex) { Log.Warn($"export_file: cannot read BACKGROUNDPLOT: {ex.Message}"); }
+
+        bool forcedForeground = false;
+        try
+        {
+            Application.SetSystemVariable("BACKGROUNDPLOT", (short)0);
+            forcedForeground = true;
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("export_file: could not disable background plotting " +
+                           $"({ex.Message}). The output file may appear after this call returns.");
+        }
 
         var pp = new PlotProgressDialog(false, 1, true);
         try
@@ -814,16 +831,22 @@ internal static class FilesPluginTools
         finally
         {
             pp.Destroy();
-            if (prevBgPlot is not null)
+            if (forcedForeground && prevBgPlot is not null)
             {
-                try { Application.SetSystemVariable("BACKGROUNDPLOT", prevBgPlot); } catch { }
+                try { Application.SetSystemVariable("BACKGROUNDPLOT", prevBgPlot); }
+                catch (Exception ex) { Log.Warn($"export_file: cannot restore BACKGROUNDPLOT: {ex.Message}"); }
             }
         }
         tr.Commit();
 
-        // Belt and braces: even foreground plots can finish writing a moment after EndPlot.
-        // Never fail the export over this - the plot itself already succeeded.
-        for (int i = 0; i < 50 && !File.Exists(a.Path); i++)
+        // Even a foreground plot can finish writing a moment after EndPlot. Never fail the
+        // export over this - the plot itself already succeeded - but do not return until the
+        // file is actually there, so "success" means the caller can open it.
+        var waitUntil = DateTime.UtcNow.AddSeconds(15);
+        while (!File.Exists(a.Path) && DateTime.UtcNow < waitUntil)
             System.Threading.Thread.Sleep(100);
+
+        if (!File.Exists(a.Path))
+            Log.Warn($"export_file: plot completed but '{a.Path}' has not appeared yet.");
     }
 }

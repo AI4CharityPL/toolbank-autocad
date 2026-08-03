@@ -171,13 +171,20 @@ public class SchemaContractTests
 
             if (FreeFormArgs.Contains(t.Name)) continue;
 
-            // {"type":"object"} with no properties tells a model nothing. Either the DTO was
-            // not expanded, or it is free-form and belongs in FreeFormArgs above.
+            // {"type":"object"} with neither properties nor additionalProperties tells a model
+            // nothing. Either the DTO was not expanded, or it is free-form and belongs in
+            // FreeFormArgs above.
+            //
+            // additionalProperties counts as described: that is how a string-keyed dictionary
+            // (IReadOnlyDictionary<string,T>, e.g. block attributes) is represented in JSON
+            // Schema. It has no fixed property names by definition, and the value schema is
+            // what a caller actually needs.
             foreach (var kv in props!)
             {
                 if (kv.Value is JsonObject o &&
                     o["type"]?.GetValue<string>() == "object" &&
-                    o["properties"] is null)
+                    o["properties"] is null &&
+                    o["additionalProperties"] is null)
                 {
                     problems.Add($"{cat}/{t.Name}: property '{kv.Key}' is an unexpanded object");
                 }

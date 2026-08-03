@@ -84,6 +84,24 @@ public static class JsonSchemaBuilder
             return new JsonObject { ["type"] = "string", ["enum"] = values };
         }
 
+        // Dictionaries BEFORE collections. IReadOnlyDictionary<string,string> also implements
+        // IEnumerable<KeyValuePair<string,string>>, so the collection branch below would
+        // describe it as an array of {key, value} objects - which is not what
+        // System.Text.Json binds. A caller following that schema sends a JSON array and
+        // deserialization fails outright ("could not be converted to
+        // IReadOnlyDictionary`2"), which is exactly what set_block_reference_attributes did.
+        var valueType = DictionaryValueTypeOf(type);
+        if (valueType is not null)
+        {
+            return new JsonObject
+            {
+                ["type"] = "object",
+                ["additionalProperties"] = depth >= MaxDepth
+                    ? new JsonObject { ["type"] = "object" }
+                    : ForType(valueType, depth + 1, seen),
+            };
+        }
+
         var element = ElementTypeOf(type);
         if (element is not null)
         {
@@ -172,6 +190,25 @@ public static class JsonSchemaBuilder
     {
         var d = prop.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>()?.Description;
         return string.IsNullOrWhiteSpace(d) ? null : d;
+    }
+
+    /// <summary>
+    /// Value type of a string-keyed dictionary, or null when the type is not one.
+    /// Only string keys map onto a JSON object; anything else has no JSON representation
+    /// as an object and is better described as the array it really is.
+    /// </summary>
+    private static Type? DictionaryValueTypeOf(Type type)
+    {
+        foreach (var i in new[] { type }.Concat(type.GetInterfaces()))
+        {
+            if (!i.IsGenericType) continue;
+            var def = i.GetGenericTypeDefinition();
+            if (def != typeof(IDictionary<,>) && def != typeof(IReadOnlyDictionary<,>)) continue;
+
+            var args = i.GetGenericArguments();
+            if (args[0] == typeof(string)) return args[1];
+        }
+        return null;
     }
 
     /// <summary>Element type for arrays and generic collections; null for anything else.</summary>

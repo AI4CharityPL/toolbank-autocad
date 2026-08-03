@@ -249,7 +249,12 @@ internal static class LayersPluginTools
             AcadEnv.ValidateSymbolName(a.Name, "LayerState");
             var lsm = new LayerStateManager(db);
             if (lsm.HasLayerState(a.Name)) lsm.DeleteLayerState(a.Name);
-            lsm.SaveLayerState(a.Name, AllLayerStateMasks, db.Clayer);
+            // Third argument is the VIEWPORT the state belongs to, not a layer.
+            // This passed db.Clayer - the current layer's ObjectId - so AutoCAD rejected
+            // every save with eNotThatKindOfClass, which in turn made restore_layer_state
+            // fail with "does not exist" because nothing was ever written.
+            // ObjectId.Null means "not viewport-specific", matching RestoreLayerState below.
+            lsm.SaveLayerState(a.Name, AllLayerStateMasks, ObjectId.Null);
             if (!string.IsNullOrWhiteSpace(a.Description))
                 lsm.SetLayerStateDescription(a.Name, a.Description);
             return Wrap(new { affected = 1 });
@@ -271,9 +276,17 @@ internal static class LayersPluginTools
         {
             var lsm = new LayerStateManager(db);
             var names = new List<string>();
-            // GetLayerStateNames returns System.Collections.Specialized.StringCollection (non-generic IEnumerable).
+            // GetLayerStateNames returns StringCollection (non-generic IEnumerable), and on a
+            // drawing that has never held a layer state it can come back null - which made
+            // this throw NullReferenceException instead of answering with an empty list.
+            // "None saved yet" is a normal state, not an error.
             var coll = lsm.GetLayerStateNames(false, false);
-            foreach (string n in coll) names.Add(n);
-            return Wrap(new { items = names });
+            if (coll is not null)
+            {
+                foreach (string? n in coll)
+                    if (!string.IsNullOrEmpty(n)) names.Add(n!);
+            }
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            return Wrap(new { items = names, count = names.Count });
         });
 }

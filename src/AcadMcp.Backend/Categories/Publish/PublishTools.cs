@@ -30,6 +30,8 @@ public static class PublishTools
 {
     private const int T_FAST = 5_000;
     private const int T_NORMAL = 20_000;
+    // A multi-sheet publish is minutes, not seconds, on a real set.
+    private const int T_LONG = 300_000;
 
     [McpTool("create_page_setup", "Define a NAMED, reusable page setup in this drawing - device, paper size, plot style table, rotation - that can then be applied to many layouts at once. Either snapshot a layout you already configured by hand (fromLayout), or state the settings explicitly; passing both is an error rather than a precedence rule nobody remembers. Refuses to overwrite an existing name unless overwrite is true, because a firm's standard page setups should not be redefined by accident.", "publish",
         Intent = new[] { "utworz nazwane ustawienia strony", "zdefiniuj page setup", "create page setup",
@@ -59,5 +61,23 @@ public static class PublishTools
         RequiresPlugin = true)]
     public static Task<DeletePageSetupResult> DeletePageSetup(IPluginGateway gw, PageSetupNameArgs args, CancellationToken ct)
         => PublishProxy.CallAsync<PageSetupNameArgs, DeletePageSetupResult>(gw, "acad.publish.delete_page_setup", args, T_NORMAL, ct);
+
+
+    // ─────────── multi-sheet output ───────────
+
+    [McpTool("publish_sheets", "Publish several layouts into ONE file - a multi-sheet PDF, DWF or DWFX. This is the thing files.export_file cannot do: its layout argument is singular, so it produces one file per sheet. Name the layouts explicitly; there is no all-layouts default, for the same reason apply_page_setup has none. Optionally names a page setup to plot every sheet through, which is how a set comes out consistent. Reports the byte count of the file that actually appeared, and fails if none did.", "publish",
+        Intent = new[] { "opublikuj arkusze do jednego pdf", "wielostronicowy pdf z ukladow", "publish sheets to one pdf",
+                         "multi-sheet pdf from layouts", "export all sheets into a single file",
+                         "zestaw arkuszy do jednego pliku" },
+        RequiresPlugin = true)]
+    public static Task<PublishSheetsResult> PublishSheets(IPluginGateway gw, PublishSheetsArgs args, CancellationToken ct)
+        => PublishProxy.CallAsync<PublishSheetsArgs, PublishSheetsResult>(gw, "acad.publish.publish_sheets", args, T_LONG, ct);
+
+    [McpTool("get_plot_area", "Report what a layout would plot: paper size, margins, the plot window, rotation, centring and scale. Read-only. This is the agent-shaped half of a plot preview - a preview is something a human looks at, while this is the part that can be checked before committing to output. Omit layoutName for the current layout.", "publish",
+        Intent = new[] { "jaki obszar zostanie wydrukowany", "sprawdz ustawienia wydruku ukladu", "get plot area",
+                         "what will this layout plot", "plot extents and margins", "podglad obszaru wydruku" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<PlotAreaResult> GetPlotArea(IPluginGateway gw, PlotAreaArgs args, CancellationToken ct)
+        => PublishProxy.CallAsync<PlotAreaArgs, PlotAreaResult>(gw, "acad.publish.get_plot_area", args, T_FAST, ct);
 
 }

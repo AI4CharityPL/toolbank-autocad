@@ -91,6 +91,24 @@ Cost me one diagnostic cycle.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
+### A9. `DBMOD` stays non-zero after `files.save_document_as`
+**Status:** found 2026-08-04 while building `publish_sheets`. Not investigated.
+`publish_sheets` guards against publishing a drawing with unsaved changes, because the Publisher
+reads the DWG from disk rather than from memory. The guard reads `DBMOD`, and `DBMOD` was still
+`1` immediately after a successful `files.save_document_as` — so the guard refused a drawing that
+had just been saved. Worked around with an explicit `allowUnsaved` argument and a message that
+names this entry. Whether `save_document_as` fails to clear the flag, or `DBMOD` means something
+narrower than "has unsaved changes", is unresolved.
+
+### A10. `publish_sheets` happy path is unverified
+**Status:** shipped with its guards verified and its success path not.
+Every refusal is verified live — empty layout list, unknown format, unknown layout, unsaved
+drawing, unconfigured layouts. **A publish that actually produces a file has never succeeded
+here**, because the only plot devices on this machine are "Brak" and OneNote and the test
+drawing's layouts carry no page setup. `PublishExecute` answered `eNullPtr`, which names nothing;
+the unconfigured-layout precondition added afterwards is the most likely cause but is **not
+confirmed to be the only one**. Needs a machine with a real plot device and a configured layout.
+
 ### A4. Vision category (9 tools)
 **Status:** never verified.
 `vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven

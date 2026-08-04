@@ -64,3 +64,52 @@ public sealed record DeletePageSetupResult(
     [property: JsonPropertyName("name")]     string Name,
     [property: JsonPropertyName("note")]     string? Note);
 
+
+public sealed record PublishSheetsArgs(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("layouts")]   IReadOnlyList<string> Layouts,
+    [property: JsonPropertyName("format")]    string Format = "PDF",
+    [property: JsonPropertyName("pageSetup")] string? PageSetup = null,
+    [property: JsonPropertyName("title")]     string? Title = null,
+    [property: JsonPropertyName("allowUnsaved")] bool AllowUnsaved = false);
+
+public sealed record PlotAreaArgs(
+    [property: JsonPropertyName("layoutName")] string? LayoutName = null);
+
+public sealed record PublishSheetsResult(
+    [property: JsonPropertyName("path")]    string Path,
+    [property: JsonPropertyName("format")]  string Format,
+    [property: JsonPropertyName("sheets")]  int Sheets,
+    [property: JsonPropertyName("layouts")] IReadOnlyList<string> Layouts,
+    [property: JsonPropertyName("bytes")]   long Bytes);
+
+public sealed record PlotAreaSize(
+    [property: JsonPropertyName("width")]  double Width,
+    [property: JsonPropertyName("height")] double Height);
+
+public sealed record PlotAreaRect(
+    [property: JsonPropertyName("xMin")] double XMin,
+    [property: JsonPropertyName("yMin")] double YMin,
+    [property: JsonPropertyName("xMax")] double XMax,
+    [property: JsonPropertyName("yMax")] double YMax);
+
+public sealed record PlotAreaScale(
+    [property: JsonPropertyName("numerator")]   double Numerator,
+    [property: JsonPropertyName("denominator")] double Denominator);
+
+public sealed record PlotAreaResult(
+    [property: JsonPropertyName("layout")]           string Layout,
+    [property: JsonPropertyName("configured")]       bool Configured,
+    [property: JsonPropertyName("note")]             string? Note,
+    [property: JsonPropertyName("plotType")]         string PlotType,
+    [property: JsonPropertyName("media")]            string? Media,
+    [property: JsonPropertyName("device")]           string? Device,
+    [property: JsonPropertyName("paperSize")]        PlotAreaSize PaperSize,
+    [property: JsonPropertyName("margins")]          PlotAreaRect Margins,
+    [property: JsonPropertyName("window")]           PlotAreaRect Window,
+    [property: JsonPropertyName("rotation")]         string Rotation,
+    [property: JsonPropertyName("centered")]         bool Centered,
+    [property: JsonPropertyName("useStandardScale")] bool UseStandardScale,
+    [property: JsonPropertyName("stdScaleType")]     string StdScaleType,
+    [property: JsonPropertyName("customScale")]      PlotAreaScale CustomScale);
+

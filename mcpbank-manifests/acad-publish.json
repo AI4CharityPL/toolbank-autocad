@@ -1,7 +1,7 @@
 {
   "id": "acad-publish",
   "name": "acad-publish",
-  "description": "Named, reusable page setups: the plotting configuration a firm defines once and applies to every sheet in a set. A page setup is a named PlotSettings stored in the drawing - device, paper size, plot style table, rotation - distinct from a layout's own configuration, which acad-layouts.configure_plot handles and which stays the right tool when there is nothing to reuse. Define a setup, list what a drawing has, and apply one to many layouts at once with per-layout results. Not here yet: importing a setup from another drawing, the Publisher API for multi-sheet PDF, and the asynchronous plot queue.",
+  "description": "Named, reusable page setups: the plotting configuration a firm defines once and applies to every sheet in a set. A page setup is a named PlotSettings stored in the drawing - device, paper size, plot style table, rotation - distinct from a layout\u0027s own configuration, which acad-layouts.configure_plot handles and which stays the right tool when there is nothing to reuse. Define a setup, list what a drawing has, and apply one to many layouts at once with per-layout results. Not here yet: importing a setup from another drawing, the Publisher API for multi-sheet PDF, and the asynchronous plot queue.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-publish.cmd",
@@ -11,20 +11,24 @@
   "lazy_mode": true,
   "tags": [
     "apply",
+    "area",
     "autocad",
     "cad",
     "create",
     "delete",
     "dwg",
+    "get",
     "import",
     "list",
     "page",
     "page-setup",
     "plot",
     "publish",
+    "set",
     "setup",
     "setups",
-    "sheets"
+    "sheets",
+    "stamp"
   ],
   "intent_examples": [
     "apply page setup to layouts",
@@ -33,35 +37,53 @@
     "create a reusable page setup",
     "create page setup",
     "delete page setup",
+    "enable plot stamping",
+    "export all sheets into a single file",
+    "get plot area",
     "get rid of sheet setup",
     "import page setup from the project template",
+    "jaki obszar zostanie wydrukowany",
     "jakie page setupy sa w tym rysunku",
     "jakie sa page setupy",
     "list page setups",
     "make all sheets plot the same",
     "make all sheets plot to the same paper size",
+    "multi-sheet pdf from layouts",
     "named plot configuration",
+    "opublikuj arkusze do jednego pdf",
+    "plot extents and margins",
+    "podglad obszaru wydruku",
     "pokaz konfiguracje wydruku",
     "przypisz konfiguracje wydruku do ukladu",
+    "publish sheets to one pdf",
     "remove named plot configuration",
     "reusable sheet setup",
+    "set plot stamp on",
     "show named plot configurations",
     "skasuj page setup",
+    "sprawdz ustawienia wydruku ukladu",
+    "stempel na wydruku",
+    "turn off plot stamp",
     "ustaw ten sam wydruk na wszystkich ukladach",
     "usun nazwane ustawienia strony",
     "utworz nazwane ustawienia strony",
     "what sheet setups exist",
+    "what will this layout plot",
+    "wielostronicowy pdf z ukladow",
+    "wlacz stempel wydruku",
     "wykasuj konfiguracje wydruku",
+    "wylacz plot stamp",
     "wylistuj ustawienia strony",
     "zapisz konfiguracje wydruku pod nazwa",
     "zastosuj ustawienia strony do arkuszy",
     "zdefiniuj nazwane ustawienia strony dla arkuszy",
-    "zdefiniuj page setup"
+    "zdefiniuj page setup",
+    "zestaw arkuszy do jednego pliku"
   ],
   "tools_summary": [
     {
       "name": "apply_page_setup",
-      "description": "Apply a named page setup to layouts, so a whole set plots identically. Name the layouts explicitly, or pass allLayouts true - there is no 'all layouts' default, because applying a page setup to every tab in a drawing because an argument was omitted is precisely the accident worth designing out. Reports the outcome per layout rather than a count, so a partial success reads as one.",
+      "description": "Apply a named page setup to layouts, so a whole set plots identically. Name the layouts explicitly, or pass allLayouts true - there is no \u0027all layouts\u0027 default, because applying a page setup to every tab in a drawing because an argument was omitted is precisely the accident worth designing out. Reports the outcome per layout rather than a count, so a partial success reads as one.",
       "tags": [
         "apply",
         "page",
@@ -70,7 +92,7 @@
     },
     {
       "name": "create_page_setup",
-      "description": "Define a NAMED, reusable page setup in this drawing - device, paper size, plot style table, rotation - that can then be applied to many layouts at once. Either snapshot a layout you already configured by hand (fromLayout), or state the settings explicitly; passing both is an error rather than a precedence rule nobody remembers. Refuses to overwrite an existing name unless overwrite is true, because a firm's standard page setups should not be redefined by accident.",
+      "description": "Define a NAMED, reusable page setup in this drawing - device, paper size, plot style table, rotation - that can then be applied to many layouts at once. Either snapshot a layout you already configured by hand (fromLayout), or state the settings explicitly; passing both is an error rather than a precedence rule nobody remembers. Refuses to overwrite an existing name unless overwrite is true, because a firm\u0027s standard page setups should not be redefined by accident.",
       "tags": [
         "create",
         "page",
@@ -87,6 +109,15 @@
       ]
     },
     {
+      "name": "get_plot_area",
+      "description": "Report what a layout would plot: paper size, margins, the plot window, rotation, centring and scale. Read-only. This is the agent-shaped half of a plot preview - a preview is something a human looks at, while this is the part that can be checked before committing to output. Omit layoutName for the current layout.",
+      "tags": [
+        "get",
+        "plot",
+        "area"
+      ]
+    },
+    {
       "name": "list_page_setups",
       "description": "List the named page setups defined in this drawing, with the device, paper size, plot style table and rotation each one carries. Read-only. Call this before apply_page_setup - the names are per-drawing, so an agent cannot know them in advance.",
       "tags": [
@@ -94,11 +125,19 @@
         "page",
         "setups"
       ]
+    },
+    {
+      "name": "publish_sheets",
+      "description": "Publish several layouts into ONE file - a multi-sheet PDF, DWF or DWFX. This is the thing files.export_file cannot do: its layout argument is singular, so it produces one file per sheet. Name the layouts explicitly; there is no all-layouts default, for the same reason apply_page_setup has none. Optionally names a page setup to plot every sheet through, which is how a set comes out consistent. Reports the byte count of the file that actually appeared, and fails if none did.",
+      "tags": [
+        "publish",
+        "sheets"
+      ]
     }
   ],
   "metadata": {
     "category": "publish",
-    "tool_count_target": 4,
+    "tool_count_target": 6,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -112,6 +151,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T20:00:31.6480523Z"
+    "last_regenerated_utc": "2026-08-04T21:19:38.0055517Z"
   }
 }

@@ -20,6 +20,7 @@ using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.PlottingServices;
 
 namespace AcadMcp.Plugin.Tools;
 
@@ -37,6 +38,8 @@ internal static class PublishPluginTools
         host.Register("acad.publish.list_page_setups", ListPageSetups);
         host.Register("acad.publish.apply_page_setup", ApplyPageSetup);
         host.Register("acad.publish.delete_page_setup", DeletePageSetup);
+        host.Register("acad.publish.publish_sheets", PublishSheets);
+        host.Register("acad.publish.get_plot_area", GetPlotArea);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -46,6 +49,9 @@ internal static class PublishPluginTools
     private static Task<ToolDispatchResult> Run(string key, JsonObject a, CancellationToken ct,
         Func<Document, Database, Transaction, JsonObject> work)
         => PluginToolRunner.RunWriteAsync(key, ct, work);
+    private static Task<ToolDispatchResult> RunR(string key, JsonObject a, CancellationToken ct,
+        Func<Document, Database, Transaction, JsonObject> work)
+        => PluginToolRunner.RunReadAsync(key, ct, work);
 
     // ─────────── helpers ───────────
 
@@ -121,6 +127,7 @@ internal static class PublishPluginTools
             psv.SetCanonicalMediaName(ps, match);
         }
     }
+
 
     // ─────────── handlers ───────────
 
@@ -298,5 +305,199 @@ internal static class PublishPluginTools
     // a tool whose entire output was a restatement of its own argument.
     //
     // Withheld rather than guessed at further. See docs/KNOWN-GAPS.md section B.
+
+
+    // ─────────── multi-sheet output (roadmap 2.2) ───────────
+
+    private static Task<ToolDispatchResult> PublishSheets(JsonObject args, CancellationToken ct) =>
+        RunR("acad.publish.publish_sheets", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PublishSheetsArgsDto>(args);
+            if (a.Layouts is null || a.Layouts.Count == 0)
+                throw new ArgumentException(
+                    "layouts: at least one is required. There is no 'all layouts' default here for the same " +
+                    "reason apply_page_setup has none - publishing every tab because an argument was omitted " +
+                    "is an expensive accident.");
+            if (string.IsNullOrWhiteSpace(a.Path)) throw new ArgumentException("path is required.");
+
+            var fmt = (a.Format ?? "PDF").Trim().ToUpperInvariant();
+            var sheetType = fmt switch
+            {
+                "PDF"  => SheetType.MultiPdf,
+                "DWF"  => SheetType.MultiDwf,
+                "DWFX" => SheetType.MultiDwfx,
+                _ => throw new ArgumentException($"Unknown format '{a.Format}'. Known: PDF, DWF, DWFX."),
+            };
+
+            // Argument validation comes BEFORE the state guards. A bad layout name is a bad
+            // argument and should be reported as one; the first version checked DBMOD first, so
+            // a typo in a layout name came back as "this drawing has unsaved changes".
+            var lm = LayoutManager.Current;
+            var missing = a.Layouts.Where(l => !lm.LayoutExists(l)).ToList();
+            if (missing.Count > 0)
+                throw new ArgumentException($"No such layout(s): {string.Join(", ", missing)}.");
+
+            // The Publisher reads the DWG from disk, not the in-memory database. An unsaved
+            // drawing publishes whatever was last written, silently.
+            var dwg = db.Filename;
+            if (string.IsNullOrWhiteSpace(dwg) || !System.IO.File.Exists(dwg))
+                throw new InvalidOperationException(
+                    "This drawing has never been saved, and the Publisher reads the DWG from disk rather " +
+                    "than from memory. Save it first with files.save_document_as.");
+
+            // DBMOD is the drawing-modified flag: nonzero means unsaved changes.
+            int dbmod = 0;
+            try { dbmod = Convert.ToInt32(Application.GetSystemVariable("DBMOD")); } catch { }
+            if (dbmod != 0 && !a.AllowUnsaved)
+                throw new InvalidOperationException(
+                    $"DBMOD is {dbmod}, so this drawing reports unsaved changes, and the Publisher reads the " +
+                    "file on disk rather than memory - publishing now may output the last saved state and " +
+                    "report success. Save first, or pass allowUnsaved:true if you know the file is current. " +
+                    "NOTE: DBMOD has been observed staying non-zero immediately after files.save_document_as, " +
+                    "so this guard can refuse a drawing that is in fact saved - see KNOWN-GAPS A9.");
+
+            // Every target layout must have a page setup. Publishing a layout with no device and
+            // a 0 x 0 sheet is what PublishExecute answers with eNullPtr - an error that names
+            // nothing and sends you looking in the wrong place. Checked here so the message is
+            // about the actual problem.
+            var unconfigured = new List<string>();
+            foreach (var name in a.Layouts)
+            {
+                var lay = (Layout)tr.GetObject(lm.GetLayoutId(name), OpenMode.ForRead);
+                if (lay.PlotPaperSize.X <= 0 || lay.PlotPaperSize.Y <= 0 ||
+                    string.IsNullOrWhiteSpace(lay.PlotConfigurationName))
+                    unconfigured.Add(name);
+            }
+            if (unconfigured.Count > 0)
+                throw new InvalidOperationException(
+                    "These layouts have no page setup, so there is no device or sheet size to publish " +
+                    $"through: {string.Join(", ", unconfigured)}. Use publish.apply_page_setup with a named " +
+                    "setup, or layouts.configure_plot, then check with publish.get_plot_area that " +
+                    "'configured' comes back true.");
+
+            var entries = new DsdEntryCollection();
+            foreach (var name in a.Layouts)
+            {
+                entries.Add(new DsdEntry
+                {
+                    DwgName = dwg,
+                    Layout = name,
+                    Title = name,
+                    Nps = a.PageSetup ?? "",
+                });
+            }
+
+            var outPath = System.IO.Path.GetFullPath(a.Path);
+            var outDir = System.IO.Path.GetDirectoryName(outPath);
+            if (!string.IsNullOrEmpty(outDir)) System.IO.Directory.CreateDirectory(outDir);
+
+            using var dsd = new DsdData
+            {
+                SheetType = sheetType,
+                ProjectPath = outDir ?? "",
+                DestinationName = outPath,
+                SheetSetName = a.Title ?? System.IO.Path.GetFileNameWithoutExtension(outPath),
+                NoOfCopies = 1,
+                IsHomogeneous = false,
+            };
+            dsd.SetDsdEntryCollection(entries);
+
+            // BACKGROUNDPLOT off, and off BEFORE the publish starts, for exactly the reason
+            // export_file documents: the background worker writes the file after the call
+            // returns, so the tool would report success over a file that does not exist yet.
+            // Int16, not int - passing an int throws eInvalidInput.
+            object? prev = null;
+            try { prev = Application.GetSystemVariable("BACKGROUNDPLOT"); } catch { }
+            try
+            {
+                Application.SetSystemVariable("BACKGROUNDPLOT", (short)0);
+
+                // PublishExecute throws eNullPtr on a null config, which tells the caller
+                // nothing. On a drawing whose layouts have never been configured there is no
+                // current plot device at all, so say that instead.
+                var cfg = PlotConfigManager.CurrentConfig
+                    ?? throw new InvalidOperationException(
+                        "No current plot configuration, so there is no device to publish through. The " +
+                        "layouts here have no page setup yet - use publish.apply_page_setup with a named " +
+                        "setup, or layouts.configure_plot, and check with publish.get_plot_area that " +
+                        "'configured' comes back true.");
+                Application.Publisher.PublishExecute(dsd, cfg);
+            }
+            finally
+            {
+                if (prev is not null)
+                {
+                    try { Application.SetSystemVariable("BACKGROUNDPLOT", prev); }
+                    catch (Exception) { /* restoring a sysvar is not worth failing a finished publish over */ }
+                }
+            }
+
+            // Report what is actually on disk, not what was asked for. A publish that produced
+            // nothing must not come back looking like one that worked.
+            bool exists = System.IO.File.Exists(outPath);
+            long bytes = exists ? new System.IO.FileInfo(outPath).Length : 0;
+            if (!exists)
+                throw new InvalidOperationException(
+                    $"The publish reported no error but '{outPath}' does not exist afterwards. Nothing was written.");
+
+            return Wrap(new
+            {
+                path = outPath,
+                format = fmt,
+                sheets = a.Layouts.Count,
+                layouts = a.Layouts,
+                bytes,
+            });
+        });
+
+    private static Task<ToolDispatchResult> GetPlotArea(JsonObject args, CancellationToken ct) =>
+        RunR("acad.publish.get_plot_area", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PlotAreaArgsDto>(args);
+            var lm = LayoutManager.Current;
+            var name = string.IsNullOrWhiteSpace(a.LayoutName) ? lm.CurrentLayout : a.LayoutName!;
+            if (!lm.LayoutExists(name))
+                throw new ArgumentException($"Layout '{name}' does not exist.");
+
+            var layout = (Layout)tr.GetObject(lm.GetLayoutId(name), OpenMode.ForRead);
+
+            // The agent-shaped question is "what area will this plot cover", answerable from the
+            // page setup without rendering anything. A preview is something a human looks at;
+            // this is the part an agent can act on.
+            var pmin = layout.PlotPaperMargins.MinPoint;
+            var pmax = layout.PlotPaperMargins.MaxPoint;
+            var wmin = layout.PlotWindowArea.MinPoint;
+            var wmax = layout.PlotWindowArea.MaxPoint;
+
+            // A layout that has never been configured reports a 0x0 sheet and an empty device.
+            // That is the truth, not a failure - but "0 x 0 mm" reads like a bug, so say which
+            // case the caller is in rather than leaving them to infer it from zeros.
+            bool configured = layout.PlotPaperSize.X > 0 && layout.PlotPaperSize.Y > 0;
+
+            return Wrap(new
+            {
+                layout = name,
+                configured,
+                note = configured ? null
+                    : "This layout has no page setup yet: no device is bound and the sheet size is 0 x 0. " +
+                      "Use layouts.configure_plot, or publish.apply_page_setup with a named setup.",
+                plotType = layout.PlotType.ToString(),
+                media = layout.CanonicalMediaName,
+                device = layout.PlotConfigurationName,
+                paperSize = new { width = layout.PlotPaperSize.X, height = layout.PlotPaperSize.Y },
+                margins = new { xMin = pmin.X, yMin = pmin.Y, xMax = pmax.X, yMax = pmax.Y },
+                window = new { xMin = wmin.X, yMin = wmin.Y, xMax = wmax.X, yMax = wmax.Y },
+                rotation = layout.PlotRotation.ToString(),
+                centered = layout.PlotCentered,
+                useStandardScale = layout.UseStandardScale,
+                stdScaleType = layout.StdScaleType.ToString(),
+                customScale = new { numerator = layout.CustomPrintScale.Numerator, denominator = layout.CustomPrintScale.Denominator },
+            });
+        });
+
+    // set_plot_stamp is WITHHELD. PLOTSTAMPON rejects both a short and an int with
+    // eInvalidInput - measured, not assumed. Whatever governs the plot stamp in AutoCAD 2025 is
+    // not that system variable set that way, and the stamp's CONTENT lives in a .pss machine
+    // configuration outside the drawing anyway. See docs/KNOWN-GAPS.md section B.
 
 }

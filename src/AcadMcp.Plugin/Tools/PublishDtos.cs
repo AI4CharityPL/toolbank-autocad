@@ -29,3 +29,17 @@ internal sealed record ImportPageSetupArgsDto(
     [property: JsonPropertyName("path")]      string Path,
     [property: JsonPropertyName("name")]      string Name,
     [property: JsonPropertyName("overwrite")] bool Overwrite = false);
+
+internal sealed record PublishSheetsArgsDto(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("layouts")]   IReadOnlyList<string> Layouts,
+    [property: JsonPropertyName("format")]    string Format = "PDF",
+    [property: JsonPropertyName("pageSetup")] string? PageSetup = null,
+    [property: JsonPropertyName("title")]     string? Title = null,
+    [property: JsonPropertyName("allowUnsaved")] bool AllowUnsaved = false);
+
+internal sealed record PlotAreaArgsDto(
+    [property: JsonPropertyName("layoutName")] string? LayoutName = null);
+
+internal sealed record PlotStampArgsDto(
+    [property: JsonPropertyName("enabled")] bool Enabled);

@@ -51,7 +51,7 @@ precedent set by the parametric constraint tools.
 | `set_viewport_layer_override`, `list_viewport_layer_overrides`, `clear_viewport_layer_overrides` | viewports | 2025 SDK exposes `LayerTableRecord.HasOverrides` as a plain bool with no viewport argument, and none of the `Set*InViewport` / `Get*InViewport` accessors. The capability exists in AutoCAD — this is finding the right API, not a limitation. **Per-viewport freeze, the larger half, ships and works.** |
 | `maximize_viewport` | viewports | `MAXACT`/`MSPACE` — command layer. |
 | `set_viewport_ucs` | viewports | Was waiting on `acad-ucs`. **That now exists — this is buildable today.** |
-| `set_viewport_annotation_scale` | viewports | Waits on Phase 1.5 (annotative). |
+| `set_viewport_annotation_scale` | viewports | Was waiting on Phase 1.5. **`acad-annotative` now exists and is verified — this is buildable today.** |
 | `ucs_from_face` | ucs | Needs subentity picking; no non-interactive form. |
 | `ucs_icon` | ucs | Display-only; nothing an API caller can observe. |
 | `set_xref_demand_load` | xrefs | Specced in the roadmap, not built. Low value. |

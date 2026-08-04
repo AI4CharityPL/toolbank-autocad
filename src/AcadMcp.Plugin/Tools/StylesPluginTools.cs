@@ -42,6 +42,12 @@ internal static class StylesPluginTools
         host.Register("acad.styles.copy_dimstyle", CopyDimStyle);
         host.Register("acad.styles.delete_dimstyle", DeleteDimStyle);
         host.Register("acad.styles.set_current_dimstyle", SetCurrentDimStyle);
+        host.Register("acad.styles.list_mleaderstyle_properties", ListMLeaderProperties);
+        host.Register("acad.styles.list_mleaderstyles", ListMLeaderStyles);
+        host.Register("acad.styles.create_mleaderstyle", CreateMLeaderStyle);
+        host.Register("acad.styles.modify_mleaderstyle", ModifyMLeaderStyle);
+        host.Register("acad.styles.delete_mleaderstyle", DeleteMLeaderStyle);
+        host.Register("acad.styles.set_current_mleaderstyle", SetCurrentMLeaderStyle);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -159,6 +165,7 @@ internal static class StylesPluginTools
         isCurrent = db.Dimstyle == rec.ObjectId,
         properties = ReadProps(rec),
     };
+
 
     // ─────────── handlers ───────────
 
@@ -285,5 +292,207 @@ internal static class StylesPluginTools
             var rec = OpenStyle(db, tr, a.Name, OpenMode.ForRead);
             db.Dimstyle = rec.ObjectId;
             return Wrap(new { dimStyle = Info(db, tr, rec) });
+        });
+
+    // ─────────── multileader styles (roadmap 2.3) ───────────
+    //
+    // MLeaderStyle objects live in a dictionary rather than a symbol table, so the shape differs
+    // from dimension styles even though the tools deliberately do not: a caller who has learned
+    // one properties map has learned both.
+
+    private static DBDictionary MLeaderDict(Database db, Transaction tr, OpenMode mode)
+        => (DBDictionary)tr.GetObject(db.MLeaderStyleDictionaryId, mode);
+
+    private static List<string> MLeaderNames(Database db, Transaction tr)
+    {
+        var names = new List<string>();
+        foreach (DBDictionaryEntry e in MLeaderDict(db, tr, OpenMode.ForRead)) names.Add(e.Key);
+        names.Sort(StringComparer.OrdinalIgnoreCase);
+        return names;
+    }
+
+    private static MLeaderStyle OpenMLeader(Database db, Transaction tr, string name, OpenMode mode, out string key)
+    {
+        var dict = MLeaderDict(db, tr, OpenMode.ForRead);
+        foreach (DBDictionaryEntry e in dict)
+        {
+            if (!string.Equals(e.Key, name, StringComparison.OrdinalIgnoreCase)) continue;
+            key = e.Key;
+            return (MLeaderStyle)tr.GetObject(e.Value, mode);
+        }
+        throw new ArgumentException(
+            $"No multileader style named '{name}'. Defined: " + string.Join(", ", MLeaderNames(db, tr)) +
+            ". Use list_mleaderstyles.");
+    }
+
+    private static double GetMl(MLeaderStyle m, string api) => api switch
+    {
+        "Scale"                   => m.Scale,
+        "TextHeight"              => m.TextHeight,
+        "ArrowSize"               => m.ArrowSize,
+        "LandingGap"              => m.LandingGap,
+        "DoglegLength"            => m.DoglegLength,
+        "BreakSize"               => m.BreakSize,
+        "MaxLeaderSegmentsPoints" => m.MaxLeaderSegmentsPoints,
+        "EnableLanding"           => m.EnableLanding ? 1 : 0,
+        "EnableDogleg"            => m.EnableDogleg ? 1 : 0,
+        "EnableFrameText"         => m.EnableFrameText ? 1 : 0,
+        _ => throw new InvalidOperationException($"No reader wired for {api}."),
+    };
+
+    private static void SetMl(MLeaderStyle m, string api, double v)
+    {
+        switch (api)
+        {
+            case "Scale":                   m.Scale = v; break;
+            case "TextHeight":              m.TextHeight = v; break;
+            case "ArrowSize":               m.ArrowSize = v; break;
+            case "LandingGap":              m.LandingGap = v; break;
+            case "DoglegLength":            m.DoglegLength = v; break;
+            case "BreakSize":               m.BreakSize = v; break;
+            case "MaxLeaderSegmentsPoints": m.MaxLeaderSegmentsPoints = (int)v; break;
+            // Booleans arrive as 0/1 so the whole argument stays one map of names to numbers.
+            case "EnableLanding":           m.EnableLanding = v != 0; break;
+            case "EnableDogleg":            m.EnableDogleg = v != 0; break;
+            case "EnableFrameText":         m.EnableFrameText = v != 0; break;
+            default: throw new InvalidOperationException($"No writer wired for {api}.");
+        }
+    }
+
+    private static Dictionary<string, double> ReadMlProps(MLeaderStyle m)
+    {
+        var d = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in MLeaderStyleProperties.All) d[p.Name] = GetMl(m, p.ApiName);
+        return d;
+    }
+
+    private static List<string> ApplyMlProps(MLeaderStyle m, IReadOnlyDictionary<string, double>? props)
+    {
+        var applied = new List<string>();
+        if (props is null) return applied;
+        foreach (var kv in props)
+        {
+            var p = MLeaderStyleProperties.Resolve(kv.Key, kv.Value);
+            SetMl(m, p.ApiName, kv.Value);
+            applied.Add(p.Name);
+        }
+        applied.Sort(StringComparer.OrdinalIgnoreCase);
+        return applied;
+    }
+
+    private static object MlInfo(Database db, string name, MLeaderStyle m) => new
+    {
+        name,
+        isCurrent = db.MLeaderstyle == m.ObjectId,
+        properties = ReadMlProps(m),
+    };
+
+    private static Task<ToolDispatchResult> ListMLeaderProperties(JsonObject args, CancellationToken ct) =>
+        RunR("acad.styles.list_mleaderstyle_properties", args, ct, (doc, db, tr) =>
+        {
+            var list = MLeaderStyleProperties.All.Select(p => (object)new
+            {
+                name = p.Name,
+                apiName = p.ApiName,
+                kind = p.Kind.ToString(),
+                description = p.Description,
+                min = p.Min,
+                max = p.Max,
+            }).ToList();
+            return Wrap(new { properties = list, count = list.Count });
+        });
+
+    private static Task<ToolDispatchResult> ListMLeaderStyles(JsonObject args, CancellationToken ct) =>
+        RunR("acad.styles.list_mleaderstyles", args, ct, (doc, db, tr) =>
+        {
+            var dict = MLeaderDict(db, tr, OpenMode.ForRead);
+            var list = new List<object>();
+            foreach (DBDictionaryEntry e in dict)
+            {
+                var m = (MLeaderStyle)tr.GetObject(e.Value, OpenMode.ForRead);
+                list.Add(MlInfo(db, e.Key, m));
+            }
+            return Wrap(new { mleaderStyles = list, count = list.Count });
+        });
+
+    private static Task<ToolDispatchResult> CreateMLeaderStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.create_mleaderstyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<CreateMLeaderStyleArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Name)) throw new ArgumentException("name is required.");
+            AcadEnv.ValidateSymbolName(a.Name, "MLeaderStyle");
+
+            var dict = MLeaderDict(db, tr, OpenMode.ForWrite);
+            foreach (DBDictionaryEntry e in dict)
+            {
+                if (!string.Equals(e.Key, a.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!a.Overwrite)
+                    throw new ArgumentException(
+                        $"A multileader style named '{e.Key}' already exists. Pass overwrite:true, or use " +
+                        "modify_mleaderstyle to change only some properties.");
+                var existing = (MLeaderStyle)tr.GetObject(e.Value, OpenMode.ForWrite);
+                var applied0 = ApplyMlProps(existing, a.Properties);
+                return Wrap(new { mleaderStyle = MlInfo(db, e.Key, existing), created = false, applied = applied0 });
+            }
+
+            var style = new MLeaderStyle();
+            var applied = ApplyMlProps(style, a.Properties);
+            // PostMLeaderStyleToDb both names the style and adds it to the dictionary; doing it
+            // by hand leaves a style the dictionary knows about and MLEADERSTYLE does not.
+            style.PostMLeaderStyleToDb(db, a.Name);
+            tr.AddNewlyCreatedDBObject(style, true);
+
+            if (a.MakeCurrent) db.MLeaderstyle = style.ObjectId;
+            return Wrap(new { mleaderStyle = MlInfo(db, a.Name, style), created = true, applied });
+        });
+
+    private static Task<ToolDispatchResult> ModifyMLeaderStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.modify_mleaderstyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ModifyMLeaderStyleArgsDto>(args);
+            if (a.Properties is null || a.Properties.Count == 0)
+                throw new ArgumentException(
+                    "properties: at least one is required. Use list_mleaderstyle_properties for the names.");
+
+            var m = OpenMLeader(db, tr, a.Name, OpenMode.ForWrite, out var key);
+            var applied = ApplyMlProps(m, a.Properties);
+            return Wrap(new
+            {
+                mleaderStyle = MlInfo(db, key, m),
+                applied,
+                note = "Existing multileaders pick this up on the next regen; the stored style is already changed.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DeleteMLeaderStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.delete_mleaderstyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MLeaderStyleNameArgsDto>(args);
+            var m = OpenMLeader(db, tr, a.Name, OpenMode.ForWrite, out var key);
+
+            if (string.Equals(key, "Standard", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("'Standard' is AutoCAD's built-in multileader style and cannot be deleted.");
+            if (db.MLeaderstyle == m.ObjectId)
+                throw new ArgumentException(
+                    $"'{key}' is the current multileader style. Make another one current first with " +
+                    "set_current_mleaderstyle.");
+
+            try { m.Erase(); }
+            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot delete '{key}': {ex.Message}. Multileaders still using it must be moved to " +
+                    "another style first.");
+            }
+            return Wrap(new { affected = 1, name = key });
+        });
+
+    private static Task<ToolDispatchResult> SetCurrentMLeaderStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.set_current_mleaderstyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MLeaderStyleNameArgsDto>(args);
+            var m = OpenMLeader(db, tr, a.Name, OpenMode.ForRead, out var key);
+            db.MLeaderstyle = m.ObjectId;
+            return Wrap(new { mleaderStyle = MlInfo(db, key, m) });
         });
 }

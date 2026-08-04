@@ -1,7 +1,7 @@
 {
   "id": "acad-styles",
   "name": "acad-styles",
-  "description": "Authoring the styles a drawing is held to, starting with dimension styles: create one with chosen properties, change an existing one, duplicate it for another scale, delete it, or make it current. Properties are named in plain terms - textHeight, arrowSize, decimalPlaces - not DIMVAR spellings, and list_dimstyle_properties reports every name, its DIMVAR, what it does and its range. The split against acad-dimensions is placing versus defining: that category places dimensions and still owns list_dimstyles and set_entity_dimstyle. Later tranches will add mleader, table, mline and visual style authoring plus layer filters.",
+  "description": "Authoring the styles a drawing is held to: dimension styles and multileader styles, with the same properties-map shape for both, so a caller who has learned one has learned the other. Create with chosen properties, change one, duplicate a dimension style for another scale, delete, or make current. Properties are named plainly - textHeight, arrowSize, doglegLength - not API spellings, and the list_*_properties tools report every name, the variable behind it, what it does and its range. Booleans travel as 0 or 1 so the argument stays one map of numbers.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-styles.cmd",
@@ -20,6 +20,8 @@
     "dimstyle",
     "dwg",
     "list",
+    "mleaderstyle",
+    "mleaderstyles",
     "modify",
     "properties",
     "set",
@@ -28,12 +30,12 @@
   ],
   "intent_examples": [
     "utworz styl wymiarowy dla skali 1:50",
-    "zmien wysokosc tekstu w stylu wymiarowym",
+    "zdefiniuj styl odnosnika z tekstem 2.5 mm",
     "create a dimension style with 2.5 mm text",
     "duplicate this dimstyle for 1:100",
-    "make this dimension style current",
-    "jakie parametry stylu wymiarowego moge ustawic",
-    "delete an unused dimension style"
+    "zmien dlugosc poziomki w stylu multileader",
+    "make this multileader style current",
+    "jakie parametry stylu moge ustawic"
   ],
   "tools_summary": [
     {
@@ -53,11 +55,27 @@
       ]
     },
     {
+      "name": "create_mleaderstyle",
+      "description": "Create a named multileader style with chosen properties - text height, arrow size, dogleg length, whether the leader has a landing, how many points it may have. Pass properties as a name-to-value map; an unknown name or an out-of-range value is an error rather than a silent skip. Refuses an existing name unless overwrite is true.",
+      "tags": [
+        "create",
+        "mleaderstyle"
+      ]
+    },
+    {
       "name": "delete_dimstyle",
       "description": "Delete a dimension style. Refuses to delete 'Standard', refuses to delete the current style, and refuses a style still in use - with the reason, and a pointer to dimensions.set_entity_dimstyle for moving the dimensions off it first.",
       "tags": [
         "delete",
         "dimstyle"
+      ]
+    },
+    {
+      "name": "delete_mleaderstyle",
+      "description": "Delete a multileader style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code.",
+      "tags": [
+        "delete",
+        "mleaderstyle"
       ]
     },
     {
@@ -70,11 +88,36 @@
       ]
     },
     {
+      "name": "list_mleaderstyle_properties",
+      "description": "List every multileader-style property this bank can set, with the API member behind it, what it does and its valid range. Read-only. Booleans travel as 0 or 1 so the whole properties argument stays one map of names to numbers - two value types in one dictionary would be two ways to be wrong about it.",
+      "tags": [
+        "list",
+        "mleaderstyle",
+        "properties"
+      ]
+    },
+    {
+      "name": "list_mleaderstyles",
+      "description": "List the multileader styles defined in this drawing with all their properties, and which one is current. Read-only.",
+      "tags": [
+        "list",
+        "mleaderstyles"
+      ]
+    },
+    {
       "name": "modify_dimstyle",
       "description": "Change properties on an existing dimension style, leaving the rest alone. The stored style changes immediately; dimensions already placed pick it up on the next regen, and the result says so - an unchanged screen after this call is not a failed call.",
       "tags": [
         "modify",
         "dimstyle"
+      ]
+    },
+    {
+      "name": "modify_mleaderstyle",
+      "description": "Change properties on an existing multileader style, leaving the rest alone. The stored style changes immediately; multileaders already placed pick it up on the next regen, and the result says so.",
+      "tags": [
+        "modify",
+        "mleaderstyle"
       ]
     },
     {
@@ -85,11 +128,20 @@
         "current",
         "dimstyle"
       ]
+    },
+    {
+      "name": "set_current_mleaderstyle",
+      "description": "Make a multileader style the current one, so leaders placed afterwards use it. Returns the style with all its properties, so the caller can confirm what they switched to rather than trusting the name.",
+      "tags": [
+        "set",
+        "current",
+        "mleaderstyle"
+      ]
     }
   ],
   "metadata": {
     "category": "styles",
-    "tool_count_target": 6,
+    "tool_count_target": 12,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -103,6 +155,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T20:10:01.7283875Z"
+    "last_regenerated_utc": "2026-08-04T20:25:06.6874495Z"
   }
 }

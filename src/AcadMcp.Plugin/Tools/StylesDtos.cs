@@ -25,3 +25,16 @@ internal sealed record CopyDimStyleArgsDto(
     [property: JsonPropertyName("newName")]     string NewName,
     [property: JsonPropertyName("properties")]  IReadOnlyDictionary<string, double>? Properties = null,
     [property: JsonPropertyName("makeCurrent")] bool MakeCurrent = false);
+
+internal sealed record MLeaderStyleNameArgsDto(
+    [property: JsonPropertyName("name")] string Name);
+
+internal sealed record CreateMLeaderStyleArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("properties")]  IReadOnlyDictionary<string, double>? Properties = null,
+    [property: JsonPropertyName("makeCurrent")] bool MakeCurrent = false,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+internal sealed record ModifyMLeaderStyleArgsDto(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);

@@ -59,3 +59,43 @@ public sealed record DimStyleResult(
 public sealed record StylesAffected(
     [property: JsonPropertyName("affected")] int Affected,
     [property: JsonPropertyName("name")]     string? Name = null);
+
+public sealed record MLeaderStyleNameArgs(
+    [property: JsonPropertyName("name")] string Name);
+
+public sealed record CreateMLeaderStyleArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("properties")]  IReadOnlyDictionary<string, double>? Properties = null,
+    [property: JsonPropertyName("makeCurrent")] bool MakeCurrent = false,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+public sealed record ModifyMLeaderStyleArgs(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+public sealed record MLeaderStylePropertyInfo(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("apiName")]     string ApiName,
+    [property: JsonPropertyName("kind")]        string Kind,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("min")]         double? Min,
+    [property: JsonPropertyName("max")]         double? Max);
+
+public sealed record MLeaderStylePropertyListResult(
+    [property: JsonPropertyName("properties")] IReadOnlyList<MLeaderStylePropertyInfo> Properties,
+    [property: JsonPropertyName("count")]      int Count);
+
+public sealed record MLeaderStyleInfo(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("isCurrent")]  bool IsCurrent,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+public sealed record MLeaderStyleResult(
+    [property: JsonPropertyName("mleaderStyle")] MLeaderStyleInfo MLeaderStyle,
+    [property: JsonPropertyName("created")]      bool? Created = null,
+    [property: JsonPropertyName("applied")]      IReadOnlyList<string>? Applied = null,
+    [property: JsonPropertyName("note")]         string? Note = null);
+
+public sealed record MLeaderStyleListResult(
+    [property: JsonPropertyName("mleaderStyles")] IReadOnlyList<MLeaderStyleInfo> MLeaderStyles,
+    [property: JsonPropertyName("count")]         int Count);

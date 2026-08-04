@@ -72,4 +72,52 @@ public static class StylesTools
         RequiresPlugin = true)]
     public static Task<DimStyleResult> SetCurrentDimStyle(IPluginGateway gw, DimStyleNameArgs args, CancellationToken ct)
         => StylesProxy.CallAsync<DimStyleNameArgs, DimStyleResult>(gw, "acad.styles.set_current_dimstyle", args, T_NORMAL, ct);
+
+    // ─────────── multileader styles ───────────
+    //
+    // Same properties-map shape as the dimension-style tools, on purpose. A caller who has
+    // learned one has learned both, and the property table lives in Shared for the same reason.
+
+    [McpTool("list_mleaderstyle_properties", "List every multileader-style property this bank can set, with the API member behind it, what it does and its valid range. Read-only. Booleans travel as 0 or 1 so the whole properties argument stays one map of names to numbers - two value types in one dictionary would be two ways to be wrong about it.", "styles",
+        Intent = new[] { "jakie wlasciwosci stylu odnosnika moge ustawic", "parametry stylu multileader",
+                         "list mleader style properties", "what can I set on an mleader style",
+                         "multileader style property names", "co da sie zmienic w stylu odnosnika" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<MLeaderStylePropertyListResult> ListMLeaderStyleProperties(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, MLeaderStylePropertyListResult>(gw, "acad.styles.list_mleaderstyle_properties", args, T_FAST, ct);
+
+    [McpTool("list_mleaderstyles", "List the multileader styles defined in this drawing with all their properties, and which one is current. Read-only.", "styles",
+        Intent = new[] { "wylistuj style odnosnikow", "jakie sa style multileader", "list mleader styles",
+                         "show multileader styles", "what leader styles exist", "pokaz style odnosnika" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<MLeaderStyleListResult> ListMLeaderStyles(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, MLeaderStyleListResult>(gw, "acad.styles.list_mleaderstyles", args, T_FAST, ct);
+
+    [McpTool("create_mleaderstyle", "Create a named multileader style with chosen properties - text height, arrow size, dogleg length, whether the leader has a landing, how many points it may have. Pass properties as a name-to-value map; an unknown name or an out-of-range value is an error rather than a silent skip. Refuses an existing name unless overwrite is true.", "styles",
+        Intent = new[] { "utworz styl odnosnika", "zdefiniuj styl multileader", "create mleader style",
+                         "new leader style with 2.5 mm text", "define multileader style", "wlasny styl odnosnikow" },
+        RequiresPlugin = true)]
+    public static Task<MLeaderStyleResult> CreateMLeaderStyle(IPluginGateway gw, CreateMLeaderStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateMLeaderStyleArgs, MLeaderStyleResult>(gw, "acad.styles.create_mleaderstyle", args, T_NORMAL, ct);
+
+    [McpTool("modify_mleaderstyle", "Change properties on an existing multileader style, leaving the rest alone. The stored style changes immediately; multileaders already placed pick it up on the next regen, and the result says so.", "styles",
+        Intent = new[] { "zmien styl odnosnika", "popraw dlugosc poziomki w stylu", "modify mleader style",
+                         "change leader style text height", "edit multileader style", "zmiana parametrow odnosnika" },
+        RequiresPlugin = true)]
+    public static Task<MLeaderStyleResult> ModifyMLeaderStyle(IPluginGateway gw, ModifyMLeaderStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<ModifyMLeaderStyleArgs, MLeaderStyleResult>(gw, "acad.styles.modify_mleaderstyle", args, T_NORMAL, ct);
+
+    [McpTool("delete_mleaderstyle", "Delete a multileader style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code.", "styles",
+        Intent = new[] { "usun styl odnosnika", "skasuj styl multileader", "delete mleader style",
+                         "remove unused leader style", "get rid of multileader style", "wykasuj styl odnosnikow" },
+        RequiresPlugin = true)]
+    public static Task<StylesAffected> DeleteMLeaderStyle(IPluginGateway gw, MLeaderStyleNameArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<MLeaderStyleNameArgs, StylesAffected>(gw, "acad.styles.delete_mleaderstyle", args, T_NORMAL, ct);
+
+    [McpTool("set_current_mleaderstyle", "Make a multileader style the current one, so leaders placed afterwards use it. Returns the style with all its properties, so the caller can confirm what they switched to rather than trusting the name.", "styles",
+        Intent = new[] { "ustaw biezacy styl odnosnika", "przelacz na styl multileader", "set current mleader style",
+                         "make this leader style active", "switch multileader style", "aktywny styl odnosnika" },
+        RequiresPlugin = true)]
+    public static Task<MLeaderStyleResult> SetCurrentMLeaderStyle(IPluginGateway gw, MLeaderStyleNameArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<MLeaderStyleNameArgs, MLeaderStyleResult>(gw, "acad.styles.set_current_mleaderstyle", args, T_NORMAL, ct);
 }

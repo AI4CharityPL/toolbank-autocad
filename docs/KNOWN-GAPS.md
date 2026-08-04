@@ -32,21 +32,7 @@ tools, or keep them as an explicitly best-effort escape hatch.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
-### A4. `fields.convert_field_to_text` does not actually freeze
-**Status:** narrow, diagnosed, not yet fixed. Everything else in the category now works.
-
-It rewrites `MText.Contents` to the evaluated string but leaves the **Field object in the
-entity's extension dictionary** under `ACAD_FIELD`. So the text looks frozen while the binding
-is still live, and `get_field_expression` correctly keeps reporting `kind: "field"`.
-
-Only visible because the detection fix in the same pass stopped scanning text and started
-asking the extension dictionary. The old text scan would have called this a success — the
-freeze was **cosmetic from the start**, and the better detector is what exposed it.
-
-**Fix:** erase the `ACAD_FIELD` entry (and the Field object it holds) as well as rewriting
-Contents. One-way by design, so there is nothing to preserve.
-
-### A5. Vision category (9 tools)
+### A4. Vision category (9 tools)
 **Status:** never verified.
 `vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
 have not been run **at all** — they need the Python sidecar started and at least one provider API

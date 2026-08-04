@@ -107,19 +107,36 @@ public static class ModifyTools
     public static Task<AffectedCount> Erase(IPluginGateway gw, HandlesArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<HandlesArgs, AffectedCount>(gw, "acad.modify.erase", args, T_NORMAL, ct);
 
-    [McpTool("undo", "Queue AutoCAD's UNDO command. The command runs AFTER this call returns, so " +
-        "its effect cannot be observed or counted here - the result reports only that it was queued. " +
-        "For a rollback you can verify, use acad_undo_checkpoint / acad_restore_checkpoint, which " +
-        "snapshot the drawing.", "modify",
-        Intent = new[] { "cofnij operacje", "undo last", "undo last action", "rollback last edit", "wycofaj ostatnia akcje" },
-        RequiresPlugin = true)]
+    // ─────────────── undo / redo: WITHDRAWN 2026-08-04 ───────────────
+    //
+    // Measured, not assumed. Draw a circle, call undo, then look for the entity:
+    //
+    //     undo -> {"queued": true, "note": "...runs after this call returns..."}
+    //     after 0.0s -> still there
+    //     after 0.5s -> still there
+    //     after 1.5s -> still there
+    //     after 3.0s -> still there
+    //
+    // The queued UNDO never runs in this dispatch context. The tool was honest about being
+    // unable to confirm anything, which was an improvement on the fabricated `affected: 1` it
+    // used to return - but "honest about doing nothing" is still a tool named `undo` that does
+    // not undo. An agent reading the name will reach for it at exactly the moment it most needs
+    // the drawing put back.
+    //
+    // And it is redundant. acad_undo_checkpoint / acad_restore_checkpoint work, verified the
+    // same afternoon: checkpoint, draw a circle, restore, the circle is gone
+    // (strategy=reopened_snapshot). A working rollback already ships.
+    //
+    // Withdrawn the same way as the parametric constraint tools: the [McpTool] attributes are
+    // removed so the tools stop being advertised, while the plugin handlers stay registered and
+    // the proxy methods below stay compilable. Restoring them is re-adding two attributes, if
+    // the command channel ever becomes reliable.
+    //
+    // See docs/KNOWN-GAPS.md A2.
+
     public static Task<QueuedCommandResult> Undo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
         => ModifyProxy.CallAsync<HandlesArgs, QueuedCommandResult>(gw, "acad.modify.undo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
 
-    [McpTool("redo", "Queue AutoCAD's REDO command. The command runs AFTER this call returns, so its " +
-        "effect cannot be observed or counted here - the result reports only that it was queued.", "modify",
-        Intent = new[] { "ponow operacje", "redo last", "redo last undo", "redo last edit", "ponow akcje" },
-        RequiresPlugin = true)]
     public static Task<QueuedCommandResult> Redo(IPluginGateway gw, HandlesArgs? _ = null, CancellationToken ct = default)
         => ModifyProxy.CallAsync<HandlesArgs, QueuedCommandResult>(gw, "acad.modify.redo", _ ?? new HandlesArgs(System.Array.Empty<string>()), T_FAST, ct);
 

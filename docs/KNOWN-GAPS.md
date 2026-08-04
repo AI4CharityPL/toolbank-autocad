@@ -31,13 +31,41 @@ explicitly when the two differ.
 Verification asserts the hatch's bounding box equals the target rectangle, not merely that a
 handle came back.
 
-### A2. `modify.undo` / `modify.redo`
-**Status:** honest but arguably should not ship.
-Now correctly report `{queued: true}` instead of a fabricated count. Still built on
-`SendStringToExecute`, the queued-command mechanism that
-[PHASE-7-STATUS.md](PHASE-7-STATUS.md) records as having deadlocked checkpoint rollback — which
-is why that moved to `.dwg` snapshots. **Decision needed:** withdraw them like the parametric
-tools, or keep them as an explicitly best-effort escape hatch.
+### ~~A2. `modify.undo` / `modify.redo`~~
+**Withdrawn 2026-08-04.** The decision this entry asked for, settled by measurement.
+
+Draw a circle, call `undo`, look for the entity: still there at 0.0 s, 0.5 s, 1.5 s and 3.0 s.
+The queued UNDO never runs in this dispatch context. The tool was honest — `{queued: true}`
+with a note saying it could not confirm anything, which was already an improvement on the
+fabricated `affected: 1` it used to return. But *honest about doing nothing* is still a tool
+called `undo` that does not undo, and an agent will reach for that name at exactly the moment
+it most needs the drawing put back.
+
+It is also redundant. `acad_undo_checkpoint` / `acad_restore_checkpoint` work, verified the
+same afternoon: checkpoint, draw a circle, restore, circle gone
+(`strategy=reopened_snapshot`).
+
+The `[McpTool]` attributes are removed so the tools are no longer advertised; the plugin
+handlers and proxy methods stay in place, exactly as the parametric constraint tools were
+withheld. Re-adding two attributes brings them back if the command channel ever becomes
+reliable.
+
+### A6. `acad-router` reports errors as successful results
+**Status:** found 2026-08-04 while settling A2. Not fixed.
+`acad_restore_checkpoint` called without `id` or `label` returns
+`"[router-error] acad_restore_checkpoint requires 'id' or 'label'."` — as **content of a
+successful tool call**. MCP's `isError` is not set, so a client sees success and must
+string-match `[router-error]` to notice otherwise. Likely affects every router meta-tool.
+This is the failure shape the whole sweep has been removing, in the one category every agent
+talks to first.
+
+### A7. `acad_undo_checkpoint` ignores its own required argument
+**Status:** found alongside A6. Not fixed.
+Its schema declares `label` as **required**. Called with a different property name instead, it
+succeeds and creates a checkpoint with `label='(none)'` rather than refusing. A caller who
+mistypes the argument gets a checkpoint they cannot then find by label. Advertised as
+required, treated as optional — the same catalogue-vs-consumer disagreement as
+[section C1](#c-missing-test-machinery), but between schema and handler.
 
 ### A3. `xrefs.set_xref_clip_display`
 **Status:** works, but the name over-promises.

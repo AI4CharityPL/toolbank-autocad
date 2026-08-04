@@ -14,8 +14,14 @@ public class ModifyTests
         "move", "rotate", "scale", "mirror", "copy",
         "array_rectangular", "array_polar", "align",
         "set_layer", "set_color", "set_linetype", "set_lineweight", "match_properties",
-        "erase", "undo", "redo",
+        "erase",
         "create_group", "ungroup",
+        // "undo" and "redo" were withdrawn 2026-08-04 and must NOT come back here without the
+        // underlying problem being fixed first. Measured: after calling undo, the entity was
+        // still present at 0.0 s, 0.5 s, 1.5 s and 3.0 s - the queued UNDO never runs in this
+        // dispatch context. The handlers and proxy methods still exist; only the [McpTool]
+        // attributes are gone. acad_undo_checkpoint / acad_restore_checkpoint are the working
+        // rollback. See docs/KNOWN-GAPS.md A2.
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

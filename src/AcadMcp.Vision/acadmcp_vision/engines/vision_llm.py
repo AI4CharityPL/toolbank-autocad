@@ -34,10 +34,7 @@ def _shrink_to_jpeg(image: Image.Image) -> bytes:
     img.save(buf, format="JPEG", quality=85, optimize=True)
     data = buf.getvalue()
     if len(data) > MAX_PAYLOAD_BYTES:
-        raise ValueError(
-            f"Image too large after JPEG q85: {len(data)} bytes "
-            f"(cap {MAX_PAYLOAD_BYTES})"
-        )
+        raise ValueError(f"Image too large after JPEG q85: {len(data)} bytes (cap {MAX_PAYLOAD_BYTES})")
     return data
 
 
@@ -64,8 +61,7 @@ def describe(image: Image.Image, prompt: str, provider: str, max_tokens: int) ->
             provider = "google"
         else:
             raise RuntimeError(
-                "No vision LLM provider available. "
-                "Set ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY."
+                "No vision LLM provider available. Set ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY."
             )
     if provider == "anthropic":
         return _anthropic(image, prompt, max_tokens)

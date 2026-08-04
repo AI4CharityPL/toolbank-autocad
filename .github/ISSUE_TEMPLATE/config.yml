@@ -1,0 +1,13 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/security/advisories/new
+    about: >
+      Do not open a public issue. Report privately — this project executes agent-supplied
+      instructions against a CAD application that can write files anywhere the user can.
+  - name: Coverage roadmap
+    url: https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/blob/main/docs/COVERAGE-ROADMAP.md
+    about: What is planned but not built yet, across six phases.
+  - name: Known gaps
+    url: https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/blob/main/docs/KNOWN-GAPS.md
+    about: What is broken, what was deliberately withheld, and what ships untested.

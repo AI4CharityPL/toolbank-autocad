@@ -4,7 +4,56 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Added
+
+- **Continuous integration — `.github/` now exists.** `ci.yml` builds and tests on Windows,
+  checks manifest/code sync, runs the whole-tree repository gate, and lints/type-checks/tests
+  the Python vision sidecar on Linux. `codeql.yml` runs `security-and-quality` over C# and
+  Python weekly and on every PR. Plus `dependabot.yml` (NuGet, pip, Actions — with the AGPL
+  `[ml]` extra deliberately excluded), `CODEOWNERS`, three issue forms, a PR template, and
+  `SECURITY.md` / `CONTRIBUTING.md` / `CODE_OF_CONDUCT.md`.
+  - New `src/AcadMcp.NoAcad.slnf`. CI cannot build `AcadMcp.Plugin` or
+    `Companion.Host`: they reference AutoCAD's managed assemblies, which Autodesk does not
+    redistribute and no runner has. Nothing else in the tree depends on them, so the filter
+    is clean — but a green check on a plugin change means only that the server compiles.
+    Said plainly at the top of `ci.yml`, in the PR template and in KNOWN-GAPS C6, because it
+    is the kind of limit that otherwise gets rediscovered as a surprise.
+  - `mypy --strict` on the sidecar runs advisory (`continue-on-error`). It was configured
+    from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
+
 ### Fixed
+
+- **The pre-commit gate's `Intent=` check reported tools that were not broken.** It used the
+  regex `\[\s*McpTool\s*\((?![^\]]*Intent\s*=)`, and `[^\]]` stops at the first `]` — which
+  in `callouts.insert_title_block` appears inside the description itself
+  (`"Pass fields=[{key, value}, ...]"`). Two files failed the gate with no defect in either.
+  Replaced with a scan that walks the attribute by paren depth while skipping string
+  literals, so punctuation in prose is irrelevant. It now also names the offending tool and
+  line instead of just the file, and reports the total checked: 401 attributes across 278
+  files, all carrying `Intent=`.
+- **The gate aborted on its own logging.** Windows PowerShell 5.1 wraps a native
+  executable's stderr in `ErrorRecord` objects under `2>&1`, and the script runs with
+  `$ErrorActionPreference = 'Stop'` — so `AcadMcp.Backend`'s startup banner, correctly
+  written to stderr because stdout carries JSON-RPC frames, killed the validator self-check
+  every time. Both native calls now go through one `Invoke-NativeCapture` helper.
+- **The gate could run a stale test assembly and report the result as current.** `--no-build`
+  keeps it inside its 60 s budget but will happily execute a months-old DLL; this surfaced as
+  a failing schedules test that had been fixed long before. Added a staleness check that
+  compares the newest source file against the assembly. A stale *pass* was the real risk.
+- **Unit tests now run against `AcadMcp.Tests.csproj`, not `src/AcadMcp.sln`.** The solution
+  also contains the two AutoCAD-dependent projects; the tests never touch them.
+- **Four MCPBank category descriptions were too thin to choose from.** `acad-callouts`,
+  `acad-schedules`, `acad-sections` and `acad-verticals` were 26–29 words of feature list.
+  Rewritten as prose that also says what each category does *not* cover and which sibling to
+  use instead — that description is the only thing an agent reads before picking a category.
+  Also repaired a mojibake in `acad-verticals` (`WT �54`).
+- **Vision sidecar: seven `raise HTTPException(...)` inside `except` blocks discarded the
+  original exception.** Added `from ex` throughout, so the cause survives into the traceback.
+  Same failure mode as a silent `catch {}`, which has cost this project a day twice.
+- Vision sidecar: `EngineUnavailable` → `EngineUnavailableError`, `WeightsMissing` →
+  `WeightsMissingError` (PEP 8); two best-effort cache writes made explicit with
+  `contextlib.suppress`; imports sorted; `ruff format` applied across 8 files. `ruff check`
+  and `ruff format --check` are clean and both gate CI. All 31 sidecar tests pass.
 
 - **Companion: chat no longer freezes ("zacina się") in either plan or non-plan mode.** Root cause: the entire network path to the LLM had no time guard — the shared `HttpClient` used `Timeout.InfiniteTimeSpan` and the SSE read loop (`SseStream.ReadDataLinesAsync` → `ReadLineAsync`) only ended on stream close or user Cancel, so any silent provider stall (rate-limit hold, proxy/VPN, mid-stream hiccup) hung the chat forever on "Analizuję…/Kontynuuję…". Added: (1) an inter-token **idle timeout** in the SSE reader (`ChatRequest.StreamIdleTimeout`, default 90 s, wired into all three providers) that turns a stalled stream into a clean error; (2) a per-turn **wall-clock timeout with one automatic retry** in `AgentOrchestrator.SendTurnWithTimeoutAsync` (`CompanionSettings.TurnTimeoutSeconds`, default 240 s); (3) a 20 s bound on `RefreshModelsAsync` so startup/provider-switch can't hang the panel. New settings `StreamIdleTimeoutSeconds` / `TurnTimeoutSeconds`.
 - **Companion: agent works incrementally instead of one giant turn.** System prompt now instructs the model to split long work/answers across turns and process many rooms/elements in small batches, complementing the existing token-limit auto-continuation — keeps the chat responsive and avoids oversized single requests.

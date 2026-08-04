@@ -21,7 +21,7 @@ _easyocr_reader: Any = None
 
 
 @dataclass(frozen=True)
-class EngineUnavailable(Exception):
+class EngineUnavailableError(Exception):
     engine: str
     install_hint: str
 
@@ -58,7 +58,7 @@ def _get_paddle(languages: list[str]):
     try:
         paddle = importlib.import_module("paddleocr")
     except ImportError as ex:
-        raise EngineUnavailable(
+        raise EngineUnavailableError(
             engine="paddleocr",
             install_hint="pip install paddleocr paddlepaddle",
         ) from ex
@@ -104,7 +104,7 @@ def _get_easy(languages: list[str]):
     try:
         easy = importlib.import_module("easyocr")
     except ImportError as ex:
-        raise EngineUnavailable(
+        raise EngineUnavailableError(
             engine="easyocr",
             install_hint="pip install easyocr",
         ) from ex
@@ -143,7 +143,7 @@ def _run_tesseract(image: Image.Image, languages: list[str]) -> list[OcrToken]:
     try:
         pyt = importlib.import_module("pytesseract")
     except ImportError as ex:
-        raise EngineUnavailable(
+        raise EngineUnavailableError(
             engine="tesseract",
             install_hint="pip install pytesseract  (and install Tesseract OCR binary)",
         ) from ex

@@ -19,7 +19,6 @@ from PIL import Image
 
 from .schemas import ImageRef
 
-
 # ---------------------------------------------------------------------------
 # Image loading
 # ---------------------------------------------------------------------------
@@ -82,9 +81,7 @@ def _rasterise_pdf_page(pdf_bytes: bytes, *, page: int, dpi: int) -> Image.Image
     try:
         pdfium = importlib.import_module("pypdfium2")
     except ImportError as ex:
-        raise ImportError(
-            "PDF input requires pypdfium2. Run `pip install pypdfium2`."
-        ) from ex
+        raise ImportError("PDF input requires pypdfium2. Run `pip install pypdfium2`.") from ex
 
     doc = pdfium.PdfDocument(pdf_bytes)
     if page < 1 or page > len(doc):

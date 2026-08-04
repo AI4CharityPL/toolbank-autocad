@@ -1,0 +1,67 @@
+# CodeQL static analysis.
+#
+# Scoped to the same project set as CI (src/AcadMcp.NoAcad.slnf) for the C# side, for the
+# same reason: the AutoCAD-dependent projects cannot be compiled on a runner, and CodeQL
+# needs a successful build to analyse compiled languages.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monday 05:17 UTC. Off the hour on purpose — scheduled runs on the hour queue behind
+    # everyone else's.
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ${{ matrix.language == 'csharp' && 'windows-latest' || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [csharp, python]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Build C#
+        if: matrix.language == 'csharp'
+        run: dotnet build src/AcadMcp.NoAcad.slnf -c Release --nologo
+
+      - name: Autobuild
+        if: matrix.language != 'csharp'
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}

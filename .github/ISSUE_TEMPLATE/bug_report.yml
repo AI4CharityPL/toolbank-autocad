@@ -1,0 +1,61 @@
+name: Bug (setup, server, or docs)
+description: Anything that is not a specific tool misbehaving — install, connection, build, documentation.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a tool that runs but does the wrong thing, use **Tool defect** — it asks the
+        questions that matter for those.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Install / setup.ps1
+        - Plugin load (NETLOAD)
+        - MCP client cannot connect to the server
+        - Backend ↔ plugin pipe
+        - Vision sidecar
+        - Build
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      value: |
+        - AutoCAD version + interface language:
+        - Windows version:
+        - .NET SDK (`dotnet --info` first lines):
+        - MCP client:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: shell

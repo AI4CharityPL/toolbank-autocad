@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "AcadMcp.sln",
+    "projects": [
+      "AcadMcp.Backend\\AcadMcp.Backend.csproj",
+      "AcadMcp.ComBridge\\AcadMcp.ComBridge.csproj",
+      "AcadMcp.Lisp\\AcadMcp.Lisp.csproj",
+      "AcadMcp.Shared\\AcadMcp.Shared.csproj",
+      "AcadMcp.SourceGen\\AcadMcp.SourceGen.csproj",
+      "Companion\\AcadMcp.Companion.Agent\\AcadMcp.Companion.Agent.csproj",
+      "Companion\\AcadMcp.Companion.Mcp\\AcadMcp.Companion.Mcp.csproj",
+      "..\\tests\\AcadMcp.Tests\\AcadMcp.Tests.csproj"
+    ]
+  }
+}

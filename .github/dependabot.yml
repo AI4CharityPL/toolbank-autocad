@@ -1,0 +1,51 @@
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Microsoft.Extensions.* and the test stack move in lockstep. One PR each rather
+      # than eight is the difference between reviewing updates and ignoring them.
+      microsoft-extensions:
+        patterns: ["Microsoft.Extensions.*"]
+      test-stack:
+        patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "FluentAssertions"]
+      roslyn:
+        patterns: ["Microsoft.CodeAnalysis.*"]
+
+  - package-ecosystem: pip
+    directory: "/src/AcadMcp.Vision"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dev-tooling:
+        patterns: ["ruff", "mypy", "pytest*", "types-*"]
+    ignore:
+      # The [ml] extra is not installed by CI and its members are enormous, frequently
+      # released and licence-sensitive (ultralytics is AGPL-3.0). Bumping them here would
+      # produce unreviewable PRs that nothing verifies. Update them deliberately, together
+      # with setup-vision-models.ps1 and THIRD-PARTY-NOTICES.md.
+      - dependency-name: torch
+      - dependency-name: torchvision
+      - dependency-name: ultralytics
+      - dependency-name: paddlepaddle
+      - dependency-name: paddleocr
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"

@@ -1,0 +1,135 @@
+# Continuous integration.
+#
+# What this can and cannot check — stated up front, because the limit is structural
+# and not worth rediscovering in a pull request:
+#
+#   CI verifies the MCP server. It cannot verify the AutoCAD plugin.
+#
+# AcadMcp.Plugin and AcadMcp.Companion.Host reference acmgd.dll / acdbmgd.dll /
+# accoremgd.dll from a local AutoCAD install via $(AcadInstallPath). No GitHub runner has
+# AutoCAD, and Autodesk does not redistribute those assemblies, so those two projects are
+# excluded through src/AcadMcp.NoAcad.slnf. Nothing else in the tree depends on them.
+#
+# The consequence: a change to the plugin can be green here and still be wrong. Plugin
+# behaviour is verified by running it against a live AutoCAD — see CONTRIBUTING.md. That
+# is a real gap, tracked in docs/KNOWN-GAPS.md section C, not an oversight.
+#
+# What IS checked: everything an agent actually talks to — tool schemas, the parameter
+# contract between the source generator and System.Text.Json, manifest/code agreement,
+# validator rule loading, and the Python vision sidecar.
+
+name: CI
+
+on:
+  push:
+    branches: [main, "fix/**", "feat/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build + test (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/AcadMcp.NoAcad.slnf
+
+      # TreatWarningsAsErrors is on in the shared props; the tree currently builds with
+      # zero warnings and this keeps it that way.
+      - name: Build (Release)
+        run: dotnet build src/AcadMcp.NoAcad.slnf -c Release --no-restore --nologo
+
+      - name: Unit tests
+        run: >
+          dotnet test tests/AcadMcp.Tests/AcadMcp.Tests.csproj
+          -c Release --no-build --nologo
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory artifacts/test-results
+
+      # Every category folder under Categories/ must have a matching MCPBank manifest and
+      # the tool names must agree. This is what stops the discovery layer advertising a
+      # tool the server does not implement.
+      - name: Manifest / code sync
+        shell: pwsh
+        run: ./scripts/check-manifests.ps1 -FailFast
+
+      # The same gate contributors run locally, in whole-tree mode: engineering rules
+      # well-formed, manifests complete, no forbidden C# patterns, every [McpTool] carries
+      # Intent=, no secrets, validator YAML loads, tests green.
+      - name: Repository gate
+        shell: pwsh
+        run: ./scripts/pre-commit.ps1 -All
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/test-results
+          if-no-files-found: warn
+
+  vision-sidecar:
+    name: Vision sidecar (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/AcadMcp.Vision
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # Deliberately NOT installing the [ml] extra. It pulls in ultralytics, which is
+      # AGPL-3.0 while this project is MIT; engines/yolo.py resolves it lazily at call
+      # time precisely so a default install links no AGPL code. Installing it in CI would
+      # put AGPL obligations on this repository for no test coverage gain — the ML engines
+      # need model weights and provider API keys that CI does not have either.
+      # See THIRD-PARTY-NOTICES.md.
+      - name: Install (core + dev only)
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: ruff format --check .
+
+      # Not blocking yet, and that is a deliberate, temporary state.
+      #
+      # pyproject.toml has had `strict = true` since the sidecar was written, but there was
+      # no CI to enforce it, so it drifted: 26 errors as of the first run. Most are missing
+      # return annotations on FastAPI route handlers. Those are NOT a mechanical fix --
+      # FastAPI derives response serialisation from the return annotation, so adding them
+      # blind can change what the API emits. Two are real: a `verdict` typed str where the
+      # model wants a Literal, and main() annotated as returning a value it never returns.
+      #
+      # Flipping this to blocking is tracked in docs/KNOWN-GAPS.md section C. Leaving it
+      # non-blocking with the count visible is honest; deleting the step would not be.
+      - name: Types (advisory — 26 known errors, see KNOWN-GAPS.md)
+        continue-on-error: true
+        run: mypy acadmcp_vision
+
+      - name: Tests
+        run: pytest -q

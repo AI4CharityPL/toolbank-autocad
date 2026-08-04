@@ -1,0 +1,87 @@
+name: Tool defect
+description: An MCP tool returned success but did the wrong thing, or failed on valid input.
+title: "[tool] <category>.<tool_name>: "
+labels: ["defect", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for a tool that misbehaves. For something that is missing rather than
+        broken, use **Missing capability** instead.
+
+        **Please read this part.** The hardest defects in this project returned a perfectly
+        healthy JSON result while drawing the wrong thing — a revision cloud that came back
+        as a valid polyline but was a plain rectangle, a diametric dimension that returned a
+        good handle while labelling every circle `Ø0`, a colour selection that returned a
+        plausible handle list containing the entire drawing. All three reported success.
+
+        So: **a screenshot is worth more than the JSON here.** If you can attach one, do.
+
+  - type: input
+    id: tool
+    attributes:
+      label: Tool
+      description: Category and tool name.
+      placeholder: acad-annotative.add_annotation_scale
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to happen in the drawing
+      description: Describe the drawing outcome, not the JSON.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Again, in the drawing. Attach a screenshot if the difference is visual.
+    validations:
+      required: true
+
+  - type: textarea
+    id: call
+    attributes:
+      label: The call and its result
+      description: Arguments sent and JSON returned. Redact anything confidential.
+      render: json
+
+  - type: dropdown
+    id: reported
+    attributes:
+      label: Did the tool report success?
+      options:
+        - "Yes — it returned a normal result and the drawing is still wrong"
+        - "No — it returned an error"
+        - "It hung or the server died"
+    validations:
+      required: true
+
+  - type: input
+    id: autocad
+    attributes:
+      label: AutoCAD version and interface language
+      description: >
+        Language matters more than you would expect. On a Polish install AutoCAD renames the
+        support-file symbols — DASHED becomes KRESKOWA, CENTER becomes ŚRODEK — and not
+        consistently: CENTER and CENTERX2 are translated while CENTER2 is not. Several
+        defects were localisation-only.
+      placeholder: "AutoCAD 2025, English — or 2026, Polish"
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: Claude Code / Cursor / Claude Desktop / own script
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: Relevant stderr from AcadMcp.Backend, if you have it.
+      render: shell

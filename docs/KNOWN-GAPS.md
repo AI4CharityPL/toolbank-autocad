@@ -80,6 +80,19 @@ Four defects in this sweep were a **discovery tool advertising what the action t
    logging.
 4. **Automated licence scan** (`dotnet-project-licenses`, `pip-licenses`).
    [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md) is hand-maintained and says so.
+5. **`mypy --strict` on the vision sidecar is advisory, not blocking.** `pyproject.toml`
+   has declared `strict = true` since the sidecar was written, but nothing ran it, so it
+   drifted to **26 errors**. Most are missing return annotations on FastAPI route handlers,
+   which is not the mechanical fix it looks like — FastAPI derives response serialisation
+   from the return annotation. Two are substantive: `app.py` passes a `str` where
+   `ArchitectReviewResponse.verdict` wants a `Literal`, and `main()` is annotated as
+   returning a value it never returns. The CI step runs with `continue-on-error: true`;
+   fixing these and removing that flag is the task.
+6. **No plugin-side CI is possible at all.** Worth stating next to item 1: runners have no
+   AutoCAD and Autodesk does not redistribute the managed assemblies, so `AcadMcp.Plugin`
+   and `Companion.Host` are excluded via `src/AcadMcp.NoAcad.slnf`. A green CI check on a
+   plugin change means the server still compiles and nothing more. Every plugin change
+   needs a human with AutoCAD open — which is why the PR template asks which case applies.
 
 ---
 
@@ -87,9 +100,11 @@ Four defects in this sweep were a **discovery tool advertising what the action t
 
 From the original public-release plan; phases 1–2 landed, the rest did not.
 
-- **CI/CD — `.github/` does not exist at all.** No workflow, no dependabot, no CODEOWNERS,
-  SECURITY.md, CONTRIBUTING.md or issue templates. The MCPNexus repo has all of it; this one has
-  none. Biggest formal gap before going public.
+- ~~**CI/CD — `.github/` does not exist at all.**~~ **Done.** `ci.yml` (build, test,
+  manifest sync, whole-tree gate, Python sidecar), `codeql.yml`, `dependabot.yml`,
+  `CODEOWNERS`, three issue forms, a PR template, plus `SECURITY.md`, `CONTRIBUTING.md` and
+  `CODE_OF_CONDUCT.md`. Caveats above: the plugin is out of CI's reach (C6) and mypy is
+  advisory (C5).
 - **`PATTERN.md`** — the "how to wrap a thick desktop app in MCP" write-up. Highest-reach
   artefact in the repository and still unwritten. Material for it accumulated all through this
   sweep (see E below).

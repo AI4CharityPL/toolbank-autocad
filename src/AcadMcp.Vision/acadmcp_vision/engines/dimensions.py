@@ -73,9 +73,7 @@ def _parse(text: str, units_hint: str) -> tuple[float | None, str | None]:
     return val if eff_unit is None else None, eff_unit
 
 
-def from_ocr(
-    tokens: list[OcrToken], units_hint: str, min_confidence: float
-) -> list[DimensionToken]:
+def from_ocr(tokens: list[OcrToken], units_hint: str, min_confidence: float) -> list[DimensionToken]:
     out: list[DimensionToken] = []
     for t in tokens:
         if t.confidence < min_confidence:

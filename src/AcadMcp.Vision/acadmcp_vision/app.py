@@ -20,16 +20,15 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from . import __phase__, __version__
-from . import _cache, _loaders
+from . import __phase__, __version__, _cache, _loaders
 from .config import SETTINGS
 from .engines import dimensions as dim_engine
 from .engines import ocr as ocr_engine
 from .engines import titleblock as tb_engine
 from .engines import vision_llm as llm_engine
 from .engines import yolo as yolo_engine
-from .engines.ocr import EngineUnavailable
-from .engines.yolo import WeightsMissing
+from .engines.ocr import EngineUnavailableError
+from .engines.yolo import WeightsMissingError
 from .schemas import (
     ARCHITECT_REVIEW_CRITERIA,
     ArchitectReviewCriterion,
@@ -125,7 +124,7 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
         except ImportError as ex:
             return _service_unavailable("pypdfium2", str(ex))
 
@@ -139,7 +138,7 @@ def create_app() -> FastAPI:
 
         try:
             tokens = await _with_lock("ocr", _run)
-        except EngineUnavailable as ex:
+        except EngineUnavailableError as ex:
             return _service_unavailable(ex.engine, ex.install_hint)
 
         kept = [t for t in tokens if t.confidence >= req.min_confidence]
@@ -152,7 +151,9 @@ def create_app() -> FastAPI:
             cached=False,
         )
         _cache.put(
-            loaded.sha256, req.engine, eng_v,
+            loaded.sha256,
+            req.engine,
+            eng_v,
             rsp.model_dump(),
             extra="|".join(req.languages),
         )
@@ -168,11 +169,13 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
         eng_v = yolo_engine.engine_version()
         cached = _cache.get(
-            loaded.sha256, f"yolo-{req.discipline}", eng_v,
+            loaded.sha256,
+            f"yolo-{req.discipline}",
+            eng_v,
             extra=f"{req.min_confidence}",
         )
         if cached:
@@ -185,7 +188,7 @@ def create_app() -> FastAPI:
             dets = await _with_lock("yolo", _run)
         except ImportError as ex:
             return _service_unavailable("ultralytics", str(ex))
-        except WeightsMissing as ex:
+        except WeightsMissingError as ex:
             return _service_unavailable(
                 f"yolo-{ex.discipline}",
                 f"Run scripts/setup-vision-models.ps1 to download weights to {ex.expected_path}.",
@@ -200,7 +203,9 @@ def create_app() -> FastAPI:
             cached=False,
         )
         _cache.put(
-            loaded.sha256, f"yolo-{req.discipline}", eng_v,
+            loaded.sha256,
+            f"yolo-{req.discipline}",
+            eng_v,
             rsp.model_dump(),
             extra=f"{req.min_confidence}",
         )
@@ -216,7 +221,7 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
         eng_v = ocr_engine.engine_version("paddleocr")
         cached = _cache.get(loaded.sha256, "titleblock", eng_v, extra=req.discipline)
@@ -228,7 +233,7 @@ def create_app() -> FastAPI:
 
         try:
             tokens = await _with_lock("ocr", _run)
-        except EngineUnavailable as ex:
+        except EngineUnavailableError as ex:
             return _service_unavailable(ex.engine, ex.install_hint)
 
         fields, panel_box, low = tb_engine.extract(
@@ -254,7 +259,7 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
         eng_v = ocr_engine.engine_version("paddleocr")
         cached = _cache.get(loaded.sha256, "dimensions", eng_v, extra=req.units)
@@ -266,7 +271,7 @@ def create_app() -> FastAPI:
 
         try:
             tokens = await _with_lock("ocr", _run)
-        except EngineUnavailable as ex:
+        except EngineUnavailableError as ex:
             return _service_unavailable(ex.engine, ex.install_hint)
 
         dims = dim_engine.from_ocr(tokens, req.units, req.min_confidence)
@@ -289,7 +294,7 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image, max_long_side=1568)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
         cached = _cache.get(loaded.sha256, "classify-drawing", "v1")
         if cached:
@@ -325,12 +330,14 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image, max_long_side=1568)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
         final_prompt = _compose_prompt(req.persona, req.prompt)
 
         cached = _cache.get(
-            loaded.sha256, f"describe-{req.provider}", "v2",
+            loaded.sha256,
+            f"describe-{req.provider}",
+            "v2",
             extra=f"{req.max_tokens}|{(req.persona or 'none')}|{final_prompt[:64]}",
         )
         if cached:
@@ -345,11 +352,15 @@ def create_app() -> FastAPI:
             return _service_unavailable("vision_llm", str(ex))
 
         rsp = DescribeImageResponse(
-            provider=reply.provider, model=reply.model,
-            description=reply.text, cached=False,
+            provider=reply.provider,
+            model=reply.model,
+            description=reply.text,
+            cached=False,
         )
         _cache.put(
-            loaded.sha256, f"describe-{req.provider}", "v2",
+            loaded.sha256,
+            f"describe-{req.provider}",
+            "v2",
             rsp.model_dump(),
             extra=f"{req.max_tokens}|{(req.persona or 'none')}|{final_prompt[:64]}",
         )
@@ -370,19 +381,17 @@ def create_app() -> FastAPI:
         try:
             loaded = _loaders.load_image(req.image, max_long_side=1568)
         except (FileNotFoundError, ValueError) as ex:
-            raise HTTPException(status_code=400, detail=str(ex))
+            raise HTTPException(status_code=400, detail=str(ex)) from ex
 
-        prompt_base = (
-            _SENIOR_ARCHITECT_PROMPT_PL
-            if req.language == "pl"
-            else _SENIOR_ARCHITECT_PROMPT_EN
-        )
+        prompt_base = _SENIOR_ARCHITECT_PROMPT_PL if req.language == "pl" else _SENIOR_ARCHITECT_PROMPT_EN
         prompt = prompt_base
         if req.brief.strip():
             prompt = f"{prompt_base}\n\nProject brief:\n{req.brief.strip()}"
 
         cached = _cache.get(
-            loaded.sha256, "architect-review", "v1",
+            loaded.sha256,
+            "architect-review",
+            "v1",
             extra=f"{req.language}|{req.provider}|{req.max_tokens}|{len(req.brief)}",
         )
         if cached:
@@ -412,7 +421,9 @@ def create_app() -> FastAPI:
             cached=False,
         )
         _cache.put(
-            loaded.sha256, "architect-review", "v1",
+            loaded.sha256,
+            "architect-review",
+            "v1",
             rsp.model_dump(),
             extra=f"{req.language}|{req.provider}|{req.max_tokens}|{len(req.brief)}",
         )
@@ -672,12 +683,14 @@ def _parse_architect_review_json(text: str) -> list[ArchitectReviewCriterion]:
         for cid, label, _axis in ARCHITECT_REVIEW_CRITERIA:
             got = rows_by_id.get(cid)
             if got is None:
-                out.append(ArchitectReviewCriterion(
-                    id=cid,
-                    label=label,
-                    score=0.0,
-                    note="persona did not score this criterion",
-                ))
+                out.append(
+                    ArchitectReviewCriterion(
+                        id=cid,
+                        label=label,
+                        score=0.0,
+                        note="persona did not score this criterion",
+                    )
+                )
             else:
                 out.append(got)
         return out
@@ -750,9 +763,7 @@ def _threshold_note(verdict: str) -> str:
             "score 14..15 / 17 - executive-grade with remark; sign-off "
             "allowed but optional axes remain for the fabricator."
         ),
-        "full-wykonawczy": (
-            "score 16..17 / 17 - full rysunek wykonawczy; clear for export."
-        ),
+        "full-wykonawczy": ("score 16..17 / 17 - full rysunek wykonawczy; clear for export."),
         "unknown": "score out of expected range.",
     }
     return notes.get(verdict, notes["unknown"])
@@ -782,6 +793,7 @@ def _cross_validate(req: CrossValidateRequest) -> CrossValidateResponse:
                 return float(s.replace(",", ".").replace(" ", ""))
             except ValueError:
                 return None
+
         ocr_nums = [(s, to_num(s)) for s in only_ocr]
         dxf_nums = [(s, to_num(s)) for s in only_dxf]
         promoted: list[str] = []

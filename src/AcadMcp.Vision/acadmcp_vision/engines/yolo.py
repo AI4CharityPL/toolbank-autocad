@@ -20,7 +20,7 @@ _models: dict[str, Any] = {}
 
 
 @dataclass(frozen=True)
-class WeightsMissing(Exception):
+class WeightsMissingError(Exception):
     discipline: str
     expected_path: str
 
@@ -45,20 +45,16 @@ def _get_model(discipline: str):
     try:
         ult = importlib.import_module("ultralytics")
     except ImportError as ex:
-        raise ImportError(
-            "Ultralytics not installed. Run `pip install ultralytics`."
-        ) from ex
+        raise ImportError("Ultralytics not installed. Run `pip install ultralytics`.") from ex
     p = weights_path(discipline)
     if not p.exists():
-        raise WeightsMissing(discipline=discipline, expected_path=str(p))
+        raise WeightsMissingError(discipline=discipline, expected_path=str(p))
     model = ult.YOLO(str(p))
     _models[discipline] = model
     return model
 
 
-def detect(
-    image: Image.Image, discipline: str, min_confidence: float
-) -> list[SymbolDetection]:
+def detect(image: Image.Image, discipline: str, min_confidence: float) -> list[SymbolDetection]:
     model = _get_model(discipline)
     res = model.predict(image, conf=min_confidence, verbose=False)
     out: list[SymbolDetection] = []

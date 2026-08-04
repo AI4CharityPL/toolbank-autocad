@@ -14,10 +14,7 @@ from pathlib import Path
 def _local_app_data_dir() -> Path:
     """Return %LOCALAPPDATA%\\AcadMcp on Windows, ~/.local/share/AcadMcp elsewhere."""
     base = os.environ.get("LOCALAPPDATA")
-    if base:
-        root = Path(base) / "AcadMcp"
-    else:
-        root = Path.home() / ".local" / "share" / "AcadMcp"
+    root = Path(base) / "AcadMcp" if base else Path.home() / ".local" / "share" / "AcadMcp"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

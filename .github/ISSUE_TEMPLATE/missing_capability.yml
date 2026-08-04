@@ -1,0 +1,54 @@
+name: Missing capability
+description: Something AutoCAD can do that no tool exposes.
+title: "[capability] "
+labels: ["capability", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please check [docs/COVERAGE-ROADMAP.md](../../docs/COVERAGE-ROADMAP.md)
+        — it plans roughly 700 further tools across six phases and the gap may already be
+        scheduled. Also check [docs/KNOWN-GAPS.md](../../docs/KNOWN-GAPS.md) section B: some
+        tools were written and then deliberately withheld rather than shipped guessed-at,
+        and the reason is recorded there.
+
+        Saying which of those two is the case saves a triage round trip.
+
+  - type: textarea
+    id: task
+    attributes:
+      label: What you are trying to do
+      description: >
+        The drawing task, in the terms you would use to a colleague — not the AutoCAD API
+        call you think it needs. Tools designed backwards from the API tend to be unusable
+        by an agent, which has to find them from a plain-language request.
+    validations:
+      required: true
+
+  - type: input
+    id: manual
+    attributes:
+      label: How you would do it by hand
+      description: Command name, ribbon path or palette.
+      placeholder: e.g. SHEETSET / SSM palette
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Have you checked the roadmap and known gaps?
+      options:
+        - "Not listed in either"
+        - "In COVERAGE-ROADMAP.md but I need it sooner"
+        - "In KNOWN-GAPS.md section B (withheld) and I want to discuss the reason"
+        - "I have not checked"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: >
+        Standards it must satisfy, how often you would use it, whether you would be willing
+        to test it against a live AutoCAD. That last one is genuinely useful — CI cannot
+        verify the plugin, so every plugin change needs a human with AutoCAD open.

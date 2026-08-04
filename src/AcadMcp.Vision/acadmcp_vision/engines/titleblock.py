@@ -128,9 +128,7 @@ def extract(
 ) -> tuple[list[TitleblockField], PixelBox | None, bool]:
     """Return (fields, panel_box, low_confidence)."""
     template = TEMPLATES.get(discipline) or TEMPLATES["architectural-eu"]
-    panel_tokens, panel_box = _select_panel_tokens(
-        tokens, image_width, image_height, template.panel
-    )
+    panel_tokens, panel_box = _select_panel_tokens(tokens, image_width, image_height, template.panel)
     fields: list[TitleblockField] = []
     used_value_indexes: set[int] = set()
     overall_low = False

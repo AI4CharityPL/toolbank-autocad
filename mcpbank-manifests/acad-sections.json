@@ -1,7 +1,7 @@
 {
   "id": "acad-sections",
   "name": "acad-sections",
-  "description": "Section cut lines (A-A, B-B) with cut-plane markers, directional arrows and depth ranges. Links to layout tabs for each section view. Conforms to PN-EN-ISO-128 and PN-B-01025 section symbol conventions.",
+  "description": "Section and elevation markers: the symbols that tell a reader which cut a drawing represents. Places section cut lines (A-A, B-B) with cut-plane markers, direction arrows and a depth range, elevation markers, and section titles; lists the section lines already in the drawing so a new one gets the next free letter. Follows PN-EN-ISO 128 and PN-B-01025 symbol conventions. This category draws the annotation, not the view - it does not generate the sectioned geometry, and the layout tab holding each section view is created through acad-layouts.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sections.cmd",
@@ -52,7 +52,7 @@
   "tools_summary": [
     {
       "name": "insert_elevation_marker",
-      "description": "Insert an elevation-direction marker at the given model-space position. Geometry: a filled triangle pointing in the requested compass direction (N / E / S / W / NE / NW / SE / SW or bare degrees) on top of a short horizontal baseline, with the caption \u0022ELEWACJA \u003Cdirection\u003E\u0022 to the right. Differs from acad-callouts.insert_section_callout in that elevations have a directional triangle rather than a circle-in-triangle pair.",
+      "description": "Insert an elevation-direction marker at the given model-space position. Geometry: a filled triangle pointing in the requested compass direction (N / E / S / W / NE / NW / SE / SW or bare degrees) on top of a short horizontal baseline, with the caption \"ELEWACJA <direction>\" to the right. Differs from acad-callouts.insert_section_callout in that elevations have a directional triangle rather than a circle-in-triangle pair.",
       "tags": [
         "insert",
         "elevation",
@@ -61,7 +61,7 @@
     },
     {
       "name": "insert_section_line",
-      "description": "Draw a section cut-line from startPoint to endPoint on layer A-DETL-SECT, apply DASHED2 linetype, add 90-degree offset ticks at both ends, then place labelled end markers with view-direction arrows via acad-callouts (unless drawEndMarkers=false). The offset ticks (6 mm plotted) signal that the cut-line\u0027s path is symbolic, not literal. sheetReference optional, viewDirection in {left|right} relative to the start\u2192end vector.",
+      "description": "Draw a section cut-line from startPoint to endPoint on layer A-DETL-SECT, apply DASHED2 linetype, add 90-degree offset ticks at both ends, then place labelled end markers with view-direction arrows via acad-callouts (unless drawEndMarkers=false). The offset ticks (6 mm plotted) signal that the cut-line's path is symbolic, not literal. sheetReference optional, viewDirection in {left|right} relative to the start→end vector.",
       "tags": [
         "insert",
         "section",
@@ -70,7 +70,7 @@
     },
     {
       "name": "insert_section_title",
-      "description": "Place a section/view title beneath a drawn section (e.g. \u0022PRZEKR\u00D3J A-A\u0022 with \u0022SKALA 1:50\u0022 under it and an underline). position is the insertion point \u2014 typically the centre-bottom of the view. Customise caption (defaults to \u0022PRZEKR\u00D3J\u0022) for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line.",
+      "description": "Place a section/view title beneath a drawn section (e.g. \"PRZEKRÓJ A-A\" with \"SKALA 1:50\" under it and an underline). position is the insertion point — typically the centre-bottom of the view. Customise caption (defaults to \"PRZEKRÓJ\") for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line.",
       "tags": [
         "insert",
         "section",

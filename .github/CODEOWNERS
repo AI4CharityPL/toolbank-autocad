@@ -1,0 +1,16 @@
+# Default owner for everything.
+*                                   @KrzysztofAugiewicz
+
+# The contract surface. A change here changes what every MCP client sees, so it should
+# never merge unreviewed even when the diff looks mechanical.
+/src/AcadMcp.SourceGen/             @KrzysztofAugiewicz
+/src/AcadMcp.Backend/Mcp/           @KrzysztofAugiewicz
+/mcpbank-manifests/                 @KrzysztofAugiewicz
+
+# The rules the code is held to.
+/docs/engineering-rules/            @KrzysztofAugiewicz
+
+# Licensing and release plumbing.
+/LICENSE                            @KrzysztofAugiewicz
+/THIRD-PARTY-NOTICES.md             @KrzysztofAugiewicz
+/.github/                           @KrzysztofAugiewicz

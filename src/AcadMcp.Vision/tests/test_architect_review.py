@@ -25,16 +25,15 @@ from PIL import Image
 
 from acadmcp_vision import app as app_module
 from acadmcp_vision.app import (
-    _parse_architect_review_json,
     _SENIOR_ARCHITECT_PROMPT_EN,
     _SENIOR_ARCHITECT_PROMPT_PL,
+    _parse_architect_review_json,
     _threshold_note,
     _verdict_from_score,
     create_app,
 )
 from acadmcp_vision.engines.vision_llm import LlmReply
 from acadmcp_vision.schemas import ARCHITECT_REVIEW_CRITERIA
-
 
 # ---------------------------------------------------------------------------
 # Rubric contract
@@ -48,26 +47,35 @@ def test_rubric_has_exactly_17_criteria_in_canonical_order() -> None:
 
     labels = [label for _, label, _ in ARCHITECT_REVIEW_CRITERIA]
     assert labels == [
-        "hatching", "furniture", "plumbing", "doors", "windows",
-        "verticals", "grid", "dimensions", "schedules", "callouts",
-        "sections", "lineweight", "finishes-legend", "orientation-scale",
-        "reflected-ceiling", "details", "room-program",
+        "hatching",
+        "furniture",
+        "plumbing",
+        "doors",
+        "windows",
+        "verticals",
+        "grid",
+        "dimensions",
+        "schedules",
+        "callouts",
+        "sections",
+        "lineweight",
+        "finishes-legend",
+        "orientation-scale",
+        "reflected-ceiling",
+        "details",
+        "room-program",
     ]
 
 
 def test_persona_prompt_en_mentions_every_canonical_label() -> None:
     for _cid, label, _axis in ARCHITECT_REVIEW_CRITERIA:
-        assert label in _SENIOR_ARCHITECT_PROMPT_EN, (
-            f"EN prompt is missing canonical label '{label}'"
-        )
+        assert label in _SENIOR_ARCHITECT_PROMPT_EN, f"EN prompt is missing canonical label '{label}'"
 
 
 def test_persona_prompt_en_cites_rubric_rules_60_through_70() -> None:
     # Rule 60 is the rubric itself + 61-70 are the category rules it maps to.
     for rule_id in (60, 61, 62, 63, 64, 65, 66, 67, 69, 70):
-        assert f"rule {rule_id}" in _SENIOR_ARCHITECT_PROMPT_EN.lower(), (
-            f"EN prompt must cite rule {rule_id}"
-        )
+        assert f"rule {rule_id}" in _SENIOR_ARCHITECT_PROMPT_EN.lower(), f"EN prompt must cite rule {rule_id}"
 
 
 def test_persona_prompt_en_demands_strict_json_output() -> None:
@@ -140,20 +148,22 @@ def test_parser_accepts_clean_json_with_all_17_rows() -> None:
 
 
 def test_parser_snaps_scores_to_nearest_half() -> None:
-    text = json.dumps({
-        "criteria": [
-            {"id": 1, "label": "hatching",           "score": 0.3, "note": "partial"},
-            {"id": 2, "label": "furniture",          "score": 0.8, "note": "partial"},
-            {"id": 3, "label": "plumbing",           "score": 0.25, "note": "partial"},
-            {"id": 4, "label": "doors",              "score": 0.75, "note": "partial"},
-            {"id": 5, "label": "windows",            "score": 1.0, "note": "ok"},
-        ]
-    })
+    text = json.dumps(
+        {
+            "criteria": [
+                {"id": 1, "label": "hatching", "score": 0.3, "note": "partial"},
+                {"id": 2, "label": "furniture", "score": 0.8, "note": "partial"},
+                {"id": 3, "label": "plumbing", "score": 0.25, "note": "partial"},
+                {"id": 4, "label": "doors", "score": 0.75, "note": "partial"},
+                {"id": 5, "label": "windows", "score": 1.0, "note": "ok"},
+            ]
+        }
+    )
     parsed = _parse_architect_review_json(text)
     by_id = {c.id: c for c in parsed}
-    assert by_id[1].score == 0.5    # 0.3 -> 0.5
-    assert by_id[2].score == 1.0    # 0.8 -> 1.0
-    assert by_id[3].score in (0.0, 0.5)   # 0.25 is exactly on the boundary
+    assert by_id[1].score == 0.5  # 0.3 -> 0.5
+    assert by_id[2].score == 1.0  # 0.8 -> 1.0
+    assert by_id[3].score in (0.0, 0.5)  # 0.25 is exactly on the boundary
     assert by_id[4].score in (0.5, 1.0)
     assert by_id[5].score == 1.0
     # Missing criteria (6..17) fall back to 0.0 per rule 60 §2.
@@ -183,12 +193,14 @@ def test_parser_returns_all_zeros_on_garbage() -> None:
 
 
 def test_parser_clamps_scores_out_of_bounds() -> None:
-    text = json.dumps({
-        "criteria": [
-            {"id": 1, "label": "hatching",  "score": 5.0, "note": "overshoot"},
-            {"id": 2, "label": "furniture", "score": -3.0, "note": "undershoot"},
-        ]
-    })
+    text = json.dumps(
+        {
+            "criteria": [
+                {"id": 1, "label": "hatching", "score": 5.0, "note": "overshoot"},
+                {"id": 2, "label": "furniture", "score": -3.0, "note": "undershoot"},
+            ]
+        }
+    )
     parsed = _parse_architect_review_json(text)
     by_id = {c.id: c for c in parsed}
     assert by_id[1].score == 1.0
@@ -196,13 +208,15 @@ def test_parser_clamps_scores_out_of_bounds() -> None:
 
 
 def test_parser_ignores_unknown_criterion_ids() -> None:
-    text = json.dumps({
-        "criteria": [
-            {"id": 1,   "label": "hatching", "score": 1.0, "note": "ok"},
-            {"id": 99,  "label": "bogus",    "score": 1.0, "note": "should not be accepted"},
-            {"id": 2,   "label": "furniture", "score": 1.0, "note": "ok"},
-        ]
-    })
+    text = json.dumps(
+        {
+            "criteria": [
+                {"id": 1, "label": "hatching", "score": 1.0, "note": "ok"},
+                {"id": 99, "label": "bogus", "score": 1.0, "note": "should not be accepted"},
+                {"id": 2, "label": "furniture", "score": 1.0, "note": "ok"},
+            ]
+        }
+    )
     parsed = _parse_architect_review_json(text)
     by_id = {c.id: c for c in parsed}
     assert 99 not in by_id
@@ -221,7 +235,7 @@ def _blank_png(tmp_path: Path) -> Path:
     # cannot return a previous test's stubbed reply. We seed the colour
     # from the tmp_path name (unique per pytest function).
     p = tmp_path / "plan.png"
-    seed = (hash(str(tmp_path)) & 0xFFFFFF)
+    seed = hash(str(tmp_path)) & 0xFFFFFF
     r = (seed >> 16) & 0xFF
     g = (seed >> 8) & 0xFF
     b = seed & 0xFF
@@ -385,7 +399,7 @@ def test_persona_descriptor_json_is_in_sync_with_rubric() -> None:
 
     crits = data["criteria"]
     assert len(crits) == 17
-    for (cid, label, _axis), row in zip(ARCHITECT_REVIEW_CRITERIA, crits):
+    for (cid, label, _axis), row in zip(ARCHITECT_REVIEW_CRITERIA, crits, strict=False):
         assert row["id"] == cid
         assert row["label"] == label
 

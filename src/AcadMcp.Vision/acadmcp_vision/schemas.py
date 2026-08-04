@@ -14,7 +14,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Common
 # ---------------------------------------------------------------------------
@@ -122,9 +121,9 @@ class DetectSymbolsResponse(BaseModel):
 
 class ExtractTitleblockRequest(BaseModel):
     image: ImageRef
-    discipline: Literal[
-        "architectural-eu", "architectural-us", "mechanical", "electrical", "civil"
-    ] = "architectural-eu"
+    discipline: Literal["architectural-eu", "architectural-us", "mechanical", "electrical", "civil"] = (
+        "architectural-eu"
+    )
 
 
 class TitleblockField(BaseModel):
@@ -309,23 +308,23 @@ class VersionResponse(BaseModel):
 #: authoritative contract declared by rule 60 §1 and must not drift.
 #: Each tuple is (id, label, axis).
 ARCHITECT_REVIEW_CRITERIA: tuple[tuple[int, str, str], ...] = (
-    (1,  "hatching",           "Material expression"),
-    (2,  "furniture",          "Interior furnishing"),
-    (3,  "plumbing",           "Sanitary fixtures"),
-    (4,  "doors",              "Door quality"),
-    (5,  "windows",            "Window quality"),
-    (6,  "verticals",          "Vertical circulation"),
-    (7,  "grid",               "Structural grid"),
-    (8,  "dimensions",         "Dimensioning"),
-    (9,  "schedules",          "Schedules"),
-    (10, "callouts",           "Callouts"),
-    (11, "sections",           "Section lines"),
-    (12, "lineweight",         "Lineweight / plot style"),
-    (13, "finishes-legend",    "Finishes legend"),
-    (14, "orientation-scale",  "Orientation + scale"),
-    (15, "reflected-ceiling",  "Reflected ceiling plan"),
-    (16, "details",            "Jamb / sill / lintel details"),
-    (17, "room-program",       "Room program fidelity"),
+    (1, "hatching", "Material expression"),
+    (2, "furniture", "Interior furnishing"),
+    (3, "plumbing", "Sanitary fixtures"),
+    (4, "doors", "Door quality"),
+    (5, "windows", "Window quality"),
+    (6, "verticals", "Vertical circulation"),
+    (7, "grid", "Structural grid"),
+    (8, "dimensions", "Dimensioning"),
+    (9, "schedules", "Schedules"),
+    (10, "callouts", "Callouts"),
+    (11, "sections", "Section lines"),
+    (12, "lineweight", "Lineweight / plot style"),
+    (13, "finishes-legend", "Finishes legend"),
+    (14, "orientation-scale", "Orientation + scale"),
+    (15, "reflected-ceiling", "Reflected ceiling plan"),
+    (16, "details", "Jamb / sill / lintel details"),
+    (17, "room-program", "Room program fidelity"),
 )
 
 
@@ -346,7 +345,8 @@ class ArchitectReviewCriterion(BaseModel):
         description="Short canonical label (see ARCHITECT_REVIEW_CRITERIA).",
     )
     score: float = Field(
-        ge=0.0, le=1.0,
+        ge=0.0,
+        le=1.0,
         description="0 / 0.5 / 1 per rule 60. Server rounds to nearest half.",
     )
     note: str = Field(

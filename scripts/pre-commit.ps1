@@ -88,6 +88,28 @@ function Add-OK([string]$msg) {
     Write-Host "  ok  : $msg" -ForegroundColor DarkGray
 }
 
+# Run a native executable and return its stdout+stderr as plain strings.
+#
+# Windows PowerShell 5.1 turns every stderr line from a native exe into an ErrorRecord when
+# you write `2>&1`, and this script runs with $ErrorActionPreference='Stop', so a single line
+# of logging aborted the whole gate. That is not hypothetical: AcadMcp.Backend logs its
+# startup banner to stderr -- correctly, because stdout is reserved for JSON-RPC frames --
+# and check 6 died on it every time.
+#
+# Dropping to 'Continue' for the duration keeps the lines flowing as data, and "$_" flattens
+# any ErrorRecord back to its text. $LASTEXITCODE stays the real exit code of the process.
+function Invoke-NativeCapture([string]$exe, [string[]]$exeArgs) {
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $lines = & $exe @exeArgs 2>&1 | ForEach-Object { "$_" }
+        $script:LastNativeExit = $LASTEXITCODE
+        return @($lines)
+    }
+    finally { $ErrorActionPreference = $prev }
+}
+$script:LastNativeExit = 0
+
 function Get-StagedFiles {
     if ($All) {
         return Get-ChildItem -Recurse -File |
@@ -195,9 +217,51 @@ Write-Host "[3/7] Forbidden C# patterns" -ForegroundColor Cyan
 $csStaged = $staged | Where-Object { $_ -like "*.cs" }
 $forbidden = @(
     @{ Pattern = 'Marshal\.GetActiveObject\s*\('; Reason = "use MarshalCompat (rule: AcadMcp.ComBridge)"; Scope = '*' },
-    @{ Pattern = 'Console\.WriteLine'; Reason = "use ILogger; stdout reserved for JSON-RPC frames (rule 40)"; Scope = 'src/AcadMcp.Backend/' },
-    @{ Pattern = '\[\s*McpTool\s*\((?![^\]]*Intent\s*=)'; Reason = "[McpTool] without Intent= (rule 20)"; Scope = '*' }
+    @{ Pattern = 'Console\.WriteLine'; Reason = "use ILogger; stdout reserved for JSON-RPC frames (rule 40)"; Scope = 'src/AcadMcp.Backend/' }
 )
+
+# The Intent= check (rule 20) is deliberately NOT a regex.
+#
+# It used to be:  \[\s*McpTool\s*\((?![^\]]*Intent\s*=)
+# and the [^\]] class made it stop at the first ']' *inside the description string* --
+# so callouts.insert_title_block, whose description legitimately reads
+# "Pass fields=[{key, value}, ...]", was reported as missing an Intent it plainly has.
+# Two files failed the gate for that reason and neither had a real defect.
+#
+# So walk the attribute instead: from '[McpTool(' to its matching ')', counting paren
+# depth and skipping over string literals (both \" and "" escapes). That gives the whole
+# argument list regardless of what punctuation the prose contains, and lets the failure
+# name the offending tool and line rather than just the file.
+function Get-McpToolAttributes([string]$body) {
+    $found = New-Object System.Collections.Generic.List[object]
+    foreach ($m in [regex]::Matches($body, '\[\s*McpTool\s*\(')) {
+        $i = $m.Index + $m.Length   # first char after the '('
+        $depth = 1
+        $inStr = $false
+        while ($i -lt $body.Length -and $depth -gt 0) {
+            $c = $body[$i]
+            if ($inStr) {
+                if ($c -eq '\') { $i += 2; continue }                      # \" and friends
+                if ($c -eq '"') {
+                    if ($i + 1 -lt $body.Length -and $body[$i + 1] -eq '"') { $i += 2; continue }  # "" in @"..."
+                    $inStr = $false
+                }
+            }
+            elseif ($c -eq '"') { $inStr = $true }
+            elseif ($c -eq '(') { $depth++ }
+            elseif ($c -eq ')') { $depth-- }
+            $i++
+        }
+        $span = $body.Substring($m.Index, $i - $m.Index)
+        $name = if ($span -match '^\[\s*McpTool\s*\(\s*"([^"]+)"') { $matches[1] } else { '<unnamed>' }
+        $line = ($body.Substring(0, $m.Index) -split "`n").Count
+        $found.Add([pscustomobject]@{ Name = $name; Text = $span; Line = $line }) | Out-Null
+    }
+    return $found
+}
+
+$patternHits = 0
+$toolsSeen = 0
 foreach ($f in $csStaged) {
     $abs = Join-Path $RepoRoot $f
     if (-not (Test-Path $abs)) { continue }
@@ -206,10 +270,20 @@ foreach ($f in $csStaged) {
         if ($rule.Scope -ne '*' -and ($f -replace '\\','/') -notlike ("*" + $rule.Scope + "*")) { continue }
         if ($body -match $rule.Pattern) {
             Add-Err "${f}: forbidden pattern - $($rule.Reason)"
+            $patternHits++
+        }
+    }
+    foreach ($att in (Get-McpToolAttributes $body)) {
+        $toolsSeen++
+        if ($att.Text -notmatch 'Intent\s*=') {
+            Add-Err "${f}:$($att.Line): [McpTool(`"$($att.Name)`")] has no Intent= (rule 20)"
+            $patternHits++
         }
     }
 }
-if (-not $errors -or $errors.Count -eq 0) { Add-OK "no forbidden patterns in $($csStaged.Count) staged C# files" }
+if ($patternHits -eq 0) {
+    Add-OK "no forbidden patterns in $($csStaged.Count) C# files; all $toolsSeen [McpTool] attributes carry Intent="
+}
 
 # 4. Secrets
 Write-Host ""
@@ -258,8 +332,8 @@ if (-not $shouldRunSelfCheck) {
     if (-not (Test-Path $backendExe)) {
         Add-OK "AcadMcp.Backend.exe not built - skipped (build first to validate yaml rules)"
     } else {
-        $output = & $backendExe --validators-self-check 2>&1
-        $code = $LASTEXITCODE
+        $output = Invoke-NativeCapture $backendExe @('--validators-self-check')
+        $code = $script:LastNativeExit
         if ($code -ne 0) {
             $errLines = @($output) | Where-Object { $_ -match '(?i)error|FAIL' } | Select-Object -First 5
             Add-Err "validators self-check failed (exit $code): $($errLines -join ' | ')"
@@ -285,9 +359,27 @@ if (-not (Test-Path $testsDll)) {
 if (-not (Test-Path $testsDll)) {
     Add-OK "AcadMcp.Tests.dll not built - skipped (run 'dotnet build src/AcadMcp.sln' first)"
 } else {
-    $testSln = Join-Path $RepoRoot 'src\AcadMcp.sln'
-    $testOutput = & dotnet test $testSln --no-build --nologo --verbosity quiet 2>&1
-    $testCode = $LASTEXITCODE
+    # Target the test project, not src/AcadMcp.sln: the solution also contains
+    # AcadMcp.Plugin and Companion.Host, which reference the AutoCAD managed assemblies
+    # via $(AcadInstallPath). On a machine without AutoCAD -- every CI runner -- evaluating
+    # those projects is noise at best. The tests never touch them.
+    # --no-build keeps the gate inside its 60 s budget, but it will happily run a months-old
+    # assembly and report the result as current. That is not theoretical either: this check
+    # once failed on a schedules test that had been fixed long before, because the DLL predated
+    # the fix. A stale PASS is the dangerous direction. Same class of bug as deploy-plugin.ps1
+    # defaulting to Debug and shipping an April build.
+    $newestSource = Get-ChildItem -Path (Join-Path $RepoRoot 'src'), (Join-Path $RepoRoot 'tests') `
+                        -Recurse -File -Include *.cs, *.csproj -ErrorAction SilentlyContinue |
+                    Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' } |
+                    Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    if ($newestSource -and $newestSource.LastWriteTimeUtc -gt (Get-Item $testsDll).LastWriteTimeUtc) {
+        Add-Err ("test assembly is STALE - {0} is newer than AcadMcp.Tests.dll. " -f $newestSource.Name +
+                 "Run: dotnet build tests/AcadMcp.Tests/AcadMcp.Tests.csproj")
+    }
+
+    $testProj = Join-Path $RepoRoot 'tests\AcadMcp.Tests\AcadMcp.Tests.csproj'
+    $testOutput = Invoke-NativeCapture 'dotnet' @('test', $testProj, '--no-build', '--nologo', '--verbosity', 'quiet')
+    $testCode = $script:LastNativeExit
     if ($testCode -ne 0) {
         $failLines = @($testOutput) | Where-Object { $_ -match '(?i)FAIL|Niepowodzenie|failed' } | Select-Object -First 5
         Add-Err "dotnet test failed (exit $testCode): $($failLines -join ' | ')"

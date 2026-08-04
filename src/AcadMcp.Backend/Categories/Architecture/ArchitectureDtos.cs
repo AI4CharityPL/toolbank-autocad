@@ -157,7 +157,11 @@ public sealed record DefineRoomArgs(
     [property: JsonPropertyName("tagPosition")] Point2dDto? TagPosition = null,   // null => auto-centroid
     [property: JsonPropertyName("tagTextHeightMm")] double TagTextHeightMm = 250.0,
     [property: JsonPropertyName("boundaryLayer")] string BoundaryLayer = ArchitecturePalette.LayerRoomBoundary,
-    [property: JsonPropertyName("tagLayer")]   string TagLayer = ArchitecturePalette.LayerRoomIdentification);
+    [property: JsonPropertyName("tagLayer")]   string TagLayer = ArchitecturePalette.LayerRoomIdentification,
+    // null  -> create and use ACADMCP-ROOM (TrueType, so "m²" renders)
+    // "..."  -> use the caller's own style, created by them, nothing added to the drawing
+    // ""     -> opt out; take the drawing's current style, superscript glyph and all
+    [property: JsonPropertyName("tagTextStyle")] string? TagTextStyle = null);
 
 public sealed record DefineRoomResult(
     [property: JsonPropertyName("boundary")]   EntityHandle Boundary,

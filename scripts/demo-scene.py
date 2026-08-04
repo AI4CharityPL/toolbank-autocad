@@ -31,10 +31,8 @@ try:
     print("== nowy rysunek ==")
     do("files", "new_document", {})
     do("architecture", "ensure_architectural_layers", {})
-    # Domyslny styl AutoCAD-a to SHX (txt.shx), ktory nie ma glifu ² i rysuje '?'.
-    # Jesli po przelaczeniu na TrueType m² pojawi sie poprawnie, diagnoza jest potwierdzona.
-    do("annotations", "create_text_style", {"name": "ACADMCP-DEMO", "font": "arial.ttf"})
-    do("annotations", "set_current_text_style", {"name": "ACADMCP-DEMO"})
+    # Styl tekstu dla etykiet pomieszczen tworzy teraz samo define_room (ACADMCP-ROOM,
+    # TrueType), bo domyslny SHX nie ma glifu ². Nic tu nie trzeba ustawiac.
 
     print("\n== sciany ==")
     do("architecture", "draw_walls_chain",

@@ -67,27 +67,23 @@ mistypes the argument gets a checkpoint they cannot then find by label. Advertis
 required, treated as optional — the same catalogue-vs-consumer disagreement as
 [section C1](#c-missing-test-machinery), but between schema and handler.
 
-### A8. Room area tags render `m?` instead of `m²`
-**Status:** found 2026-08-04 while building the README demo. Diagnosed, not fixed — the fix
-carries a product decision.
+### ~~A8. Room area tags render `m?` instead of `m²`~~
+**Fixed 2026-08-04, verified visually.** The string was never wrong — proper UTF-8 in the
+source, read as UTF-8. AutoCAD's default text style is backed by an SHX font with no glyph for
+the superscript, so it drew a question mark on every room tag.
 
-`architecture.define_room` writes the area as `20,46 m²`. The string is correct: the literal in
-`ArchitectureTools.cs` is proper UTF-8 (`0xC2 0xB2`) and Roslyn reads BOM-less files as UTF-8,
-so nothing is mangled in transport. **AutoCAD's default text style uses an SHX font, which has
-no glyph for `²` and draws `?` instead.** Every room tag on a default install is affected.
+Setting a TrueType style as *current* does not help: `DBText` takes the style it is given, and
+`define_room` was giving none. It now names one. `ACADMCP-ROOM` (Arial) is created on demand,
+idempotently, and used for all three tag lines.
 
-Creating a TrueType style and making it current does *not* help — `define_room` does not use the
-current text style, which is a second finding worth its own look.
+New `tagTextStyle` argument so this is not imposed: pass your own style name and nothing is
+created; pass `""` to opt out entirely and take the drawing's current style. Default `null`
+gets the working behaviour.
 
-Two ways out, and they are not equivalent:
-- **Write `m2`.** Renders on every install, including SHX. Less correct typographically, and
-  Polish architectural drafting convention is `m²`.
-- **Have `define_room` ensure a TrueType-backed style for room tags.** Keeps `m²`, but imposes a
-  text style on the caller's drawing, which an office with its own standards will not thank us
-  for.
-
-Deliberately not decided unilaterally: this changes the content of every drawing the tool
-produces, not just a screenshot.
+Worth recording separately: `create_text_style` takes a TrueType **typeface name** ("Arial"),
+not a file name. Passing `"arial.ttf"` succeeds and produces a style bound to a typeface that
+does not exist, which renders as the fallback and looks exactly like the style was ignored.
+Cost me one diagnostic cycle.
 
 ### A3. `xrefs.set_xref_clip_display`
 **Status:** works, but the name over-promises.

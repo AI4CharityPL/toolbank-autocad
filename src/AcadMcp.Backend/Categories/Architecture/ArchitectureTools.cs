@@ -402,15 +402,46 @@ public static class ArchitectureTools
         var namePos   = new Point2dDto(centroid.X, centroid.Y);
         var areaPos   = new Point2dDto(centroid.X, centroid.Y - lineSpacing);
 
+        // The area label carries "m²", and AutoCAD's default text style is backed by an SHX
+        // font that has no glyph for it - so every room tag on a default install used to read
+        // "20,46 m?". The string was never wrong; the font could not draw it.
+        //
+        // Setting a TrueType style as current does not help either: DBText takes the style it
+        // is given, and this tool was giving none. So name one explicitly. The style is created
+        // on demand and the call is idempotent, so a drawing that already has it is untouched.
+        //
+        // tagTextStyle lets an office with its own standards name their style instead; pass
+        // their name and nothing is created. Passing "" opts out entirely and takes whatever
+        // the drawing's current style is, "m?" and all - deliberate, and their call to make.
+        var tagStyle = args.TagTextStyle;
+        if (tagStyle is null)
+        {
+            tagStyle = DefaultRoomTagTextStyle;
+            // "Arial" is the typeface name, not "arial.ttf" - the plugin builds a FontDescriptor
+            // from this string, and a file name there yields a style bound to a typeface that
+            // does not exist, which renders as the fallback and looks like the style was ignored.
+            await ArchitectureProxy.EnsureTextStyleAsync(gw, tagStyle, "Arial", ct).ConfigureAwait(false);
+        }
+        else if (tagStyle.Length == 0)
+        {
+            tagStyle = null;   // explicit opt-out: use whatever the drawing has current
+        }
+
         var numberText = await ArchitectureProxy.AddDBTextAsync(
-            gw, numberPos, args.Number, args.TagTextHeightMm, args.TagLayer, 0.0, ct).ConfigureAwait(false);
+            gw, numberPos, args.Number, args.TagTextHeightMm, args.TagLayer, 0.0, ct, tagStyle).ConfigureAwait(false);
         var nameText   = await ArchitectureProxy.AddDBTextAsync(
-            gw, namePos, args.Name,   args.TagTextHeightMm, args.TagLayer, 0.0, ct).ConfigureAwait(false);
+            gw, namePos, args.Name,   args.TagTextHeightMm, args.TagLayer, 0.0, ct, tagStyle).ConfigureAwait(false);
         var areaText   = await ArchitectureProxy.AddDBTextAsync(
-            gw, areaPos, $"{areaM2:F2} m²", args.TagTextHeightMm, args.TagLayer, 0.0, ct).ConfigureAwait(false);
+            gw, areaPos, $"{areaM2:F2} m²", args.TagTextHeightMm, args.TagLayer, 0.0, ct, tagStyle).ConfigureAwait(false);
 
         return new DefineRoomResult(boundary, numberText, nameText, areaText, areaM2, centroid, created);
     }
+
+    /// <summary>
+    /// Text style created on demand for room tags. TrueType, because the area label contains
+    /// "m²" and the SHX fonts AutoCAD ships with have no glyph for it.
+    /// </summary>
+    private const string DefaultRoomTagTextStyle = "ACADMCP-ROOM";
 
     // ─────────── dimensioning ───────────
 

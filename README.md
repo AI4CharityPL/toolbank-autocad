@@ -4,6 +4,14 @@
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
+![Plan a small clinic, drawn by an agent through this MCP server](assets/readme/demo-clinic.png)
+
+<sub>Four rooms with computed areas, walls, doors, windows, a tiled floor, north arrow and
+scale bar — 21 tool calls, no human drafting. Reproduce it with
+[`scripts/demo-scene.py`](scripts/demo-scene.py); it runs against your AutoCAD and writes this
+exact PNG. Building it found two defects that every previous run had reported as a success —
+see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
+
 > **Not here for AutoCAD?** [**PATTERN.md**](PATTERN.md) is the transferable half — what we
 > learned wrapping a thick desktop application in MCP, with the failures that produced each
 > lesson. Nothing in it is AutoCAD-specific. Start there if you are building the same kind of

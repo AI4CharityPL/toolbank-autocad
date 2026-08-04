@@ -139,7 +139,8 @@ public static class ArchitectureProxy
         double heightMm,
         string layer,
         double rotationDeg,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? textStyle = null)
     {
         var args = new JsonObject
         {
@@ -149,7 +150,29 @@ public static class ArchitectureProxy
             ["layer"]       = layer,
             ["rotationDeg"] = rotationDeg,
         };
+        if (!string.IsNullOrWhiteSpace(textStyle)) args["textStyle"] = textStyle;
         return await CallEntityAsync(gw, "acad.annotations.add_dbtext", args, T_NORMAL, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Create a text style if it is not already in the drawing. The underlying tool is
+    /// idempotent, so this is safe to call on every request.
+    /// </summary>
+    /// <param name="font">
+    /// A TrueType <b>typeface name</b> ("Arial"), not a file name — the plugin builds a
+    /// <c>FontDescriptor</c> from it. Passing "arial.ttf" produces a style bound to a typeface
+    /// that does not exist, which renders as the fallback and looks like the style was ignored.
+    /// An <c>.shx</c> suffix selects the SHX path instead.
+    /// </param>
+    public static async Task EnsureTextStyleAsync(
+        IPluginGateway gw, string name, string font, CancellationToken ct)
+    {
+        var args = new JsonObject
+        {
+            ["name"] = name,
+            ["font"] = font,
+        };
+        await gw.InvokeAsync("acad.annotations.create_text_style", args, T_NORMAL, ct).ConfigureAwait(false);
     }
 
     public static async Task<EntityHandle> DimensionLinearAsync(

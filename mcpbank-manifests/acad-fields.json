@@ -1,0 +1,244 @@
+{
+  "id": "acad-fields",
+  "name": "acad-fields",
+  "description": "Dynamic text fields: date, filename, layout/sheet name, object properties, computed areas, system variables and formulas. A title block or schedule built from fields stays correct when the drawing changes; one built from plain text is wrong the moment anything moves.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-fields.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "convert",
+    "date",
+    "dwg",
+    "evaluation",
+    "expression",
+    "field",
+    "fields",
+    "filename",
+    "get",
+    "insert",
+    "layout",
+    "list",
+    "mode",
+    "name",
+    "object",
+    "property",
+    "set",
+    "system",
+    "text",
+    "to",
+    "update",
+    "variable"
+  ],
+  "intent_examples": [
+    "add auto-updating date",
+    "aktualny tryb pol",
+    "arbitrary field expression",
+    "auto-updating area label",
+    "convert field to static text",
+    "custom field code",
+    "data ktora sie aktualizuje",
+    "do czego odwoluje sie pole",
+    "dynamiczna data na rysunku",
+    "field bound to entity area",
+    "fieldeval setting",
+    "file name field",
+    "freeze field value",
+    "gdzie sa pola dynamiczne",
+    "get field evaluation mode",
+    "get field expression",
+    "insert date field",
+    "insert filename field",
+    "insert layout name field",
+    "insert object property field",
+    "insert raw field expression",
+    "insert system variable field",
+    "inspect field code",
+    "jakie jest fieldeval",
+    "jakie pola sa na rysunku",
+    "kod pola",
+    "kto rysowal jako pole",
+    "list fields in drawing",
+    "loginname field",
+    "make field permanent text",
+    "nazwa rysunku jako pole",
+    "nazwa ukladu w tabelce",
+    "numer arkusza jako pole",
+    "odswiez wartosci pol",
+    "pokaz wyrazenie pola",
+    "pole powiazane z geometria",
+    "powierzchnia jako pole dynamiczne",
+    "przelicz pola teraz",
+    "read fieldeval",
+    "recalculate field values",
+    "refresh all fields",
+    "sciezka pliku na rysunku",
+    "set field evaluation mode",
+    "sheet number field",
+    "show all fields",
+    "show drawing name automatically",
+    "sprawdz tryb aktualizacji pol",
+    "surowe wyrazenie pola",
+    "sysvar field",
+    "tab name field",
+    "title block date field",
+    "tryb aktualizacji pol",
+    "update fields",
+    "ustaw kiedy pola sie przeliczaja",
+    "usun powiazanie pola",
+    "what is this field bound to",
+    "when do fields update",
+    "when do fields update currently",
+    "which text is a field",
+    "wlasne pole acvar",
+    "wstaw pole z data",
+    "wstaw pole z nazwa arkusza",
+    "wstaw pole z nazwa pliku",
+    "wstaw pole z wlasciwoscia obiektu",
+    "wstaw pole z wyrazeniem",
+    "wstaw pole ze zmienna systemowa",
+    "wylacz automatyczne pola",
+    "wylistuj pola",
+    "zaktualizuj pola",
+    "zamien pole na tekst",
+    "zamroz wartosc pola",
+    "zmienna systemowa na rysunku"
+  ],
+  "tools_summary": [
+    {
+      "name": "convert_field_to_text",
+      "description": "Freeze a field into plain text at its current value. One-way and deliberate: use it when issuing a drawing that must not change afterwards, never as a way to \u0027fix\u0027 a field showing the wrong thing.",
+      "tags": [
+        "convert",
+        "field",
+        "to",
+        "text"
+      ]
+    },
+    {
+      "name": "get_field_evaluation_mode",
+      "description": "Report when fields currently re-evaluate (the FIELDEVAL bitmask, decoded). Read-only.",
+      "tags": [
+        "get",
+        "field",
+        "evaluation",
+        "mode"
+      ]
+    },
+    {
+      "name": "get_field_expression",
+      "description": "Return the raw AcVar expression and the evaluated value behind one text entity. Read-only. Use it to see what a field is actually bound to before trusting the number it shows.",
+      "tags": [
+        "get",
+        "field",
+        "expression"
+      ]
+    },
+    {
+      "name": "insert_field_date",
+      "description": "Place a date field that re-evaluates rather than freezing. format is a .NET/AutoCAD date pattern (default yyyy-MM-dd). Use this for the date cell of a title block instead of writing today\u0027s date as text.",
+      "tags": [
+        "insert",
+        "field",
+        "date"
+      ]
+    },
+    {
+      "name": "insert_field_expression",
+      "description": "Place a field from a raw AcVar expression, for anything the typed tools do not cover. Escape hatch - the expression is passed through unvalidated, and the evaluated result is returned so a wrong one is visible immediately rather than at plot time.",
+      "tags": [
+        "insert",
+        "field",
+        "expression"
+      ]
+    },
+    {
+      "name": "insert_field_filename",
+      "description": "Place a field showing this drawing\u0027s file name, optionally with its full path and extension. Survives Save As, which a typed file name does not.",
+      "tags": [
+        "insert",
+        "field",
+        "filename"
+      ]
+    },
+    {
+      "name": "insert_field_layout_name",
+      "description": "Place a field showing the name of the layout the field sits on. This is the sheet-number cell of a title block: rename the tab and every sheet updates itself.",
+      "tags": [
+        "insert",
+        "field",
+        "layout",
+        "name"
+      ]
+    },
+    {
+      "name": "insert_field_object_property",
+      "description": "Place a field bound to a property of an existing entity by handle - Area, Length, Radius, Layer, Color and so on. The text follows the object: edit the geometry and the number changes with it. This is what makes a room-area label self-maintaining.",
+      "tags": [
+        "insert",
+        "field",
+        "object",
+        "property"
+      ]
+    },
+    {
+      "name": "insert_field_system_variable",
+      "description": "Place a field showing an AutoCAD system variable (DWGNAME, LOGINNAME, CTAB, DWGPREFIX, ...). Useful for drawn-by and drawing-status cells.",
+      "tags": [
+        "insert",
+        "field",
+        "system",
+        "variable"
+      ]
+    },
+    {
+      "name": "list_fields",
+      "description": "List every text entity in model space that contains a field, with its raw expression and its currently evaluated value. Read-only. Call this to find title-block cells that are still frozen text.",
+      "tags": [
+        "list",
+        "fields"
+      ]
+    },
+    {
+      "name": "set_field_evaluation_mode",
+      "description": "Control when fields re-evaluate: on open, save, plot and/or regen (the FIELDEVAL bitmask). Turning them all off is how a drawing is frozen for issue without converting every field to text.",
+      "tags": [
+        "set",
+        "field",
+        "evaluation",
+        "mode"
+      ]
+    },
+    {
+      "name": "update_fields",
+      "description": "Re-evaluate fields now. Pass handles to update specific ones, or omit them to update every field in the drawing. Returns how many were evaluated.",
+      "tags": [
+        "update",
+        "fields"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "fields",
+    "tool_count_target": 12,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-04T10:12:04.8318782Z"
+  }
+}

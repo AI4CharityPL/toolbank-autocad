@@ -32,7 +32,31 @@ tools, or keep them as an explicitly best-effort escape hatch.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
-### A4. Vision category (9 tools)
+### A4. `fields` — half the category does not evaluate
+**Status:** shipped, verified, partly broken. Found on first live run.
+
+Working, with real values: `insert_field_filename` ("Rysunek2.dwg"),
+`insert_field_layout_name` ("Model"), `insert_field_system_variable` ("DELL"),
+`set_field_evaluation_mode` / `get_field_evaluation_mode` (FIELDEVAL 31, decoded correctly),
+`convert_field_to_text`.
+
+Broken:
+- **`insert_field_date`** renders `####` — AutoCAD's "recognised but could not evaluate"
+  placeholder. The `%<\AcVar Date  "...">%` form is wrong.
+- **`insert_field_object_property`** renders `####`. This is the important one: it is the tool
+  that would make a room-area label self-maintaining and remove the need for
+  `schedules.correct_all_room_areas`. The `%<\AcObjProp Object(%<\_ObjId ...>%).Area>%` form
+  is wrong — most likely the ObjId, which needs the internal object id, not the handle string
+  I passed.
+- **`list_fields` returns 0** on a drawing that visibly contains fields, so `update_fields`
+  reports 0 as well. The detection scans `MText.Contents` for `%<\Ac`, and Contents comes back
+  already evaluated for the fields that DO work — so the marker is not there to find. Detection
+  has to come off the Field object attached to the entity, not off the text.
+
+**Do not trust anything this category reports about counts until the above is fixed.** The three
+insertion tools that work are genuinely useful today; the rest are not.
+
+### A5. Vision category (9 tools)
 **Status:** never verified.
 `vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
 have not been run **at all** — they need the Python sidecar started and at least one provider API

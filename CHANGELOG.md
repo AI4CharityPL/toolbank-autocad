@@ -42,6 +42,14 @@ All notable changes to this project will be documented in this file. Format: [Ke
   compares the newest source file against the assembly. A stale *pass* was the real risk.
 - **Unit tests now run against `AcadMcp.Tests.csproj`, not `src/AcadMcp.sln`.** The solution
   also contains the two AutoCAD-dependent projects; the tests never touch them.
+- **The gate located the test assembly in one configuration and then asked dotnet for
+  another.** It searched `Debug` then `Release`, but ran `dotnet test --no-build` without
+  `-c`, which defaults to Debug regardless. On a developer machine both exist so it never
+  showed; CI builds Release only, so the gate's very first run failed asking for a Debug
+  build that was never produced — and reported it as `dotnet test failed (exit 1):` with
+  nothing after the colon. Now it remembers which configuration it found, prefers the newer
+  of the two, passes `-c`, and when no line matches the failure patterns it falls back to the
+  tail of the output instead of an empty message.
 - **Four MCPBank category descriptions were too thin to choose from.** `acad-callouts`,
   `acad-schedules`, `acad-sections` and `acad-verticals` were 26–29 words of feature list.
   Rewritten as prose that also says what each category does *not* cover and which sibling to

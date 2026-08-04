@@ -351,12 +351,22 @@ if (-not $shouldRunSelfCheck) {
 # contributors aren't blocked before their first `dotnet build`.
 Write-Host ""
 Write-Host "[7/7] Unit tests" -ForegroundColor Cyan
-$testsDll = Join-Path $RepoRoot 'tests\AcadMcp.Tests\bin\Debug\net8.0\AcadMcp.Tests.dll'
-if (-not (Test-Path $testsDll)) {
-    $testsDllRel = Join-Path $RepoRoot 'tests\AcadMcp.Tests\bin\Release\net8.0\AcadMcp.Tests.dll'
-    if (Test-Path $testsDllRel) { $testsDll = $testsDllRel }
+# Whichever configuration is actually built, prefer the newer one -- and remember which,
+# because `dotnet test --no-build` defaults to Debug regardless of the assembly we located.
+# Getting that wrong is how this check failed in CI on its first run: the runner builds
+# Release only, the gate found the Release DLL, then asked dotnet for a Debug build that
+# does not exist. It fails with an empty message, which is a miserable thing to debug.
+$testsCfg = $null
+$testsDll = $null
+foreach ($cfg in @('Debug', 'Release')) {
+    $candidate = Join-Path $RepoRoot "tests\AcadMcp.Tests\bin\$cfg\net8.0\AcadMcp.Tests.dll"
+    if (-not (Test-Path $candidate)) { continue }
+    if ($null -eq $testsDll -or (Get-Item $candidate).LastWriteTimeUtc -gt (Get-Item $testsDll).LastWriteTimeUtc) {
+        $testsDll = $candidate
+        $testsCfg = $cfg
+    }
 }
-if (-not (Test-Path $testsDll)) {
+if ($null -eq $testsDll) {
     Add-OK "AcadMcp.Tests.dll not built - skipped (run 'dotnet build src/AcadMcp.sln' first)"
 } else {
     # Target the test project, not src/AcadMcp.sln: the solution also contains
@@ -378,11 +388,19 @@ if (-not (Test-Path $testsDll)) {
     }
 
     $testProj = Join-Path $RepoRoot 'tests\AcadMcp.Tests\AcadMcp.Tests.csproj'
-    $testOutput = Invoke-NativeCapture 'dotnet' @('test', $testProj, '--no-build', '--nologo', '--verbosity', 'quiet')
+    $testOutput = Invoke-NativeCapture 'dotnet' @(
+        'test', $testProj, '-c', $testsCfg, '--no-build', '--nologo', '--verbosity', 'quiet')
     $testCode = $script:LastNativeExit
     if ($testCode -ne 0) {
         $failLines = @($testOutput) | Where-Object { $_ -match '(?i)FAIL|Niepowodzenie|failed' } | Select-Object -First 5
-        Add-Err "dotnet test failed (exit $testCode): $($failLines -join ' | ')"
+        # Never report a bare "exit 1" with nothing after it. When no line matches the
+        # failure patterns the cause is usually structural rather than a failing test --
+        # wrong configuration, missing assembly -- and the tail is what identifies it.
+        if (-not $failLines) {
+            $failLines = @($testOutput) | Where-Object { $_ -match '\S' } | Select-Object -Last 5
+        }
+        if (-not $failLines) { $failLines = @("(no output from dotnet test; configuration=$testsCfg)") }
+        Add-Err "dotnet test failed (exit $testCode, configuration=$testsCfg): $($failLines -join ' | ')"
     } else {
         $summaryLine = @($testOutput) | Where-Object { $_ -match 'Powodzenie!|Passed!' } | Select-Object -First 1
         if (-not $summaryLine) { $summaryLine = 'tests passed' }

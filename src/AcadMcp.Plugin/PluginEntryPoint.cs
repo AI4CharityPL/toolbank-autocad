@@ -73,6 +73,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             ViewportsPluginTools.Register(_toolHost);
             UcsPluginTools.Register(_toolHost);
             FieldsPluginTools.Register(_toolHost);
+            AnnotativePluginTools.Register(_toolHost);
             ValidatorsPluginTools.Register(_toolHost);
             ParametricPluginTools.Register(_toolHost);
             CheckpointPluginTools.Register(_toolHost);

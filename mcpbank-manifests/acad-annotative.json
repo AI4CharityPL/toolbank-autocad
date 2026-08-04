@@ -1,0 +1,290 @@
+{
+  "id": "acad-annotative",
+  "name": "acad-annotative",
+  "description": "Annotative objects and annotation scales: make text, dimensions, hatches and blocks carry several scale representations so one model annotates correctly at 1:50 and 1:100 without duplicating anything. Covers the drawing scale list, the current annotation scale, per-object scale representations and annotation visibility.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-annotative.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "add",
+    "annotation",
+    "annotative",
+    "auto",
+    "autocad",
+    "cad",
+    "current",
+    "delete",
+    "dwg",
+    "from",
+    "get",
+    "list",
+    "object",
+    "objects",
+    "positions",
+    "remove",
+    "reset",
+    "scale",
+    "scales",
+    "set",
+    "settings",
+    "sync",
+    "to",
+    "visibility"
+  ],
+  "intent_examples": [
+    "add annotation scale to drawing",
+    "add annotation scale to object",
+    "aktualna skala",
+    "aktualna skala adnotacyjna",
+    "annoallvisible",
+    "annoautoscale",
+    "annotation visibility settings",
+    "auto add scale to annotative objects",
+    "automatyczna skala",
+    "automatyczne dodawanie skal",
+    "available scales",
+    "change active annotation scale",
+    "clean up scale list",
+    "co jest adnotacyjne w rysunku",
+    "create scale entry",
+    "current scale",
+    "define new scale",
+    "delete annotation scale",
+    "dodaj skale do obiektu adnotacyjnego",
+    "dodaj skale do rysunku",
+    "drop scale representation",
+    "drop unused scale",
+    "find all annotative entities",
+    "get annotation settings",
+    "get current annotation scale",
+    "give object another scale representation",
+    "hide annotations without this scale",
+    "hide annotative object at scale",
+    "jaka jest biezaca skala adnotacji",
+    "jakie sa annoallvisible i annoautoscale",
+    "jakie skale ma obiekt",
+    "jakie skale sa dostepne",
+    "list annotation scales",
+    "list annotative objects",
+    "list object annotation scales",
+    "lista skal w rysunku",
+    "make all scales match current",
+    "make object annotative",
+    "nowa skala na liscie",
+    "obiekt skalowany adnotacyjnie",
+    "obiekty skalowane",
+    "pokaz cannoscale",
+    "pokaz ustawienia adnotacji",
+    "pokaz wszystkie adnotacje",
+    "przywroc domyslne skale",
+    "read annotative sysvars",
+    "remove annotation scale from object",
+    "remove scale from drawing",
+    "reprezentacja w skali",
+    "reprezentacje skal encji",
+    "reset scale list",
+    "reset scale positions",
+    "restore default scales",
+    "set annotation visibility",
+    "set annotative flag",
+    "set auto add annotation scale",
+    "set current annotation scale",
+    "set model space scale",
+    "show drawing scale list",
+    "show only current scale annotations",
+    "show scale representations",
+    "skasuj skale rysunku",
+    "stop objects gaining scales",
+    "sync annotative scale positions",
+    "tekst ma byc widoczny w skali 1:100",
+    "text missing in viewport scale",
+    "turn annotative off",
+    "ujednolic pozycje adnotacji",
+    "ukryj tekst w danej skali",
+    "ustaw biezaca skale adnotacji",
+    "ustaw obiekt jako adnotacyjny",
+    "ustawienia adnotacyjne",
+    "usun niepotrzebna skale",
+    "usun reprezentacje skali",
+    "usun skale z listy",
+    "usun skale z obiektu adnotacyjnego",
+    "utworz skale 1:25",
+    "what annotation scale is active",
+    "which objects have scale 1:50",
+    "which scales does this text have",
+    "widocznosc adnotacji",
+    "wlacz adnotacyjnosc tekstu",
+    "wyczysc liste skal",
+    "wylistuj obiekty adnotacyjne",
+    "wylistuj skale obiektu adnotacyjnego",
+    "wylistuj skale rysunku",
+    "wyrownaj polozenie reprezentacji",
+    "zmien cannoscale",
+    "zresetuj liste skal",
+    "zsynchronizuj pozycje skal"
+  ],
+  "tools_summary": [
+    {
+      "name": "add_annotation_scale",
+      "description": "Give annotative objects a representation at one or more scales, so they appear in viewports set to those scales. An annotative object is invisible in a viewport whose scale it has no representation for - this is the tool that fixes \u0027my text disappeared on the 1:100 sheet\u0027.",
+      "tags": [
+        "add",
+        "annotation",
+        "scale"
+      ]
+    },
+    {
+      "name": "add_scale_to_list",
+      "description": "Add an annotation scale to the drawing, e.g. name \u00271:25\u0027 with paperUnits 1 and drawingUnits 25. Idempotent - an existing name is updated rather than duplicated.",
+      "tags": [
+        "add",
+        "scale",
+        "to",
+        "list"
+      ]
+    },
+    {
+      "name": "delete_scale_from_list",
+      "description": "Remove an annotation scale from the drawing\u0027s list. Fails if the scale is in use by an annotative object or a viewport, rather than silently orphaning them.",
+      "tags": [
+        "delete",
+        "scale",
+        "from",
+        "list"
+      ]
+    },
+    {
+      "name": "get_annotation_settings",
+      "description": "Report ANNOALLVISIBLE and ANNOAUTOSCALE, decoded. Read-only.",
+      "tags": [
+        "get",
+        "annotation",
+        "settings"
+      ]
+    },
+    {
+      "name": "get_current_annotation_scale",
+      "description": "Return the current annotation scale (CANNOSCALE) with its ratio. Read-only.",
+      "tags": [
+        "get",
+        "current",
+        "annotation",
+        "scale"
+      ]
+    },
+    {
+      "name": "list_annotative_objects",
+      "description": "Enumerate every annotative object in model space with the scales it carries. Pass scale to list only objects having a representation at that scale. Read-only.",
+      "tags": [
+        "list",
+        "annotative",
+        "objects"
+      ]
+    },
+    {
+      "name": "list_object_annotation_scales",
+      "description": "List which scale representations each given entity carries, plus whether it is annotative at all. Read-only. Call this before wondering why an object is missing from a sheet.",
+      "tags": [
+        "list",
+        "object",
+        "annotation",
+        "scales"
+      ]
+    },
+    {
+      "name": "list_scale_list",
+      "description": "List every annotation scale defined in this drawing, with its paper:drawing ratio and which one is current. Read-only. These are the scales available to add_annotation_scale and to viewports.",
+      "tags": [
+        "list",
+        "scale",
+        "list"
+      ]
+    },
+    {
+      "name": "remove_annotation_scale",
+      "description": "Remove scale representations from annotative objects. The object stops appearing in viewports at those scales. An object\u0027s last remaining representation cannot be removed - use set_annotative false instead.",
+      "tags": [
+        "remove",
+        "annotation",
+        "scale"
+      ]
+    },
+    {
+      "name": "reset_scale_list",
+      "description": "Reset the drawing\u0027s scale list to AutoCAD\u0027s defaults, dropping custom entries that are not in use. Scales still referenced by objects or viewports are kept and reported.",
+      "tags": [
+        "reset",
+        "scale",
+        "list"
+      ]
+    },
+    {
+      "name": "set_annotation_visibility",
+      "description": "ANNOALLVISIBLE: show every annotative object regardless of whether it has a representation at the current scale, or show only those that do. Turning it OFF is how you check a sheet for annotation that will be missing at that scale.",
+      "tags": [
+        "set",
+        "annotation",
+        "visibility"
+      ]
+    },
+    {
+      "name": "set_annotative",
+      "description": "Turn the annotative flag on or off for one or more entities. Turning it ON gives the object a representation at the CURRENT annotation scale only - use add_annotation_scale for the others. Turning it OFF collapses it back to a single fixed-size object.",
+      "tags": [
+        "set",
+        "annotative"
+      ]
+    },
+    {
+      "name": "set_auto_add_scale",
+      "description": "ANNOAUTOSCALE: whether annotative objects automatically gain a representation when the current annotation scale changes. On is convenient while drafting and dangerous on an issued set, because objects silently acquire scales nobody asked for.",
+      "tags": [
+        "set",
+        "auto",
+        "add",
+        "scale"
+      ]
+    },
+    {
+      "name": "set_current_annotation_scale",
+      "description": "Set CANNOSCALE - the scale new annotative objects are created at, and the one model space displays. Does NOT retroactively add this scale to existing objects; use add_annotation_scale for that.",
+      "tags": [
+        "set",
+        "current",
+        "annotation",
+        "scale"
+      ]
+    },
+    {
+      "name": "sync_scale_positions",
+      "description": "Reset every scale representation of the given objects back to the position of the current scale\u0027s representation. Use after moving annotation at one scale and wanting the others to follow rather than drift.",
+      "tags": [
+        "sync",
+        "scale",
+        "positions"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "annotative",
+    "tool_count_target": 15,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-04T11:01:23.8296642Z"
+  }
+}

@@ -6,6 +6,35 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`viewports.set_viewport_ucs` and `viewports.set_viewport_annotation_scale`** — the two
+  tools withheld when `acad-viewports` shipped, waiting on `acad-ucs` and `acad-annotative`
+  respectively. Both of those exist and are verified, so a UCS or a scale is now something the
+  caller lists by name rather than something the tool has to guess at. Bank 413 → 415.
+  - `set_viewport_ucs` gives one paperspace viewport its own coordinate system, so a sheet can
+    annotate a rotated wing of a building in that wing's own coordinates while the neighbouring
+    viewport stays on the world axes. `ucs` is **required** here — everywhere else in the
+    codebase an absent `ucs` means WCS (rule 43), but on the tool whose only job is to set the
+    coordinate system that default would silently undo a deliberate setting. Pass `"world"` to
+    clear. `"current"` is rejected: binding a saved sheet to transient session state would make
+    the viewport's meaning depend on what the user last clicked.
+  - `set_viewport_annotation_scale` sets what annotative text and dimensions plot at in that
+    window, and which annotative objects appear in it at all. The viewport's zoom scale follows
+    by default, the way AutoCAD's own UI keeps the two linked — a viewport whose annotation
+    scale disagrees with its zoom means text sized for 1:50 on a window drawn at 1:100.
+    `syncViewScale: false` for the deliberate case; the result always reports both numbers.
+  - Both refuse an unknown name and list what is available, rather than falling back to WCS or
+    to a default scale.
+  - The contract was written into [rule 43](docs/engineering-rules/43-coordinate-systems.md)
+    before the code, which is the practice that got `acad-ucs` to 13/13 first time.
+  - Verified live: **23/23**, including an independent re-read through `get_viewport_info`
+    rather than trusting what `set` returned, and both branches of `syncViewScale`.
+  - `ViewportInfo` gained `ucs` and `annotationScale`. Without declaring them on the backend
+    DTO, System.Text.Json drops them and the client sees a viewport with no UCS, reported as a
+    success — the failure this codebase has hit three times.
+  - Honest note on `UcsPerViewport`: the tool sets it explicitly, because without it AutoCAD
+    does not store the UCS against the viewport. It turns out to be `true` on a freshly created
+    viewport anyway, so this is belt-and-braces rather than a demonstrated necessity.
+
 - **The catalogue-vs-consumer contract is now a test, and CI runs it.** This was the
   highest-value missing test in `docs/KNOWN-GAPS.md`, recorded there as blocked on a
   plugin-level test project that could never exist because CI has no AutoCAD.

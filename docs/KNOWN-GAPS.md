@@ -32,6 +32,15 @@ tools, or keep them as an explicitly best-effort escape hatch.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
+### A5. `ucs.create_ucs_origin` reports the wrong name back
+**Status:** works, reports poorly.
+Called with `name: "MCP-ROT"` it **does** save the UCS under that name — proved independently,
+because `viewports.set_viewport_ucs` then finds `MCP-ROT` in the table. But its own result
+reports `name: "*CURRENT"`, AutoCAD's label for the unnamed current UCS, so a caller cannot
+confirm from the response that the name took. Found while verifying `set_viewport_ucs`. Same
+family as the fabricated `affected: 1` in `undo`: the tool is right and the report is not.
+Likely affects the other `create_ucs_*` tools; not checked.
+
 ### A4. Vision category (9 tools)
 **Status:** never verified.
 `vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
@@ -50,8 +59,6 @@ precedent set by the parametric constraint tools.
 | `refedit_begin` / `_save` / `_discard` | xrefs | Modal, stateful command sequence on the channel that produced `eInvalidInput` in `zoom_extents` and silent queueing in `undo`. Needs a supervised contract for that channel first. |
 | `set_viewport_layer_override`, `list_viewport_layer_overrides`, `clear_viewport_layer_overrides` | viewports | 2025 SDK exposes `LayerTableRecord.HasOverrides` as a plain bool with no viewport argument, and none of the `Set*InViewport` / `Get*InViewport` accessors. The capability exists in AutoCAD — this is finding the right API, not a limitation. **Per-viewport freeze, the larger half, ships and works.** |
 | `maximize_viewport` | viewports | `MAXACT`/`MSPACE` — command layer. |
-| `set_viewport_ucs` | viewports | Was waiting on `acad-ucs`. **That now exists — this is buildable today.** |
-| `set_viewport_annotation_scale` | viewports | Was waiting on Phase 1.5. **`acad-annotative` now exists and is verified — this is buildable today.** |
 | `ucs_from_face` | ucs | Needs subentity picking; no non-interactive form. |
 | `ucs_icon` | ucs | Display-only; nothing an API caller can observe. |
 | `set_xref_demand_load` | xrefs | Specced in the roadmap, not built. Low value. |

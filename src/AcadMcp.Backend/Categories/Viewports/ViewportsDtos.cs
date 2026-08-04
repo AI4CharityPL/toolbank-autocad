@@ -29,6 +29,18 @@ public sealed record SetViewportScaleArgs(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("scale")]  double Scale);
 
+// ucs is deliberately non-nullable and has no default. Everywhere else in this codebase an
+// absent `ucs` means WCS (rule 43); on the tool whose only job is to set the coordinate
+// system, that default would silently undo a deliberate setting. Pass "world" to clear.
+public sealed record SetViewportUcsArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("ucs")]    string Ucs);
+
+public sealed record SetViewportAnnotationScaleArgs(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("scaleName")]     string ScaleName,
+    [property: JsonPropertyName("syncViewScale")] bool SyncViewScale = true);
+
 public sealed record SetViewportLockArgs(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("locked")] bool Locked);
@@ -73,10 +85,39 @@ public sealed record ViewportInfo(
     [property: JsonPropertyName("shadePlot")]    string ShadePlot,
     [property: JsonPropertyName("isPolygonal")]  bool IsPolygonal,
     [property: JsonPropertyName("frozenLayers")] IReadOnlyList<string> FrozenLayers,
-    [property: JsonPropertyName("overriddenLayers")] IReadOnlyList<string> OverriddenLayers);
+    [property: JsonPropertyName("overriddenLayers")] IReadOnlyList<string> OverriddenLayers,
+    // These two must be declared here or System.Text.Json drops them on the way out of the
+    // backend and the client sees a viewport with no UCS and no annotation scale, reported as
+    // a success. That has happened three times in this codebase; the DTO is the first place to
+    // look when a field the plugin definitely sent fails to arrive.
+    [property: JsonPropertyName("ucs")]              ViewportUcsInfo? Ucs = null,
+    [property: JsonPropertyName("annotationScale")]  string? AnnotationScale = null);
+
+public sealed record ViewportUcsInfo(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("perViewport")] bool PerViewport,
+    [property: JsonPropertyName("origin")]      Point3dDto Origin,
+    [property: JsonPropertyName("xAxis")]       Point3dDto XAxis,
+    [property: JsonPropertyName("yAxis")]       Point3dDto YAxis);
+
+public sealed record ViewportAnnotationScaleInfo(
+    [property: JsonPropertyName("name")]         string Name,
+    [property: JsonPropertyName("paperUnits")]   double PaperUnits,
+    [property: JsonPropertyName("drawingUnits")] double DrawingUnits,
+    [property: JsonPropertyName("scaleFactor")]  double ScaleFactor);
 
 public sealed record ViewportResult(
     [property: JsonPropertyName("viewport")] ViewportInfo Viewport);
+
+public sealed record ViewportUcsResult(
+    [property: JsonPropertyName("viewport")] ViewportInfo Viewport,
+    [property: JsonPropertyName("ucs")]      ViewportUcsInfo Ucs);
+
+public sealed record ViewportAnnotationScaleResult(
+    [property: JsonPropertyName("viewport")]         ViewportInfo Viewport,
+    [property: JsonPropertyName("annotationScale")]  ViewportAnnotationScaleInfo AnnotationScale,
+    [property: JsonPropertyName("viewScaleSynced")]  bool ViewScaleSynced,
+    [property: JsonPropertyName("appliedViewScale")] double? AppliedViewScale);
 
 public sealed record ViewportListResult(
     [property: JsonPropertyName("viewports")] IReadOnlyList<ViewportInfo> Viewports,

@@ -54,6 +54,43 @@ is **opt-in and written down in the call**, so the call still says what it does.
    geometry on that plane. Tools that genuinely cannot (anything that must be planar in WCS)
    must reject a non-planar UCS with a clear message rather than flattening silently.
 
+## Per-viewport UCS
+
+A paper-space viewport can carry its own UCS, independent of the drawing's current one. This
+is what lets one sheet annotate a rotated wing of a building in that wing's own coordinates
+while the neighbouring viewport stays on the world axes.
+
+`viewports.set_viewport_ucs` is the tool. Its contract, settled before it was written:
+
+1. **`ucs` is required here**, unlike everywhere else in this rule. On a drawing tool an
+   absent `ucs` sensibly means WCS. On a tool whose entire purpose is to set the coordinate
+   system, an absent argument means the caller has not said what they want, and guessing WCS
+   would silently undo a deliberate setting.
+2. **`"world"` is how you clear it**, and it is not the same as leaving the viewport alone.
+3. **Setting a UCS also sets `UcsPerViewport` on that viewport.** Without it AutoCAD does not
+   store the UCS against the viewport, so the setting survives until the next layout switch
+   and then quietly vanishes — success reported, nothing persisted. This is not optional and
+   is not exposed as an argument.
+4. **Only the named UCS table is accepted**, plus `"world"`. Not `"current"`: the drawing's
+   current UCS is a transient piece of session state, and binding a saved sheet to it would
+   mean the viewport's meaning depends on what the user last clicked.
+5. **An unknown name is an error listing the saved UCSs**, per rule 4 above.
+6. **Changing the viewport UCS does not change the view.** `UCSFOLLOW` — which re-orients the
+   view to look straight down the new UCS — is a separate decision with visible consequences
+   for an issued sheet, and is not bundled in here.
+
+## Per-viewport annotation scale
+
+`viewports.set_viewport_annotation_scale` sits next to it and shares the same shape: an
+unknown scale name is an error listing the drawing's scale list, never a fallback.
+
+One decision worth recording because it is a default rather than a rule. Setting the
+annotation scale also sets the viewport's view scale to match, because AutoCAD's own UI keeps
+the two linked and a viewport whose annotation scale disagrees with its zoom is almost always
+a mistake — text sized for 1:50 on a window drawn at 1:100. `syncViewScale: false` exists for
+the deliberate case, and the result always reports both numbers so a caller can see what it
+got.
+
 ## Rollout
 
 The `ucs` argument is added to a tool when that tool is next touched, not in one sweeping

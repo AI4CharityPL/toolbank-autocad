@@ -53,3 +53,15 @@ internal sealed record CreateRectViewportArgsDto(
 internal sealed record VpScaleArgsDto(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("scale")]  double Scale);
+
+// ucs is required, unlike the optional `ucs` on drawing tools. On a tool whose whole purpose
+// is to set the coordinate system, an absent argument means the caller has not said what they
+// want; defaulting to WCS would silently undo a deliberate setting. See rule 43.
+internal sealed record VpUcsArgsDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("ucs")]    string Ucs);
+
+internal sealed record VpAnnotationScaleArgsDto(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("scaleName")]     string ScaleName,
+    [property: JsonPropertyName("syncViewScale")] bool SyncViewScale = true);

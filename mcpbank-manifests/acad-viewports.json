@@ -10,6 +10,7 @@
   },
   "lazy_mode": true,
   "tags": [
+    "annotation",
     "autocad",
     "cad",
     "create",
@@ -32,11 +33,13 @@
     "set",
     "shade",
     "thaw",
+    "ucs",
     "viewport",
     "viewports"
   ],
   "intent_examples": [
     "add paperspace viewport",
+    "annotation scale for this sheet",
     "change drawing scale of viewport",
     "create polygonal viewport",
     "create viewport",
@@ -61,31 +64,41 @@
     "odblokuj okno widokowe",
     "odmroz warstwy w rzutni",
     "per viewport layer freeze",
+    "per-viewport coordinate system",
     "plot viewport as hidden",
     "pokaz okna widokowe",
     "pokaz ponownie warstwy na arkuszu",
     "pokaz szczegoly rzutni",
     "prevent viewport zoom",
     "remove paperspace viewport",
+    "rotate coordinates in this viewport only",
     "rzutnia niewidoczna",
     "rzutnia o dowolnym ksztalcie",
     "rzutnia z ukrytymi krawedziami",
     "scale viewport to 1:50",
+    "set viewport annotation scale",
     "set viewport scale",
     "set viewport shade plot",
+    "set viewport ucs",
     "show all paperspace views",
     "show layer again in viewport",
+    "skala adnotacji na arkuszu",
+    "skala opisu w oknie widokowym",
     "skala rzutni 1 do 100",
     "skasuj okno widokowe",
     "sposob plotowania rzutni",
+    "text size in viewport",
     "thaw layers in viewport",
     "turn viewport off",
     "turn viewport on",
+    "uklad wspolrzednych tylko w tym oknie",
     "ukryj warstwy tylko na tym arkuszu",
     "unfreeze layers in this viewport",
     "unlock viewport",
+    "ustaw skale adnotacyjna rzutni",
     "ustaw skale rzutni",
     "ustaw tryb wydruku rzutni",
+    "ustaw ukd dla rzutni",
     "usun rzutnie",
     "utworz rzutnie",
     "utworz rzutnie wielokatna",
@@ -97,6 +110,7 @@
     "wlacz rzutnie",
     "wlacz warstwe w rzutni",
     "wlasciwosci rzutni",
+    "wlasny uklad wspolrzednych w rzutni",
     "wspolrzedne widoku rzutni",
     "wstaw rzutnie na uklad",
     "wykasuj rzutnie z arkusza",
@@ -164,6 +178,16 @@
       ]
     },
     {
+      "name": "set_viewport_annotation_scale",
+      "description": "Set the annotation scale of a paperspace viewport, which decides what size annotative text and dimensions plot at in that window, and which annotative objects appear in it at all. By default the viewport\u0027s zoom scale is set to match, the way AutoCAD\u0027s own UI keeps the two linked; pass syncViewScale false to set annotation scale alone. The scale must already be in the drawing\u0027s list - use annotative.add_scale_to_list first if it is not.",
+      "tags": [
+        "set",
+        "viewport",
+        "annotation",
+        "scale"
+      ]
+    },
+    {
       "name": "set_viewport_layer_freeze",
       "description": "Freeze layers in ONE viewport only. This is the mechanism that lets a single model produce an architectural plan and a fire plan: freeze the layers each sheet must not show, in that sheet\u0027s viewport, without touching the model or any other viewport.",
       "tags": [
@@ -220,11 +244,20 @@
         "shade",
         "plot"
       ]
+    },
+    {
+      "name": "set_viewport_ucs",
+      "description": "Give one paperspace viewport its own coordinate system, independent of the drawing\u0027s current UCS. This is what lets one sheet annotate a rotated wing of a building in that wing\u0027s own coordinates while the neighbouring viewport stays on the world axes. Pass a saved UCS name, or \u0027world\u0027 to clear it. Also sets UCSVP so the setting is stored with the viewport instead of vanishing at the next layout switch.",
+      "tags": [
+        "set",
+        "viewport",
+        "ucs"
+      ]
     }
   ],
   "metadata": {
     "category": "viewports",
-    "tool_count_target": 12,
+    "tool_count_target": 14,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -238,6 +271,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-03T22:09:38.9216354Z"
+    "last_regenerated_utc": "2026-08-04T14:38:26.4485642Z"
   }
 }

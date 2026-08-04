@@ -52,6 +52,8 @@ internal static class ViewportsPluginTools
         host.Register("acad.viewports.set_viewport_shade_plot", SetShadePlot);
         host.Register("acad.viewports.set_viewport_layer_freeze", (a, c) => FreezeThaw(a, c, freeze: true));
         host.Register("acad.viewports.set_viewport_layer_thaw", (a, c) => FreezeThaw(a, c, freeze: false));
+        host.Register("acad.viewports.set_viewport_ucs", SetUcs);
+        host.Register("acad.viewports.set_viewport_annotation_scale", SetAnnotationScale);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -155,6 +157,8 @@ internal static class ViewportsPluginTools
         isPolygonal = !vp.NonRectClipEntityId.IsNull,
         frozenLayers = FrozenLayerNames(tr, vp),
         overriddenLayers = OverriddenLayerNames(db, tr, vp),
+        ucs = UcsInfo(tr, vp),
+        annotationScale = vp.AnnotationScale?.Name,
     };
 
     private static ObjectIdCollection ResolveLayers(Database db, Transaction tr, IReadOnlyList<string> names)
@@ -221,6 +225,133 @@ internal static class ViewportsPluginTools
             vp.CustomScale = a.Scale;
             return Wrap(new { viewport = Info(db, tr, vp) });
         });
+
+    // ─────────── per-viewport UCS and annotation scale (rule 43) ───────────
+    //
+    // Both were specced when acad-viewports was built and withheld: the first waited on
+    // acad-ucs, the second on acad-annotative. Both categories now exist and are verified, so
+    // these stop being guesses about how a UCS or a scale is identified and start being
+    // ordinary lookups against a table the caller can list.
+
+    private static Task<ToolDispatchResult> SetUcs(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_ucs", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpUcsArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Ucs))
+                throw new ArgumentException("ucs is required. Pass a saved UCS name, or 'world' to clear the viewport's UCS.");
+
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+
+            if (string.Equals(a.Ucs, "world", StringComparison.OrdinalIgnoreCase))
+            {
+                vp.SetUcsToWorld();
+            }
+            else
+            {
+                var table = (UcsTable)tr.GetObject(db.UcsTableId, OpenMode.ForRead);
+                if (!table.Has(a.Ucs))
+                {
+                    var known = new List<string>();
+                    foreach (ObjectId id in table)
+                        known.Add(((UcsTableRecord)tr.GetObject(id, OpenMode.ForRead)).Name);
+                    known.Sort(StringComparer.OrdinalIgnoreCase);
+                    throw new ArgumentException(
+                        $"No UCS named '{a.Ucs}'. Saved: " + (known.Count == 0 ? "(none)" : string.Join(", ", known)) +
+                        ". Use ucs.list_ucs, or pass 'world'.");
+                }
+                vp.SetUcs(table[a.Ucs]);
+            }
+
+            // Not optional and not exposed as an argument. Without UcsPerViewport AutoCAD does
+            // not store the UCS against this viewport: the setting applies until the next
+            // layout switch and then quietly reverts, having reported success. Rule 43.
+            vp.UcsPerViewport = true;
+
+            return Wrap(new { viewport = Info(db, tr, vp), ucs = UcsInfo(tr, vp) });
+        });
+
+    private static Task<ToolDispatchResult> SetAnnotationScale(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_annotation_scale", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpAnnotationScaleArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.ScaleName))
+                throw new ArgumentException("scaleName is required, e.g. '1:50'.");
+
+            var coll = db.ObjectContextManager.GetContextCollection("ACDB_ANNOTATIONSCALES");
+            if (coll is null)
+                throw new InvalidOperationException("This drawing has no annotation scale collection.");
+
+            if (coll.GetContext(a.ScaleName) is not AnnotationScale scale)
+            {
+                var known = coll.Cast<ObjectContext>().OfType<AnnotationScale>()
+                    .Select(s => s.Name)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                throw new ArgumentException(
+                    $"No annotation scale named '{a.ScaleName}' in this drawing. Available: " +
+                    (known.Count == 0 ? "(none)" : string.Join(", ", known)) +
+                    ". Use annotative.list_annotation_scales, or annotative.add_scale_to_list to add one.");
+            }
+
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            vp.AnnotationScale = scale;
+
+            // AutoCAD's own UI keeps the annotation scale and the view scale linked, and a
+            // viewport where they disagree means text sized for one scale on a window drawn at
+            // another. Sync by default; syncViewScale:false is for the deliberate case.
+            double? appliedViewScale = null;
+            if (a.SyncViewScale && scale.DrawingUnits > 0)
+            {
+                vp.CustomScale = scale.PaperUnits / scale.DrawingUnits;
+                appliedViewScale = vp.CustomScale;
+            }
+
+            return Wrap(new
+            {
+                viewport = Info(db, tr, vp),
+                annotationScale = new
+                {
+                    name = scale.Name,
+                    paperUnits = scale.PaperUnits,
+                    drawingUnits = scale.DrawingUnits,
+                    scaleFactor = scale.DrawingUnits > 0 ? scale.PaperUnits / scale.DrawingUnits : 0.0,
+                },
+                viewScaleSynced = a.SyncViewScale,
+                appliedViewScale,
+            });
+        });
+
+    /// <summary>
+    /// The viewport's own UCS, reported so a caller can verify what a set actually produced
+    /// rather than trusting the return code.
+    /// </summary>
+    private static object UcsInfo(Transaction tr, Viewport vp)
+    {
+        string name;
+        if (vp.UcsName.IsNull)
+        {
+            name = "world";
+        }
+        else
+        {
+            try { name = ((UcsTableRecord)tr.GetObject(vp.UcsName, OpenMode.ForRead)).Name; }
+            catch (Autodesk.AutoCAD.Runtime.Exception) { name = "(unnamed)"; }
+        }
+
+        // GetUcs takes ref, not out - the arguments have to exist before the call.
+        var origin = Point3d.Origin;
+        var xAxis = Vector3d.XAxis;
+        var yAxis = Vector3d.YAxis;
+        vp.GetUcs(ref origin, ref xAxis, ref yAxis);
+        return new
+        {
+            name,
+            perViewport = vp.UcsPerViewport,
+            origin = new { x = origin.X, y = origin.Y, z = origin.Z },
+            xAxis = new { x = xAxis.X, y = xAxis.Y, z = xAxis.Z },
+            yAxis = new { x = yAxis.X, y = yAxis.Y, z = yAxis.Z },
+        };
+    }
 
     private static Task<ToolDispatchResult> CreatePolygonal(JsonObject args, CancellationToken ct) =>
         Run("acad.viewports.create_polygonal_viewport", args, ct, (doc, db, tr) =>

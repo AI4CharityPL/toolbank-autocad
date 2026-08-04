@@ -136,6 +136,24 @@ public static class ViewportsTools
     public static Task<ViewportResult> SetViewportLayerThaw(IPluginGateway gw, ViewportLayerVisibilityArgs args, CancellationToken ct)
         => ViewportsProxy.CallAsync<ViewportLayerVisibilityArgs, ViewportResult>(gw, "acad.viewports.set_viewport_layer_thaw", args, T_NORMAL, ct);
 
+    // ─────────── per-viewport coordinate system and annotation scale ───────────
+    //
+    // Both were withheld when this category shipped, waiting on acad-ucs and acad-annotative
+    // respectively. Those exist and are verified, so a UCS or a scale is now something the
+    // caller can list by name rather than something this tool has to guess at.
 
+    [McpTool("set_viewport_ucs", "Give one paperspace viewport its own coordinate system, independent of the drawing's current UCS. This is what lets one sheet annotate a rotated wing of a building in that wing's own coordinates while the neighbouring viewport stays on the world axes. Pass a saved UCS name, or 'world' to clear it. Also sets UCSVP so the setting is stored with the viewport instead of vanishing at the next layout switch.", "viewports",
+        Intent = new[] { "ustaw ukd dla rzutni", "wlasny uklad wspolrzednych w rzutni", "set viewport ucs",
+                         "per-viewport coordinate system", "rotate coordinates in this viewport only",
+                         "uklad wspolrzednych tylko w tym oknie" },
+        RequiresPlugin = true)]
+    public static Task<ViewportUcsResult> SetViewportUcs(IPluginGateway gw, SetViewportUcsArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<SetViewportUcsArgs, ViewportUcsResult>(gw, "acad.viewports.set_viewport_ucs", args, T_NORMAL, ct);
 
+    [McpTool("set_viewport_annotation_scale", "Set the annotation scale of a paperspace viewport, which decides what size annotative text and dimensions plot at in that window, and which annotative objects appear in it at all. By default the viewport's zoom scale is set to match, the way AutoCAD's own UI keeps the two linked; pass syncViewScale false to set annotation scale alone. The scale must already be in the drawing's list - use annotative.add_scale_to_list first if it is not.", "viewports",
+        Intent = new[] { "ustaw skale adnotacyjna rzutni", "skala opisu w oknie widokowym", "set viewport annotation scale",
+                         "annotation scale for this sheet", "text size in viewport", "skala adnotacji na arkuszu" },
+        RequiresPlugin = true)]
+    public static Task<ViewportAnnotationScaleResult> SetViewportAnnotationScale(IPluginGateway gw, SetViewportAnnotationScaleArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<SetViewportAnnotationScaleArgs, ViewportAnnotationScaleResult>(gw, "acad.viewports.set_viewport_annotation_scale", args, T_NORMAL, ct);
 }

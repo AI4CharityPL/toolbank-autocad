@@ -16,8 +16,10 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**337 tools across 31 categories.** Coverage is close to complete for one thing: *drawing and
-annotating a 2D production sheet*.
+**411 tools across 36 categories** (updated 2026-08-04; this document was written at 337 across
+31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
+sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
+[Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
 
 | Solid | |
 |---|---|
@@ -431,27 +433,56 @@ create_showmotion_shot      play_showmotion
 
 ## Totals
 
-| Phase | Focus | Tools |
-|---|---|---:|
-| — | **Existing** | **337** |
-| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 |
-| 6 | Visualisation — render, animation | 40 |
-| | **Total** | **≈713** |
+| Phase | Focus | Planned | Built | Status |
+|---|---|---:|---:|---|
+| — | Pre-existing at the time this was written | 337 | 337 | — |
+| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 | 0 | not started |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 | 0 | not started |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 | 0 | not started |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 | 0 | not started |
+| 6 | Visualisation — render, animation | 40 | 0 | not started |
+| | **Total** | **813** | **411** | **51 %** |
 
-Reaching **1,000+** is achievable and is mostly a question of granularity rather than of new
-capability areas: splitting composite tools into per-parameter variants (as `openings` and
-`furniture` already do with typed entry points beside a generic one), adding per-discipline
-wrappers over the generic primitives, and expanding the validator rule set — which is data, not
-code, and where several hundred rules would be entirely reasonable for PL/EU/ISO coverage.
+**Corrected 2026-08-04.** This table previously read "Total ≈713". The phases sum to 476 and
+the pre-existing bank was 337, which is 813. The old figure was 100 short and made the
+remaining work look smaller than it is.
+
+### Phase 1 is not finished
+
+Verification and coverage were being conflated. Every tool built in Phase 1 passed its live
+check — 21/21, 13/13, 14/14, 12/12, 15/15 — and that was reported as "Phase 1 complete". It
+is not: those ratios say *everything built works*, not *everything planned was built*.
+
+| Category | Planned | Built | Withheld with reason | Simply not built |
+|---|---:|---:|---:|---:|
+| `acad-xrefs` | 26 | 21 | 4 | 1 |
+| `acad-ucs` | 18 | 13 | 2 | 3 |
+| `acad-viewports` | 24 | 14 | 4 | 6 |
+| `acad-fields` | 16 | 12 | 0 | 4 |
+| `acad-annotative` | 14 | 15 | 0 | −1 |
+| **Total** | **98** | **75** | **10** | **13** |
+
+The 10 withheld are recorded in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B with the reason for
+each — modal command sequences, missing SDK accessors, display-only operations with nothing an
+API caller can observe. They are decisions, not omissions.
+
+The 13 remaining are ordinary unbuilt work.
+
+### Reaching 1,000+
+
+Still achievable, and still mostly a question of granularity rather than new capability areas:
+splitting composite tools into per-parameter variants (as `openings` and `furniture` already do
+with typed entry points beside a generic one), adding per-discipline wrappers over the generic
+primitives, and expanding the validator rule set — which is data, not code, and where several
+hundred rules would be entirely reasonable for PL/EU/ISO coverage.
 
 **That is a reason for caution, not enthusiasm.** Every tool added is a tool that must be
 described, schema'd, live-verified and kept correct. The sweep behind this document found 20
-real defects in 340 tools — roughly one per seventeen. Tripling the bank without tripling the
-verification machinery would triple the defect count.
+real defects in 340 tools — roughly one per seventeen. Phase 1 then added 75 tools and the work
+around them turned up a further handful, including two that every automated run had reported as
+a success. Tripling the bank without tripling the verification machinery would triple the
+defect count.
 
 ---
 

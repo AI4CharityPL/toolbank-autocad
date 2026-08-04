@@ -10,13 +10,26 @@ Ordered by what would hurt a real project first.
 
 ## A. Broken or unreliable
 
-### A1. `hatches.draw_hatch_by_boundary` / `hatches.apply_material_preset_by_point`
-**Status:** fail on valid input.
-`TraceBoundary found no closed region around seed point` for a seed plainly inside a rectangle.
-This is trap 11d in [rule 26](engineering-rules/26-acad-api-traps.md) — TraceBoundary needs the
-region **visible on screen**. Rule 26 states that `apply_material_preset_by_point` mitigates it
-by zooming first; `zoom_extents` was broken until this sweep fixed it, so **that mitigation may
-never have worked**. Needs its own investigation, not a guess.
+### ~~A1. `hatches.draw_hatch_by_boundary` / `hatches.apply_material_preset_by_point`~~
+**Fixed 2026-08-04, verified 10/10.** Two independent causes, both of which
+[rule 26](engineering-rules/26-acad-api-traps.md) trap 11d already described — as mitigations
+the code was said to perform. Neither was in the code.
+
+1. **`Editor.TraceBoundary` reads its seed in the current UCS.** Arguments in this codebase are
+   WCS (rule 43), so the seed was silently offset by whatever the current UCS happened to be.
+   With the UCS at world the two agree, which is why it passed every casual test.
+2. **The region must be visible in the current view.** Off-screen geometry yields an empty
+   result, not an error — indistinguishable from "your geometry is not closed".
+
+Measured by varying them separately; only *view on region* **and** a transformed seed succeeds.
+The tool now transforms the seed, frames the drawing through a `ViewTableRecord` (not the
+command layer, which is what broke `zoom_extents` itself), traces, and **restores the caller's
+view** — verified before/after, since an agent asking for a hatch did not ask for its camera to
+move. The failure message now reports the WCS seed, the UCS it was taken to, and says so
+explicitly when the two differ.
+
+Verification asserts the hatch's bounding box equals the target rectangle, not merely that a
+handle came back.
 
 ### A2. `modify.undo` / `modify.redo`
 **Status:** honest but arguably should not ship.
@@ -32,6 +45,12 @@ tools, or keep them as an explicitly best-effort escape hatch.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
+### A4. Vision category (9 tools)
+**Status:** never verified.
+`vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
+have not been run **at all** — they need the Python sidecar started and at least one provider API
+key. Untested is not the same as working.
+
 ### A5. `ucs.create_ucs_origin` reports the wrong name back
 **Status:** works, reports poorly.
 Called with `name: "MCP-ROT"` it **does** save the UCS under that name — proved independently,
@@ -40,12 +59,6 @@ reports `name: "*CURRENT"`, AutoCAD's label for the unnamed current UCS, so a ca
 confirm from the response that the name took. Found while verifying `set_viewport_ucs`. Same
 family as the fabricated `affected: 1` in `undo`: the tool is right and the report is not.
 Likely affects the other `create_ucs_*` tools; not checked.
-
-### A4. Vision category (9 tools)
-**Status:** never verified.
-`vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
-have not been run **at all** — they need the Python sidecar started and at least one provider API
-key. Untested is not the same as working.
 
 ---
 

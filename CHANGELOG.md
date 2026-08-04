@@ -80,6 +80,33 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **`hatches.draw_hatch_by_boundary` and `apply_material_preset_by_point` work again**
+  (KNOWN-GAPS A1, the oldest entry on the broken-on-valid-input list). `Editor.TraceBoundary`
+  has **two** independent requirements, and the code met neither:
+  - It reads its seed point in the **current UCS**. Arguments here are WCS (rule 43), so the
+    seed was silently offset by whatever the current UCS happened to be. Reproduced with a
+    rectangle at (50000,50000)–(56000,54000), a seed at (53000,52000) plainly inside it and a
+    UCS origin of (1000,2000): the seed was read as (54000,54000), exactly on the top edge, so
+    TraceBoundary correctly found nothing — and the tool blamed the caller's geometry.
+  - The region must be **visible in the current view**. Off-screen geometry returns an empty
+    result rather than an error, which is indistinguishable from an unclosed boundary.
+
+  Both conditions were measured separately; only a transformed seed *and* a view on the region
+  succeeds. The tool now does both, and **restores the caller's view afterwards** — an agent
+  asking for a hatch did not ask for its camera to move. Framing goes through a
+  `ViewTableRecord`, not the command layer, which is what made `zoom_extents` itself fail with
+  `eInvalidInput`. The failure message now reports the WCS seed, the UCS point it was taken to,
+  and says so explicitly when they differ.
+
+  Verified 10/10, asserting the hatch's bounding box equals the target rectangle rather than
+  that a handle came back.
+
+  **[Rule 26](docs/engineering-rules/26-acad-api-traps.md) trap 11d already described both
+  mitigations as things the code performed.** It never did. The rule has been corrected, with
+  the measurement table and the lesson: a rule claiming the code handles something is a claim
+  to check, not evidence — this one sent every reader, including me, to look elsewhere for
+  months.
+
 - **The pre-commit gate's `Intent=` check reported tools that were not broken.** It used the
   regex `\[\s*McpTool\s*\((?![^\]]*Intent\s*=)`, and `[^\]]` stops at the first `]` — which
   in `callouts.insert_title_block` appears inside the description itself

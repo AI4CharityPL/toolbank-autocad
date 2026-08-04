@@ -143,19 +143,53 @@ current user's Support File Search Path. Two consequences:
 
 ### 11d. Seed point must be INSIDE a closed boundary on the current UCS plane
 
-`Hatch.AppendLoop(HatchLoopTypes.Default, boundaryFromSeed)` calls
-`Editor.TraceBoundary(seedPoint, detectIslands)` under the hood, which
-requires:
+`Editor.TraceBoundary(seedPoint, detectIslands)` **reads its seed in the
+current UCS.** Every argument in this codebase is WCS unless a `ucs`
+argument says otherwise (rule 43), so the seed must be transformed with
+`Ed.CurrentUserCoordinateSystem.Inverse()` before the call. That matrix
+maps UCS → WCS, so its inverse is the direction you want.
 
-- A closed region around the seed point **visible on screen** (off-
-  screen polylines are ignored — this is why silent failures happen in
-  headless / scripted contexts where there is no viewport).
-- The seed is in current-UCS coordinates; WCS leaks produce "invalid
-  seed" errors on UCSs that aren't identity.
+When the current UCS is world the two agree, which is why a missing
+transform passes every casual test and then fails on a real drawing.
 
-`apply_material_preset_by_point` fights both by:
-1. Calling `ZoomExtents`-equivalent via a temp view before the trace.
-2. Transforming seed from WCS → UCS with `Ed.CurrentUserCoordinateSystem`.
+**Reproduced, 2026-08-04.** Rectangle (50000,50000)–(56000,54000), seed
+(53000,52000) plainly inside it, current UCS origin (1000,2000). The
+seed was read as WCS (54000,54000) — exactly on the top edge — so
+TraceBoundary correctly found no enclosing region, and the tool blamed
+the caller's geometry. `ucs.set_ucs_world` made the identical call
+succeed.
+
+**There are two independent conditions, and both are real.** The seed
+must be in the current UCS, *and* the region must be visible in the
+current view. Measured by varying them separately:
+
+| | view away from region | view framing the region |
+|---|---|---|
+| **UCS = world** | fails | works |
+| **UCS offset (1000,2000)** | fails | works¹ |
+
+¹ only once the seed is transformed. Before that fix, framing the region
+made no difference at all — which is how the two conditions hid each
+other for so long, and how a first pass at this concluded, wrongly, that
+visibility did not matter.
+
+So `TraceBoundaryAsHandles` now does both: transform the seed, frame the
+drawing extents through a `ViewTableRecord` (never the command layer —
+that is what made `zoom_extents` itself fail with `eInvalidInput`), trace,
+then **put the caller's view back**. An agent calling a hatch tool did
+not ask for its view to move.
+
+**Correction to what this rule used to say.** It previously stated that
+`apply_material_preset_by_point` already did both of these. Neither was
+in the code. The rule described the intent as if it were the state.
+
+That is the lesson worth more than the trap: **a rule describing a
+mitigation the code does not implement is worse than no rule**, because
+it sends the next person to look somewhere else. This entry is why
+`draw_hatch_by_boundary` sat on the broken-on-valid-input list for
+months — every reader, including me, believed the mitigations were there.
+When a rule claims the code handles something, the rule is a claim to be
+checked, not evidence.
 
 ### 11e. Hatch scale in mm is literal — no drawing-unit auto-scaling
 

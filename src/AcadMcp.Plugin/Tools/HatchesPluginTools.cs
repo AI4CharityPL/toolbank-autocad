@@ -92,10 +92,6 @@ internal static class HatchesPluginTools
             var bounds = TraceBoundaryAsHandles(doc, db, tr,
                 new Point3d(a.SeedPoint.X, a.SeedPoint.Y, 0), a.DetectIslands);
 
-            if (bounds.Count == 0)
-                throw new InvalidOperationException(
-                    "TraceBoundary found no closed region around seed point — check that surrounding geometry is closed.");
-
             var hatch = BuildHatchFromBoundaries(db, tr,
                 bounds, a.Pattern, a.Scale, a.AngleDeg, a.Layer,
                 a.Color, backgroundColor: null, associative: true, annotative: false);
@@ -140,9 +136,6 @@ internal static class HatchesPluginTools
             var preset = ResolvePreset(a.Material);
             var bounds = TraceBoundaryAsHandles(doc, db, tr,
                 new Point3d(a.SeedPoint.X, a.SeedPoint.Y, 0), a.DetectIslands);
-            if (bounds.Count == 0)
-                throw new InvalidOperationException(
-                    "TraceBoundary found no closed region around seed point.");
             var scale = preset.Scale * (a.ScaleMultiplier > 0 ? a.ScaleMultiplier : 1.0);
             var color = new ColorDto(0, 0, 0, preset.AciColor);
             var hatch = BuildHatchFromBoundaries(db, tr,
@@ -353,24 +346,121 @@ internal static class HatchesPluginTools
     // We persist them to a hidden layer "A-BNDRY-TEMP" so the hatch can reference them by ObjectId,
     // which is required for associativity. Callers using associative=true keep these boundaries;
     // the layer is frozen+non-plotting so they don't pollute plots.
+    /// <summary>
+    /// Frame the whole drawing so TraceBoundary can see it. Returns false when there is nothing
+    /// drawable to frame. Same managed route as view.zoom_extents - deliberately not the
+    /// command layer, which is what made zoom_extents itself fail with eInvalidInput.
+    /// </summary>
+    private static bool TryFrameDrawing(Document doc, Database db)
+    {
+        try { db.UpdateExt(true); } catch (Autodesk.AutoCAD.Runtime.Exception) { }
+
+        var lo = db.Extmin;
+        var hi = db.Extmax;
+        if (lo.X > hi.X || lo.Y > hi.Y) return false;   // the empty-drawing sentinel
+
+        double w = hi.X - lo.X, h = hi.Y - lo.Y;
+        if (w <= 1e-9 && h <= 1e-9) { w = h = 100.0; }
+        else if (w <= 1e-9) { w = h; }
+        else if (h <= 1e-9) { h = w; }
+
+        using var vtr = new ViewTableRecord
+        {
+            CenterPoint = new Point2d((lo.X + hi.X) / 2.0, (lo.Y + hi.Y) / 2.0),
+            Width = w * 1.04,
+            Height = h * 1.04,
+        };
+        doc.Editor.SetCurrentView(vtr);
+        return true;
+    }
+
     private static List<string> TraceBoundaryAsHandles(
         Document doc, Database db, Transaction tr,
         Point3d seed, bool detectIslands)
     {
+        // Editor.TraceBoundary reads its seed point in the CURRENT UCS, not in WCS.
+        //
+        // Every argument in this codebase is WCS unless a `ucs` argument says otherwise
+        // (rule 43), so handing the caller's point straight to TraceBoundary silently offsets
+        // it by whatever the current UCS happens to be. With the UCS at world - the common
+        // case - the two agree and the tool works, which is why this survived so long.
+        //
+        // Reproduced: a rectangle spanning (50000,50000)-(56000,54000), a seed at
+        // (53000,52000) plainly inside it, and a current UCS with origin (1000,2000). The seed
+        // was read as WCS (54000,54000), which lands exactly on the top edge, so TraceBoundary
+        // correctly found no enclosing region - and the tool blamed the user's geometry.
+        // The same seed succeeds immediately after ucs.set_ucs_world.
+        //
+        // CurrentUserCoordinateSystem is the UCS -> WCS matrix, so WCS -> UCS is its inverse.
+        var ucsToWcs = doc.Editor.CurrentUserCoordinateSystem;
+        var seedInUcs = seed.TransformBy(ucsToWcs.Inverse());
+
+        // Second condition, independent of the first: TraceBoundary only sees geometry that is
+        // in the current view. A region sitting off-screen produces an empty result, not an
+        // error, which is indistinguishable from "your geometry is not closed".
+        //
+        // Measured, both conditions varied independently:
+        //
+        //     UCS world     + view away from region  -> fails
+        //     UCS world     + view on region         -> works
+        //     UCS offset    + view away from region  -> fails
+        //     UCS offset    + view on region         -> works (only once the seed is
+        //                                                      transformed, above)
+        //
+        // So frame the drawing before tracing, and put the user's view back afterwards. An
+        // agent calling a hatch tool has not asked for its view to move, and leaving it moved
+        // would be a side effect nobody requested.
         DBObjectCollection found;
+        ViewTableRecord? savedView = null;
         try
         {
-            found = doc.Editor.TraceBoundary(seed, detectIslands)
-                ?? new DBObjectCollection();
+            try
+            {
+                savedView = doc.Editor.GetCurrentView();
+                if (TryFrameDrawing(doc, db)) { /* framed */ }
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception)
+            {
+                // Framing is a best-effort improvement to the odds, not a precondition. If the
+                // view cannot be changed, still attempt the trace - it may well succeed, and a
+                // real failure is reported below with everything the caller needs.
+            }
+
+            try
+            {
+                found = doc.Editor.TraceBoundary(seedInUcs, detectIslands)
+                    ?? new DBObjectCollection();
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Editor.TraceBoundary failed at WCS ({seed.X:F1},{seed.Y:F1}) " +
+                    $"= UCS ({seedInUcs.X:F1},{seedInUcs.Y:F1}): {ex.Message}.");
+            }
         }
-        catch (Autodesk.AutoCAD.Runtime.Exception ex)
+        finally
         {
-            throw new InvalidOperationException(
-                $"Editor.TraceBoundary failed at ({seed.X:F1},{seed.Y:F1}): {ex.Message}. " +
-                "Ensure the seed point is inside a fully closed area and geometry is visible on screen.");
+            if (savedView is not null)
+            {
+                try { doc.Editor.SetCurrentView(savedView); }
+                catch (Autodesk.AutoCAD.Runtime.Exception) { /* view restore is not worth failing the tool over */ }
+                savedView.Dispose();
+            }
         }
 
-        if (found.Count == 0) return new List<string>();
+        if (found.Count == 0)
+        {
+            // Report both points. When these differ, a caller who believed the seed was inside
+            // the region is looking at the reason, rather than at advice about their geometry.
+            var ucsNote = seed.IsEqualTo(seedInUcs, new Tolerance(1e-9, 1e-9))
+                ? "The current UCS is world, so the seed was used as given."
+                : $"NOTE: the current UCS is not world, so the seed was taken to UCS " +
+                  $"({seedInUcs.X:F1},{seedInUcs.Y:F1}). Arguments here are WCS; if you meant " +
+                  "UCS coordinates, convert them first or call ucs.set_ucs_world.";
+            throw new InvalidOperationException(
+                $"TraceBoundary found no closed region around WCS ({seed.X:F1},{seed.Y:F1}). " +
+                $"Check that the surrounding geometry forms a fully closed area. {ucsNote}");
+        }
 
         // Ensure hidden layer for trace boundaries (non-plotting, thawed-for-hatch-creation).
         const string BLayer = "A-BNDRY-TEMP";

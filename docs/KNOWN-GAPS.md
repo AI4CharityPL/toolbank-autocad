@@ -67,6 +67,28 @@ mistypes the argument gets a checkpoint they cannot then find by label. Advertis
 required, treated as optional — the same catalogue-vs-consumer disagreement as
 [section C1](#c-missing-test-machinery), but between schema and handler.
 
+### A8. Room area tags render `m?` instead of `m²`
+**Status:** found 2026-08-04 while building the README demo. Diagnosed, not fixed — the fix
+carries a product decision.
+
+`architecture.define_room` writes the area as `20,46 m²`. The string is correct: the literal in
+`ArchitectureTools.cs` is proper UTF-8 (`0xC2 0xB2`) and Roslyn reads BOM-less files as UTF-8,
+so nothing is mangled in transport. **AutoCAD's default text style uses an SHX font, which has
+no glyph for `²` and draws `?` instead.** Every room tag on a default install is affected.
+
+Creating a TrueType style and making it current does *not* help — `define_room` does not use the
+current text style, which is a second finding worth its own look.
+
+Two ways out, and they are not equivalent:
+- **Write `m2`.** Renders on every install, including SHX. Less correct typographically, and
+  Polish architectural drafting convention is `m²`.
+- **Have `define_room` ensure a TrueType-backed style for room tags.** Keeps `m²`, but imposes a
+  text style on the caller's drawing, which an office with its own standards will not thank us
+  for.
+
+Deliberately not decided unilaterally: this changes the content of every drawing the tool
+produces, not just a screenshot.
+
 ### A3. `xrefs.set_xref_clip_display`
 **Status:** works, but the name over-promises.
 `XCLIPFRAME` is a **drawing-wide** system variable, not per-insert. The tool takes a handle and

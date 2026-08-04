@@ -797,6 +797,21 @@ internal static class FilesPluginTools
         psv.SetStdScaleType(ps, StdScaleType.ScaleToFit);
         psv.SetPlotCentered(ps, true);
 
+        // Plot rotation was never set, so it was inherited from whatever the layout happened to
+        // carry - and on a fresh drawing that is 90 degrees. The exported PNG came out with the
+        // whole plan on its side: text reading bottom-to-top, the north arrow pointing east.
+        //
+        // Nothing in the result said so. export_file returned a path, a byte count and a media
+        // name, all correct, for an image no one could use. Another one for the list of defects
+        // that are invisible in the JSON.
+        //
+        // The caller has already stated the orientation they want, twice: through the window
+        // rectangle and through widthPx/heightPx. Honour that rather than the layout's leftover
+        // setting. There is no rotation argument on this tool and there should not be one until
+        // somebody needs it - ScaleToFit plus PlotCentered handles a mismatched aspect by
+        // letterboxing, which is predictable, unlike a silent quarter-turn.
+        psv.SetPlotRotation(ps, PlotRotation.Degrees000);
+
         // Force foreground plotting BEFORE the engine is created. Order is the whole point:
         // PlotFactory captures the plotting mode when the engine is constructed, so setting
         // BACKGROUNDPLOT afterwards - as this did on the first attempt - changes nothing. The

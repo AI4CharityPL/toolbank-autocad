@@ -146,28 +146,101 @@ set_paperspace_scale_link       list_objects_by_annotation_scale
 
 Turning a finished model into deliverables.
 
-### 2.1 `acad-sheetsets` — sheet set manager (≈24)
+### 2.1 `acad-sheetsets` — sheet set manager (≈24 → **18 planned**)
+
+**Revised 2026-08-04 after checking the API rather than assuming it.** The original list was
+written from the AutoCAD feature set, not from what is reachable, and three things about it were
+wrong.
+
+**It is COM, and the roadmap never said so.** There is no `DatabaseServices` API for sheet sets.
+`acmgd.dll` exposes `IAcSmSheetSetMgr` / `IAcSmSheetSet` and `AcSmComponents.Interop.dll` sits
+next to it, so this *is* reachable — but only through COM interop, which means a new assembly
+reference on `$(AcadInstallPath)`, COM lifetime management, and a different error model from
+every other category in this bank.
+
+That matters more here than it would elsewhere. This repository already forbids
+`Marshal.GetActiveObject` in its pre-commit gate, keeps a whole `AcadMcp.ComBridge` project for
+the COM path it could not avoid, and has a documented history of the command and COM layers
+failing opaquely. **Sheet sets should be the first category built with a supervised contract for
+COM, written before the code** — the same way rule 43 preceded `acad-ucs` and rule 44 preceded
+page setups.
+
+**Four entries are somebody else's job:**
+
+| Entry | Belongs to |
+|---|---|
+| `publish_sheet_set` | 2.2 — it is a publish operation that happens to take a sheet set |
+| `create_sheet_list_table`, `update_sheet_list_table` | `acad-schedules` already generates AutoCAD Table entities; a sheet list is one more schedule, not a new mechanism |
+| `archive_sheet_set`, `etransmit_sheet_set` | eTransmit is a separate subsystem with its own packaging rules; it deserves its own tranche rather than two tools smuggled in here |
+
+**Two are session state, and this bank has been burned by that shape before:**
+`open_sheet_set` / `close_sheet_set` hold a handle across calls. Every stateful thing attempted
+so far — `refedit_*`, the plot queue, `undo` — either failed or had to be withdrawn. If they are
+built, the contract has to say what happens when a second client opens a different set.
+
+**Missing, and they are not optional:** `rename_sheet`, `set_sheet_number`, `list_subsets`,
+`delete_subset`, `get_sheet_set_path`. A sheet set whose sheets cannot be renumbered is not
+usable on a real project, and renumbering is the single most common sheet-set operation there is.
+
+**Cross-dependency the original list did not record:** `fields.insert_field_sheet_set_property`
+is blocked on this category and is the reason title blocks cannot yet carry live sheet-set data.
+Whatever subset of 2.1 gets built first must include `get_sheet_property`, or that field stays
+blocked for nothing.
 
 ```
 create_sheet_set            open_sheet_set             close_sheet_set
+get_sheet_set_info          get_sheet_set_path         set_sheet_set_template
 list_sheets                 add_sheet                  remove_sheet
-reorder_sheet               create_subset              move_sheet_to_subset
-set_sheet_property          get_sheet_property         list_custom_properties
-define_custom_property      create_sheet_list_table    update_sheet_list_table
-set_sheet_view_category     list_sheet_views           add_sheet_view
-publish_sheet_set           archive_sheet_set          etransmit_sheet_set
-get_sheet_set_info          resave_all_sheets          set_sheet_set_template
+rename_sheet                set_sheet_number           reorder_sheet
+create_subset               list_subsets               delete_subset
+move_sheet_to_subset        set_sheet_property         get_sheet_property
+list_custom_properties      define_custom_property     resave_all_sheets
+list_sheet_views            add_sheet_view             set_sheet_view_category
 ```
 
-### 2.2 `acad-publish` — batch output (≈16)
+### 2.2 `acad-publish` — batch output (≈16 → **9 planned**, 4 built)
+
+**Revised 2026-08-04.** Built and verified: `create_page_setup`, `list_page_setups`,
+`apply_page_setup`, `delete_page_setup`. Withheld: `import_page_setup` (see
+[KNOWN-GAPS.md](KNOWN-GAPS.md) section B — `WblockCloneObjects` reports success and clones
+nothing).
+
+**The good news the original list did not know:** `Publisher`, `DsdData`, `DsdEntry`,
+`PlotProgressDialog`, `PlotConfigManager` and `PlotStamp` are all in `accoremgd.dll`. The
+multi-sheet publish family is plain managed API, not COM. Nothing here needs the treatment 2.1
+needs.
+
+**Four entries collapse into two.** `publish_layouts`, `publish_to_pdf_multisheet`,
+`publish_to_dwf` and `publish_to_plotter` are one mechanism with a parameter. Worse,
+`files.export_file` already plots a single layout to PDF, DWF, DWFX, PNG and JPG and does it
+well. The only thing genuinely missing is **many layouts into one file**, which `export_file`
+cannot do — its `layout` argument is singular. So:
+
+- `publish_sheets` — many layouts, one output file or one device, format as an argument
+- `set_publish_options` — the DSD-level settings that publish reads
+
+**`export_layout_to_model` is misfiled.** It is the EXPORTLAYOUT command: it turns a layout's
+paper space into model space in a *new drawing*. That is a file operation, not a publish one,
+and it belongs in `acad-files` or `acad-layouts`.
+
+**Two entries contradict a decision this bank already made.** `get_plot_status` and
+`cancel_plot` only mean anything with background plotting on — and `files.export_file` forces
+`BACKGROUNDPLOT` **off** deliberately, because the background worker writes the file *after*
+`EndPlot` returns (measured: PNG ~10 s late, PDF ~5 s late) and holds the engine long enough to
+reject the next export. Building a status/cancel pair for a mode the bank switches off would be
+building tools for a situation that does not arise. Withdrawn unless background plotting is ever
+deliberately re-enabled, which would need its own contract.
+
+**`plot_preview_extents` as specced is interactive.** A preview is something a human looks at.
+The useful agent-shaped question is "what area will this plot cover", which is answerable from
+the page setup and the layout without rendering anything — kept, but as
+`get_plot_area` rather than as a preview.
 
 ```
-publish_layouts             publish_to_pdf_multisheet  publish_to_dwf
-publish_to_plotter          set_publish_options        create_page_setup
-apply_page_setup            import_page_setup          list_page_setups
-delete_page_setup           batch_plot_from_list       set_plot_stamp
-export_layout_to_model      plot_preview_extents       get_plot_status
-cancel_plot
+create_page_setup           list_page_setups           apply_page_setup      (built)
+delete_page_setup           import_page_setup                                (built / withheld)
+publish_sheets              set_publish_options        set_plot_stamp
+get_plot_area
 ```
 
 ### 2.3 `acad-styles` — style authoring (≈30)
@@ -437,7 +510,7 @@ create_showmotion_shot      play_showmotion
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 | 0 | not started |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **22** | **in progress** |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 | 0 | not started |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 | 0 | not started |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 | 0 | not started |

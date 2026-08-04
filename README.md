@@ -4,6 +4,12 @@
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
+> **Not here for AutoCAD?** [**PATTERN.md**](PATTERN.md) is the transferable half — what we
+> learned wrapping a thick desktop application in MCP, with the failures that produced each
+> lesson. Nothing in it is AutoCAD-specific. Start there if you are building the same kind of
+> thing over Excel, Revit, Photoshop or anything else with a real object model and a
+> misleading command layer.
+
 ## Architecture in one sentence
 
 Your AI client only ever sees `acad-router` (meta-tools) plus MCP Nexus. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.

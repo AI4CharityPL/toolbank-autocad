@@ -105,9 +105,10 @@ From the original public-release plan; phases 1–2 landed, the rest did not.
   `CODEOWNERS`, three issue forms, a PR template, plus `SECURITY.md`, `CONTRIBUTING.md` and
   `CODE_OF_CONDUCT.md`. Caveats above: the plugin is out of CI's reach (C6) and mypy is
   advisory (C5).
-- **`PATTERN.md`** — the "how to wrap a thick desktop app in MCP" write-up. Highest-reach
-  artefact in the repository and still unwritten. Material for it accumulated all through this
-  sweep (see E below).
+- ~~**`PATTERN.md`**~~ **Written.** Eleven sections, each a claim with the failure that
+  produced it, plus a checklist. Section E below is its source material and now duplicates
+  it; E stays as the working record, `PATTERN.md` is the version for people who do not use
+  AutoCAD.
 - **Docs reorganisation** — split `docs/engineering-rules/` (universal) from a
   `docs/case-studies/hospital-2026/` (one project's history). `README.md` is 21 KB with no
   screenshots despite `assets/report/` holding finished renders.

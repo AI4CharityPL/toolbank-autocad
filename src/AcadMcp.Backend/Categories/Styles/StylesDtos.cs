@@ -99,3 +99,44 @@ public sealed record MLeaderStyleResult(
 public sealed record MLeaderStyleListResult(
     [property: JsonPropertyName("mleaderStyles")] IReadOnlyList<MLeaderStyleInfo> MLeaderStyles,
     [property: JsonPropertyName("count")]         int Count);
+
+public sealed record TableStyleNameArgs(
+    [property: JsonPropertyName("name")] string Name);
+
+public sealed record CreateTableStyleArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("properties")]  IReadOnlyDictionary<string, double>? Properties = null,
+    [property: JsonPropertyName("makeCurrent")] bool MakeCurrent = false,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+public sealed record ModifyTableStyleArgs(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+public sealed record TableStylePropertyInfo(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("apiName")]     string ApiName,
+    [property: JsonPropertyName("rowType")]     string? RowType,
+    [property: JsonPropertyName("kind")]        string Kind,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("min")]         double? Min,
+    [property: JsonPropertyName("max")]         double? Max);
+
+public sealed record TableStylePropertyListResult(
+    [property: JsonPropertyName("properties")] IReadOnlyList<TableStylePropertyInfo> Properties,
+    [property: JsonPropertyName("count")]      int Count);
+
+public sealed record TableStyleInfo(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("isCurrent")]  bool IsCurrent,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+public sealed record TableStyleResult(
+    [property: JsonPropertyName("tableStyle")] TableStyleInfo TableStyle,
+    [property: JsonPropertyName("created")]    bool? Created = null,
+    [property: JsonPropertyName("applied")]    IReadOnlyList<string>? Applied = null,
+    [property: JsonPropertyName("note")]       string? Note = null);
+
+public sealed record TableStyleListResult(
+    [property: JsonPropertyName("tableStyles")] IReadOnlyList<TableStyleInfo> TableStyles,
+    [property: JsonPropertyName("count")]       int Count);

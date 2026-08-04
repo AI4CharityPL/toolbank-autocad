@@ -1,7 +1,7 @@
 {
   "id": "acad-styles",
   "name": "acad-styles",
-  "description": "Authoring the styles a drawing is held to: dimension styles and multileader styles, with the same properties-map shape for both, so a caller who has learned one has learned the other. Create with chosen properties, change one, duplicate a dimension style for another scale, delete, or make current. Properties are named plainly - textHeight, arrowSize, doglegLength - not API spellings, and the list_*_properties tools report every name, the variable behind it, what it does and its range. Booleans travel as 0 or 1 so the argument stays one map of numbers.",
+  "description": "Authoring the styles a drawing is held to: dimension styles, multileader styles and table styles, with the same properties-map shape for all three, so a caller who has learned one has learned the others. Create with chosen properties, change one, duplicate a dimension style for another scale, delete, or make current. Properties are named plainly - textHeight, arrowSize, dataTextHeight - not API spellings, and the list_*_properties tools report every name, the variable behind it, what it does and its range. Table text heights are per row, because a schedule's caption, headings and content are three different sizes.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-styles.cmd",
@@ -26,16 +26,126 @@
     "properties",
     "set",
     "standards",
-    "styles"
+    "styles",
+    "tablestyle",
+    "tablestyles"
   ],
   "intent_examples": [
-    "utworz styl wymiarowy dla skali 1:50",
-    "zdefiniuj styl odnosnika z tekstem 2.5 mm",
+    "aktywny styl odnosnika",
+    "aktywny styl tabeli",
+    "aktywny styl wymiarowy",
+    "change dimstyle text height",
+    "change leader style text height",
+    "change table style text height",
+    "clone dimstyle with changes",
+    "co da sie zmienic w stylu odnosnika",
+    "co da sie zmienic w stylu tabeli",
+    "co da sie zmienic w stylu wymiarowym",
+    "copy dimension style",
     "create a dimension style with 2.5 mm text",
+    "create dimension style",
+    "create mleader style",
+    "create table style",
+    "define dimension style for 1:50",
+    "define multileader style",
+    "define schedule table style",
+    "delete dimension style",
+    "delete mleader style",
+    "delete table style",
+    "dimstyle property names",
+    "duplicate dimstyle for another scale",
     "duplicate this dimstyle for 1:100",
-    "zmien dlugosc poziomki w stylu multileader",
+    "edit existing dimstyle",
+    "edit multileader style",
+    "edit schedule style",
+    "get rid of dimension style",
+    "get rid of multileader style",
+    "get rid of schedule style",
+    "jakie parametry stylu moge ustawic",
+    "jakie sa style multileader",
+    "jakie sa style tabeli",
+    "jakie wlasciwosci stylu odnosnika moge ustawic",
+    "jakie wlasciwosci stylu tabeli moge ustawic",
+    "jakie wlasciwosci stylu wymiarowego moge ustawic",
+    "list dimension style properties",
+    "list mleader style properties",
+    "list mleader styles",
+    "list table style properties",
+    "list table styles",
+    "lista parametrow stylu wymiarowania",
+    "make this dimstyle active",
+    "make this leader style active",
     "make this multileader style current",
-    "jakie parametry stylu moge ustawic"
+    "make this table style active",
+    "modify dimension style",
+    "modify mleader style",
+    "modify table style",
+    "multileader style property names",
+    "new dimstyle with text height",
+    "new leader style with 2.5 mm text",
+    "new table style for schedules",
+    "parametry stylu multileader",
+    "parametry stylu tabeli",
+    "pokaz style odnosnika",
+    "pokaz style tabel",
+    "popraw dlugosc poziomki w stylu",
+    "popraw wysokosc tekstu w stylu",
+    "popraw wysokosc tekstu w tabeli",
+    "przelacz na styl multileader",
+    "przelacz na styl wymiarowania",
+    "przelacz na styl zestawienia",
+    "remove unused dimstyle",
+    "remove unused leader style",
+    "remove unused table style",
+    "set current dimension style",
+    "set current mleader style",
+    "set current table style",
+    "show multileader styles",
+    "show table styles",
+    "skasuj dimstyle",
+    "skasuj styl multileader",
+    "skasuj styl zestawienia",
+    "skopiuj styl wymiarowy",
+    "styl wymiarowy dla innej skali",
+    "switch dimstyle",
+    "switch multileader style",
+    "switch table style",
+    "table style property names",
+    "ustaw biezacy styl odnosnika",
+    "ustaw biezacy styl tabeli",
+    "ustaw biezacy styl wymiarowy",
+    "usun styl odnosnika",
+    "usun styl tabeli",
+    "usun styl wymiarowy",
+    "utworz styl odnosnika",
+    "utworz styl tabeli",
+    "utworz styl wymiarowy",
+    "utworz styl wymiarowy dla skali 1:50",
+    "what can I set on a dimstyle",
+    "what can I set on a table style",
+    "what can I set on an mleader style",
+    "what leader styles exist",
+    "what schedule styles exist",
+    "wlasny styl odnosnikow",
+    "wlasny styl tabelki",
+    "wlasny styl wymiarowania",
+    "wykasuj styl odnosnikow",
+    "wykasuj styl tabelki",
+    "wykasuj styl wymiarowania",
+    "wylistuj style odnosnikow",
+    "wylistuj style tabel",
+    "zdefiniuj nowy dimstyle",
+    "zdefiniuj styl multileader",
+    "zdefiniuj styl odnosnika z tekstem 2.5 mm",
+    "zdefiniuj styl zestawienia",
+    "zduplikuj dimstyle pod nowa nazwa",
+    "zmiana parametrow odnosnika",
+    "zmiana parametrow tabeli",
+    "zmiana parametrow wymiarowania",
+    "zmien dlugosc poziomki w stylu multileader",
+    "zmien styl odnosnika",
+    "zmien styl tabeli",
+    "zmien styl wymiarowy"
   ],
   "tools_summary": [
     {
@@ -63,6 +173,14 @@
       ]
     },
     {
+      "name": "create_tablestyle",
+      "description": "Create a named table style with chosen properties - cell margins, flow direction, and text height per row type. This is what makes a generated door or room schedule match the rest of the set instead of arriving at AutoCAD's defaults. Refuses an existing name unless overwrite is true.",
+      "tags": [
+        "create",
+        "tablestyle"
+      ]
+    },
+    {
       "name": "delete_dimstyle",
       "description": "Delete a dimension style. Refuses to delete 'Standard', refuses to delete the current style, and refuses a style still in use - with the reason, and a pointer to dimensions.set_entity_dimstyle for moving the dimensions off it first.",
       "tags": [
@@ -76,6 +194,14 @@
       "tags": [
         "delete",
         "mleaderstyle"
+      ]
+    },
+    {
+      "name": "delete_tablestyle",
+      "description": "Delete a table style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code.",
+      "tags": [
+        "delete",
+        "tablestyle"
       ]
     },
     {
@@ -105,6 +231,23 @@
       ]
     },
     {
+      "name": "list_tablestyle_properties",
+      "description": "List every table-style property this bank can set, with the API member behind it, which row it applies to, what it does and its range. Read-only. Text heights are per row - titleTextHeight, headerTextHeight, dataTextHeight - because a schedule's caption, its column headings and its content are three different sizes and pretending otherwise is how tables end up unreadable.",
+      "tags": [
+        "list",
+        "tablestyle",
+        "properties"
+      ]
+    },
+    {
+      "name": "list_tablestyles",
+      "description": "List the table styles defined in this drawing with all their properties, and which one is current. Read-only. The schedules family draws into whichever style is current, so this is what tells you what a generated door or room schedule will look like before you generate it.",
+      "tags": [
+        "list",
+        "tablestyles"
+      ]
+    },
+    {
       "name": "modify_dimstyle",
       "description": "Change properties on an existing dimension style, leaving the rest alone. The stored style changes immediately; dimensions already placed pick it up on the next regen, and the result says so - an unchanged screen after this call is not a failed call.",
       "tags": [
@@ -118,6 +261,14 @@
       "tags": [
         "modify",
         "mleaderstyle"
+      ]
+    },
+    {
+      "name": "modify_tablestyle",
+      "description": "Change properties on an existing table style, leaving the rest alone. The stored style changes immediately; tables already placed pick it up on the next regen, and the result says so.",
+      "tags": [
+        "modify",
+        "tablestyle"
       ]
     },
     {
@@ -137,11 +288,20 @@
         "current",
         "mleaderstyle"
       ]
+    },
+    {
+      "name": "set_current_tablestyle",
+      "description": "Make a table style the current one, so tables created afterwards use it - including the ones the schedules family generates. Returns the style with all its properties so the caller can confirm what they switched to.",
+      "tags": [
+        "set",
+        "current",
+        "tablestyle"
+      ]
     }
   ],
   "metadata": {
     "category": "styles",
-    "tool_count_target": 12,
+    "tool_count_target": 18,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -155,6 +315,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T20:25:06.6874495Z"
+    "last_regenerated_utc": "2026-08-04T20:59:32.0396991Z"
   }
 }

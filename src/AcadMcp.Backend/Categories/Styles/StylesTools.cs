@@ -120,4 +120,53 @@ public static class StylesTools
         RequiresPlugin = true)]
     public static Task<MLeaderStyleResult> SetCurrentMLeaderStyle(IPluginGateway gw, MLeaderStyleNameArgs args, CancellationToken ct)
         => StylesProxy.CallAsync<MLeaderStyleNameArgs, MLeaderStyleResult>(gw, "acad.styles.set_current_mleaderstyle", args, T_NORMAL, ct);
+
+    // ─────────── table styles ───────────
+    //
+    // Third style family, same properties-map shape. What differs is that a table has three
+    // kinds of row - title, header, data - each with its own text height, so the property names
+    // carry the row rather than pretending a table has one text size.
+
+    [McpTool("list_tablestyle_properties", "List every table-style property this bank can set, with the API member behind it, which row it applies to, what it does and its range. Read-only. Text heights are per row - titleTextHeight, headerTextHeight, dataTextHeight - because a schedule's caption, its column headings and its content are three different sizes and pretending otherwise is how tables end up unreadable.", "styles",
+        Intent = new[] { "jakie wlasciwosci stylu tabeli moge ustawic", "parametry stylu tabeli",
+                         "list table style properties", "what can I set on a table style",
+                         "table style property names", "co da sie zmienic w stylu tabeli" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<TableStylePropertyListResult> ListTableStyleProperties(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, TableStylePropertyListResult>(gw, "acad.styles.list_tablestyle_properties", args, T_FAST, ct);
+
+    [McpTool("list_tablestyles", "List the table styles defined in this drawing with all their properties, and which one is current. Read-only. The schedules family draws into whichever style is current, so this is what tells you what a generated door or room schedule will look like before you generate it.", "styles",
+        Intent = new[] { "wylistuj style tabel", "jakie sa style tabeli", "list table styles",
+                         "show table styles", "what schedule styles exist", "pokaz style tabel" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<TableStyleListResult> ListTableStyles(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, TableStyleListResult>(gw, "acad.styles.list_tablestyles", args, T_FAST, ct);
+
+    [McpTool("create_tablestyle", "Create a named table style with chosen properties - cell margins, flow direction, and text height per row type. This is what makes a generated door or room schedule match the rest of the set instead of arriving at AutoCAD's defaults. Refuses an existing name unless overwrite is true.", "styles",
+        Intent = new[] { "utworz styl tabeli", "zdefiniuj styl zestawienia", "create table style",
+                         "new table style for schedules", "define schedule table style", "wlasny styl tabelki" },
+        RequiresPlugin = true)]
+    public static Task<TableStyleResult> CreateTableStyle(IPluginGateway gw, CreateTableStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateTableStyleArgs, TableStyleResult>(gw, "acad.styles.create_tablestyle", args, T_NORMAL, ct);
+
+    [McpTool("modify_tablestyle", "Change properties on an existing table style, leaving the rest alone. The stored style changes immediately; tables already placed pick it up on the next regen, and the result says so.", "styles",
+        Intent = new[] { "zmien styl tabeli", "popraw wysokosc tekstu w tabeli", "modify table style",
+                         "change table style text height", "edit schedule style", "zmiana parametrow tabeli" },
+        RequiresPlugin = true)]
+    public static Task<TableStyleResult> ModifyTableStyle(IPluginGateway gw, ModifyTableStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<ModifyTableStyleArgs, TableStyleResult>(gw, "acad.styles.modify_tablestyle", args, T_NORMAL, ct);
+
+    [McpTool("delete_tablestyle", "Delete a table style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code.", "styles",
+        Intent = new[] { "usun styl tabeli", "skasuj styl zestawienia", "delete table style",
+                         "remove unused table style", "get rid of schedule style", "wykasuj styl tabelki" },
+        RequiresPlugin = true)]
+    public static Task<StylesAffected> DeleteTableStyle(IPluginGateway gw, TableStyleNameArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<TableStyleNameArgs, StylesAffected>(gw, "acad.styles.delete_tablestyle", args, T_NORMAL, ct);
+
+    [McpTool("set_current_tablestyle", "Make a table style the current one, so tables created afterwards use it - including the ones the schedules family generates. Returns the style with all its properties so the caller can confirm what they switched to.", "styles",
+        Intent = new[] { "ustaw biezacy styl tabeli", "przelacz na styl zestawienia", "set current table style",
+                         "make this table style active", "switch table style", "aktywny styl tabeli" },
+        RequiresPlugin = true)]
+    public static Task<TableStyleResult> SetCurrentTableStyle(IPluginGateway gw, TableStyleNameArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<TableStyleNameArgs, TableStyleResult>(gw, "acad.styles.set_current_tablestyle", args, T_NORMAL, ct);
 }

@@ -38,3 +38,16 @@ internal sealed record CreateMLeaderStyleArgsDto(
 internal sealed record ModifyMLeaderStyleArgsDto(
     [property: JsonPropertyName("name")]       string Name,
     [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+internal sealed record TableStyleNameArgsDto(
+    [property: JsonPropertyName("name")] string Name);
+
+internal sealed record CreateTableStyleArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("properties")]  IReadOnlyDictionary<string, double>? Properties = null,
+    [property: JsonPropertyName("makeCurrent")] bool MakeCurrent = false,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+internal sealed record ModifyTableStyleArgsDto(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);

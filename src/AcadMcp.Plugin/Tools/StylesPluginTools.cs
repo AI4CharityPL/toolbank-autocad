@@ -48,6 +48,12 @@ internal static class StylesPluginTools
         host.Register("acad.styles.modify_mleaderstyle", ModifyMLeaderStyle);
         host.Register("acad.styles.delete_mleaderstyle", DeleteMLeaderStyle);
         host.Register("acad.styles.set_current_mleaderstyle", SetCurrentMLeaderStyle);
+        host.Register("acad.styles.list_tablestyle_properties", ListTableProperties);
+        host.Register("acad.styles.list_tablestyles", ListTableStyles);
+        host.Register("acad.styles.create_tablestyle", CreateTableStyle);
+        host.Register("acad.styles.modify_tablestyle", ModifyTableStyle);
+        host.Register("acad.styles.delete_tablestyle", DeleteTableStyle);
+        host.Register("acad.styles.set_current_tablestyle", SetCurrentTableStyle);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -165,6 +171,7 @@ internal static class StylesPluginTools
         isCurrent = db.Dimstyle == rec.ObjectId,
         properties = ReadProps(rec),
     };
+
 
 
     // ─────────── handlers ───────────
@@ -494,5 +501,210 @@ internal static class StylesPluginTools
             var m = OpenMLeader(db, tr, a.Name, OpenMode.ForRead, out var key);
             db.MLeaderstyle = m.ObjectId;
             return Wrap(new { mleaderStyle = MlInfo(db, key, m) });
+        });
+
+    // ─────────── table styles (roadmap 2.3) ───────────
+    //
+    // Third table in the same family. What differs: several properties are per ROW TYPE rather
+    // than per style - a table has a title row, a header row and data rows, each with its own
+    // text height - so the wire names carry the row (titleTextHeight, dataTextHeight) and the
+    // catalogue carries which RowType each addresses.
+
+    private static DBDictionary TableDict(Database db, Transaction tr, OpenMode mode)
+        => (DBDictionary)tr.GetObject(db.TableStyleDictionaryId, mode);
+
+    private static List<string> TableStyleNames(Database db, Transaction tr)
+    {
+        var names = new List<string>();
+        foreach (DBDictionaryEntry e in TableDict(db, tr, OpenMode.ForRead)) names.Add(e.Key);
+        names.Sort(StringComparer.OrdinalIgnoreCase);
+        return names;
+    }
+
+    private static TableStyle OpenTableStyle(Database db, Transaction tr, string name, OpenMode mode, out string key)
+    {
+        foreach (DBDictionaryEntry e in TableDict(db, tr, OpenMode.ForRead))
+        {
+            if (!string.Equals(e.Key, name, StringComparison.OrdinalIgnoreCase)) continue;
+            key = e.Key;
+            return (TableStyle)tr.GetObject(e.Value, mode);
+        }
+        throw new ArgumentException(
+            $"No table style named '{name}'. Defined: " + string.Join(", ", TableStyleNames(db, tr)) +
+            ". Use list_tablestyles.");
+    }
+
+    private static RowType RowOf(string? name) => name switch
+    {
+        "TitleRow"  => RowType.TitleRow,
+        "HeaderRow" => RowType.HeaderRow,
+        "DataRow"   => RowType.DataRow,
+        _ => throw new InvalidOperationException($"No row type wired for '{name}'."),
+    };
+
+    private static double GetTs(TableStyle t, TableStyleProperty p) => p.ApiName switch
+    {
+        "HorizontalCellMargin" => t.HorizontalCellMargin,
+        "VerticalCellMargin"   => t.VerticalCellMargin,
+        "TextHeight"           => t.TextHeight(RowOf(p.RowType)),
+        _ => throw new InvalidOperationException($"No reader wired for {p.ApiName}."),
+    };
+
+    private static void SetTs(TableStyle t, TableStyleProperty p, double v)
+    {
+        switch (p.ApiName)
+        {
+            case "HorizontalCellMargin": t.HorizontalCellMargin = v; break;
+            case "VerticalCellMargin":   t.VerticalCellMargin = v; break;
+            case "TextHeight":           t.SetTextHeight(v, (int)RowOf(p.RowType)); break;
+            default: throw new InvalidOperationException($"No writer wired for {p.ApiName}.");
+        }
+    }
+
+    private static Dictionary<string, double> ReadTsProps(TableStyle t)
+    {
+        var d = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in TableStyleProperties.All) d[p.Name] = GetTs(t, p);
+        return d;
+    }
+
+    private static List<string> ApplyTsProps(TableStyle t, IReadOnlyDictionary<string, double>? props)
+    {
+        var applied = new List<string>();
+        if (props is null) return applied;
+        foreach (var kv in props)
+        {
+            var p = TableStyleProperties.Resolve(kv.Key, kv.Value);
+            SetTs(t, p, kv.Value);
+            applied.Add(p.Name);
+        }
+        applied.Sort(StringComparer.OrdinalIgnoreCase);
+        return applied;
+    }
+
+    private static object TsInfo(Database db, string name, TableStyle t) => new
+    {
+        name,
+        isCurrent = db.Tablestyle == t.ObjectId,
+        properties = ReadTsProps(t),
+    };
+
+    private static Task<ToolDispatchResult> ListTableProperties(JsonObject args, CancellationToken ct) =>
+        RunR("acad.styles.list_tablestyle_properties", args, ct, (doc, db, tr) =>
+        {
+            var list = TableStyleProperties.All.Select(p => (object)new
+            {
+                name = p.Name,
+                apiName = p.ApiName,
+                rowType = p.RowType,
+                kind = p.Kind.ToString(),
+                description = p.Description,
+                min = p.Min,
+                max = p.Max,
+            }).ToList();
+            return Wrap(new { properties = list, count = list.Count });
+        });
+
+    private static Task<ToolDispatchResult> ListTableStyles(JsonObject args, CancellationToken ct) =>
+        RunR("acad.styles.list_tablestyles", args, ct, (doc, db, tr) =>
+        {
+            var list = new List<object>();
+            foreach (DBDictionaryEntry e in TableDict(db, tr, OpenMode.ForRead))
+            {
+                var t = (TableStyle)tr.GetObject(e.Value, OpenMode.ForRead);
+                list.Add(TsInfo(db, e.Key, t));
+            }
+            return Wrap(new { tableStyles = list, count = list.Count });
+        });
+
+    private static Task<ToolDispatchResult> CreateTableStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.create_tablestyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<CreateTableStyleArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Name)) throw new ArgumentException("name is required.");
+            AcadEnv.ValidateSymbolName(a.Name, "TableStyle");
+
+            var dict = TableDict(db, tr, OpenMode.ForWrite);
+            foreach (DBDictionaryEntry e in dict)
+            {
+                if (!string.Equals(e.Key, a.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!a.Overwrite)
+                    throw new ArgumentException(
+                        $"A table style named '{e.Key}' already exists. Pass overwrite:true, or use " +
+                        "modify_tablestyle to change only some properties.");
+                var existing = (TableStyle)tr.GetObject(e.Value, OpenMode.ForWrite);
+                var applied0 = ApplyTsProps(existing, a.Properties);
+                return Wrap(new { tableStyle = TsInfo(db, e.Key, existing), created = false, applied = applied0 });
+            }
+
+            var style = new TableStyle();
+
+            // Registered before the properties are applied. That order is NOT load-bearing - an
+            // earlier version of this comment claimed it fixed an eInvalidInput and it did not:
+            // the failure was one property, FlowDirection, which throws on write whether the
+            // style is database-resident or not. It is withheld from the catalogue. The order
+            // stays because it is the safer of the two, not because it fixed anything.
+            //
+            // TableStyle has no PostTableStyleToDb; that convenience exists on MLeaderStyle
+            // and not here, so the dictionary entry is made by hand. SetAt then
+            // AddNewlyCreatedDBObject, in that order: the object must be owned before the
+            // transaction is told about it.
+            dict.SetAt(a.Name, style);
+            tr.AddNewlyCreatedDBObject(style, true);
+
+            var applied = ApplyTsProps(style, a.Properties);
+
+            if (a.MakeCurrent) db.Tablestyle = style.ObjectId;
+            return Wrap(new { tableStyle = TsInfo(db, a.Name, style), created = true, applied });
+        });
+
+    private static Task<ToolDispatchResult> ModifyTableStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.modify_tablestyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ModifyTableStyleArgsDto>(args);
+            if (a.Properties is null || a.Properties.Count == 0)
+                throw new ArgumentException(
+                    "properties: at least one is required. Use list_tablestyle_properties for the names.");
+
+            var t = OpenTableStyle(db, tr, a.Name, OpenMode.ForWrite, out var key);
+            var applied = ApplyTsProps(t, a.Properties);
+            return Wrap(new
+            {
+                tableStyle = TsInfo(db, key, t),
+                applied,
+                note = "Existing tables pick this up on the next regen; the stored style is already changed.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DeleteTableStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.delete_tablestyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<TableStyleNameArgsDto>(args);
+            var t = OpenTableStyle(db, tr, a.Name, OpenMode.ForWrite, out var key);
+
+            if (string.Equals(key, "Standard", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("'Standard' is AutoCAD's built-in table style and cannot be deleted.");
+            if (db.Tablestyle == t.ObjectId)
+                throw new ArgumentException(
+                    $"'{key}' is the current table style. Make another one current first with " +
+                    "set_current_tablestyle.");
+
+            try { t.Erase(); }
+            catch (Autodesk.AutoCAD.Runtime.Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot delete '{key}': {ex.Message}. Tables still using it must be moved to " +
+                    "another style first.");
+            }
+            return Wrap(new { affected = 1, name = key });
+        });
+
+    private static Task<ToolDispatchResult> SetCurrentTableStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.styles.set_current_tablestyle", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<TableStyleNameArgsDto>(args);
+            var t = OpenTableStyle(db, tr, a.Name, OpenMode.ForRead, out var key);
+            db.Tablestyle = t.ObjectId;
+            return Wrap(new { tableStyle = TsInfo(db, key, t) });
         });
 }

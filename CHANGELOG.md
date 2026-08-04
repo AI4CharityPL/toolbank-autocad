@@ -6,6 +6,34 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **The catalogue-vs-consumer contract is now a test, and CI runs it.** This was the
+  highest-value missing test in `docs/KNOWN-GAPS.md`, recorded there as blocked on a
+  plugin-level test project that could never exist because CI has no AutoCAD.
+  **That premise was wrong.** The blocker was not that the test needed AutoCAD; it was that
+  the catalogues happened to sit next to code that does. They are pure data — names,
+  millimetre dimensions, prose, standards citations.
+  - New `src/AcadMcp.Shared/Catalogs/`: `FurnitureCatalog`, `PlumbingCatalog`, `HatchCatalog`,
+    plus the shared `PREFIX-FAMILY-SUBTYPE-W-D` naming helper and `CatalogNameException`.
+    Each catalogue owns both the listing a discovery tool publishes and the resolution its
+    action tool performs, so the two cannot drift apart in the first place. The plugin keeps
+    what genuinely needs AutoCAD — turning a resolution into geometry — and
+    `BuildBlockGeometry` is now one `Resolve` call followed by dispatch.
+  - New `CatalogContractTests` — 27 tests. The load-bearing ones assert that every name each
+    listing publishes is accepted by the tool it points at. **Verified against the real
+    defect:** reintroducing the missing family lookup makes the suite fail with
+    `list_furniture_catalog publishes 26 names; insert_furniture rejects 11 of them`, naming
+    every one — matching the historical record exactly.
+  - The hatch catalogue gets a check the other two cannot have: every material preset names a
+    pattern, and that pattern must exist in the pattern catalogue. A dangling preset is
+    invisible — `list_hatch_patterns` would not show it while `apply_material_preset` would
+    ask AutoCAD to load it anyway.
+  - `MaterialPreset.Angle` became `AngleDeg`. The unit belongs in the name; hatch angles are
+    stored in radians on the entity and degrees in the catalogue, which is exactly the
+    confusion a bare `Angle` invites.
+  - 148 → 175 tests, 0 warnings, `AcadMcp.Shared` still clean on both `net8.0` and `net48`
+    (the catalogue code avoids `System.Index` and `string.Join(char, …)`, neither of which
+    exists on the latter).
+
 - **Continuous integration — `.github/` now exists.** `ci.yml` builds and tests on Windows,
   checks manifest/code sync, runs the whole-tree repository gate, and lints/type-checks/tests
   the Python vision sidecar on Linux. `codeql.yml` runs `security-and-quality` over C# and

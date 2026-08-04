@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
+using AcadMcp.Shared.Catalogs;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
@@ -58,92 +59,10 @@ internal static class HatchesPluginTools
 
     // ─────────── pattern catalog + material presets (rule 62) ───────────
 
-    internal sealed record HatchPatternEntry(string Category, string Description, double DefaultScale, double DefaultAngle);
-
-    private static readonly IReadOnlyDictionary<string, HatchPatternEntry> s_patternCatalog =
-        new Dictionary<string, HatchPatternEntry>(StringComparer.OrdinalIgnoreCase)
-        {
-            // ANSI patterns (ISO 128 mechanical)
-            { "ANSI31",  new("ANSI",      "Iron / brick elevation (45° diagonal)",  1.0,  0.0) },
-            { "ANSI32",  new("ANSI",      "Steel",                                    1.0,  0.0) },
-            { "ANSI33",  new("ANSI",      "Bronze / brass",                           1.0,  0.0) },
-            { "ANSI34",  new("ANSI",      "Plastic / rubber",                         1.0,  0.0) },
-            { "ANSI35",  new("ANSI",      "Fire brick / refractory",                  1.0,  0.0) },
-            { "ANSI36",  new("ANSI",      "Marble / slate",                           1.0,  0.0) },
-            { "ANSI37",  new("ANSI",      "Lead / zinc (crosshatch)",                 1.0,  0.0) },
-            { "ANSI38",  new("ANSI",      "Aluminum",                                 1.0,  0.0) },
-
-            // ISO patterns (PN-EN-ISO 128)
-            { "ISO02W100", new("ISO",     "Dashed line (ISO)",                        1.0,  0.0) },
-            { "ISO03W100", new("ISO",     "Dashed space (ISO)",                       1.0,  0.0) },
-            { "ISO09W100", new("ISO",     "Long dash short dash (ISO)",               1.0,  0.0) },
-
-            // Architectural (ISO 128 + PN-EN)
-            { "AR-CONC",   new("ARCH",    "Concrete (stone aggregate)",               1.0,  0.0) },
-            { "AR-BRSTD",  new("ARCH",    "Brick — standard (common bond)",           1.0,  0.0) },
-            { "AR-BRELM",  new("ARCH",    "Brick — English bond",                     1.0,  0.0) },
-            { "AR-B816",   new("ARCH",    "Block 8x16 (cinder / concrete block)",     1.0,  0.0) },
-            { "AR-B88",    new("ARCH",    "Block 8x8",                                1.0,  0.0) },
-            { "AR-RROOF",  new("ARCH",    "Rough stone / irregular roof tile",        1.0,  0.0) },
-            { "AR-HBONE",  new("ARCH",    "Herringbone parquet",                      1.0,  0.0) },
-            { "AR-PARQ1",  new("ARCH",    "Parquet (standard)",                       1.0,  0.0) },
-            { "AR-SAND",   new("ARCH",    "Sand",                                     1.0,  0.0) },
-            { "AR-RSHKE",  new("ARCH",    "Roof shingles",                            1.0,  0.0) },
-
-            // Material-specific
-            { "BATTING",   new("MATERIAL","Insulation (zigzag)",                      1.0,  0.0) },
-            { "EARTH",     new("MATERIAL","Earth / soil",                             1.0,  0.0) },
-            { "CORK",      new("MATERIAL","Cork",                                     1.0,  0.0) },
-            { "NET",       new("MATERIAL","Mesh / grid (Faraday)",                    1.0,  0.0) },
-            { "NET3",      new("MATERIAL","3-direction mesh",                         1.0,  0.0) },
-            { "GRAVEL",    new("MATERIAL","Gravel",                                   1.0,  0.0) },
-            { "SWAMP",     new("MATERIAL","Swamp / wetland",                          1.0,  0.0) },
-            { "GRASS",     new("MATERIAL","Grass",                                    1.0,  0.0) },
-            { "HONEY",     new("MATERIAL","Honeycomb",                                1.0,  0.0) },
-            { "TRIANG",    new("MATERIAL","Triangles",                                1.0,  0.0) },
-            { "DOTS",      new("MATERIAL","Dots",                                     1.0,  0.0) },
-            { "CROSS",     new("MATERIAL","Crosses",                                  1.0,  0.0) },
-            { "ESCHER",    new("MATERIAL","Escher pattern",                           1.0,  0.0) },
-            { "FLEX",      new("MATERIAL","Flexible material",                        1.0,  0.0) },
-            { "ZIGZAG",    new("MATERIAL","Zigzag",                                   1.0,  0.0) },
-            { "CLAY",      new("MATERIAL","Clay",                                     1.0,  0.0) },
-            { "SACNCR",    new("MATERIAL","Sand + concrete composite",                1.0,  0.0) },
-
-            // Solid / line
-            { "SOLID",     new("SOLID",   "Solid fill",                               1.0,  0.0) },
-            { "LINE",      new("LINE",    "Parallel lines",                           1.0,  0.0) },
-        };
-
-    internal sealed record MaterialPreset(string Pattern, double Scale, double Angle, int AciColor);
-
-    // Material -> (pattern, scale, angle, ACI color). Scale assumes mm drawing units.
-    private static readonly IReadOnlyDictionary<string, MaterialPreset> s_materialPresets =
-        new Dictionary<string, MaterialPreset>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "concrete",             new("AR-CONC",  50.0,  0.0,   8)  },  // gray
-            { "reinforced-concrete",  new("ANSI37",    5.0,  0.0,   8)  },
-            { "concrete-block",       new("AR-B816",  50.0,  0.0,   8)  },
-            { "brick",                new("AR-BRSTD", 50.0,  0.0,   1)  },  // red
-            { "brick-elm",            new("AR-BRELM", 50.0,  0.0,   1)  },
-            { "insulation",           new("BATTING",  50.0,  0.0,   4)  },  // cyan
-            { "plaster",              new("ANSI31",    5.0, 45.0,   8)  },
-            { "stone",                new("AR-RROOF", 50.0,  0.0,  42)  },  // brown
-            { "earth",                new("EARTH",    50.0,  0.0,  42)  },
-            { "soil",                 new("EARTH",    50.0,  0.0,  42)  },
-            { "steel",                new("ANSI32",    5.0, 45.0,   7)  },
-            { "glass",                new("LINE",      1.0, 45.0,   4)  },
-            { "wood-cross",           new("ANSI32",    5.0,  0.0,  42)  },
-            { "wood-grain",           new("AR-HBONE",  1.0,  0.0,  42)  },
-            { "parquet",              new("AR-PARQ1",  1.0,  0.0,  42)  },
-            { "herringbone",          new("AR-HBONE",  1.0,  0.0,  42)  },
-            { "tile",                 new("AR-B816",   1.0,  0.0,   8)  },
-            { "lead-shield",          new("SOLID",     1.0,  0.0,   6)  },  // magenta — RTG/lead shielding
-            { "faraday",              new("NET",      50.0,  0.0,   3)  },  // green — Faraday cage mesh
-            { "sand",                 new("AR-SAND",  50.0,  0.0,  40)  },
-            { "cork",                 new("CORK",     50.0,  0.0,  42)  },
-            { "gravel",               new("GRAVEL",   50.0,  0.0,   8)  },
-            { "grass",                new("GRASS",    50.0,  0.0,   3)  },
-        };
+    // Pattern catalogue and material presets live in AcadMcp.Shared.Catalogs.HatchCatalog,
+    // outside AutoCAD's reach so CI can test them. Two contracts are enforced there: every
+    // published name resolves, and every material preset points at a pattern the catalogue
+    // actually lists. See CatalogContractTests.
 
     // ─────────── handler: draw_hatch ───────────
 
@@ -200,7 +119,7 @@ internal static class HatchesPluginTools
             var scale = preset.Scale * (a.ScaleMultiplier > 0 ? a.ScaleMultiplier : 1.0);
             var color = new ColorDto(0, 0, 0, preset.AciColor);
             var hatch = BuildHatchFromBoundaries(db, tr,
-                a.BoundaryHandles, preset.Pattern, scale, preset.Angle, a.Layer,
+                a.BoundaryHandles, preset.Pattern, scale, preset.AngleDeg, a.Layer,
                 color, backgroundColor: null, associative: true, annotative: false);
             return Wrap(new
             {
@@ -227,7 +146,7 @@ internal static class HatchesPluginTools
             var scale = preset.Scale * (a.ScaleMultiplier > 0 ? a.ScaleMultiplier : 1.0);
             var color = new ColorDto(0, 0, 0, preset.AciColor);
             var hatch = BuildHatchFromBoundaries(db, tr,
-                bounds, preset.Pattern, scale, preset.Angle, a.Layer,
+                bounds, preset.Pattern, scale, preset.AngleDeg, a.Layer,
                 color, backgroundColor: null, associative: true, annotative: false);
             return Wrap(new
             {
@@ -372,21 +291,17 @@ internal static class HatchesPluginTools
         RunR("acad.hatches.list_patterns", args, ct, (doc, db, tr) =>
         {
             var a = Read<HatchesListPatternsArgsDto>(args);
-            var filter = string.IsNullOrWhiteSpace(a.CategoryFilter) ? null : a.CategoryFilter;
-            var list = new List<object>();
-            foreach (var kv in s_patternCatalog.OrderBy(k => k.Value.Category).ThenBy(k => k.Key))
-            {
-                if (filter is not null && !string.Equals(kv.Value.Category, filter, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                list.Add(new
+            var list = HatchCatalog.AllPatterns(a.CategoryFilter)
+                .Select(e => (object)new
                 {
-                    name = kv.Key,
-                    category = kv.Value.Category,
-                    description = kv.Value.Description,
-                    defaultScale = kv.Value.DefaultScale,
-                    defaultAngleDeg = kv.Value.DefaultAngle
-                });
-            }
+                    name = e.Name,
+                    category = e.Category,
+                    description = e.Description,
+                    defaultScale = e.DefaultScale,
+                    defaultAngleDeg = e.DefaultAngleDeg
+                })
+                .ToList();
+
             return Wrap(new { patterns = list, count = list.Count });
         });
 
@@ -488,15 +403,5 @@ internal static class HatchesPluginTools
     // ─────────── internal: resolve material preset ───────────
 
     private static MaterialPreset ResolvePreset(string material)
-    {
-        if (string.IsNullOrWhiteSpace(material))
-            throw new ArgumentException("material preset name is required.");
-        if (!s_materialPresets.TryGetValue(material.Trim(), out var preset))
-        {
-            var all = string.Join(", ", s_materialPresets.Keys);
-            throw new ArgumentException(
-                $"Unknown material preset '{material}'. Known: {all}.");
-        }
-        return preset;
-    }
+        => HatchCatalog.ResolvePreset(material);
 }

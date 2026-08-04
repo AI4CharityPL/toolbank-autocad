@@ -27,6 +27,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
+using AcadMcp.Shared.Catalogs;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
@@ -84,45 +85,15 @@ internal static class PlumbingPluginTools
 
     // ─────────── catalog metadata ───────────
 
-    internal sealed record PlumbEntry(
-        string Name, string Category, string Domain,
-        double WidthMm, double DepthMm,
-        bool Accessible, string Standard, string Description);
-
-    private static readonly IReadOnlyList<PlumbEntry> s_fixedCatalog = new List<PlumbEntry>
-    {
-        new("PLMB-WC-FS",  "wc",     "residential", 370,  650, false, "PN-EN 997",        "Floor-standing WC"),
-        new("PLMB-WC-WH",  "wc",     "residential", 370,  540, false, "PN-EN 997",        "Wall-hung WC"),
-        new("PLMB-WC-BID", "wc",     "residential", 370,  550, false, "PN-EN 14528",      "Bidet-combo WC"),
-        new("PLMB-WC-ACC", "wc",     "universal",   800,  800, true,  "PN-EN 17210 §T.4", "Accessible WC with grab-bar markers"),
-        new("PLMB-BSN-STD","basin",  "residential", 600,  450, false, "PN-EN 14688",      "Standard wash basin"),
-        new("PLMB-BSN-DBL","basin",  "residential",1200,  450, false, "PN-EN 14688",      "Double wash basin"),
-        new("PLMB-UR-STD", "urinal", "office",      380,  340, false, "PN-EN 13407",      "Standard wall-hung urinal"),
-        new("PLMB-UR-ACC", "urinal", "universal",   380,  450, true,  "PN-EN 17210 §U.4", "Accessible lower-rim urinal"),
-    };
-
-    private static readonly IReadOnlyList<PlumbEntry> s_sizedFamilies = new List<PlumbEntry>
-    {
-        new("PLMB-BSN-ACC",  "basin",   "universal",  700,  550, true,  "PN-EN 17210 §U.2", "Accessible basin (knee clearance)"),
-        new("PLMB-SHW-SQ",   "shower",  "residential", 900,  900, false, "PN-EN 14527",      "Square shower tray"),
-        new("PLMB-SHW-WI",   "shower",  "universal",  1200,  900, true,  "PN-EN 17210 §S.3", "Walk-in barrier-free shower"),
-        new("PLMB-BT-STANDARD", "bathtub", "residential", 1700, 700, false, "PN-EN 232",     "Standard rectangular bathtub"),
-        new("PLMB-BT-MINI",     "bathtub", "residential", 1500, 700, false, "PN-EN 232",     "Mini rectangular bathtub"),
-        new("PLMB-BT-CORNER",   "bathtub", "residential", 1400,1400, false, "PN-EN 232",     "Corner quarter-round bathtub"),
-    };
+    // Catalogue data and name resolution live in AcadMcp.Shared.Catalogs.PlumbingCatalog,
+    // outside AutoCAD's reach so CI can test them. Geometry stays here.
 
     private static Task<ToolDispatchResult> ListCatalog(JsonObject args, CancellationToken ct) =>
         RunR("acad.plumbing.list_plumbing_catalog", args, ct, (doc, db, tr) =>
         {
             var a = Read<PlumbListCatalogDto>(args);
-            IEnumerable<PlumbEntry> merged = s_fixedCatalog.Concat(s_sizedFamilies);
-            if (!string.IsNullOrWhiteSpace(a.CategoryFilter))
-                merged = merged.Where(e => string.Equals(e.Category, a.CategoryFilter, StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrWhiteSpace(a.DomainFilter))
-                merged = merged.Where(e => string.Equals(e.Domain, a.DomainFilter, StringComparison.OrdinalIgnoreCase));
-            if (a.AccessibleOnly) merged = merged.Where(e => e.Accessible);
+            var list = PlumbingCatalog.All(a.CategoryFilter, a.DomainFilter, a.AccessibleOnly);
 
-            var list = merged.OrderBy(e => e.Category).ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase).ToList();
             return Wrap(new { entries = list, count = list.Count });
         });
 
@@ -151,65 +122,37 @@ internal static class PlumbingPluginTools
 
     private static bool LookupAccessibleByName(string name)
     {
-        var fixedHit = s_fixedCatalog.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (fixedHit is not null) return fixedHit.Accessible;
-        var family = FamilyOf(name);
-        var famHit = s_sizedFamilies.FirstOrDefault(e => string.Equals(e.Name, family, StringComparison.OrdinalIgnoreCase));
-        return famHit?.Accessible ?? false;
-    }
-
-    private static string FamilyOf(string name)
-    {
-        var parts = name.Split('-');
-        if (parts.Length >= 5 && int.TryParse(parts[^1], out _) && int.TryParse(parts[^2], out _))
-            return string.Join('-', parts.Take(parts.Length - 2));
-        return name;
+        // An existing block: we did not draw it this call, but the caller still needs to know
+        // whether it satisfies the barrier-free clearances, so ask the catalogue. A name that
+        // is not ours at all is reported as not accessible rather than throwing - the block
+        // exists either way and refusing here would be worse than the honest false.
+        try
+        {
+            return PlumbingCatalog.Resolve(name).Accessible;
+        }
+        catch (CatalogNameException)
+        {
+            return false;
+        }
     }
 
     private static (double W, double D, bool Accessible) BuildBlockGeometry(
         Transaction tr, BlockTableRecord btr, string name, double? sizedW, double? sizedD)
     {
-        var fixedHit = s_fixedCatalog.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (fixedHit is not null)
+        // See FurniturePluginTools for the reasoning: one resolution, then pure dispatch.
+        var r = PlumbingCatalog.Resolve(name, sizedW, sizedD);
+
+        if (r.Match == CatalogMatch.Fixed)
         {
-            BuildFixedBlock(tr, btr, fixedHit);
-            return (fixedHit.WidthMm, fixedHit.DepthMm, fixedHit.Accessible);
+            BuildFixedBlock(tr, btr, r.Entry);
+            return (r.WidthMm, r.DepthMm, r.Accessible);
         }
 
-        var family = FamilyOf(name);
-        var parts = name.Split('-');
-        double w, d;
-        if (parts.Length >= 5 && int.TryParse(parts[^2], out var wI) && int.TryParse(parts[^1], out var dI))
-        {
-            w = sizedW ?? wI;
-            d = sizedD ?? dI;
-        }
-        else if (s_sizedFamilies.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase))
-                 is { } bareFamily)
-        {
-            // A bare family name, exactly as list_plumbing_catalog reports it. The catalog
-            // publishes PLMB-BSN-ACC together with widthMm 700 / depthMm 550, but this only
-            // consulted s_sizedFamilies AFTER demanding a -W-D suffix, so the very names the
-            // catalog hands out were rejected: 6 of its 14 entries (accessible basin, all
-            // three bathtubs, both showers) could not be inserted through insert_plumbing at
-            // all. Use the family's own defaults, overridable by the caller.
-            family = bareFamily.Name;
-            w = sizedW ?? bareFamily.WidthMm;
-            d = sizedD ?? bareFamily.DepthMm;
-        }
-        else
-        {
-            throw new ArgumentException(
-                $"Block '{name}' is neither in the fixed catalog, a known sized family, nor a " +
-                "sized-family name (expected format PLMB-FAMILY-SUBTYPE-W-D). " +
-                "Names accepted here are exactly those returned by list_plumbing_catalog.");
-        }
-        var famHit = s_sizedFamilies.FirstOrDefault(e => string.Equals(e.Name, family, StringComparison.OrdinalIgnoreCase));
-        BuildSizedBlock(tr, btr, family, w, d);
-        return (w, d, famHit?.Accessible ?? false);
+        BuildSizedBlock(tr, btr, r.Family, r.WidthMm, r.DepthMm);
+        return (r.WidthMm, r.DepthMm, r.Accessible);
     }
 
-    private static void BuildFixedBlock(Transaction tr, BlockTableRecord btr, PlumbEntry e)
+    private static void BuildFixedBlock(Transaction tr, BlockTableRecord btr, PlumbingCatalogEntry e)
     {
         switch (e.Name.ToUpperInvariant())
         {

@@ -26,6 +26,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
+using AcadMcp.Shared.Catalogs;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
@@ -86,48 +87,10 @@ internal static class FurniturePluginTools
 
     // ─────────── catalog metadata ───────────
 
-    internal sealed record FurnCatalogEntry(
-        string Name, string Category, string Domain, double WidthMm, double DepthMm, string Description);
-
-    // Fixed (non-parametric) catalog entries. Sized catalog entries are enumerated
-    // programmatically in ListCatalog with common default sizes.
-    private static readonly IReadOnlyList<FurnCatalogEntry> s_fixedCatalog = new List<FurnCatalogEntry>
-    {
-        // beds (hospital)
-        new("FURN-BED-STD",    "bed",   "hospital",    900, 2000, "Standard hospital bed, two-wheel frame + pillow strip"),
-        new("FURN-BED-ICU",    "bed",   "hospital",   1000, 2200, "ICU bed, with head-monitor box + side rails"),
-        new("FURN-BED-BARIAT", "bed",   "hospital",   1200, 2200, "Bariatric bed (reinforced, wide frame)"),
-        new("FURN-BED-PED",    "bed",   "hospital",    700, 1500, "Pediatric bed with side rail"),
-        new("FURN-BED-OR",     "bed",   "hospital",    550, 2100, "Operating-room table, narrow body + trendelenburg end"),
-        new("FURN-BED-LBR",    "bed",   "hospital",   1050, 2300, "Labour/delivery bed with foot stirrups"),
-        // chairs
-        new("FURN-CHAIR-OFF",  "chair", "office",       550,  550, "Office swivel chair (round base + 5 legs)"),
-        new("FURN-CHAIR-ARM",  "chair", "residential",  800,  800, "Armchair, square"),
-        new("FURN-CHAIR-STL",  "chair", "hospital",     450,  450, "Round stool"),
-        new("FURN-CHAIR-EXAM", "chair", "hospital",     600,  600, "Medical rolling exam stool"),
-        new("FURN-CHAIR-WHL",  "chair", "hospital",     700, 1100, "Wheelchair (seat + backrest + 2 wheels)"),
-        // sofas
-        new("FURN-SOFA-2",     "sofa",  "residential", 1800,  800, "2-seat lounge sofa, cushioned"),
-        new("FURN-SOFA-3",     "sofa",  "residential", 2200,  800, "3-seat lounge sofa, cushioned"),
-        new("FURN-SOFA-CLN-2", "sofa",  "hospital",    1800,  700, "2-seat clinic waiting sofa (vinyl)"),
-        new("FURN-SOFA-CLN-3", "sofa",  "hospital",    2200,  700, "3-seat clinic waiting sofa (vinyl)"),
-    };
-
-    // Sized families: (family, category, domain, defaultW, defaultD, description)
-    private static readonly IReadOnlyList<FurnCatalogEntry> s_sizedFamilies = new List<FurnCatalogEntry>
-    {
-        new("FURN-DESK-OFF",  "desk",    "office",    1600, 800, "Office desk with two drawer lines"),
-        new("FURN-DESK-RCP",  "desk",    "office",    2400, 800, "Reception L-counter (desk + overhang)"),
-        new("FURN-DESK-NST",  "desk",    "hospital",  3000, 900, "Nurse station with raised edge"),
-        new("FURN-CBT-STR",   "cabinet", "office",     800, 400, "Storage cabinet with door-swing arc"),
-        new("FURN-CBT-MED",   "cabinet", "hospital",   900, 450, "Medical cabinet with glass-door cross indicator"),
-        new("FURN-CBT-FIL",   "cabinet", "office",    1000, 450, "File cabinet with drawer lines"),
-        new("FURN-CBT-WDR",   "cabinet", "residential",1200, 600, "Wardrobe with hanger rail indicator"),
-        new("FURN-TBL-RECT",  "table",   "office",    1200, 800, "Rectangular table"),
-        new("FURN-TBL-ROUND", "table",   "office",    1200, 1200, "Round table (W=D=diameter)"),
-        new("FURN-TBL-SQ",    "table",   "office",    1000, 1000, "Square table"),
-        new("FURN-TBL-EXAM",  "table",   "hospital",  1900, 700, "Medical exam table with pillow + paper-roll slot"),
-    };
+    // The catalogue itself lives in AcadMcp.Shared.Catalogs.FurnitureCatalog, which has no
+    // AutoCAD dependency and is therefore reachable from tests CI can run. What stays here
+    // is the half that genuinely needs AutoCAD: turning a resolution into geometry.
+    // CatalogContractTests holds the two halves to their contract.
 
     // ─────────── catalog listing ───────────
 
@@ -135,17 +98,8 @@ internal static class FurniturePluginTools
         RunR("acad.furniture.list_furniture_catalog", args, ct, (doc, db, tr) =>
         {
             var a = Read<FurnitureListCatalogArgsDto>(args);
+            var list = FurnitureCatalog.All(a.CategoryFilter, a.DomainFilter);
 
-            IEnumerable<FurnCatalogEntry> merged = s_fixedCatalog.Concat(s_sizedFamilies);
-            if (!string.IsNullOrWhiteSpace(a.CategoryFilter))
-                merged = merged.Where(e => string.Equals(e.Category, a.CategoryFilter, StringComparison.OrdinalIgnoreCase));
-            if (!string.IsNullOrWhiteSpace(a.DomainFilter))
-                merged = merged.Where(e => string.Equals(e.Domain, a.DomainFilter, StringComparison.OrdinalIgnoreCase));
-
-            var list = merged
-                .OrderBy(e => e.Category)
-                .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
             return Wrap(new { entries = list, count = list.Count });
         });
 
@@ -178,49 +132,23 @@ internal static class FurniturePluginTools
     private static (double W, double D) BuildBlockGeometry(
         Database db, Transaction tr, BlockTableRecord btr, string name, double? sizedW, double? sizedD)
     {
-        var fixedHit = s_fixedCatalog.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (fixedHit is not null)
+        // One decision, made in one place, testable without AutoCAD. Everything below it is
+        // dispatch. All three name forms - fixed entry, bare family, family with a -W-D
+        // suffix - are resolved by the shared catalogue, so a name the listing publishes
+        // cannot be rejected here without CatalogContractTests going red.
+        var r = FurnitureCatalog.Resolve(name, sizedW, sizedD);
+
+        if (r.Match == CatalogMatch.Fixed)
         {
-            BuildFixedBlock(tr, btr, fixedHit);
-            return (fixedHit.WidthMm, fixedHit.DepthMm);
+            BuildFixedBlock(tr, btr, r.Entry);
+            return (r.WidthMm, r.DepthMm);
         }
 
-        // A bare family name, exactly as list_furniture_catalog reports it. That listing is
-        // s_fixedCatalog.Concat(s_sizedFamilies), so it publishes family names together with
-        // their default width/depth - but this used to go straight to ParseSizedName, which
-        // demands a -W-D suffix and threw before any family lookup happened. 11 of the 26
-        // names the catalogue hands out (every desk, cabinet and table) could not be inserted
-        // through insert_furniture at all. Same defect as insert_plumbing.
-        var bareFamily = s_sizedFamilies.FirstOrDefault(
-            e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (bareFamily is not null)
-        {
-            double bw = sizedW ?? bareFamily.WidthMm;
-            double bd = sizedD ?? bareFamily.DepthMm;
-            BuildSizedBlock(tr, btr, bareFamily.Name, bw, bd);
-            return (bw, bd);
-        }
-
-        // sized family: strip the -W-D suffix
-        var (family, wMm, dMm) = ParseSizedName(name, sizedW, sizedD);
-        BuildSizedBlock(tr, btr, family, wMm, dMm);
-        return (wMm, dMm);
+        BuildSizedBlock(tr, btr, r.Family, r.WidthMm, r.DepthMm);
+        return (r.WidthMm, r.DepthMm);
     }
 
-    private static (string Family, double W, double D) ParseSizedName(string name, double? sizedW, double? sizedD)
-    {
-        var parts = name.Split('-');
-        if (parts.Length < 5)
-            throw new ArgumentException(
-                $"Block '{name}' is neither in the fixed catalog nor a sized-family name (expected format FURN-FAMILY-SUBTYPE-W-D).");
-        // family = everything except last two tokens (width, depth)
-        var family = string.Join('-', parts.Take(parts.Length - 2));
-        if (!int.TryParse(parts[^2], out var w) || !int.TryParse(parts[^1], out var d))
-            throw new ArgumentException($"Block '{name}': last two tokens must be integer width and depth in mm.");
-        return (family, sizedW ?? w, sizedD ?? d);
-    }
-
-    private static void BuildFixedBlock(Transaction tr, BlockTableRecord btr, FurnCatalogEntry e)
+    private static void BuildFixedBlock(Transaction tr, BlockTableRecord btr, FurnitureCatalogEntry e)
     {
         switch (e.Name.ToUpperInvariant())
         {

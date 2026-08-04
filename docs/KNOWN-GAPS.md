@@ -68,10 +68,22 @@ The XML comment says so; the field name still reads more precise than it is.
 Four defects in this sweep were a **discovery tool advertising what the action tool refuses**
 (dictionary params described as arrays; three catalogues). Nothing tests that the two agree.
 
-1. **Catalogue-vs-consumer contract test.** Would have caught all four at once. **Cannot live in
-   `AcadMcp.Tests`** — the catalogues are static data inside the plugin assembly, which needs the
-   AutoCAD managed references. **A plugin-level test project is needed and does not exist.**
-   This is the single highest-value item in this document.
+1. ~~**Catalogue-vs-consumer contract test.**~~ **Done, and without the plugin test project
+   this entry used to demand.** The premise was wrong: the blocker was never that the test
+   needed AutoCAD, it was that the catalogues *happened to live* next to code that does. They
+   are pure data — names, millimetre dimensions, prose. Moved to
+   `AcadMcp.Shared/Catalogs/`, together with the name resolution, so `AcadMcp.Tests` reaches
+   them and CI runs the contract on every push. The plugin keeps only what genuinely needs
+   AutoCAD: turning a resolution into geometry.
+
+   `CatalogContractTests` — 27 tests over all three catalogues (furniture, plumbing, hatches).
+   Verified against the real defect: reintroducing the missing family lookup makes it fail
+   with *"list_furniture_catalog publishes 26 names; insert_furniture rejects 11 of them"*,
+   naming every one. The hatch catalogue also gets a cross-reference check that the other two
+   cannot have — every material preset must name a pattern the pattern catalogue lists.
+
+   The fourth defect of the four, dictionary parameters advertised as arrays, is schema-level
+   rather than catalogue-level and is covered by `SchemaContractTests`.
 2. **Invalid-argument coverage.** `FullToolAuditTests` calls every tool with **empty** arguments.
    That blind spot hid both the empty input schemas and the exception that killed the server —
    two tools failed on *session state*, not on arguments.

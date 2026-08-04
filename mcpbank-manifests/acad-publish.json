@@ -1,0 +1,117 @@
+{
+  "id": "acad-publish",
+  "name": "acad-publish",
+  "description": "Named, reusable page setups: the plotting configuration a firm defines once and applies to every sheet in a set. A page setup is a named PlotSettings stored in the drawing - device, paper size, plot style table, rotation - distinct from a layout's own configuration, which acad-layouts.configure_plot handles and which stays the right tool when there is nothing to reuse. Define a setup, list what a drawing has, and apply one to many layouts at once with per-layout results. Not here yet: importing a setup from another drawing, the Publisher API for multi-sheet PDF, and the asynchronous plot queue.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-publish.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "apply",
+    "autocad",
+    "cad",
+    "create",
+    "delete",
+    "dwg",
+    "import",
+    "list",
+    "page",
+    "page-setup",
+    "plot",
+    "publish",
+    "setup",
+    "setups",
+    "sheets"
+  ],
+  "intent_examples": [
+    "apply page setup to layouts",
+    "apply the same plot configuration to every sheet",
+    "assign page setup",
+    "create a reusable page setup",
+    "create page setup",
+    "delete page setup",
+    "get rid of sheet setup",
+    "import page setup from the project template",
+    "jakie page setupy sa w tym rysunku",
+    "jakie sa page setupy",
+    "list page setups",
+    "make all sheets plot the same",
+    "make all sheets plot to the same paper size",
+    "named plot configuration",
+    "pokaz konfiguracje wydruku",
+    "przypisz konfiguracje wydruku do ukladu",
+    "remove named plot configuration",
+    "reusable sheet setup",
+    "show named plot configurations",
+    "skasuj page setup",
+    "ustaw ten sam wydruk na wszystkich ukladach",
+    "usun nazwane ustawienia strony",
+    "utworz nazwane ustawienia strony",
+    "what sheet setups exist",
+    "wykasuj konfiguracje wydruku",
+    "wylistuj ustawienia strony",
+    "zapisz konfiguracje wydruku pod nazwa",
+    "zastosuj ustawienia strony do arkuszy",
+    "zdefiniuj nazwane ustawienia strony dla arkuszy",
+    "zdefiniuj page setup"
+  ],
+  "tools_summary": [
+    {
+      "name": "apply_page_setup",
+      "description": "Apply a named page setup to layouts, so a whole set plots identically. Name the layouts explicitly, or pass allLayouts true - there is no 'all layouts' default, because applying a page setup to every tab in a drawing because an argument was omitted is precisely the accident worth designing out. Reports the outcome per layout rather than a count, so a partial success reads as one.",
+      "tags": [
+        "apply",
+        "page",
+        "setup"
+      ]
+    },
+    {
+      "name": "create_page_setup",
+      "description": "Define a NAMED, reusable page setup in this drawing - device, paper size, plot style table, rotation - that can then be applied to many layouts at once. Either snapshot a layout you already configured by hand (fromLayout), or state the settings explicitly; passing both is an error rather than a precedence rule nobody remembers. Refuses to overwrite an existing name unless overwrite is true, because a firm's standard page setups should not be redefined by accident.",
+      "tags": [
+        "create",
+        "page",
+        "setup"
+      ]
+    },
+    {
+      "name": "delete_page_setup",
+      "description": "Remove a named page setup from this drawing. Layouts previously configured from it keep their settings - applying a page setup copies it rather than linking to it - and the result says so, so nobody expects issued sheets to revert.",
+      "tags": [
+        "delete",
+        "page",
+        "setup"
+      ]
+    },
+    {
+      "name": "list_page_setups",
+      "description": "List the named page setups defined in this drawing, with the device, paper size, plot style table and rotation each one carries. Read-only. Call this before apply_page_setup - the names are per-drawing, so an agent cannot know them in advance.",
+      "tags": [
+        "list",
+        "page",
+        "setups"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "publish",
+    "tool_count_target": 4,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-04T20:00:31.6480523Z"
+  }
+}

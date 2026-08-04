@@ -277,10 +277,44 @@ internal static class FieldsPluginTools
                     $"MText {a.Handle} carries no field, so there is nothing to freeze. " +
                     "Use list_fields to find the ones that do.");
 
+            // Evaluate first so the value we freeze is current, not whatever was last rendered.
             try { db.EvaluateFields(); } catch { }
             var frozen = SafeText(mt);
-            mt.Contents = frozen;   // one-way, deliberately
-            return Wrap(new { affected = 1, handle = a.Handle });
+
+            // ORDER MATTERS, and getting it wrong is worse than not freezing at all.
+            // Remove the binding FIRST, write the text LAST. The reverse - set Contents, then
+            // erase the Field - leaves a dangling reference that the next EvaluateFields
+            // resolves by blanking the MText: measured, the text came back as "" instead of the
+            // frozen value. That turns a cosmetic bug into data loss.
+            bool bindingRemoved = false;
+            if (!mt.ExtensionDictionary.IsNull)
+            {
+                var ext = (DBDictionary)tr.GetObject(mt.ExtensionDictionary, OpenMode.ForWrite);
+                if (ext.Contains("ACAD_FIELD"))
+                {
+                    try
+                    {
+                        var fieldObj = tr.GetObject(ext.GetAt("ACAD_FIELD"), OpenMode.ForWrite);
+                        if (!fieldObj.IsErased) fieldObj.Erase();
+                    }
+                    catch { /* the entry still goes, below */ }
+                    ext.Remove("ACAD_FIELD");
+                    bindingRemoved = true;
+                }
+            }
+
+            mt.Contents = frozen;
+
+            // Verify rather than assume. This tool has already reported success twice while
+            // doing something other than what it claimed.
+            if (HasField(tr, mt))
+                throw new InvalidOperationException(
+                    $"MText {a.Handle} still carries a field after the freeze attempt. Nothing committed.");
+            if (string.IsNullOrEmpty(mt.Contents) && !string.IsNullOrEmpty(frozen))
+                throw new InvalidOperationException(
+                    $"MText {a.Handle} lost its text during the freeze (was '{frozen}'). Nothing committed.");
+
+            return Wrap(new { affected = 1, handle = a.Handle, bindingRemoved, frozenText = frozen });
         });
 
     private static Task<ToolDispatchResult> GetExpression(JsonObject args, CancellationToken ct) =>

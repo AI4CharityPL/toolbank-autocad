@@ -94,7 +94,12 @@ public sealed record FieldListResult(
 
 public sealed record FieldAffected(
     [property: JsonPropertyName("affected")] int Affected,
-    [property: JsonPropertyName("handle")]   string? Handle = null);
+    [property: JsonPropertyName("handle")]   string? Handle = null,
+    // Carried so a caller can confirm the freeze actually removed the binding rather than
+    // just rewriting the text. Omitting them meant the plugin's own answer was discarded by
+    // deserialization - the same truncation that previously ate revcloud's scallop count.
+    [property: JsonPropertyName("bindingRemoved")] bool? BindingRemoved = null,
+    [property: JsonPropertyName("frozenText")]     string? FrozenText = null);
 
 public sealed record FieldEvalModeResult(
     [property: JsonPropertyName("onOpen")]   bool OnOpen,

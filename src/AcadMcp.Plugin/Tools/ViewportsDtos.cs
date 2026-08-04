@@ -61,6 +61,23 @@ internal sealed record VpUcsArgsDto(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("ucs")]    string Ucs);
 
+internal sealed record VpClipByObjectArgsDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("clipHandle")]  string ClipHandle);
+
+internal sealed record VpViewDirectionArgsDto(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("preset")]    string? Preset = null,
+    [property: JsonPropertyName("direction")] Point3dDto? Direction = null);
+
+internal sealed record VpTwistArgsDto(
+    [property: JsonPropertyName("handle")]   string Handle,
+    [property: JsonPropertyName("angleDeg")] double AngleDeg);
+
+internal sealed record VpVisualStyleArgsDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("style")]  string Style);
+
 internal sealed record VpAnnotationScaleArgsDto(
     [property: JsonPropertyName("handle")]        string Handle,
     [property: JsonPropertyName("scaleName")]     string ScaleName,

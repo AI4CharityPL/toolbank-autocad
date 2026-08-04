@@ -54,6 +54,11 @@ internal static class ViewportsPluginTools
         host.Register("acad.viewports.set_viewport_layer_thaw", (a, c) => FreezeThaw(a, c, freeze: false));
         host.Register("acad.viewports.set_viewport_ucs", SetUcs);
         host.Register("acad.viewports.set_viewport_annotation_scale", SetAnnotationScale);
+        host.Register("acad.viewports.clip_viewport_by_object", ClipByObject);
+        host.Register("acad.viewports.set_viewport_view_direction", SetViewDirection);
+        host.Register("acad.viewports.set_viewport_twist", SetTwist);
+        host.Register("acad.viewports.sync_viewport_to_annotation_scale", SyncToAnnotationScale);
+        host.Register("acad.viewports.set_viewport_visual_style", SetVisualStyle);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -320,6 +325,156 @@ internal static class ViewportsPluginTools
                 appliedViewScale,
             });
         });
+
+    // ─────────── the rest of the sheet-control surface (roadmap 1.3) ───────────
+
+    private static Task<ToolDispatchResult> ClipByObject(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.clip_viewport_by_object", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpClipByObjectArgsDto>(args);
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var clipEnt = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.ClipHandle), OpenMode.ForWrite);
+            // AutoCAD accepts a closed Polyline, a Circle or an Ellipse as a viewport clip
+            // boundary. Anything else is refused here rather than assigned and left to fail
+            // later as a corrupt viewport.
+            bool usable = clipEnt switch
+            {
+                Polyline pl => pl.Closed,
+                Circle => true,
+                Ellipse => true,
+                _ => false,
+            };
+            if (!usable)
+                throw new ArgumentException(
+                    $"Clip boundary {a.ClipHandle} is a {clipEnt.GetRXClass().Name}" +
+                    (clipEnt is Polyline { Closed: false } ? " that is not closed" : "") +
+                    ". A viewport clip needs a CLOSED polyline, a circle or an ellipse.");
+
+            vp.NonRectClipEntityId = clipEnt.ObjectId;
+            vp.NonRectClipOn = true;
+            return Wrap(new { viewport = Info(db, tr, vp), clipHandle = a.ClipHandle });
+        });
+
+    private static Task<ToolDispatchResult> SetViewDirection(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_view_direction", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpViewDirectionArgsDto>(args);
+
+            Vector3d dir;
+            if (a.Direction is { } d)
+            {
+                dir = new Vector3d(d.X, d.Y, d.Z);
+                if (dir.Length < 1e-9)
+                    throw new ArgumentException("direction must not be a zero-length vector.");
+            }
+            else if (!string.IsNullOrWhiteSpace(a.Preset))
+            {
+                dir = a.Preset!.Trim().ToLowerInvariant() switch
+                {
+                    "top" or "plan"   => new Vector3d(0, 0, 1),
+                    "bottom"          => new Vector3d(0, 0, -1),
+                    "front"           => new Vector3d(0, -1, 0),
+                    "back" or "rear"  => new Vector3d(0, 1, 0),
+                    "left"            => new Vector3d(-1, 0, 0),
+                    "right"           => new Vector3d(1, 0, 0),
+                    "sw-iso" or "swiso" => new Vector3d(-1, -1, 1),
+                    "se-iso" or "seiso" => new Vector3d(1, -1, 1),
+                    "ne-iso" or "neiso" => new Vector3d(1, 1, 1),
+                    "nw-iso" or "nwiso" => new Vector3d(-1, 1, 1),
+                    _ => throw new ArgumentException(
+                        $"Unknown preset '{a.Preset}'. Known: top, bottom, front, back, left, right, " +
+                        "sw-iso, se-iso, ne-iso, nw-iso. Or pass an explicit direction vector."),
+                };
+            }
+            else
+            {
+                throw new ArgumentException("Pass either preset or direction.");
+            }
+
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            vp.ViewDirection = dir.GetNormal();
+            return Wrap(new
+            {
+                viewport = Info(db, tr, vp),
+                viewDirection = new { x = vp.ViewDirection.X, y = vp.ViewDirection.Y, z = vp.ViewDirection.Z },
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetTwist(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_twist", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpTwistArgsDto>(args);
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            // TwistAngle is radians on the entity, degrees on the wire. The unit is in the
+            // argument name for the same reason MaterialPreset.AngleDeg is.
+            vp.TwistAngle = a.AngleDeg * Math.PI / 180.0;
+            return Wrap(new
+            {
+                viewport = Info(db, tr, vp),
+                twistDeg = vp.TwistAngle * 180.0 / Math.PI,
+            });
+        });
+
+    private static Task<ToolDispatchResult> SyncToAnnotationScale(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.sync_viewport_to_annotation_scale", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpHandleArgsDto>(args);
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var scale = vp.AnnotationScale;
+            if (scale is null || scale.DrawingUnits <= 0)
+                throw new InvalidOperationException(
+                    "This viewport has no usable annotation scale to sync to. Set one with " +
+                    "set_viewport_annotation_scale.");
+
+            double before = vp.CustomScale;
+            vp.CustomScale = scale.PaperUnits / scale.DrawingUnits;
+            return Wrap(new
+            {
+                viewport = Info(db, tr, vp),
+                annotationScaleName = scale.Name,
+                customScaleBefore = before,
+                customScaleAfter = vp.CustomScale,
+                changed = Math.Abs(before - vp.CustomScale) > 1e-12,
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetVisualStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.viewports.set_viewport_visual_style", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<VpVisualStyleArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Style))
+                throw new ArgumentException("style is required, e.g. '2dWireframe', 'Hidden', 'Realistic'.");
+
+            var dict = (DBDictionary)tr.GetObject(db.VisualStyleDictionaryId, OpenMode.ForRead);
+            string? match = null;
+            foreach (DBDictionaryEntry e in dict)
+            {
+                if (string.Equals(e.Key, a.Style, StringComparison.OrdinalIgnoreCase)) { match = e.Key; break; }
+            }
+            if (match is null)
+            {
+                var known = new List<string>();
+                foreach (DBDictionaryEntry e in dict) known.Add(e.Key);
+                known.Sort(StringComparer.OrdinalIgnoreCase);
+                throw new ArgumentException(
+                    $"No visual style named '{a.Style}' in this drawing. Available: " +
+                    (known.Count == 0 ? "(none)" : string.Join(", ", known)) + ".");
+            }
+
+            var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            vp.VisualStyleId = dict.GetAt(match);
+            return Wrap(new { viewport = Info(db, tr, vp), visualStyle = match });
+        });
+
+    // set_viewport_render_mode is WITHHELD, not forgotten. Viewport.RenderMode exists in
+    // acdbmgd's metadata but its enum is in neither Autodesk.AutoCAD.DatabaseServices nor
+    // Autodesk.AutoCAD.GraphicsInterface, both of which the compiler rejects. Rather than keep
+    // guessing namespaces, it goes where refedit and the viewport layer overrides went.
+    // set_viewport_visual_style covers the same ground on any modern drawing, and
+    // set_viewport_shade_plot already controls hidden-line removal at plot time.
+    // See docs/KNOWN-GAPS.md section B.
 
     /// <summary>
     /// The viewport's own UCS, reported so a caller can verify what a set actually produced

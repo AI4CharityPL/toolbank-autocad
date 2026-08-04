@@ -12,9 +12,12 @@
   "tags": [
     "annotation",
     "autocad",
+    "by",
     "cad",
+    "clip",
     "create",
     "delete",
+    "direction",
     "dwg",
     "extents",
     "freeze",
@@ -25,6 +28,7 @@
     "list",
     "lock",
     "model",
+    "object",
     "off",
     "on",
     "plot",
@@ -32,35 +36,53 @@
     "scale",
     "set",
     "shade",
+    "style",
+    "sync",
     "thaw",
+    "to",
+    "twist",
     "ucs",
+    "view",
     "viewport",
-    "viewports"
+    "viewports",
+    "visual"
   ],
   "intent_examples": [
     "add paperspace viewport",
+    "align building to sheet",
     "annotation scale for this sheet",
     "change drawing scale of viewport",
+    "clip viewport by object",
+    "clip viewport to existing polyline",
+    "conceptual style on sheet",
     "create polygonal viewport",
     "create viewport",
     "delete viewport",
     "describe viewport",
     "dodaj okno widokowe na arkuszu",
+    "fix mismatched viewport scale",
     "freeze layers in viewport",
     "get rid of viewport",
     "get viewport details",
+    "hidden line viewport",
     "hide layers in this viewport only",
     "hide viewport contents",
     "informacje o oknie widokowym",
     "irregular viewport shape",
+    "isometric viewport",
     "jaki obszar modelu pokazuje rzutnia",
     "jakie rzutnie sa na arkuszu",
     "L-shaped viewport",
     "list viewports",
     "lock viewport",
     "make a viewport on the layout",
+    "make this viewport an elevation",
     "model area covered by viewport",
+    "napraw rozjechane skale rzutni",
     "nieprostokatne okno widokowe",
+    "non-rectangular viewport from shape",
+    "obetnij okno widokowe ksztaltem",
+    "obroc widok w rzutni",
     "odblokuj okno widokowe",
     "odmroz warstwy w rzutni",
     "per viewport layer freeze",
@@ -70,23 +92,34 @@
     "pokaz ponownie warstwy na arkuszu",
     "pokaz szczegoly rzutni",
     "prevent viewport zoom",
+    "przekrec zawartosc okna widokowego",
+    "przytnij rzutnie do obiektu",
     "remove paperspace viewport",
     "rotate coordinates in this viewport only",
+    "rotate view inside viewport",
+    "rzut izometryczny na arkuszu",
     "rzutnia niewidoczna",
     "rzutnia o dowolnym ksztalcie",
+    "rzutnia w ksztalcie narysowanej figury",
     "rzutnia z ukrytymi krawedziami",
     "scale viewport to 1:50",
     "set viewport annotation scale",
     "set viewport scale",
     "set viewport shade plot",
+    "set viewport twist angle",
     "set viewport ucs",
+    "set viewport view direction",
+    "set viewport visual style",
     "show all paperspace views",
     "show layer again in viewport",
     "skala adnotacji na arkuszu",
     "skala opisu w oknie widokowym",
     "skala rzutni 1 do 100",
+    "skala widoku nie zgadza sie z opisem",
     "skasuj okno widokowe",
     "sposob plotowania rzutni",
+    "styl wyswietlania rzutni",
+    "sync viewport scale to annotation scale",
     "text size in viewport",
     "thaw layers in viewport",
     "turn viewport off",
@@ -95,8 +128,10 @@
     "ukryj warstwy tylko na tym arkuszu",
     "unfreeze layers in this viewport",
     "unlock viewport",
+    "ustaw kierunek patrzenia rzutni",
     "ustaw skale adnotacyjna rzutni",
     "ustaw skale rzutni",
+    "ustaw styl wizualny rzutni",
     "ustaw tryb wydruku rzutni",
     "ustaw ukd dla rzutni",
     "usun rzutnie",
@@ -104,8 +139,11 @@
     "utworz rzutnie wielokatna",
     "viewport extents in model space",
     "viewport properties",
+    "viewport zoom does not match text size",
     "what does this viewport show",
     "what viewports are on this layout",
+    "widok realistyczny w oknie",
+    "widok z gory w rzutni",
     "wireframe plot mode",
     "wlacz rzutnie",
     "wlacz warstwe w rzutni",
@@ -117,13 +155,25 @@
     "wylacz okno widokowe",
     "wylacz warstwe w jednej rzutni",
     "wylistuj rzutnie",
+    "wyprostuj skrzydlo na arkuszu",
     "zabezpiecz skale rzutni",
     "zablokuj rzutnie",
     "zakres rzutni w modelu",
     "zamroz warstwy w rzutni",
-    "zmien skale okna widokowego"
+    "zmien skale okna widokowego",
+    "zsynchronizuj skale rzutni ze skala adnotacyjna"
   ],
   "tools_summary": [
+    {
+      "name": "clip_viewport_by_object",
+      "description": "Clip a viewport to an existing closed shape - a closed polyline, circle or ellipse already in paper space. Use this when create_polygonal_viewport\u0027s vertex list is the wrong tool because the outline already exists, for instance a site boundary traced earlier. The shape must be closed; an open polyline is refused rather than assigned and left to corrupt the viewport later.",
+      "tags": [
+        "clip",
+        "viewport",
+        "by",
+        "object"
+      ]
+    },
     {
       "name": "create_polygonal_viewport",
       "description": "Create a non-rectangular paperspace viewport from an ordered vertex list in paper-space coordinates. Needs at least 3 vertices; the outline is closed automatically. Use this for L-shaped or angled sheet windows.",
@@ -246,6 +296,15 @@
       ]
     },
     {
+      "name": "set_viewport_twist",
+      "description": "Rotate the view inside a viewport by an angle, without rotating the model. Use it to put a wing of a building square on the sheet when it sits at an angle in the model - the drawing reads straight while the geometry stays where the survey put it.",
+      "tags": [
+        "set",
+        "viewport",
+        "twist"
+      ]
+    },
+    {
       "name": "set_viewport_ucs",
       "description": "Give one paperspace viewport its own coordinate system, independent of the drawing\u0027s current UCS. This is what lets one sheet annotate a rotated wing of a building in that wing\u0027s own coordinates while the neighbouring viewport stays on the world axes. Pass a saved UCS name, or \u0027world\u0027 to clear it. Also sets UCSVP so the setting is stored with the viewport instead of vanishing at the next layout switch.",
       "tags": [
@@ -253,11 +312,42 @@
         "viewport",
         "ucs"
       ]
+    },
+    {
+      "name": "set_viewport_view_direction",
+      "description": "Set which way a viewport looks at the model: a named preset (top, bottom, front, back, left, right, sw-iso, se-iso, ne-iso, nw-iso) or an explicit direction vector. This is what turns one 3D model into a plan, an elevation and an isometric on the same sheet without duplicating geometry.",
+      "tags": [
+        "set",
+        "viewport",
+        "view",
+        "direction"
+      ]
+    },
+    {
+      "name": "set_viewport_visual_style",
+      "description": "Set the visual style a viewport displays and plots with - 2dWireframe, Hidden, Realistic, Conceptual, Shaded and whatever else the drawing defines. Unknown names are refused with the list of what this drawing actually has, since visual styles are per-drawing rather than fixed.",
+      "tags": [
+        "set",
+        "viewport",
+        "visual",
+        "style"
+      ]
+    },
+    {
+      "name": "sync_viewport_to_annotation_scale",
+      "description": "Set a viewport\u0027s zoom scale to match the annotation scale it already carries. set_viewport_annotation_scale does this by default; this tool is for repairing a viewport where the two have drifted apart - text sized for 1:50 on a window drawn at 1:100. Reports the scale before and after and whether anything changed.",
+      "tags": [
+        "sync",
+        "viewport",
+        "to",
+        "annotation",
+        "scale"
+      ]
     }
   ],
   "metadata": {
     "category": "viewports",
-    "tool_count_target": 14,
+    "tool_count_target": 19,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -271,6 +361,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T14:38:26.4485642Z"
+    "last_regenerated_utc": "2026-08-04T16:18:37.7189668Z"
   }
 }

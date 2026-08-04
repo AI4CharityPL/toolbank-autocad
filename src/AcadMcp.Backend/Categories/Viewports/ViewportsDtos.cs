@@ -41,6 +41,23 @@ public sealed record SetViewportAnnotationScaleArgs(
     [property: JsonPropertyName("scaleName")]     string ScaleName,
     [property: JsonPropertyName("syncViewScale")] bool SyncViewScale = true);
 
+public sealed record ClipViewportByObjectArgs(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("clipHandle")] string ClipHandle);
+
+public sealed record SetViewportViewDirectionArgs(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("preset")]    string? Preset = null,
+    [property: JsonPropertyName("direction")] Point3dDto? Direction = null);
+
+public sealed record SetViewportTwistArgs(
+    [property: JsonPropertyName("handle")]   string Handle,
+    [property: JsonPropertyName("angleDeg")] double AngleDeg);
+
+public sealed record SetViewportVisualStyleArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("style")]  string Style);
+
 public sealed record SetViewportLockArgs(
     [property: JsonPropertyName("handle")] string Handle,
     [property: JsonPropertyName("locked")] bool Locked);
@@ -118,6 +135,29 @@ public sealed record ViewportAnnotationScaleResult(
     [property: JsonPropertyName("annotationScale")]  ViewportAnnotationScaleInfo AnnotationScale,
     [property: JsonPropertyName("viewScaleSynced")]  bool ViewScaleSynced,
     [property: JsonPropertyName("appliedViewScale")] double? AppliedViewScale);
+
+public sealed record ViewportClipResult(
+    [property: JsonPropertyName("viewport")]   ViewportInfo Viewport,
+    [property: JsonPropertyName("clipHandle")] string ClipHandle);
+
+public sealed record ViewportViewDirectionResult(
+    [property: JsonPropertyName("viewport")]      ViewportInfo Viewport,
+    [property: JsonPropertyName("viewDirection")] Point3dDto ViewDirection);
+
+public sealed record ViewportTwistResult(
+    [property: JsonPropertyName("viewport")] ViewportInfo Viewport,
+    [property: JsonPropertyName("twistDeg")] double TwistDeg);
+
+public sealed record ViewportSyncScaleResult(
+    [property: JsonPropertyName("viewport")]            ViewportInfo Viewport,
+    [property: JsonPropertyName("annotationScaleName")] string AnnotationScaleName,
+    [property: JsonPropertyName("customScaleBefore")]   double CustomScaleBefore,
+    [property: JsonPropertyName("customScaleAfter")]    double CustomScaleAfter,
+    [property: JsonPropertyName("changed")]             bool Changed);
+
+public sealed record ViewportVisualStyleResult(
+    [property: JsonPropertyName("viewport")]    ViewportInfo Viewport,
+    [property: JsonPropertyName("visualStyle")] string VisualStyle);
 
 public sealed record ViewportListResult(
     [property: JsonPropertyName("viewports")] IReadOnlyList<ViewportInfo> Viewports,

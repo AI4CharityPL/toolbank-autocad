@@ -118,6 +118,7 @@ precedent set by the parametric constraint tools.
 | `refedit_begin` / `_save` / `_discard` | xrefs | Modal, stateful command sequence on the channel that produced `eInvalidInput` in `zoom_extents` and silent queueing in `undo`. Needs a supervised contract for that channel first. |
 | `set_viewport_layer_override`, `list_viewport_layer_overrides`, `clear_viewport_layer_overrides` | viewports | 2025 SDK exposes `LayerTableRecord.HasOverrides` as a plain bool with no viewport argument, and none of the `Set*InViewport` / `Get*InViewport` accessors. The capability exists in AutoCAD — this is finding the right API, not a limitation. **Per-viewport freeze, the larger half, ships and works.** |
 | `maximize_viewport` | viewports | `MAXACT`/`MSPACE` — command layer. |
+| `set_viewport_render_mode` | viewports | `Viewport.RenderMode` exists in `acdbmgd`'s metadata, but its enum is in neither `Autodesk.AutoCAD.DatabaseServices` nor `Autodesk.AutoCAD.GraphicsInterface` — the compiler rejects both. Withheld rather than guessing further namespaces. `set_viewport_visual_style` covers the same ground on any modern drawing and `set_viewport_shade_plot` already controls hidden-line removal at plot time. |
 | `ucs_from_face` | ucs | Needs subentity picking; no non-interactive form. |
 | `ucs_icon` | ucs | Display-only; nothing an API caller can observe. |
 | `set_xref_demand_load` | xrefs | Specced in the roadmap, not built. Low value. |

@@ -156,4 +156,44 @@ public static class ViewportsTools
         RequiresPlugin = true)]
     public static Task<ViewportAnnotationScaleResult> SetViewportAnnotationScale(IPluginGateway gw, SetViewportAnnotationScaleArgs args, CancellationToken ct)
         => ViewportsProxy.CallAsync<SetViewportAnnotationScaleArgs, ViewportAnnotationScaleResult>(gw, "acad.viewports.set_viewport_annotation_scale", args, T_NORMAL, ct);
+
+    // ─────────── closing out roadmap 1.3 ───────────
+
+    [McpTool("clip_viewport_by_object", "Clip a viewport to an existing closed shape - a closed polyline, circle or ellipse already in paper space. Use this when create_polygonal_viewport's vertex list is the wrong tool because the outline already exists, for instance a site boundary traced earlier. The shape must be closed; an open polyline is refused rather than assigned and left to corrupt the viewport later.", "viewports",
+        Intent = new[] { "przytnij rzutnie do obiektu", "obetnij okno widokowe ksztaltem", "clip viewport by object",
+                         "clip viewport to existing polyline", "non-rectangular viewport from shape",
+                         "rzutnia w ksztalcie narysowanej figury" },
+        RequiresPlugin = true)]
+    public static Task<ViewportClipResult> ClipViewportByObject(IPluginGateway gw, ClipViewportByObjectArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<ClipViewportByObjectArgs, ViewportClipResult>(gw, "acad.viewports.clip_viewport_by_object", args, T_NORMAL, ct);
+
+    [McpTool("set_viewport_view_direction", "Set which way a viewport looks at the model: a named preset (top, bottom, front, back, left, right, sw-iso, se-iso, ne-iso, nw-iso) or an explicit direction vector. This is what turns one 3D model into a plan, an elevation and an isometric on the same sheet without duplicating geometry.", "viewports",
+        Intent = new[] { "ustaw kierunek patrzenia rzutni", "widok z gory w rzutni", "set viewport view direction",
+                         "make this viewport an elevation", "isometric viewport", "rzut izometryczny na arkuszu" },
+        RequiresPlugin = true)]
+    public static Task<ViewportViewDirectionResult> SetViewportViewDirection(IPluginGateway gw, SetViewportViewDirectionArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<SetViewportViewDirectionArgs, ViewportViewDirectionResult>(gw, "acad.viewports.set_viewport_view_direction", args, T_NORMAL, ct);
+
+    [McpTool("set_viewport_twist", "Rotate the view inside a viewport by an angle, without rotating the model. Use it to put a wing of a building square on the sheet when it sits at an angle in the model - the drawing reads straight while the geometry stays where the survey put it.", "viewports",
+        Intent = new[] { "obroc widok w rzutni", "przekrec zawartosc okna widokowego", "set viewport twist angle",
+                         "rotate view inside viewport", "align building to sheet", "wyprostuj skrzydlo na arkuszu" },
+        RequiresPlugin = true)]
+    public static Task<ViewportTwistResult> SetViewportTwist(IPluginGateway gw, SetViewportTwistArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<SetViewportTwistArgs, ViewportTwistResult>(gw, "acad.viewports.set_viewport_twist", args, T_NORMAL, ct);
+
+    [McpTool("sync_viewport_to_annotation_scale", "Set a viewport's zoom scale to match the annotation scale it already carries. set_viewport_annotation_scale does this by default; this tool is for repairing a viewport where the two have drifted apart - text sized for 1:50 on a window drawn at 1:100. Reports the scale before and after and whether anything changed.", "viewports",
+        Intent = new[] { "zsynchronizuj skale rzutni ze skala adnotacyjna", "napraw rozjechane skale rzutni",
+                         "sync viewport scale to annotation scale", "viewport zoom does not match text size",
+                         "fix mismatched viewport scale", "skala widoku nie zgadza sie z opisem" },
+        RequiresPlugin = true)]
+    public static Task<ViewportSyncScaleResult> SyncViewportToAnnotationScale(IPluginGateway gw, ViewportHandleArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<ViewportHandleArgs, ViewportSyncScaleResult>(gw, "acad.viewports.sync_viewport_to_annotation_scale", args, T_NORMAL, ct);
+
+    [McpTool("set_viewport_visual_style", "Set the visual style a viewport displays and plots with - 2dWireframe, Hidden, Realistic, Conceptual, Shaded and whatever else the drawing defines. Unknown names are refused with the list of what this drawing actually has, since visual styles are per-drawing rather than fixed.", "viewports",
+        Intent = new[] { "ustaw styl wizualny rzutni", "widok realistyczny w oknie", "set viewport visual style",
+                         "hidden line viewport", "conceptual style on sheet", "styl wyswietlania rzutni" },
+        RequiresPlugin = true)]
+    public static Task<ViewportVisualStyleResult> SetViewportVisualStyle(IPluginGateway gw, SetViewportVisualStyleArgs args, CancellationToken ct)
+        => ViewportsProxy.CallAsync<SetViewportVisualStyleArgs, ViewportVisualStyleResult>(gw, "acad.viewports.set_viewport_visual_style", args, T_NORMAL, ct);
+
 }

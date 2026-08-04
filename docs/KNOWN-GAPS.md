@@ -32,29 +32,19 @@ tools, or keep them as an explicitly best-effort escape hatch.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
-### A4. `fields` — half the category does not evaluate
-**Status:** shipped, verified, partly broken. Found on first live run.
+### A4. `fields.convert_field_to_text` does not actually freeze
+**Status:** narrow, diagnosed, not yet fixed. Everything else in the category now works.
 
-Working, with real values: `insert_field_filename` ("Rysunek2.dwg"),
-`insert_field_layout_name` ("Model"), `insert_field_system_variable` ("DELL"),
-`set_field_evaluation_mode` / `get_field_evaluation_mode` (FIELDEVAL 31, decoded correctly),
-`convert_field_to_text`.
+It rewrites `MText.Contents` to the evaluated string but leaves the **Field object in the
+entity's extension dictionary** under `ACAD_FIELD`. So the text looks frozen while the binding
+is still live, and `get_field_expression` correctly keeps reporting `kind: "field"`.
 
-Broken:
-- **`insert_field_date`** renders `####` — AutoCAD's "recognised but could not evaluate"
-  placeholder. The `%<\AcVar Date  "...">%` form is wrong.
-- **`insert_field_object_property`** renders `####`. This is the important one: it is the tool
-  that would make a room-area label self-maintaining and remove the need for
-  `schedules.correct_all_room_areas`. The `%<\AcObjProp Object(%<\_ObjId ...>%).Area>%` form
-  is wrong — most likely the ObjId, which needs the internal object id, not the handle string
-  I passed.
-- **`list_fields` returns 0** on a drawing that visibly contains fields, so `update_fields`
-  reports 0 as well. The detection scans `MText.Contents` for `%<\Ac`, and Contents comes back
-  already evaluated for the fields that DO work — so the marker is not there to find. Detection
-  has to come off the Field object attached to the entity, not off the text.
+Only visible because the detection fix in the same pass stopped scanning text and started
+asking the extension dictionary. The old text scan would have called this a success — the
+freeze was **cosmetic from the start**, and the better detector is what exposed it.
 
-**Do not trust anything this category reports about counts until the above is fixed.** The three
-insertion tools that work are genuinely useful today; the rest are not.
+**Fix:** erase the `ACAD_FIELD` entry (and the Field object it holds) as well as rewriting
+Contents. One-way by design, so there is nothing to preserve.
 
 ### A5. Vision category (9 tools)
 **Status:** never verified.

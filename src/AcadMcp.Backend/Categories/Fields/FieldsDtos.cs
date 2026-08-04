@@ -1,4 +1,4 @@
-// DTOs for the acad-fields category.
+﻿// DTOs for the acad-fields category.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -20,6 +20,7 @@ public sealed record FieldPlacementArgs(
 public sealed record FieldDateArgs(
     [property: JsonPropertyName("position")]  Point3dDto Position,
     [property: JsonPropertyName("format")]    string Format = "yyyy-MM-dd",
+    [property: JsonPropertyName("kind")]      string Kind = "create",
     [property: JsonPropertyName("height")]    double? Height = null,
     [property: JsonPropertyName("layer")]     string? Layer = null,
     [property: JsonPropertyName("textStyle")] string? TextStyle = null,

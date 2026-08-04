@@ -1,4 +1,4 @@
-// Plugin-side DTOs for acad-fields. Wire names must match the backend's FieldsDtos.cs.
+﻿// Plugin-side DTOs for acad-fields. Wire names must match the backend's FieldsDtos.cs.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -17,6 +17,7 @@ internal sealed record FieldPlacementArgsDto(
 internal sealed record FieldDateArgsDto(
     [property: JsonPropertyName("position")]  Point3dDto Position,
     [property: JsonPropertyName("format")]    string Format = "yyyy-MM-dd",
+    [property: JsonPropertyName("kind")]      string Kind = "create",
     [property: JsonPropertyName("height")]    double? Height = null,
     [property: JsonPropertyName("layer")]     string? Layer = null,
     [property: JsonPropertyName("textStyle")] string? TextStyle = null,

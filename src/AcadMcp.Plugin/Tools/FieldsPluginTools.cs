@@ -1,9 +1,11 @@
-// AutoCAD plugin handlers for the acad-fields category.
+﻿// AutoCAD plugin handlers for the acad-fields category.
 //
 // A field is not an entity type. It is an MText whose Contents carry an %<\AcVar ...>%
 // expression, plus a Field object AutoCAD attaches when it evaluates. So:
 //   - creating a field   = create MText with the expression, then Database.EvaluateFields()
-//   - detecting a field  = look for "%<\Ac" in the raw Contents
+//   - detecting a field  = ask the extension dictionary for ACAD_FIELD. Scanning Contents for
+//                          the marker does NOT work: once a field evaluates, Contents comes
+//                          back resolved and the marker is gone.
 //   - the visible value  = MText.Text (evaluated) vs MText.Contents (raw expression)
 // That last distinction is the one to hold on to: Contents is what you wrote, Text is what the
 // sheet shows. Reporting Contents as the value would show the caller a code, not a number.
@@ -56,6 +58,29 @@ internal static class FieldsPluginTools
 
     private const string FieldMarker = "%<\\Ac";
 
+    /// <summary>
+    /// Whether this object actually carries a Field.
+    ///
+    /// Scanning MText.Contents for the field marker does NOT work: for a field that evaluates,
+    /// Contents comes back already resolved and the marker is gone. Measured - list_fields
+    /// returned 0 on a drawing whose fields were plainly visible. The Field hangs off the
+    /// entity's extension dictionary under ACAD_FIELD, so ask there. The text scan stays as a
+    /// fallback for an expression that has not evaluated yet and still shows its code.
+    /// </summary>
+    private static bool HasField(Transaction tr, DBObject obj)
+    {
+        try
+        {
+            if (!obj.ExtensionDictionary.IsNull)
+            {
+                var ext = (DBDictionary)tr.GetObject(obj.ExtensionDictionary, OpenMode.ForRead);
+                if (ext.Contains("ACAD_FIELD")) return true;
+            }
+        }
+        catch { }
+        return obj is MText mt && LooksLikeField(mt.Contents);
+    }
+
     private static bool LooksLikeField(string? contents) =>
         !string.IsNullOrEmpty(contents) && contents!.Contains(FieldMarker, StringComparison.Ordinal);
 
@@ -106,7 +131,20 @@ internal static class FieldsPluginTools
         {
             var a = Read<FieldDateArgsDto>(args);
             var fmt = string.IsNullOrWhiteSpace(a.Format) ? "yyyy-MM-dd" : a.Format;
-            var expr = $"%<\\AcVar Date \\f \"{fmt}\">%";
+            // "Date" is NOT a valid AcVar name - it renders #### (recognised, unevaluable).
+            // Measured against live AutoCAD: CreateDate and SaveDate both evaluate. Which one a
+            // title block wants differs, so the caller picks; CreateDate is the default because
+            // it is the one that does not move every time somebody saves.
+            var which = (a.Kind ?? "create").Trim().ToLowerInvariant() switch
+            {
+                "create" => "CreateDate",
+                "save"   => "SaveDate",
+                "plot"   => "PlotDate",
+                _ => throw new ArgumentException(
+                        $"kind must be 'create', 'save' or 'plot' (got '{a.Kind}'). AutoCAD has no "
+                        + "plain 'now' date field - it would need re-evaluating on every regen."),
+            };
+            var expr = $"%<\\AcVar {which} \\f \"{fmt}\">%";
             return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
                               a.TextStyle, a.Prefix, a.Suffix, "date");
         });
@@ -142,10 +180,15 @@ internal static class FieldsPluginTools
             // producing a field that silently evaluates to nothing.
             var id = AcadEnv.ResolveHandle(db, a.Handle);
             var ent = (Entity)tr.GetObject(id, OpenMode.ForRead);
-            var objIdHex = ent.ObjectId.Handle.ToString();
+            // \_ObjId takes the ObjectId POINTER value as decimal - not the handle, and not the
+            // handle converted to decimal. Measured: handle 7F (decimal 127) rendered #### in
+            // every form tried; the pointer is a number in the billions. This one substitution
+            // is the whole reason the first version of this tool never evaluated.
+            var objIdDec = ent.ObjectId.OldIdPtr.ToInt64().ToString(
+                System.Globalization.CultureInfo.InvariantCulture);
 
             var fmt = string.IsNullOrWhiteSpace(a.Format) ? "" : $" \\f \"{a.Format}\"";
-            var expr = $"%<\\AcObjProp Object(%<\\_ObjId {objIdHex}>%).{a.Property}{fmt}>%";
+            var expr = $"%<\\AcObjProp Object(%<\\_ObjId {objIdDec}>%).{a.Property}{fmt}>%";
             return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
                               a.TextStyle, a.Prefix, a.Suffix, "objectProperty");
         });
@@ -178,7 +221,7 @@ internal static class FieldsPluginTools
         foreach (ObjectId id in ms)
         {
             if (tr.GetObject(id, OpenMode.ForRead) is not MText probe) continue;
-            if (!LooksLikeField(probe.Contents)) continue;
+            if (!HasField(tr, probe)) continue;
             yield return (id, mode == OpenMode.ForRead ? probe : (MText)tr.GetObject(id, mode));
         }
     }
@@ -211,7 +254,7 @@ internal static class FieldsPluginTools
                 foreach (var h in a.Handles)
                 {
                     var obj = tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
-                    if (obj is MText mt && LooksLikeField(mt.Contents)) n++;
+                    if (obj is MText mt2 && HasField(tr, mt2)) n++;
                 }
             }
             else
@@ -229,7 +272,7 @@ internal static class FieldsPluginTools
             var obj = tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle), OpenMode.ForWrite);
             if (obj is not MText mt)
                 throw new ArgumentException($"Handle {a.Handle} is a {obj.GetRXClass().Name}, not an MText.");
-            if (!LooksLikeField(mt.Contents))
+            if (!HasField(tr, mt))
                 throw new ArgumentException(
                     $"MText {a.Handle} carries no field, so there is nothing to freeze. " +
                     "Use list_fields to find the ones that do.");
@@ -255,7 +298,7 @@ internal static class FieldsPluginTools
                     layer = mt.Layer,
                     expression = mt.Contents,
                     evaluated = SafeText(mt),
-                    kind = LooksLikeField(mt.Contents) ? "field" : "plainText",
+                    kind = HasField(tr, mt) ? "field" : "plainText",
                 }
             });
         });

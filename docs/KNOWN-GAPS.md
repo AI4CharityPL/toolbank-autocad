@@ -122,6 +122,8 @@ precedent set by the parametric constraint tools.
 | `ucs_from_face` | ucs | Needs subentity picking; no non-interactive form. |
 | `ucs_icon` | ucs | Display-only; nothing an API caller can observe. |
 | `set_xref_demand_load` | xrefs | Specced in the roadmap, not built. Low value. |
+| `set_scale_position_for_scale` | annotative | Moving ONE scale representation of an annotative object needs a per-context transform. `ObjectContexts` exposes only Has/Add/Remove; in AutoCAD this is done by grip-editing while that scale is current, and there is no managed equivalent. `sync_scale_positions` (reset all representations from the current one) ships and works. |
+| `set_paperspace_scale_link` | annotative | No API behind the roadmap's name. The link between a viewport's zoom and its annotation scale is implicit in AutoCAD, not a stored setting — `viewports.set_viewport_annotation_scale` (syncViewScale) and `viewports.sync_viewport_to_annotation_scale` are what actually control it. Name withdrawn rather than invented. |
 | Parametric constraint application | parametric | Pre-existing. Every attempt failed with `eInvalidInput` from `Editor.Command` across four approaches; implementation preserved unregistered in `ParametricPluginTools.cs`. |
 
 **Note on `overriddenLayers`:** `viewports.get_viewport_info` reports it from the bool

@@ -81,3 +81,7 @@ public sealed record EntityHandleUcsArgs(
 public sealed record RenameUcsArgs(
     [property: JsonPropertyName("oldName")] string OldName,
     [property: JsonPropertyName("newName")] string NewName);
+
+public sealed record UcsPreviousResult(
+    [property: JsonPropertyName("ucs")]               UcsInfo Ucs,
+    [property: JsonPropertyName("remainingHistory")]  int RemainingHistory);

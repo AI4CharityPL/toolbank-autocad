@@ -122,4 +122,20 @@ public static class UcsTools
         RequiresPlugin = true, ReadOnly = true)]
     public static Task<TransformPointResult> TransformPoint(IPluginGateway gw, TransformPointArgs args, CancellationToken ct)
         => UcsProxy.CallAsync<TransformPointArgs, TransformPointResult>(gw, "acad.ucs.transform_point", args, T_FAST, ct);
+
+    // ─────────── closing out roadmap 1.2 ───────────
+
+    [McpTool("create_ucs_from_view", "Set the current UCS so its XY plane faces the screen - AutoCAD's UCS View. This is what makes text and dimensions placed on an isometric or a rotated view read straight instead of lying flat on the model's own plane. The origin stays where the current UCS has it, because changing what you are looking at should not move where coordinates are measured from.", "ucs",
+        Intent = new[] { "ukd rownolegly do ekranu", "uklad wspolrzednych z widoku", "create ucs from view",
+                         "ucs view", "align ucs to screen", "tekst prostopadle do ekranu na izometrii" },
+        RequiresPlugin = true)]
+    public static Task<UcsResult> CreateUcsFromView(IPluginGateway gw, EmptyUcsArgs args, CancellationToken ct)
+        => UcsProxy.CallAsync<EmptyUcsArgs, UcsResult>(gw, "acad.ucs.create_ucs_from_view", args, T_FAST, ct);
+
+    [McpTool("set_ucs_previous", "Step back to the UCS in use before the last change, like AutoCAD's UCS Previous. The history covers changes made through these tools in this session only - a UCS changed by hand in AutoCAD is not in it, and the tool says so rather than silently doing nothing. Reports how many steps remain.", "ucs",
+        Intent = new[] { "wroc do poprzedniego ukd", "cofnij zmiane ukladu wspolrzednych", "set ucs previous",
+                         "undo ucs change", "previous coordinate system", "poprzedni uklad wspolrzednych" },
+        RequiresPlugin = true)]
+    public static Task<UcsPreviousResult> SetUcsPrevious(IPluginGateway gw, EmptyUcsArgs args, CancellationToken ct)
+        => UcsProxy.CallAsync<EmptyUcsArgs, UcsPreviousResult>(gw, "acad.ucs.set_ucs_previous", args, T_FAST, ct);
 }

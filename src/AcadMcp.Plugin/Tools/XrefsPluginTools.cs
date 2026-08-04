@@ -62,6 +62,7 @@ internal static class XrefsPluginTools
 
         host.Register("acad.xrefs.clip_xref_rect", ClipRect);
         host.Register("acad.xrefs.clip_xref_polygonal", ClipPolygonal);
+        host.Register("acad.xrefs.clip_xref_by_object", ClipByObject);
         host.Register("acad.xrefs.invert_xref_clip", InvertClip);
         host.Register("acad.xrefs.delete_xref_clip", DeleteClip);
         host.Register("acad.xrefs.set_xref_clip_display", SetClipDisplay);
@@ -619,6 +620,57 @@ internal static class XrefsPluginTools
 
             // A two-point definition is AutoCAD's own rectangular clip form.
             var pts = new Point2dCollection { new Point2d(x1, y1), new Point2d(x2, y2) };
+            return ApplyClip(db, tr, br, pts, a.Inverted);
+        });
+
+    private static Task<ToolDispatchResult> ClipByObject(JsonObject args, CancellationToken ct) =>
+        Run("acad.xrefs.clip_xref_by_object", args, ct, (doc, db, tr) =>
+        {
+            // Same clip as clip_xref_polygonal, but reading the outline from geometry that
+            // already exists rather than from a vertex list. On a real project the boundary is
+            // usually already drawn - a site outline, a fire compartment, a lease line - and
+            // retyping its coordinates is both tedious and a chance to get them wrong.
+            var a = Read<XrefClipByObjectArgsDto>(args);
+            var br = OpenInsert(db, tr, a.Handle, OpenMode.ForWrite);
+            var boundary = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.BoundaryHandle), OpenMode.ForRead);
+
+            var pts = new Point2dCollection();
+            switch (boundary)
+            {
+                case Polyline pl:
+                    if (!pl.Closed)
+                        throw new ArgumentException(
+                            $"Boundary {a.BoundaryHandle} is an open polyline. A clip needs a closed outline.");
+                    for (int i = 0; i < pl.NumberOfVertices; i++)
+                    {
+                        var p2 = pl.GetPoint2dAt(i);
+                        pts.Add(p2);
+                    }
+                    break;
+
+                case Circle c:
+                    // A clip boundary is a polygon, so approximate the circle. 64 segments keeps
+                    // the error under about 0.1% of the radius, which is finer than any plotted
+                    // line width at architectural scales.
+                    const int segments = 64;
+                    for (int i = 0; i < segments; i++)
+                    {
+                        double t = 2.0 * Math.PI * i / segments;
+                        pts.Add(new Point2d(c.Center.X + c.Radius * Math.Cos(t),
+                                            c.Center.Y + c.Radius * Math.Sin(t)));
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentException(
+                        $"Boundary {a.BoundaryHandle} is a {boundary.GetRXClass().Name}. " +
+                        "Use a closed polyline or a circle.");
+            }
+
+            if (pts.Count < 3)
+                throw new ArgumentException($"Boundary {a.BoundaryHandle} has fewer than 3 distinct points.");
+            if (pts[0].GetDistanceTo(pts[pts.Count - 1]) > 1e-9) pts.Add(pts[0]);
+
             return ApplyClip(db, tr, br, pts, a.Inverted);
         });
 

@@ -456,12 +456,25 @@ is not: those ratios say *everything built works*, not *everything planned was b
 
 | Category | Planned | Built | Withheld with reason | Simply not built |
 |---|---:|---:|---:|---:|
-| `acad-xrefs` | 26 | 21 | 4 | 1 |
-| `acad-ucs` | 18 | 13 | 2 | 3 |
-| `acad-viewports` | 24 | 14 | 4 | 6 |
+| `acad-xrefs` | 26 | 22 | 4 | 0 |
+| `acad-ucs` | 18 | 15 | 2 | 0 |
+| `acad-viewports` | 24 | 19 | 5 | 0 |
 | `acad-fields` | 16 | 12 | 0 | 4 |
-| `acad-annotative` | 14 | 15 | 0 | −1 |
-| **Total** | **98** | **75** | **10** | **13** |
+| `acad-annotative` | 14 | 15 | 2 | −1 |
+| **Total** | **98** | **83** | **13** | **4** |
+
+**Updated 2026-08-04 (second pass).** Four categories are now closed out. Two roadmap entries
+turned out not to be missing tools at all: `bind_xref_insert` is `bind_xref` with
+`insertMode: true`, and `rotate_ucs_x/y/z` is one `rotate_ucs` with an axis argument — the
+roadmap was sketching capability, not naming an API.
+
+The 4 remaining are all in `acad-fields`: `insert_field_area`, `insert_field_formula`,
+`insert_field_plot_info`, `insert_field_block_attribute` and `set_field_format` — five names
+against four slots because `insert_field_area` overlaps `insert_field_object_property`. They
+need the same kind of controlled experiment the field-expression syntax needed the first time
+(ten candidate expressions in one run), not a guess each.
+
+`insert_field_sheet_set_property` stays blocked on `acad-sheetsets` in Phase 2.
 
 The 10 withheld are recorded in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B with the reason for
 each — modal command sequences, missing SDK accessors, display-only operations with nothing an

@@ -182,4 +182,12 @@ public static class XrefsTools
         RequiresPlugin = true)]
     public static Task<XrefAffected> ResetXrefLayerOverrides(IPluginGateway gw, XrefLayerResetArgs args, CancellationToken ct)
         => XrefsProxy.CallAsync<XrefLayerResetArgs, XrefAffected>(gw, "acad.xrefs.reset_xref_layer_overrides", args, T_NORMAL, ct);
+
+    [McpTool("clip_xref_by_object", "Clip an external reference to an outline that already exists in the drawing - a closed polyline or a circle - instead of retyping its coordinates. On a real project the boundary is usually already drawn: a site outline, a fire compartment, a lease line. Set inverted to clip away the inside instead of the outside. A circle is approximated with 64 segments, finer than any plotted line width.", "xrefs",
+        Intent = new[] { "przytnij xref do narysowanego obrysu", "obetnij referencje istniejaca polilinia",
+                         "clip xref by object", "clip xref to existing boundary", "use drawn outline to clip xref",
+                         "przycinanie xrefa po obiekcie" },
+        RequiresPlugin = true)]
+    public static Task<XrefAffected> ClipXrefByObject(IPluginGateway gw, ClipXrefByObjectArgs args, CancellationToken ct)
+        => XrefsProxy.CallAsync<ClipXrefByObjectArgs, XrefAffected>(gw, "acad.xrefs.clip_xref_by_object", args, T_NORMAL, ct);
 }

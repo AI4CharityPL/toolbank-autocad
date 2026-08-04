@@ -23,6 +23,7 @@
     "list",
     "origin",
     "point",
+    "previous",
     "rename",
     "restore",
     "rotate",
@@ -30,6 +31,7 @@
     "set",
     "transform",
     "ucs",
+    "view",
     "world",
     "zaxis"
   ],
@@ -37,12 +39,15 @@
     "aktualny uklad wspolrzednych",
     "align ucs to angled wall",
     "align ucs to entity",
+    "align ucs to screen",
     "back to wcs",
     "change ucs name",
+    "cofnij zmiane ukladu wspolrzednych",
     "convert ucs coordinates to wcs",
     "coordinate system from existing geometry",
     "create ucs from 3 points",
     "create ucs from object",
+    "create ucs from view",
     "create ucs from z axis",
     "current ucs origin and axes",
     "define coordinate system by normal",
@@ -64,6 +69,8 @@
     "obroc uklad wspolrzednych",
     "obrot ukladu o kat",
     "pokaz biezacy uklad",
+    "poprzedni uklad wspolrzednych",
+    "previous coordinate system",
     "przelicz punkt miedzy ukladami",
     "przeliczenie wspolrzednych",
     "przemianuj ucs",
@@ -78,6 +85,7 @@
     "rotate ucs",
     "save named ucs",
     "set local origin",
+    "set ucs previous",
     "set ucs three point",
     "set ucs to world",
     "shift coordinate system origin",
@@ -85,13 +93,18 @@
     "skasuj ucs",
     "store current coordinate system",
     "switch to saved coordinate system",
+    "tekst prostopadle do ekranu na izometrii",
     "transform point between coordinate systems",
     "translate point to another ucs",
     "turn coordinate system",
     "ucs on inclined plane",
+    "ucs view",
+    "ukd rownolegly do ekranu",
     "uklad dla polaci dachu",
     "uklad na plaszczyznie pochylej",
     "uklad wedlug istniejacego elementu",
+    "uklad wspolrzednych z widoku",
+    "undo ucs change",
     "ustaw origin ucs",
     "ustaw ucs na world",
     "ustaw ucs wedlug obiektu",
@@ -103,6 +116,7 @@
     "what coordinate system is active",
     "what ucs exist in this drawing",
     "wroc do globalnego ukladu",
+    "wroc do poprzedniego ukd",
     "wykasuj uklad wspolrzednych",
     "wylistuj uklady wspolrzednych",
     "wyrownaj uklad do encji",
@@ -131,6 +145,16 @@
         "ucs",
         "from",
         "entity"
+      ]
+    },
+    {
+      "name": "create_ucs_from_view",
+      "description": "Set the current UCS so its XY plane faces the screen - AutoCAD\u0027s UCS View. This is what makes text and dimensions placed on an isometric or a rotated view read straight instead of lying flat on the model\u0027s own plane. The origin stays where the current UCS has it, because changing what you are looking at should not move where coordinates are measured from.",
+      "tags": [
+        "create",
+        "ucs",
+        "from",
+        "view"
       ]
     },
     {
@@ -209,6 +233,15 @@
       ]
     },
     {
+      "name": "set_ucs_previous",
+      "description": "Step back to the UCS in use before the last change, like AutoCAD\u0027s UCS Previous. The history covers changes made through these tools in this session only - a UCS changed by hand in AutoCAD is not in it, and the tool says so rather than silently doing nothing. Reports how many steps remain.",
+      "tags": [
+        "set",
+        "ucs",
+        "previous"
+      ]
+    },
+    {
       "name": "set_ucs_world",
       "description": "Reset the current UCS to WCS. Every tool in the bank interprets coordinates in WCS by default, so this returns the drawing to the state those tools assume.",
       "tags": [
@@ -228,7 +261,7 @@
   ],
   "metadata": {
     "category": "ucs",
-    "tool_count_target": 13,
+    "tool_count_target": 15,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -242,6 +275,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T09:34:04.2587559Z"
+    "last_regenerated_utc": "2026-08-04T16:43:02.0774661Z"
   }
 }

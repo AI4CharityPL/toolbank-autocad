@@ -140,3 +140,8 @@ public sealed record XrefClipResult(
 public sealed record XrefAffected(
     [property: JsonPropertyName("affected")]  int Affected,
     [property: JsonPropertyName("blockName")] string? BlockName = null);
+
+public sealed record ClipXrefByObjectArgs(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("boundaryHandle")] string BoundaryHandle,
+    [property: JsonPropertyName("inverted")]       bool Inverted = false);

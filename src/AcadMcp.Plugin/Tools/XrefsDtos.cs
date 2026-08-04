@@ -67,3 +67,8 @@ internal sealed record XrefLayerOverrideArgsDto(
 internal sealed record XrefLayerResetArgsDto(
     [property: JsonPropertyName("blockName")] string BlockName,
     [property: JsonPropertyName("layer")]     string? Layer = null);
+
+internal sealed record XrefClipByObjectArgsDto(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("boundaryHandle")] string BoundaryHandle,
+    [property: JsonPropertyName("inverted")]       bool Inverted = false);

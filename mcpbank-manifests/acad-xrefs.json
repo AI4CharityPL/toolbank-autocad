@@ -14,6 +14,7 @@
     "attach",
     "autocad",
     "bind",
+    "by",
     "cad",
     "clip",
     "delete",
@@ -29,6 +30,7 @@
     "list",
     "missing",
     "nested",
+    "object",
     "overlay",
     "override",
     "overrides",
@@ -53,8 +55,10 @@
     "bulk fix xref paths",
     "change xref layer colour",
     "clear reference layer overrides",
+    "clip xref by object",
     "clip xref polygon",
     "clip xref rectangle",
+    "clip xref to existing boundary",
     "cofnij wyszarzenie",
     "convert xref to block",
     "crop external reference",
@@ -86,6 +90,7 @@
     "napraw sciezke referencji",
     "napraw wszystkie sciezki xrefow",
     "obetnij referencje do obszaru",
+    "obetnij referencje istniejaca polilinia",
     "obetnij referencje po obrysie",
     "odblokuj caly podklad",
     "odlacz xref",
@@ -109,7 +114,9 @@
     "przekieruj podklad",
     "przeladuj wszystkie xrefy",
     "przeladuj xref",
+    "przycinanie xrefa po obiekcie",
     "przytnij podklad do konturu",
+    "przytnij xref do narysowanego obrysu",
     "przytnij xref prostokatem",
     "przytnij xref wielokatem",
     "przywroc oryginalne wlasciwosci podkladu",
@@ -142,6 +149,7 @@
     "ukryj referencje bez usuwania",
     "unload xref",
     "update all references",
+    "use drawn outline to clip xref",
     "usun nadpisania warstw xrefa",
     "usun przyciecie xrefa",
     "usun referencje zewnetrzna",
@@ -196,6 +204,16 @@
       "tags": [
         "bind",
         "xref"
+      ]
+    },
+    {
+      "name": "clip_xref_by_object",
+      "description": "Clip an external reference to an outline that already exists in the drawing - a closed polyline or a circle - instead of retyping its coordinates. On a real project the boundary is usually already drawn: a site outline, a fire compartment, a lease line. Set inverted to clip away the inside instead of the outside. A circle is approximated with 64 segments, finer than any plotted line width.",
+      "tags": [
+        "clip",
+        "xref",
+        "by",
+        "object"
       ]
     },
     {
@@ -363,7 +381,7 @@
   ],
   "metadata": {
     "category": "xrefs",
-    "tool_count_target": 21,
+    "tool_count_target": 22,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -377,6 +395,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-03T21:43:24.4029908Z"
+    "last_regenerated_utc": "2026-08-04T16:43:02.3344066Z"
   }
 }

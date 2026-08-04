@@ -50,6 +50,8 @@ internal static class UcsPluginTools
         host.Register("acad.ucs.get_current_ucs", GetCurrent);
         host.Register("acad.ucs.list_ucs", ListUcs);
         host.Register("acad.ucs.transform_point", TransformPoint);
+        host.Register("acad.ucs.create_ucs_from_view", CreateFromView);
+        host.Register("acad.ucs.set_ucs_previous", SetPrevious);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -68,14 +70,49 @@ internal static class UcsPluginTools
     /// <summary>Current UCS as a matrix mapping UCS -> WCS.</summary>
     private static Matrix3d CurrentMatrix(Document doc) => doc.Editor.CurrentUserCoordinateSystem;
 
+    // AutoCAD tracks a previous UCS for its own UCS command (the UCSPREV system variable), but
+    // the managed API does not expose it. So keep our own, per document, and push through the
+    // single choke point below. It only records changes made through these tools - a UCS the
+    // user changes by hand in AutoCAD is invisible to us, and set_ucs_previous says so rather
+    // than pretending to be AutoCAD's own history.
+    private static readonly Dictionary<string, Stack<Matrix3d>> s_ucsHistory = new(StringComparer.OrdinalIgnoreCase);
+    private const int UcsHistoryDepth = 32;
+
+    private static Stack<Matrix3d> HistoryFor(Document doc)
+    {
+        var key = doc.Name ?? "";
+        if (!s_ucsHistory.TryGetValue(key, out var st))
+        {
+            st = new Stack<Matrix3d>();
+            s_ucsHistory[key] = st;
+        }
+        return st;
+    }
+
+    /// <summary>Every change to the current UCS goes through here so the history stays honest.</summary>
+    private static void ApplyUcs(Document doc, Matrix3d m)
+    {
+        var st = HistoryFor(doc);
+        st.Push(doc.Editor.CurrentUserCoordinateSystem);
+        while (st.Count > UcsHistoryDepth)
+        {
+            // Trim from the bottom: a bounded stack that drops the oldest entry, so a long
+            // session cannot grow this without limit.
+            var keep = st.ToArray();
+            st.Clear();
+            for (int i = keep.Length - 2; i >= 0; i--) st.Push(keep[i]);
+        }
+        doc.Editor.CurrentUserCoordinateSystem = m;
+    }
+
     private static void SetCurrent(Document doc, Point3d origin, Vector3d x, Vector3d y)
     {
         var z = x.CrossProduct(y);
         if (z.Length < 1e-12)
             throw new ArgumentException("The X and Y directions are parallel, so they define no plane.");
-        doc.Editor.CurrentUserCoordinateSystem =
+        ApplyUcs(doc,
             Matrix3d.AlignCoordinateSystem(Point3d.Origin, Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis,
-                                           origin, x.GetNormal(), y.GetNormal(), z.GetNormal());
+                                           origin, x.GetNormal(), y.GetNormal(), z.GetNormal()));
     }
 
     private static object InfoFromMatrix(Matrix3d m, string name, bool isCurrent)
@@ -227,10 +264,52 @@ internal static class UcsPluginTools
 
     // ─────────── world / named ───────────
 
+    private static Task<ToolDispatchResult> CreateFromView(JsonObject args, CancellationToken ct) =>
+        Run("acad.ucs.create_ucs_from_view", args, ct, (doc, db, tr) =>
+        {
+            // A UCS whose XY plane faces the screen. This is what makes text and dimensions
+            // placed on an isometric or a rotated view read straight instead of lying flat on
+            // the model's own plane.
+            using var view = doc.Editor.GetCurrentView();
+            var z = view.ViewDirection.GetNormal();
+            if (z.Length < 1e-12)
+                throw new InvalidOperationException("The current view has no usable direction.");
+
+            // Pick an X that is perpendicular to Z and as close to "screen right" as possible.
+            // When looking straight down (the plan case) world Z is parallel to the view, so
+            // fall back to world X rather than producing a degenerate axis.
+            var up = Math.Abs(z.DotProduct(Vector3d.ZAxis)) > 0.999999 ? Vector3d.YAxis : Vector3d.ZAxis;
+            var x = up.CrossProduct(z).GetNormal();
+            var y = z.CrossProduct(x).GetNormal();
+
+            // Keep the origin where the current UCS has it - changing the view should not move
+            // where coordinates are measured from.
+            var origin = CurrentMatrix(doc).CoordinateSystem3d.Origin;
+            SetCurrent(doc, origin, x, y);
+            return Wrap(new { ucs = CurrentInfo(doc) });
+        });
+
+    private static Task<ToolDispatchResult> SetPrevious(JsonObject args, CancellationToken ct) =>
+        Run("acad.ucs.set_ucs_previous", args, ct, (doc, db, tr) =>
+        {
+            var st = HistoryFor(doc);
+            if (st.Count == 0)
+                throw new InvalidOperationException(
+                    "No previous UCS recorded for this drawing. This history only covers changes made " +
+                    "through these tools during this session - a UCS changed by hand in AutoCAD is not " +
+                    "in it. Use set_ucs_world, or restore_ucs with a saved name.");
+
+            // Do NOT route this through ApplyUcs: stepping back should not push another entry,
+            // or "previous" would oscillate between two states forever instead of unwinding.
+            var m = st.Pop();
+            doc.Editor.CurrentUserCoordinateSystem = m;
+            return Wrap(new { ucs = CurrentInfo(doc), remainingHistory = st.Count });
+        });
+
     private static Task<ToolDispatchResult> SetWorld(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.set_ucs_world", args, ct, (doc, db, tr) =>
         {
-            doc.Editor.CurrentUserCoordinateSystem = Matrix3d.Identity;
+            ApplyUcs(doc, Matrix3d.Identity);
             return Wrap(new { ucs = CurrentInfo(doc) });
         });
 
@@ -247,7 +326,7 @@ internal static class UcsPluginTools
         {
             var a = Read<UcsNameArgsDto>(args);
             var m = MatrixOfNamed(db, tr, a.Name);
-            doc.Editor.CurrentUserCoordinateSystem = m;
+            ApplyUcs(doc, m);
             return Wrap(new { ucs = InfoFromMatrix(m, a.Name, isCurrent: true) });
         });
 

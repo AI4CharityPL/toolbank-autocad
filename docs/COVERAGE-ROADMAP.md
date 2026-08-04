@@ -459,9 +459,20 @@ is not: those ratios say *everything built works*, not *everything planned was b
 | `acad-xrefs` | 26 | 22 | 4 | 0 |
 | `acad-ucs` | 18 | 15 | 2 | 0 |
 | `acad-viewports` | 24 | 19 | 5 | 0 |
-| `acad-fields` | 16 | 12 | 0 | 4 |
+| `acad-fields` | 16 | 17 | 0 | 0 |
 | `acad-annotative` | 14 | 15 | 2 | −1 |
-| **Total** | **98** | **83** | **13** | **4** |
+| **Total** | **98** | **88** | **13** | **0** |
+
+## Phase 1 is complete
+
+All five categories are built out: 88 tools shipped and verified against live AutoCAD, 13
+withheld with a recorded reason each in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B, nothing left
+unattempted. The one genuinely blocked item, `insert_field_sheet_set_property`, needs
+`acad-sheetsets` and moves to Phase 2 where it belongs.
+
+Two roadmap bullets turned out not to be tools at all - `bind_xref_insert` is `bind_xref` with
+`insertMode: true`, `rotate_ucs_x/y/z` is one `rotate_ucs` with an axis argument - which is why
+88 built against 98 planned is closure rather than a shortfall.
 
 **Updated 2026-08-04 (second pass).** Four categories are now closed out. Two roadmap entries
 turned out not to be missing tools at all: `bind_xref_insert` is `bind_xref` with

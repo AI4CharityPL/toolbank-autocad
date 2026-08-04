@@ -10,7 +10,10 @@
   },
   "lazy_mode": true,
   "tags": [
+    "area",
+    "attribute",
     "autocad",
+    "block",
     "cad",
     "convert",
     "date",
@@ -20,13 +23,17 @@
     "field",
     "fields",
     "filename",
+    "format",
+    "formula",
     "get",
+    "info",
     "insert",
     "layout",
     "list",
     "mode",
     "name",
     "object",
+    "plot",
     "property",
     "set",
     "system",
@@ -39,23 +46,36 @@
     "add auto-updating date",
     "aktualny tryb pol",
     "arbitrary field expression",
+    "arithmetic field expression",
+    "atrybut bloku w innym miejscu",
     "auto-updating area label",
+    "auto-updating room area",
+    "calculated field",
+    "change field decimal places",
     "convert field to static text",
     "custom field code",
     "data ktora sie aktualizuje",
     "do czego odwoluje sie pole",
     "dynamiczna data na rysunku",
+    "echo block attribute elsewhere",
+    "field bound to block tag",
     "field bound to entity area",
     "fieldeval setting",
     "file name field",
+    "format arkusza jako pole",
+    "format wyswietlania pola",
     "freeze field value",
     "gdzie sa pola dynamiczne",
     "get field evaluation mode",
     "get field expression",
+    "insert area field",
+    "insert block attribute field",
     "insert date field",
     "insert filename field",
+    "insert formula field",
     "insert layout name field",
     "insert object property field",
+    "insert plot info field",
     "insert raw field expression",
     "insert system variable field",
     "inspect field code",
@@ -64,21 +84,31 @@
     "kod pola",
     "kto rysowal jako pole",
     "list fields in drawing",
+    "live area label in square metres",
     "loginname field",
     "make field permanent text",
+    "metraz jako pole dynamiczne",
     "nazwa rysunku jako pole",
     "nazwa ukladu w tabelce",
     "numer arkusza jako pole",
+    "numer drzwi jako pole",
+    "obliczenie jako pole",
     "odswiez wartosci pol",
+    "paper size field in title block",
+    "plot scale field",
     "pokaz wyrazenie pola",
+    "pole liczace z innych pol",
     "pole powiazane z geometria",
     "powierzchnia jako pole dynamiczne",
+    "powierzchnia pomieszczenia w m2 jako pole",
     "przelicz pola teraz",
     "read fieldeval",
     "recalculate field values",
+    "reformat existing field",
     "refresh all fields",
     "sciezka pliku na rysunku",
     "set field evaluation mode",
+    "set field format",
     "sheet number field",
     "show all fields",
     "show drawing name automatically",
@@ -89,16 +119,22 @@
     "title block date field",
     "tryb aktualizacji pol",
     "update fields",
+    "urzadzenie drukujace jako pole",
     "ustaw kiedy pola sie przeliczaja",
+    "ustaw liczbe miejsc po przecinku w polu",
     "usun powiazanie pola",
     "what is this field bound to",
     "when do fields update",
     "when do fields update currently",
     "which text is a field",
     "wlasne pole acvar",
+    "wstaw pole z atrybutem bloku",
     "wstaw pole z data",
+    "wstaw pole z formula",
+    "wstaw pole z informacja o wydruku",
     "wstaw pole z nazwa arkusza",
     "wstaw pole z nazwa pliku",
+    "wstaw pole z powierzchnia",
     "wstaw pole z wlasciwoscia obiektu",
     "wstaw pole z wyrazeniem",
     "wstaw pole ze zmienna systemowa",
@@ -107,6 +143,7 @@
     "zaktualizuj pola",
     "zamien pole na tekst",
     "zamroz wartosc pola",
+    "zmien format pola",
     "zmienna systemowa na rysunku"
   ],
   "tools_summary": [
@@ -140,6 +177,25 @@
       ]
     },
     {
+      "name": "insert_field_area",
+      "description": "Place a live area label for a closed shape, converted to the units you actually annotate in. AutoCAD reports Area in square DRAWING units, so a raw area field on a room drawn in millimetres reads 24000000 - correct and useless on a plan. This divides inside the field, so the number stays live: edit the room and the label follows. units accepts mm2, cm2, m2 (default) or ha, each with a sensible precision and unit suffix you can override.",
+      "tags": [
+        "insert",
+        "field",
+        "area"
+      ]
+    },
+    {
+      "name": "insert_field_block_attribute",
+      "description": "Place a field bound to one attribute of an inserted block, found by its tag. Use it to echo a door number, an equipment ID or a title-block value somewhere else on the sheet without retyping it - change the attribute and every echo follows. An unknown tag is refused with the list of tags that block actually has.",
+      "tags": [
+        "insert",
+        "field",
+        "block",
+        "attribute"
+      ]
+    },
+    {
       "name": "insert_field_date",
       "description": "Place a date field that re-evaluates rather than freezing. format is a .NET/AutoCAD date pattern (default yyyy-MM-dd). Use this for the date cell of a title block instead of writing today\u0027s date as text.",
       "tags": [
@@ -167,6 +223,15 @@
       ]
     },
     {
+      "name": "insert_field_formula",
+      "description": "Place a field that computes an arithmetic expression, optionally over other fields. \u00272\u002B3\u0027 evaluates to 5; nest a property reference to compute from live geometry, such as a room area divided by an occupancy factor. The expression is passed through unvalidated and the evaluated result comes back with the handle, so a mistake shows up now rather than as #### at plot time.",
+      "tags": [
+        "insert",
+        "field",
+        "formula"
+      ]
+    },
+    {
       "name": "insert_field_layout_name",
       "description": "Place a field showing the name of the layout the field sits on. This is the sheet-number cell of a title block: rename the tab and every sheet updates itself.",
       "tags": [
@@ -184,6 +249,16 @@
         "field",
         "object",
         "property"
+      ]
+    },
+    {
+      "name": "insert_field_plot_info",
+      "description": "Place a field showing how this sheet will plot: PaperSize, DeviceName, PlotScale, PlotOrientation, PlotDate, PlotStyleTable or LoginName. These are the title-block cells that are wrong most often, because they are usually typed once and then the page setup changes. Several evaluate to ---- until the layout has the setting, which is AutoCAD saying \u0027not set\u0027 rather than a broken field; the evaluated value is returned so you can tell.",
+      "tags": [
+        "insert",
+        "field",
+        "plot",
+        "info"
       ]
     },
     {
@@ -215,6 +290,15 @@
       ]
     },
     {
+      "name": "set_field_format",
+      "description": "Change how an existing field displays its value - decimal places, unit format, thousands separator - without rebuilding what it is bound to. Format strings are AutoCAD\u0027s field format codes, e.g. \u0022%lu2%pr2\u0022 for two decimal places. Edits the field code rather than the text, because the text of a field is its answer, and writing that back would freeze the field into plain text.",
+      "tags": [
+        "set",
+        "field",
+        "format"
+      ]
+    },
+    {
       "name": "update_fields",
       "description": "Re-evaluate fields now. Pass handles to update specific ones, or omit them to update every field in the drawing. Returns how many were evaluated.",
       "tags": [
@@ -225,7 +309,7 @@
   ],
   "metadata": {
     "category": "fields",
-    "tool_count_target": 12,
+    "tool_count_target": 17,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -239,6 +323,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T10:12:04.8318782Z"
+    "last_regenerated_utc": "2026-08-04T19:40:56.8672216Z"
   }
 }

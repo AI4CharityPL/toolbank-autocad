@@ -44,6 +44,11 @@ internal static class FieldsPluginTools
         host.Register("acad.fields.update_fields", UpdateFields);
         host.Register("acad.fields.convert_field_to_text", ConvertToText);
         host.Register("acad.fields.get_field_expression", GetExpression);
+        host.Register("acad.fields.insert_field_area", InsertArea);
+        host.Register("acad.fields.insert_field_formula", InsertFormula);
+        host.Register("acad.fields.insert_field_plot_info", InsertPlotInfo);
+        host.Register("acad.fields.insert_field_block_attribute", InsertBlockAttribute);
+        host.Register("acad.fields.set_field_format", SetFormat);
         host.Register("acad.fields.set_field_evaluation_mode", SetEvalMode);
         host.Register("acad.fields.get_field_evaluation_mode", GetEvalMode);
     }
@@ -57,6 +62,34 @@ internal static class FieldsPluginTools
         => PluginToolRunner.RunWriteAsync(key, ct, work);
 
     private const string FieldMarker = "%<\\Ac";
+
+    /// <summary>
+    /// The RAW field code, e.g. %&lt;\AcVar CreateDate&gt;%, read from the Field object itself.
+    ///
+    /// MText.Contents is NOT the expression. For a field that has evaluated, Contents comes back
+    /// already resolved, so reading it returns the answer and calls it the question - which made
+    /// get_field_expression report the value twice and deliver precisely nothing it promised.
+    /// The header of this file already said Contents cannot be trusted for DETECTING a field;
+    /// the same is true for reading its code, and that half was missed.
+    ///
+    /// Field.GetFieldCode is the real source. Returns null when the object carries no Field.
+    /// </summary>
+    private static string? RawFieldCode(Transaction tr, DBObject obj)
+    {
+        try
+        {
+            if (obj.ExtensionDictionary.IsNull) return null;
+            var ext = (DBDictionary)tr.GetObject(obj.ExtensionDictionary, OpenMode.ForRead);
+            if (!ext.Contains("ACAD_FIELD")) return null;
+
+            var dict = (DBDictionary)tr.GetObject(ext.GetAt("ACAD_FIELD"), OpenMode.ForRead);
+            if (!dict.Contains("TEXT")) return null;
+
+            var field = (Field)tr.GetObject(dict.GetAt("TEXT"), OpenMode.ForRead);
+            return field.GetFieldCode(FieldCodeFlags.AddMarkers);
+        }
+        catch { return null; }
+    }
 
     /// <summary>
     /// Whether this object actually carries a Field.
@@ -112,7 +145,7 @@ internal static class FieldsPluginTools
             {
                 handle = handle.Handle,
                 layer = mt.Layer,
-                expression = mt.Contents,
+                expression = RawFieldCode(tr, mt) ?? mt.Contents,
                 evaluated = SafeText(mt),
                 kind,
             }
@@ -236,7 +269,7 @@ internal static class FieldsPluginTools
                 {
                     handle = mt.Handle.ToString(),
                     layer = mt.Layer,
-                    expression = mt.Contents,
+                    expression = RawFieldCode(tr, mt) ?? mt.Contents,
                     evaluated = SafeText(mt),
                     kind = "unknown",
                 });
@@ -317,6 +350,169 @@ internal static class FieldsPluginTools
             return Wrap(new { affected = 1, handle = a.Handle, bindingRemoved, frozenText = frozen });
         });
 
+    // ─────────── closing out roadmap 1.4 ───────────
+    //
+    // Every expression below was settled by one experiment rather than a guess each: candidate
+    // syntaxes placed side by side in a single run, then read back through the (now fixed)
+    // get_field_expression. What that measured, on a 6000x4000 mm rectangle:
+    //
+    //   %<\AcObjProp Object(N).Area>%                        -> 24000000.000000   (mm2, raw)
+    //   %<\AcExpr (%<\AcObjProp Object(N).Area>%)/1000000>%  -> 24.000000         (m2)
+    //   %<\AcExpr 2+3>%                                      -> 5
+    //   %<\AcVar PaperSize>%                                 -> ISO A4 (210.00 x 297.00 mm)
+    //   ...\f "%lu2%pr2"                                     -> 24000000.00
+    //
+    // N is the ObjectId POINTER as decimal, not the handle. AutoCAD stores it as Object(N)
+    // directly - the %<\_ObjId N>% wrapper you write is normalised away, which is why a regex
+    // hunting for _ObjId inside a stored field finds nothing.
+
+    private static string ObjIdOf(Database db, Transaction tr, string handle)
+    {
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle), OpenMode.ForRead);
+        return ent.ObjectId.OldIdPtr.ToInt64().ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string FmtClause(string? format) =>
+        string.IsNullOrWhiteSpace(format) ? "" : " \\f \"" + format + "\"";
+
+    private static Task<ToolDispatchResult> InsertArea(JsonObject args, CancellationToken ct) =>
+        Run("acad.fields.insert_field_area", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FieldAreaArgsDto>(args);
+            var oid = ObjIdOf(db, tr, a.Handle);
+
+            // AutoCAD reports Area in square DRAWING units. This bank draws in millimetres, so a
+            // raw area field on a room reads 24000000 - technically right and useless on a plan.
+            // Do the division inside the field so the number stays live when the room changes.
+            var (divisor, defFmt, defSuffix) = (a.Units ?? "m2").Trim().ToLowerInvariant() switch
+            {
+                "mm2" or "mm" => (1.0, "%lu2%pr0", " mm\u00b2"),
+                "cm2" or "cm" => (100.0, "%lu2%pr1", " cm\u00b2"),
+                "m2" or "m"   => (1000000.0, "%lu2%pr2", " m\u00b2"),
+                "ha"          => (10000000000.0, "%lu2%pr4", " ha"),
+                _ => throw new ArgumentException($"Unknown units '{a.Units}'. Known: mm2, cm2, m2, ha."),
+            };
+
+            var fmt = FmtClause(a.Format ?? defFmt);
+            var expr = divisor == 1.0
+                ? "%<\\AcObjProp Object(" + oid + ").Area" + fmt + ">%"
+                : "%<\\AcExpr (%<\\AcObjProp Object(" + oid + ").Area>%)/"
+                  + divisor.ToString("0.############", System.Globalization.CultureInfo.InvariantCulture)
+                  + fmt + ">%";
+
+            return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
+                              a.TextStyle, a.Prefix, a.Suffix ?? defSuffix, "area");
+        });
+
+    private static Task<ToolDispatchResult> InsertFormula(JsonObject args, CancellationToken ct) =>
+        Run("acad.fields.insert_field_formula", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FieldFormulaArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Expression))
+                throw new ArgumentException("expression is required, e.g. '2+3' or '(12.5*3)/2'.");
+
+            // Passed through unvalidated on purpose: the point of a formula field is arbitrary
+            // arithmetic, including nested %<\AcObjProp ...>% references to live geometry. The
+            // evaluated result comes back with the handle, so a wrong expression shows up now
+            // rather than at plot time, where #### is all anyone sees.
+            var expr = "%<\\AcExpr " + a.Expression + FmtClause(a.Format) + ">%";
+            return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
+                              a.TextStyle, a.Prefix, a.Suffix, "formula");
+        });
+
+    private static readonly string[] PlotInfoVars =
+        { "PaperSize", "DeviceName", "PlotScale", "PlotOrientation", "PlotDate", "PlotStyleTable", "LoginName" };
+
+    private static Task<ToolDispatchResult> InsertPlotInfo(JsonObject args, CancellationToken ct) =>
+        Run("acad.fields.insert_field_plot_info", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FieldPlotInfoArgsDto>(args);
+            var match = PlotInfoVars.FirstOrDefault(v => string.Equals(v, a.Info, StringComparison.OrdinalIgnoreCase));
+            if (match is null)
+                throw new ArgumentException($"Unknown plot info '{a.Info}'. Known: {string.Join(", ", PlotInfoVars)}.");
+
+            // Several of these evaluate to ---- until the layout has the setting: PlotDate before
+            // the first plot, PlotStyleTable with no table assigned. That is AutoCAD reporting
+            // "not set", not a broken field, and the evaluated value is returned so the caller can
+            // tell which case they are in rather than guessing.
+            var expr = "%<\\AcVar " + match + FmtClause(a.Format) + ">%";
+            return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
+                              a.TextStyle, a.Prefix, a.Suffix, "plotInfo");
+        });
+
+    private static Task<ToolDispatchResult> InsertBlockAttribute(JsonObject args, CancellationToken ct) =>
+        Run("acad.fields.insert_field_block_attribute", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FieldBlockAttributeArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Tag)) throw new ArgumentException("tag is required.");
+
+            var obj = tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle), OpenMode.ForRead);
+            if (obj is not BlockReference br)
+                throw new ArgumentException($"Handle {a.Handle} is a {obj.GetRXClass().Name}, not a block reference.");
+
+            var tags = new List<string>();
+            var attId = ObjectId.Null;
+            foreach (ObjectId id in br.AttributeCollection)
+            {
+                var att = (AttributeReference)tr.GetObject(id, OpenMode.ForRead);
+                tags.Add(att.Tag);
+                if (string.Equals(att.Tag, a.Tag, StringComparison.OrdinalIgnoreCase)) { attId = id; break; }
+            }
+            if (attId.IsNull)
+                throw new ArgumentException(
+                    "Block " + a.Handle + " has no attribute tagged '" + a.Tag + "'. Tags present: " +
+                    (tags.Count == 0 ? "(none)" : string.Join(", ", tags)) + ".");
+
+            var oid = attId.OldIdPtr.ToInt64().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var expr = "%<\\AcObjProp Object(" + oid + ").TextString" + FmtClause(a.Format) + ">%";
+            return PlaceField(db, tr, AcadEnv.ToPoint3d(a.Position), expr, a.Height, a.Layer,
+                              a.TextStyle, a.Prefix, a.Suffix, "blockAttribute");
+        });
+
+    private static Task<ToolDispatchResult> SetFormat(JsonObject args, CancellationToken ct) =>
+        Run("acad.fields.set_field_format", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SetFieldFormatArgsDto>(args);
+            var obj = tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle), OpenMode.ForWrite);
+            var code = RawFieldCode(tr, obj)
+                ?? throw new ArgumentException(
+                       "Handle " + a.Handle + " carries no field, so there is no format to set. " +
+                       "Use list_fields to find text that is actually a field.");
+
+            // Edit the field CODE, never the entity contents: contents comes back evaluated, so
+            // writing it would replace the field with its own answer and quietly turn a live
+            // field into frozen text.
+            var stripped = System.Text.RegularExpressions.Regex.Replace(code, "\\s*\\\\f\\s*\"[^\"]*\"", "");
+            int close = stripped.LastIndexOf(">%", StringComparison.Ordinal);
+            if (close < 0)
+                throw new InvalidOperationException(
+                    "Field code on " + a.Handle + " is not in a form this tool can edit: " + code);
+            var updated = stripped.Insert(close, FmtClause(a.Format));
+
+            var ext = (DBDictionary)tr.GetObject(obj.ExtensionDictionary, OpenMode.ForRead);
+            var dict = (DBDictionary)tr.GetObject(ext.GetAt("ACAD_FIELD"), OpenMode.ForRead);
+            var field = (Field)tr.GetObject(dict.GetAt("TEXT"), OpenMode.ForWrite);
+            field.SetFieldCode(updated);
+
+            // Field.Evaluate on its own re-runs the field but does NOT push the new result into
+            // the owning MText, so the code changed and the visible text did not - the tool
+            // reported a new format over an unchanged number. db.EvaluateFields is what update_
+            // fields uses and what actually refreshes the text.
+            try { db.EvaluateFields(); }
+            catch (Exception ex) { throw new InvalidOperationException("EvaluateFields failed: " + ex.Message, ex); }
+
+            return Wrap(new
+            {
+                field = new
+                {
+                    handle = a.Handle,
+                    expression = RawFieldCode(tr, obj) ?? updated,
+                    evaluated = obj is MText m ? SafeText(m) : null,
+                    format = a.Format,
+                }
+            });
+        });
+
     private static Task<ToolDispatchResult> GetExpression(JsonObject args, CancellationToken ct) =>
         Run("acad.fields.get_field_expression", args, ct, (doc, db, tr) =>
         {
@@ -330,7 +526,7 @@ internal static class FieldsPluginTools
                 {
                     handle = a.Handle,
                     layer = mt.Layer,
-                    expression = mt.Contents,
+                    expression = RawFieldCode(tr, mt) ?? mt.Contents,
                     evaluated = SafeText(mt),
                     kind = HasField(tr, mt) ? "field" : "plainText",
                 }

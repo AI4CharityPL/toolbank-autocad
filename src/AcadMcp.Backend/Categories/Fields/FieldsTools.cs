@@ -113,4 +113,41 @@ public static class FieldsTools
         RequiresPlugin = true, ReadOnly = true)]
     public static Task<FieldEvalModeResult> GetFieldEvaluationMode(IPluginGateway gw, EmptyFieldsArgs args, CancellationToken ct)
         => FieldsProxy.CallAsync<EmptyFieldsArgs, FieldEvalModeResult>(gw, "acad.fields.get_field_evaluation_mode", args, T_FAST, ct);
+
+    // ─────────── closing out roadmap 1.4 ───────────
+
+    [McpTool("insert_field_area", "Place a live area label for a closed shape, converted to the units you actually annotate in. AutoCAD reports Area in square DRAWING units, so a raw area field on a room drawn in millimetres reads 24000000 - correct and useless on a plan. This divides inside the field, so the number stays live: edit the room and the label follows. units accepts mm2, cm2, m2 (default) or ha, each with a sensible precision and unit suffix you can override.", "fields",
+        Intent = new[] { "wstaw pole z powierzchnia", "powierzchnia pomieszczenia w m2 jako pole", "insert area field",
+                         "live area label in square metres", "auto-updating room area", "metraz jako pole dynamiczne" },
+        RequiresPlugin = true)]
+    public static Task<FieldResult> InsertFieldArea(IPluginGateway gw, FieldAreaArgs args, CancellationToken ct)
+        => FieldsProxy.CallAsync<FieldAreaArgs, FieldResult>(gw, "acad.fields.insert_field_area", args, T_NORMAL, ct);
+
+    [McpTool("insert_field_formula", "Place a field that computes an arithmetic expression, optionally over other fields. '2+3' evaluates to 5; nest a property reference to compute from live geometry, such as a room area divided by an occupancy factor. The expression is passed through unvalidated and the evaluated result comes back with the handle, so a mistake shows up now rather than as #### at plot time.", "fields",
+        Intent = new[] { "wstaw pole z formula", "obliczenie jako pole", "insert formula field",
+                         "calculated field", "arithmetic field expression", "pole liczace z innych pol" },
+        RequiresPlugin = true)]
+    public static Task<FieldResult> InsertFieldFormula(IPluginGateway gw, FieldFormulaArgs args, CancellationToken ct)
+        => FieldsProxy.CallAsync<FieldFormulaArgs, FieldResult>(gw, "acad.fields.insert_field_formula", args, T_NORMAL, ct);
+
+    [McpTool("insert_field_plot_info", "Place a field showing how this sheet will plot: PaperSize, DeviceName, PlotScale, PlotOrientation, PlotDate, PlotStyleTable or LoginName. These are the title-block cells that are wrong most often, because they are usually typed once and then the page setup changes. Several evaluate to ---- until the layout has the setting, which is AutoCAD saying 'not set' rather than a broken field; the evaluated value is returned so you can tell.", "fields",
+        Intent = new[] { "wstaw pole z informacja o wydruku", "format arkusza jako pole", "insert plot info field",
+                         "paper size field in title block", "plot scale field", "urzadzenie drukujace jako pole" },
+        RequiresPlugin = true)]
+    public static Task<FieldResult> InsertFieldPlotInfo(IPluginGateway gw, FieldPlotInfoArgs args, CancellationToken ct)
+        => FieldsProxy.CallAsync<FieldPlotInfoArgs, FieldResult>(gw, "acad.fields.insert_field_plot_info", args, T_NORMAL, ct);
+
+    [McpTool("insert_field_block_attribute", "Place a field bound to one attribute of an inserted block, found by its tag. Use it to echo a door number, an equipment ID or a title-block value somewhere else on the sheet without retyping it - change the attribute and every echo follows. An unknown tag is refused with the list of tags that block actually has.", "fields",
+        Intent = new[] { "wstaw pole z atrybutem bloku", "numer drzwi jako pole", "insert block attribute field",
+                         "echo block attribute elsewhere", "field bound to block tag", "atrybut bloku w innym miejscu" },
+        RequiresPlugin = true)]
+    public static Task<FieldResult> InsertFieldBlockAttribute(IPluginGateway gw, FieldBlockAttributeArgs args, CancellationToken ct)
+        => FieldsProxy.CallAsync<FieldBlockAttributeArgs, FieldResult>(gw, "acad.fields.insert_field_block_attribute", args, T_NORMAL, ct);
+
+    [McpTool("set_field_format", "Change how an existing field displays its value - decimal places, unit format, thousands separator - without rebuilding what it is bound to. Format strings are AutoCAD's field format codes, e.g. \"%lu2%pr2\" for two decimal places. Edits the field code rather than the text, because the text of a field is its answer, and writing that back would freeze the field into plain text.", "fields",
+        Intent = new[] { "zmien format pola", "ustaw liczbe miejsc po przecinku w polu", "set field format",
+                         "change field decimal places", "reformat existing field", "format wyswietlania pola" },
+        RequiresPlugin = true)]
+    public static Task<FieldResult> SetFieldFormat(IPluginGateway gw, SetFieldFormatArgs args, CancellationToken ct)
+        => FieldsProxy.CallAsync<SetFieldFormatArgs, FieldResult>(gw, "acad.fields.set_field_format", args, T_NORMAL, ct);
 }

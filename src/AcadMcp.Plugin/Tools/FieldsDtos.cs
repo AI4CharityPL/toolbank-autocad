@@ -72,3 +72,49 @@ internal sealed record FieldEvalModeArgsDto(
     [property: JsonPropertyName("onSave")]  bool OnSave = true,
     [property: JsonPropertyName("onPlot")]  bool OnPlot = true,
     [property: JsonPropertyName("onRegen")] bool OnRegen = true);
+
+internal sealed record FieldAreaArgsDto(
+    [property: JsonPropertyName("position")]  Point3dDto Position,
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("units")]     string Units = "m2",
+    [property: JsonPropertyName("format")]    string? Format = null,
+    [property: JsonPropertyName("height")]    double? Height = null,
+    [property: JsonPropertyName("layer")]     string? Layer = null,
+    [property: JsonPropertyName("textStyle")] string? TextStyle = null,
+    [property: JsonPropertyName("prefix")]    string? Prefix = null,
+    [property: JsonPropertyName("suffix")]    string? Suffix = null);
+
+internal sealed record FieldFormulaArgsDto(
+    [property: JsonPropertyName("position")]   Point3dDto Position,
+    [property: JsonPropertyName("expression")] string Expression,
+    [property: JsonPropertyName("format")]     string? Format = null,
+    [property: JsonPropertyName("height")]     double? Height = null,
+    [property: JsonPropertyName("layer")]      string? Layer = null,
+    [property: JsonPropertyName("textStyle")]  string? TextStyle = null,
+    [property: JsonPropertyName("prefix")]     string? Prefix = null,
+    [property: JsonPropertyName("suffix")]     string? Suffix = null);
+
+internal sealed record FieldPlotInfoArgsDto(
+    [property: JsonPropertyName("position")]  Point3dDto Position,
+    [property: JsonPropertyName("info")]      string Info,
+    [property: JsonPropertyName("format")]    string? Format = null,
+    [property: JsonPropertyName("height")]    double? Height = null,
+    [property: JsonPropertyName("layer")]     string? Layer = null,
+    [property: JsonPropertyName("textStyle")] string? TextStyle = null,
+    [property: JsonPropertyName("prefix")]    string? Prefix = null,
+    [property: JsonPropertyName("suffix")]    string? Suffix = null);
+
+internal sealed record FieldBlockAttributeArgsDto(
+    [property: JsonPropertyName("position")]  Point3dDto Position,
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("tag")]       string Tag,
+    [property: JsonPropertyName("format")]    string? Format = null,
+    [property: JsonPropertyName("height")]    double? Height = null,
+    [property: JsonPropertyName("layer")]     string? Layer = null,
+    [property: JsonPropertyName("textStyle")] string? TextStyle = null,
+    [property: JsonPropertyName("prefix")]    string? Prefix = null,
+    [property: JsonPropertyName("suffix")]    string? Suffix = null);
+
+internal sealed record SetFieldFormatArgsDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("format")] string Format);

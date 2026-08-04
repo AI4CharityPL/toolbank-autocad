@@ -1,7 +1,9 @@
 ﻿// AutoCAD plugin handlers for the acad-viewports category.
 //
-// create_viewport and set_viewport_scale are NOT here - they stay under acad.layouts.* and the
-// backend points at those. One implementation cannot drift from itself.
+// create_viewport and set_viewport_scale ARE here. They were briefly pointed at the
+// acad.layouts.* handlers to avoid duplication; those answer {entity:...} while this
+// category's contract is {viewport:...}, so the handle came back null and nine downstream
+// tools failed on it. Sharing an implementation is only free when the contracts match.
 //
 // Per-viewport layer state lives in two different places, which is the thing to know:
 //   frozen    -> on the Viewport, via FreezeLayersInViewport / ThawLayersInViewport /

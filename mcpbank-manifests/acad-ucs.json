@@ -1,0 +1,247 @@
+{
+  "id": "acad-ucs",
+  "name": "acad-ucs",
+  "description": "User Coordinate System management: create UCSs from points, objects, views or faces, rotate them about any axis, save and restore them by name. Every drawing tool in the bank works in WCS by default; a UCS is what makes rotated, inclined or sectioned work addressable. See docs/engineering-rules/43-coordinate-systems.md for the contract.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-ucs.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "3point",
+    "autocad",
+    "cad",
+    "create",
+    "current",
+    "delete",
+    "dwg",
+    "entity",
+    "from",
+    "get",
+    "list",
+    "origin",
+    "point",
+    "rename",
+    "restore",
+    "rotate",
+    "save",
+    "set",
+    "transform",
+    "ucs",
+    "world",
+    "zaxis"
+  ],
+  "intent_examples": [
+    "aktualny uklad wspolrzednych",
+    "align ucs to angled wall",
+    "align ucs to entity",
+    "back to wcs",
+    "change ucs name",
+    "convert ucs coordinates to wcs",
+    "coordinate system from existing geometry",
+    "create ucs from 3 points",
+    "create ucs from object",
+    "create ucs from z axis",
+    "current ucs origin and axes",
+    "define coordinate system by normal",
+    "define coordinate system by origin and axes",
+    "delete named ucs",
+    "drop ucs by name",
+    "get current ucs",
+    "jaki jest aktualny ucs",
+    "jakie ucs sa zapisane",
+    "list named ucs",
+    "load ucs by name",
+    "move ucs origin",
+    "name this ucs",
+    "nazwij biezacy ucs",
+    "nowa nazwa ukladu",
+    "nowy punkt zerowy",
+    "nowy uklad na podstawie punktow",
+    "obroc ucs wokol osi z",
+    "obroc uklad wspolrzednych",
+    "obrot ukladu o kat",
+    "pokaz biezacy uklad",
+    "przelicz punkt miedzy ukladami",
+    "przeliczenie wspolrzednych",
+    "przemianuj ucs",
+    "przesun poczatek ukladu",
+    "przywroc uklad swiatowy",
+    "przywroc zapisany uklad",
+    "remove saved coordinate system",
+    "rename named ucs",
+    "rename saved coordinate system",
+    "reset coordinate system",
+    "restore named ucs",
+    "rotate ucs",
+    "save named ucs",
+    "set local origin",
+    "set ucs three point",
+    "set ucs to world",
+    "shift coordinate system origin",
+    "show all coordinate systems",
+    "skasuj ucs",
+    "store current coordinate system",
+    "switch to saved coordinate system",
+    "transform point between coordinate systems",
+    "translate point to another ucs",
+    "turn coordinate system",
+    "ucs on inclined plane",
+    "uklad dla polaci dachu",
+    "uklad na plaszczyznie pochylej",
+    "uklad wedlug istniejacego elementu",
+    "ustaw origin ucs",
+    "ustaw ucs na world",
+    "ustaw ucs wedlug obiektu",
+    "usun nazwany uklad",
+    "utworz ucs z kierunku osi z",
+    "utworz uklad wspolrzednych z trzech punktow",
+    "uzyj zapisanego ukladu",
+    "wczytaj nazwany ucs",
+    "what coordinate system is active",
+    "what ucs exist in this drawing",
+    "wroc do globalnego ukladu",
+    "wykasuj uklad wspolrzednych",
+    "wylistuj uklady wspolrzednych",
+    "wyrownaj uklad do encji",
+    "zachowaj uklad pod nazwa",
+    "zamien wspolrzedne ucs na world",
+    "zapisane uklady",
+    "zapisz uklad wspolrzednych",
+    "zdefiniuj ucs przez punkty",
+    "zmien nazwe ukladu"
+  ],
+  "tools_summary": [
+    {
+      "name": "create_ucs_3point",
+      "description": "Define a UCS from three points: origin, a point on the positive X axis, and a point on the positive-Y side. This is the general case - it fixes origin, rotation and plane in one call. Pass a name to save it; makeCurrent defaults to true.",
+      "tags": [
+        "create",
+        "ucs",
+        "3point"
+      ]
+    },
+    {
+      "name": "create_ucs_from_entity",
+      "description": "Align the UCS to an existing entity\u0027s own plane and orientation, given its handle. The fastest way to start drawing on something already in the model - a wall face, a sloped polyline, a rotated block.",
+      "tags": [
+        "create",
+        "ucs",
+        "from",
+        "entity"
+      ]
+    },
+    {
+      "name": "create_ucs_origin",
+      "description": "Move the UCS origin without changing its axis directions. The cheapest useful UCS: work near a building corner in small local coordinates instead of large absolute ones.",
+      "tags": [
+        "create",
+        "ucs",
+        "origin"
+      ]
+    },
+    {
+      "name": "create_ucs_zaxis",
+      "description": "Define a UCS from an origin and a Z-axis direction; X and Y are derived. Use this for work on an inclined plane - a roof slope, a ramp, a sloped section.",
+      "tags": [
+        "create",
+        "ucs",
+        "zaxis"
+      ]
+    },
+    {
+      "name": "delete_ucs",
+      "description": "Delete a named UCS. The current UCS is unaffected even if it happens to match the deleted definition.",
+      "tags": [
+        "delete",
+        "ucs"
+      ]
+    },
+    {
+      "name": "get_current_ucs",
+      "description": "Return the current UCS: origin and the three axis vectors in WCS, plus whether it is the world system. Read-only.",
+      "tags": [
+        "get",
+        "current",
+        "ucs"
+      ]
+    },
+    {
+      "name": "list_ucs",
+      "description": "List every named UCS in the drawing with its origin and axes, plus the current one. Read-only. Call this before restore_ucs to see what names exist.",
+      "tags": [
+        "list",
+        "ucs"
+      ]
+    },
+    {
+      "name": "rename_ucs",
+      "description": "Rename a saved UCS. The new name must be a valid AutoCAD symbol name and must not already exist.",
+      "tags": [
+        "rename",
+        "ucs"
+      ]
+    },
+    {
+      "name": "restore_ucs",
+      "description": "Make a previously saved named UCS current. Errors if the name does not exist rather than silently leaving the current UCS in place.",
+      "tags": [
+        "restore",
+        "ucs"
+      ]
+    },
+    {
+      "name": "rotate_ucs",
+      "description": "Rotate the current UCS about its own X, Y or Z axis by an angle in degrees. axis is \u0027x\u0027, \u0027y\u0027 or \u0027z\u0027. Rotating about Z is the usual case: aligning to a wall that does not run north-south.",
+      "tags": [
+        "rotate",
+        "ucs"
+      ]
+    },
+    {
+      "name": "save_ucs",
+      "description": "Save the current UCS under a name so it can be restored later. Named UCSs are how a multi-storey or multi-wing project keeps its local coordinate systems addressable.",
+      "tags": [
+        "save",
+        "ucs"
+      ]
+    },
+    {
+      "name": "set_ucs_world",
+      "description": "Reset the current UCS to WCS. Every tool in the bank interprets coordinates in WCS by default, so this returns the drawing to the state those tools assume.",
+      "tags": [
+        "set",
+        "ucs",
+        "world"
+      ]
+    },
+    {
+      "name": "transform_point",
+      "description": "Convert one point between coordinate systems. \u0027from\u0027 and \u0027to\u0027 each accept \u0027world\u0027, \u0027current\u0027, or a saved UCS name. Use this to work out WCS coordinates for the drawing tools while they are still WCS-only.",
+      "tags": [
+        "transform",
+        "point"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "ucs",
+    "tool_count_target": 13,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-04T09:34:04.2587559Z"
+  }
+}

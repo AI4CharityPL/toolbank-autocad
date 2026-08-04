@@ -504,6 +504,95 @@ create_showmotion_shot      play_showmotion
 
 ---
 
+## Phases 3–6 reviewed against the SDK, 2026-08-04
+
+Phases 2.1 and 2.2 turned out to be planned from AutoCAD's feature set rather than from what is
+reachable, so the rest got the same treatment: every type family below was looked for in
+`acdbmgd` / `acmgd` / `accoremgd` metadata before the numbers were touched.
+
+**The counts move, and not all in the same direction.**
+
+### Phase 3 — the numbers were never checked against what exists
+
+The plan reads "`acad-geometry-2d` extensions (≈30)", "`acad-dimensions` extensions (≈14)" and
+so on, written when those categories were smaller. They are not small now:
+
+| Category | Tools today | Plan said "extensions" |
+|---|---:|---:|
+| `acad-geometry-2d` | 31 | +30 |
+| `acad-dimensions` | 17 | +14 |
+| `acad-annotations` | 12 | +18 |
+| `acad-selection` | 12 | +12 |
+
+Doubling a 31-tool category is not an "extension", and nobody has checked how much of the
+proposed 30 is already there. **This subphase needs a tool-by-tool diff against the existing
+manifests before its number means anything** — the same diff that turned Phase 1's "13 missing"
+into "4 missing, 2 that were never separate tools".
+
+`acad-images` / `acad-underlays` (≈22) is the one part of Phase 3 that is genuinely new
+capability, and it checks out: `RasterImage`, `RasterImageDef`, `UnderlayReference`,
+`DgnReference`, `PdfReference` and `DwfReference` are all in `acdbmgd`.
+
+### Phase 4 — sound, with two names that do not exist
+
+`Solid3d`, `LoftOptions`, `SweepOptions`, `Brep`, the whole surface family
+(`PlaneSurface`, `LoftedSurface`, `SweptSurface`, `NurbSurface`, `ExtrudedSurface`), the mesh
+family (`SubDMesh`, `PolygonMesh`, `PolyFaceMesh`), `SectionSettings`/`SectionManager` and
+`PointCloudEx`/`PointCloudDefEx` are all present. Phase 4 is buildable as planned.
+
+Two entries name types that do not exist: **`ShellSolid` and `SliceSolid`**. Those are
+*operations* on `Solid3d`, not classes, so the capability is there and the roadmap's naming is
+not. A reminder that a plausible-looking name in a plan is not evidence the API has it — which
+is exactly how `set_viewport_render_mode`, `AlignSpace` and `flowDirection` each cost a build
+cycle.
+
+`acad-geometry-3d` (15) and `acad-boolean-ops` (8) already exist, so Phase 4 is an extension of
+those two rather than five new categories, and 92 is likely high for the same reason Phase 3's
+numbers are.
+
+### Phase 5 — the LISP subphase is already half-built and nobody wrote it down
+
+`ResultBuffer` and `TypedValue` are present, and **`src/AcadMcp.Lisp/LispScriptLibrary.cs`
+already exists in this repository**. The roadmap plans `acad-lisp` at 12 tools as though from
+nothing. Whatever that project already does has to be diffed against the plan first.
+
+`XData`, `RegAppTable`, `Xrecord`, `DataLink` and `DataTable` are all present, so 5.2 is sound.
+`GeoLocationData`, `GeoPositionMarker`, `GeoMap` are present — 5.3 is sound.
+`ViewTableRecord`, `Camera`, `ViewBorder` are present — 5.4 is sound, and part of it is already
+covered by `acad-view`.
+
+### Phase 6.2 — **there is no managed API at all**
+
+`MotionPath`, `AnimationSettings` and `AnimPath` are **absent from all three assemblies**.
+ANIPATH is a command, and its settings live in a dialog. So the 14 animation tools are not
+"not yet built" — they are unreachable by the route every other category in this bank uses, and
+would have to go through the command layer, which this project has repeatedly found unreliable
+(`eInvalidInput` from `Editor.Command`, silent queueing in `undo`, the parametric tools).
+
+**Phase 6.2 drops from 14 to 0** unless somebody wants command-layer animation badly enough to
+write a supervised contract for that channel first.
+
+Phase 6.1 is fine: `Render`, `RenderEnvironment`, `Material`, `MaterialMap`, `Sun` and `Light`
+are all present.
+
+### What this means for the totals
+
+The honest position is that **only Phase 1 and Phase 2 have numbers anyone has checked**. Phases
+3–5 are plausible but their counts are guesses that ignore what already exists; Phase 6.2 is
+wrong outright.
+
+| Phase | Was | Now | Confidence |
+|---|---:|---:|---|
+| 1 | 98 | 98 | verified, complete |
+| 2 | 84 | **71** | verified against the API |
+| 3 | 96 | **needs a diff** | low — ignores 72 existing tools in the four categories it extends |
+| 4 | 92 | **likely lower** | medium — API confirmed, but extends two existing categories |
+| 5 | 66 | **needs a diff** | medium — 5.1 ignores an existing project |
+| 6 | 40 | **26** | 6.1 confirmed; 6.2 has no managed API |
+
+Doing those diffs is cheap — it is the same script that produced Phase 1's real gap list — and
+should happen before any of phases 3–5 is started, not while it is being built.
+
 ## Totals
 
 | Phase | Focus | Planned | Built | Status |
@@ -511,10 +600,10 @@ create_showmotion_shot      play_showmotion
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **22** | **in progress** |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 | 0 | not started |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 | 0 | not started |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 | 0 | not started |
-| 6 | Visualisation — render, animation | 40 | 0 | not started |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → *needs diff* | 0 | not started |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → *likely lower* | 0 | not started |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → *needs diff* | 0 | not started |
+| 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
 | | **Total** | **813** | **411** | **51 %** |
 
 **Corrected 2026-08-04.** This table previously read "Total ≈713". The phases sum to 476 and

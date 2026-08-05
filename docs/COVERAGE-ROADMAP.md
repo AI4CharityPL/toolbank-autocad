@@ -337,7 +337,78 @@ it created first.
 
 ---
 
-## Phase 3 — Filling the 2D gaps (≈95 tools)
+## Phases 3–5 — API review, 2026-08-05
+
+**Every phase so far had planning errors that only a check against the managed API found**, so
+phases 3, 4 and 5 were reviewed the same way before any of them starts: every type each group
+needs was looked up in `acdbmgd` / `acmgd` / `accoremgd` metadata, and every planned tool name was
+grepped against all 38 manifests. Two findings change the numbers.
+
+### Finding 1 — six of Phase 4.1's tools already exist, and `acad-modify` is already 3D
+
+The roadmap lists `move_3d`, `rotate_3d`, `mirror_3d`, `align_3d`, `array_3d_rectangular` and
+`array_3d_polar` as new 3D work. They are not new. `acad-modify` shipped 3D-capable:
+
+| Planned in 4.1 | Already in `acad-modify` | What it says |
+|---|---|---|
+| `move_3d` | `move` | "by the vector from→to (**WCS**)" |
+| `rotate_3d` | `rotate` | "**Optional axis vector for 3D rotations** (default Z)" |
+| `mirror_3d` | `mirror` | "through a **plane defined by point + normal (3D)**" |
+| `align_3d` | `align` | source point pair onto target point pair, optional scale |
+| `array_3d_rectangular` | `array_rectangular` | "rows × cols × **levels** … optional **Z level spacing**" |
+| `array_3d_polar` | `array_polar` | polar around a centre — the only one where a 3D axis argument may genuinely be missing |
+
+This is the 2.4 pattern again: a phase planned from the AutoCAD *feature list* rather than from
+what this bank already has. Five struck outright; `array_polar` gets an axis argument if it turns
+out to lack one, which is an argument, not a tool.
+
+### Finding 2 — what has no managed API at all
+
+Confirmed absent from all three assemblies, so unbuildable without COM or the command channel:
+
+| Tool | Why |
+|---|---|
+| `arc_aligned_text` (3.3) | Express Tools object, not in the core API |
+| `spell_check` (3.3) | no `SpellCheck` type of any kind |
+| `import_pdf_as_geometry`, `set_pdf_import_options` (3.5) | no importer type; PDFIMPORT is a command. `PdfReference` handles *attaching* an underlay, which is a different thing |
+| `run_data_extraction`, `create_data_extraction_template` (5.2) | DATAEXTRACTION is a wizard |
+| `define_property_set`, `attach_property_set`, `list_property_sets` (5.2) | **AEC/Architecture vertical only.** This bank targets vanilla AutoCAD; a tool that works on one machine and not the next is worse than an absent one |
+
+That is **10 struck**, plus the 5 duplicates: **15 fewer than planned**.
+
+### What the review confirmed as buildable
+
+Almost everything else, and more solidly than expected. `Solid3d` alone covers most of 4.1 in
+managed code — `ExtrudeFaces`, `TaperFaces`, `OffsetFaces`, `RemoveFaces`, `TransformFaces`,
+`CopyFace`, `CopyEdge`, `ShellBody`, `SeparateBody`, `CleanBody`, `CheckInterference`,
+`ImprintEntity`, `FilletEdges`, `ChamferEdges`, `Slice`, `CreateSweptSolid`, `CreateLoftedSolid`,
+`CreateSculptedSolid` — so the SOLIDEDIT family does **not** need the command channel, which was
+the main risk in Phase 4. `NurbSurface`, `SubDMesh`, `Section` + `SectionSettings`, `PointCloudEx`,
+`Xrecord`, `RegAppTable`, `DataLink`, `GeoLocationData`, `ResultBuffer` + `TypedValue` (for 5.1)
+and `RasterImage` / `UnderlayReference` + `PdfReference` / `DgnReference` / `DwfReference` are all
+present.
+
+### One naming collision to settle before 4.4 starts
+
+`acad-sections` already exists and is **2D drafting symbols** — section lines, elevation markers,
+titles. Phase 4.4 is **3D `SECTIONPLANE` objects**, a completely different mechanism. Both are
+worth having, but `list_section_lines` next to `list_section_planes` is exactly the pair a
+discovery layer cannot disambiguate for an agent. Name the 3D group explicitly — `acad-sections-3d`
+with every tool carrying `_section_plane` — or merge the two under one category with unmistakable
+prose. Decide before writing, not after.
+
+### Revised totals
+
+| Phase | Planned | After review | Note |
+|---|---:|---:|---|
+| 3 | 96 | **90** | 6 struck: arc_aligned_text, spell_check, 2 PDF-import, and 2 that need re-scoping against `filter_entities` |
+| 4 | 92 | **86** | 5 duplicates of `acad-modify`, 1 argument rather than a tool |
+| 5 | 66 | **61** | 5 struck: 2 data-extraction, 3 AEC property sets |
+| | **254** | **237** | |
+
+---
+
+## Phase 3 — Filling the 2D gaps (≈95 → **90** after review)
 
 The existing 2D coverage is broad but not complete. These are commands a draughtsman uses daily.
 
@@ -403,7 +474,7 @@ bind_underlay
 
 ---
 
-## Phase 4 — Real 3D (≈95 tools)
+## Phase 4 — Real 3D (≈95 → **86** after review)
 
 Today: 7 primitives, extrude, revolve, one planar surface, 6 booleans, 5 queries. That is the
 beginning of 3D, not 3D.
@@ -469,7 +540,7 @@ pointcloud_to_geometry      set_pointcloud_crop_state  get_pointcloud_info
 
 ---
 
-## Phase 5 — Data, extensibility, escape hatches (≈65 tools)
+## Phase 5 — Data, extensibility, escape hatches (≈65 → **61** after review)
 
 ### 5.1 `acad-lisp` — the highest-leverage small phase (≈12)
 
@@ -659,9 +730,9 @@ should happen before any of phases 3–5 is started, not while it is being built
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **66** | **56** | **2.2, 2.3, 2.4 complete**; only 2.1 sheetsets remains, and it needs a supervised COM contract first |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → *needs diff* | 0 | not started |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → *likely lower* | 0 | not started |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → *needs diff* | 0 | not started |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | 1 | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | 0 | 5 already exist in `acad-modify`, which shipped 3D-capable |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
 | | **Total** | **813** | **411** | **51 %** |
 

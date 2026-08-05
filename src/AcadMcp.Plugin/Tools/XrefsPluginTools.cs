@@ -65,7 +65,7 @@ internal static class XrefsPluginTools
         host.Register("acad.xrefs.clip_xref_by_object", ClipByObject);
         host.Register("acad.xrefs.invert_xref_clip", InvertClip);
         host.Register("acad.xrefs.delete_xref_clip", DeleteClip);
-        host.Register("acad.xrefs.set_xref_clip_display", SetClipDisplay);
+        host.Register("acad.xrefs.set_clip_frame_display", SetClipFrameDisplay);
 
         host.Register("acad.xrefs.set_xref_layer_override", SetLayerOverride);
         host.Register("acad.xrefs.reset_xref_layer_overrides", ResetLayerOverrides);
@@ -732,25 +732,44 @@ internal static class XrefsPluginTools
             return Wrap(new { handle = a.Handle, clipped = false, inverted = false, vertexCount = 0 });
         });
 
-    private static Task<ToolDispatchResult> SetClipDisplay(JsonObject args, CancellationToken ct) =>
-        Run("acad.xrefs.set_xref_clip_display", args, ct, (doc, db, tr) =>
+    // KNOWN-GAPS A3. This used to be set_xref_clip_display and took a HANDLE, which promised a
+    // per-reference setting it could not deliver: XCLIPFRAME is drawing-wide. The handle was read
+    // only to check that insert had a clip, so the signature implied a scope the behaviour never
+    // had. Renamed, handle dropped, and the sysvar's third state exposed - "visible on screen but
+    // not plotted" is precisely what a drafter wants while laying out, and hiding it behind a
+    // boolean threw it away.
+    private static Task<ToolDispatchResult> SetClipFrameDisplay(JsonObject args, CancellationToken ct) =>
+        Run("acad.xrefs.set_clip_frame_display", args, ct, (doc, db, tr) =>
         {
-            var a = Read<SetClipDisplayArgsDto>(args);
-            var br = OpenInsert(db, tr, a.Handle, OpenMode.ForRead);
-            var sf = OpenFilter(tr, br, OpenMode.ForRead)
-                     ?? throw new ArgumentException($"Insert {a.Handle} has no clip boundary.");
+            var a = Read<SetClipFrameDisplayArgsDto>(args);
 
-            // XCLIPFRAME is a database-wide setting, not per-insert. Say so rather than
-            // pretending the call was scoped to this one reference.
-            Application.SetSystemVariable("XCLIPFRAME", a.Visible ? (short)2 : (short)0);
-            Log.Info($"set_xref_clip_display: XCLIPFRAME is drawing-wide; all clip frames are now {(a.Visible ? "visible" : "hidden")}.");
+            short Before() => Convert.ToInt16(Application.GetSystemVariable("XCLIPFRAME"));
+            var before = Before();
+
+            short want = (a.Mode ?? "").Trim().ToLowerInvariant() switch
+            {
+                "hidden" or "off" => 0,
+                "display" or "screenonly" => 1,
+                "displayandplot" or "on" => 2,
+                _ => throw new ArgumentException(
+                    "mode must be 'hidden', 'display' (on screen but never plotted) or " +
+                    "'displayAndPlot'; got '" + a.Mode + "'."),
+            };
+
+            Application.SetSystemVariable("XCLIPFRAME", want);
+
+            static string Name(short v) => v switch
+            {
+                0 => "hidden", 1 => "display", 2 => "displayAndPlot", _ => "unknown(" + v + ")",
+            };
 
             return Wrap(new
             {
-                handle = a.Handle,
-                clipped = true,
-                inverted = sf.Inverted,
-                vertexCount = sf.Definition.GetPoints().Count,
+                before = Name(before),
+                mode = Name(Before()),
+                scope = "drawing",
+                note = "XCLIPFRAME is a drawing-wide system variable. This affects the clip " +
+                       "frames of EVERY clipped xref and block in the drawing, not one reference.",
             });
         });
 

@@ -62,6 +62,15 @@ public sealed record DocumentsListResult(
 public sealed record DocumentResult(
     [property: JsonPropertyName("document")] DocumentInfo Document);
 
+// save_document_as gets its OWN result rather than reusing DocumentResult, because the two facts
+// it has to report are different things: where a copy was written, and what the open document is
+// still called. Sharing DocumentResult is how the second fact used to be the only one reported.
+public sealed record SaveAsResult(
+    [property: JsonPropertyName("savedTo")]  string SavedTo,
+    [property: JsonPropertyName("bytes")]    long Bytes,
+    [property: JsonPropertyName("document")] DocumentInfo Document,
+    [property: JsonPropertyName("note")]     string Note);
+
 public sealed record FilePathResult(
     [property: JsonPropertyName("path")] string Path);
 

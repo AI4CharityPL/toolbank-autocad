@@ -270,7 +270,30 @@ internal static class FilesPluginTools
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
             db.SaveAs(a.Path, ver);
-            return Wrap(new { document = BuildDocumentInfo(doc) });
+
+            // KNOWN-GAPS A9, resolved here. Database.SaveAs WRITES A COPY - it is not AutoCAD's
+            // SAVEAS command and it does NOT re-point the open document, which keeps its own
+            // name and its own unsaved state. So DBMOD staying nonzero after this call was never
+            // a bug: the drawing in memory genuinely still has unsaved changes, because it was
+            // never saved - a copy of it was written somewhere else.
+            //
+            // The result used to report BuildDocumentInfo(doc) alone, whose `path` is the
+            // document's own name. A caller who asked to save to C:\tmp\x.dwg got back
+            // "Rysunek7.dwg" and no indication that anything had been written anywhere. Both
+            // facts are now reported side by side, because the difference between them is the
+            // whole trap.
+            var written = Path.GetFullPath(a.Path);
+            return Wrap(new
+            {
+                savedTo = written,
+                bytes = File.Exists(written) ? new FileInfo(written).Length : 0L,
+                document = BuildDocumentInfo(doc),
+                note = "A COPY was written to savedTo. The open document keeps its own name and " +
+                       "its own unsaved state - this is Database.SaveAs, not AutoCAD's SAVEAS " +
+                       "command, and the managed API cannot re-point an open document. " +
+                       "save_document still writes to the document's original path, and DBMOD " +
+                       "still reports unsaved changes, both correctly.",
+            });
         });
 
     private static async Task<ToolDispatchResult> CloseDocument(JsonObject args, CancellationToken ct)

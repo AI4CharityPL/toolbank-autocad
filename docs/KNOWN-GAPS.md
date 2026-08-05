@@ -50,8 +50,8 @@ handlers and proxy methods stay in place, exactly as the parametric constraint t
 withheld. Re-adding two attributes brings them back if the command channel ever becomes
 reliable.
 
-### A6. `acad-router` reports errors as successful results
-**Status:** found 2026-08-04 while settling A2. Not fixed.
+### ~~A6. `acad-router` reports errors as successful results~~
+**Fixed 2026-08-05, verified live at the JSON-RPC level.**
 `acad_restore_checkpoint` called without `id` or `label` returns
 `"[router-error] acad_restore_checkpoint requires 'id' or 'label'."` — as **content of a
 successful tool call**. MCP's `isError` is not set, so a client sees success and must
@@ -59,8 +59,8 @@ string-match `[router-error]` to notice otherwise. Likely affects every router m
 This is the failure shape the whole sweep has been removing, in the one category every agent
 talks to first.
 
-### A7. `acad_undo_checkpoint` ignores its own required argument
-**Status:** found alongside A6. Not fixed.
+### ~~A7. `acad_undo_checkpoint` ignores its own required argument~~
+**Fixed 2026-08-05, verified live.**
 Its schema declares `label` as **required**. Called with a different property name instead, it
 succeeds and creates a checkpoint with `label='(none)'` rather than refusing. A caller who
 mistypes the argument gets a checkpoint they cannot then find by label. Advertised as
@@ -85,8 +85,8 @@ not a file name. Passing `"arial.ttf"` succeeds and produces a style bound to a 
 does not exist, which renders as the fallback and looks exactly like the style was ignored.
 Cost me one diagnostic cycle.
 
-### A3. `xrefs.set_xref_clip_display`
-**Status:** works, but the name over-promises.
+### ~~A3. `xrefs.set_xref_clip_display`~~
+**Fixed 2026-08-05 by renaming to `set_clip_frame_display` and dropping the handle.**
 `XCLIPFRAME` is a **drawing-wide** system variable, not per-insert. The tool takes a handle and
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
@@ -115,8 +115,8 @@ confirmed to be the only one**. Needs a machine with a real plot device and a co
 have not been run **at all** — they need the Python sidecar started and at least one provider API
 key. Untested is not the same as working.
 
-### A5. `ucs.create_ucs_origin` reports the wrong name back
-**Status:** works, reports poorly.
+### ~~A5. `ucs.create_ucs_origin` reports the wrong name back~~
+**Fixed 2026-08-05. It was the whole `create_ucs_*` family, and there was a second defect underneath: `makeCurrent:false` did nothing at all.**
 Called with `name: "MCP-ROT"` it **does** save the UCS under that name — proved independently,
 because `viewports.set_viewport_ucs` then finds `MCP-ROT` in the table. But its own result
 reports `name: "*CURRENT"`, AutoCAD's label for the unnamed current UCS, so a caller cannot
@@ -156,6 +156,31 @@ The XML comment says so; the field name still reads more precise than it is.
 
 Four defects in this sweep were a **discovery tool advertising what the action tool refuses**
 (dictionary params described as arrays; three catalogues). Nothing tests that the two agree.
+
+### C0. A field the plugin emits and the backend DTO does not declare vanishes silently
+
+**Status: open, and it has now happened three times.** Every category proxy ends in
+`resultNode.Deserialize<TResult>(Opts)`. `System.Text.Json` drops JSON members the target record
+does not declare — no exception, no warning, nothing in a log. The tool returns a healthy result
+that is quietly missing the field it computed.
+
+| Where | What vanished | Consequence |
+|---|---|---|
+| `delete_layer_filter` | `alsoDeleted` | a cascade that removed two nested filters reported `{name, deleted:true}` and nothing else |
+| `import_dimstyle_from_dwg` | `replaced` | added while fixing the same class of bug in that tool |
+| `create_ucs_*` | `savedAs`, `isCurrent` | a UCS saved-but-not-made-current was indistinguishable from one made current |
+
+All three were caught by a live verification asserting on the field, and **only** because the
+verification asserted on it. Nothing structural would have found them: the plugin builds
+anonymous objects, so there is no type to compare against the record at compile time.
+
+**Proposed mechanism, not built.** `JsonSerializerOptions.UnmappedMemberHandling =
+JsonUnmappedMemberHandling.Disallow` (.NET 8) makes deserialisation throw on exactly this. Too
+strict to ship — a plugin sending an extra diagnostic field would break a working tool — but
+correct for verification. An env var such as `ACADMCP_STRICT_DTO=1`, read where each proxy builds
+its `JsonSerializerOptions`, would turn every live verification run into a contract check for
+free. The obstacle is that all ~38 proxies declare their own `Opts`; they need one shared
+factory first, which is a mechanical change worth doing before phase 3 adds more of them.
 
 1. ~~**Catalogue-vs-consumer contract test.**~~ **Done, and without the plugin test project
    this entry used to demand.** The premise was wrong: the blocker was never that the test

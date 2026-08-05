@@ -72,3 +72,6 @@ internal sealed record XrefClipByObjectArgsDto(
     [property: JsonPropertyName("handle")]         string Handle,
     [property: JsonPropertyName("boundaryHandle")] string BoundaryHandle,
     [property: JsonPropertyName("inverted")]       bool Inverted = false);
+
+internal sealed record SetClipFrameDisplayArgsDto(
+    [property: JsonPropertyName("mode")] string? Mode);

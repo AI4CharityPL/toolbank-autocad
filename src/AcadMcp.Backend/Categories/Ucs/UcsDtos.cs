@@ -55,8 +55,19 @@ public sealed record UcsInfo(
     [property: JsonPropertyName("isCurrent")] bool IsCurrent,
     [property: JsonPropertyName("isWorld")]   bool IsWorld);
 
+// savedAs and isCurrent are separate from UcsInfo.Name on purpose: a UCS can be saved under a
+// name WITHOUT becoming current (makeCurrent:false), and before this record carried them a caller
+// had no way to tell those two outcomes apart. They are nullable because the read-only tools
+// share this shape and neither applies to them.
+//
+// THIRD TIME THIS SHAPE HAS BITTEN. The plugin emitted both fields, this record did not declare
+// them, and deserialisation dropped them silently - the same failure as `alsoDeleted` in
+// delete_layer_filter and `replaced` in import_dimstyle_from_dwg. A field produced on one side of
+// the pipe and undeclared on the other vanishes without any error anywhere. See KNOWN-GAPS C.
 public sealed record UcsResult(
-    [property: JsonPropertyName("ucs")] UcsInfo Ucs);
+    [property: JsonPropertyName("ucs")]       UcsInfo Ucs,
+    [property: JsonPropertyName("savedAs")]   string? SavedAs = null,
+    [property: JsonPropertyName("isCurrent")] bool? IsCurrent = null);
 
 public sealed record UcsListResult(
     [property: JsonPropertyName("named")]   IReadOnlyList<UcsInfo> Named,

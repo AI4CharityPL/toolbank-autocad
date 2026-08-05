@@ -181,6 +181,12 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
         return StdioJsonRpcHost.BuildResult(id, new JsonObject { ["tools"] = tools });
     }
 
+    /// <summary>
+    /// Prefix every router refusal carries. Load-bearing: the dispatcher maps it to MCP's
+    /// isError, so a message that starts with this is an error by construction. See KNOWN-GAPS A6.
+    /// </summary>
+    internal const string RouterErrorMarker = "[router-error]";
+
     private async Task<JsonObject?> HandleToolsCallAsync(JsonNode? id, JsonObject? prms, CancellationToken ct)
     {
         var name = prms?["name"]?.GetValue<string>();
@@ -249,6 +255,19 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
             text = $"[router-error] {name}: {ex.Message}";
             isError = true;
         }
+
+        // KNOWN-GAPS A6. Every handler in the switch above except acad_call returns a plain
+        // string, and several of them return a "[router-error] ..." message for a refusal. Those
+        // arrived here with isError still false, so a client saw a SUCCESSFUL tool call whose
+        // content happened to begin with a marker it would have to string-match to notice. That
+        // is the exact failure shape this whole sweep has been removing, sitting in the one
+        // category every agent talks to first.
+        //
+        // The marker is already the convention at a dozen sites. Making it load-bearing in
+        // exactly ONE place means the text and the flag cannot disagree again, whatever a future
+        // handler does: a refusal that says [router-error] is an error, by construction.
+        if (!isError && text.StartsWith(RouterErrorMarker, StringComparison.Ordinal))
+            isError = true;
 
         var contentArr = new JsonArray { new JsonObject { ["type"] = "text", ["text"] = text } };
         return StdioJsonRpcHost.BuildResult(id, new JsonObject
@@ -434,9 +453,27 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
     private async Task<string> CheckpointCreateAsync(JsonObject args, CancellationToken ct)
     {
         if (_plugin is null) return Stub("acad_undo_checkpoint: plugin gateway not wired.");
+
+        // KNOWN-GAPS A7. The schema above declares `label` REQUIRED, and this used to accept its
+        // absence, creating a checkpoint labelled "(none)". A caller who mistyped the argument -
+        // `name` instead of `label`, say - got a checkpoint back and then could not find it by
+        // label, because the label they thought they set was never read. Advertised as required
+        // and treated as optional is the same catalogue-versus-consumer disagreement the property
+        // catalogues exist to prevent, only here between a schema and its own handler.
         var label = args["label"]?.GetValue<string>();
-        var req = new JsonObject();
-        if (!string.IsNullOrWhiteSpace(label)) req["label"] = label;
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            var passed = args.Select(kv => kv.Key).Where(k => k != "fileSnapshot").ToList();
+            var sawSomethingElse = passed.Count > 0
+                ? " Received instead: " + string.Join(", ", passed) + "."
+                : "";
+            return RouterErrorMarker +
+                   " acad_undo_checkpoint requires 'label' - it is declared required in this " +
+                   "tool's schema, and a checkpoint you cannot name is one you cannot restore by " +
+                   "name later." + sawSomethingElse;
+        }
+
+        var req = new JsonObject { ["label"] = label };
         if (args["fileSnapshot"] is JsonValue jv && jv.TryGetValue<bool>(out var snap)) req["fileSnapshot"] = snap;
 
         var result = await _plugin.InvokeAsync("acad.checkpoint.create", req, DefaultToolTimeoutMs, ct).ConfigureAwait(false);
@@ -444,7 +481,7 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
         {
             var cid = obj["id"]?.GetValue<string>() ?? "<unknown>";
             var depth = obj["stackDepth"]?.GetValue<int>() ?? -1;
-            return $"[router] checkpoint created id='{cid}' label='{label ?? "(none)"}' stack_depth={depth}";
+            return $"[router] checkpoint created id='{cid}' label='{label}' stack_depth={depth}";
         }
         return "[router] checkpoint created (plugin returned no body).";
     }

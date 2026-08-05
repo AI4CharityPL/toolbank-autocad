@@ -45,11 +45,11 @@ public static class FilesTools
     public static Task<DocumentResult> SaveDocument(IPluginGateway gw, FilesEmptyArgs args, CancellationToken ct)
         => FilesProxy.CallAsync<FilesEmptyArgs, DocumentResult>(gw, "acad.files.save_document", args, T_SLOW, ct);
 
-    [McpTool("save_document_as", "Save the currently active document to a new path. Optional dwgVersion is one of \"AC1027\" (2013), \"AC1032\" (2018), \"AC1024\" (2010), etc. Defaults to current AutoCAD's native format.", "files",
+    [McpTool("save_document_as", "Write the active drawing to a new path. IMPORTANT: this writes a COPY. The open document keeps its own name and its own unsaved state - this is the managed Database.SaveAs, not AutoCAD's SAVEAS command, and there is no managed way to re-point an open document. So save_document afterwards still writes to the ORIGINAL path, and DBMOD still reports unsaved changes, both correctly. The result gives savedTo and the document's own path side by side, because confusing the two is the entire trap. Optional dwgVersion is one of \"AC1027\" (2013), \"AC1032\" (2018), \"AC1024\" (2010); defaults to native.", "files",
         Intent = new[] { "zapisz jako", "save dwg as", "save active as", "save document to path", "zapisz dokument jako" },
         RequiresPlugin = true)]
-    public static Task<DocumentResult> SaveDocumentAs(IPluginGateway gw, SaveAsArgs args, CancellationToken ct)
-        => FilesProxy.CallAsync<SaveAsArgs, DocumentResult>(gw, "acad.files.save_document_as", args, T_SLOW, ct);
+    public static Task<SaveAsResult> SaveDocumentAs(IPluginGateway gw, SaveAsArgs args, CancellationToken ct)
+        => FilesProxy.CallAsync<SaveAsArgs, SaveAsResult>(gw, "acad.files.save_document_as", args, T_SLOW, ct);
 
     [McpTool("close_document", "Close a document by its file path (or the active document if path is null). Set save=true to save before closing.", "files",
         Intent = new[] { "zamknij rysunek", "close document", "close active dwg", "zamknij aktywny dokument", "close drawing" },

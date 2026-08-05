@@ -136,11 +136,51 @@ internal static class UcsPluginTools
     private static object CurrentInfo(Document doc) =>
         InfoFromMatrix(CurrentMatrix(doc), "*CURRENT", isCurrent: true);
 
-    private static JsonObject Finish(Document doc, Database db, Transaction tr, string? name, bool makeCurrent)
+    /// <summary>
+    /// Shared exit for every create_ucs_* tool: save under a name if one was given, honour
+    /// makeCurrent, and report what actually happened.
+    /// </summary>
+    /// <param name="previous">
+    /// The UCS in force BEFORE this tool changed it. Every create tool applies its new matrix
+    /// first — the save reads the current UCS — so restoring is the only way makeCurrent:false
+    /// can mean anything.
+    /// </param>
+    /// <remarks>
+    /// Two defects lived here, both KNOWN-GAPS A5 and both wider than that entry said.
+    ///
+    /// The report was wrong for the WHOLE FAMILY, not just create_ucs_origin: this is the one
+    /// exit all five creators share, and it reported CurrentInfo(doc), whose name is hardcoded
+    /// "*CURRENT". A caller who passed name:"MCP-ROT" got a result saying "*CURRENT" and could
+    /// not confirm from it that the name had taken — even though it had.
+    ///
+    /// And makeCurrent:false did nothing at all. The branch that used to sit here was an empty
+    /// block with a comment claiming the caller only wanted it saved; the new UCS had already
+    /// been applied by the time control arrived, so it stayed current either way. An argument
+    /// that cannot be honoured is worse than an absent one, so it is honoured now.
+    /// </remarks>
+    private static JsonObject Finish(Document doc, Database db, Transaction tr,
+                                     string? name, bool makeCurrent, Matrix3d previous)
     {
-        if (!string.IsNullOrWhiteSpace(name)) SaveNamed(db, tr, doc, name!, overwrite: true);
-        if (!makeCurrent) { /* the caller only wanted it saved */ }
-        return Wrap(new { ucs = CurrentInfo(doc) });
+        var named = !string.IsNullOrWhiteSpace(name);
+        if (named) SaveNamed(db, tr, doc, name!, overwrite: true);
+
+        if (!makeCurrent)
+        {
+            if (!named)
+                throw new ArgumentException(
+                    "makeCurrent:false with no name would discard the coordinate system entirely - " +
+                    "it would be neither saved nor active. Pass a name to keep it, or leave " +
+                    "makeCurrent at its default.");
+            doc.Editor.CurrentUserCoordinateSystem = previous;
+        }
+
+        return Wrap(new
+        {
+            ucs = InfoFromMatrix(CurrentMatrix(doc), named && makeCurrent ? name! : "*CURRENT",
+                                 isCurrent: true),
+            savedAs = named ? name : null,
+            isCurrent = makeCurrent,
+        });
     }
 
     private static void SaveNamed(Database db, Transaction tr, Document doc, string name, bool overwrite)
@@ -195,24 +235,27 @@ internal static class UcsPluginTools
     private static Task<ToolDispatchResult> Create3Point(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.create_ucs_3point", args, ct, (doc, db, tr) =>
         {
+            var previous = CurrentMatrix(doc);
             var a = Read<Ucs3PointArgsDto>(args);
             var o = AcadEnv.ToPoint3d(a.Origin);
             SetCurrent(doc, o, AcadEnv.ToPoint3d(a.XAxisPoint) - o, AcadEnv.ToPoint3d(a.YAxisPoint) - o);
-            return Finish(doc, db, tr, a.Name, a.MakeCurrent);
+            return Finish(doc, db, tr, a.Name, a.MakeCurrent, previous);
         });
 
     private static Task<ToolDispatchResult> CreateOrigin(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.create_ucs_origin", args, ct, (doc, db, tr) =>
         {
+            var previous = CurrentMatrix(doc);
             var a = Read<UcsOriginArgsDto>(args);
             var cs = CurrentMatrix(doc).CoordinateSystem3d;
             SetCurrent(doc, AcadEnv.ToPoint3d(a.Origin), cs.Xaxis, cs.Yaxis);
-            return Finish(doc, db, tr, a.Name, a.MakeCurrent);
+            return Finish(doc, db, tr, a.Name, a.MakeCurrent, previous);
         });
 
     private static Task<ToolDispatchResult> CreateZAxis(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.create_ucs_zaxis", args, ct, (doc, db, tr) =>
         {
+            var previous = CurrentMatrix(doc);
             var a = Read<UcsZAxisArgsDto>(args);
             var o = AcadEnv.ToPoint3d(a.Origin);
             var z = (AcadEnv.ToPoint3d(a.ZAxis) - Point3d.Origin);
@@ -222,12 +265,13 @@ internal static class UcsPluginTools
             var seed = Math.Abs(z.DotProduct(Vector3d.ZAxis)) > 0.9 ? Vector3d.XAxis : Vector3d.ZAxis;
             var x = seed.CrossProduct(z).GetNormal();
             SetCurrent(doc, o, x, z.CrossProduct(x).GetNormal());
-            return Finish(doc, db, tr, a.Name, a.MakeCurrent);
+            return Finish(doc, db, tr, a.Name, a.MakeCurrent, previous);
         });
 
     private static Task<ToolDispatchResult> RotateUcs(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.rotate_ucs", args, ct, (doc, db, tr) =>
         {
+            var previous = CurrentMatrix(doc);
             var a = Read<UcsRotateArgsDto>(args);
             var cs = CurrentMatrix(doc).CoordinateSystem3d;
             var axis = (a.Axis ?? "z").Trim().ToLowerInvariant() switch
@@ -239,12 +283,13 @@ internal static class UcsPluginTools
             };
             var rot = Matrix3d.Rotation(a.AngleDeg * Math.PI / 180.0, axis, cs.Origin);
             SetCurrent(doc, cs.Origin, cs.Xaxis.TransformBy(rot), cs.Yaxis.TransformBy(rot));
-            return Finish(doc, db, tr, a.Name, a.MakeCurrent);
+            return Finish(doc, db, tr, a.Name, a.MakeCurrent, previous);
         });
 
     private static Task<ToolDispatchResult> CreateFromEntity(JsonObject args, CancellationToken ct) =>
         Run("acad.ucs.create_ucs_from_entity", args, ct, (doc, db, tr) =>
         {
+            var previous = CurrentMatrix(doc);
             var a = Read<UcsFromEntityArgsDto>(args);
             var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle), OpenMode.ForRead);
 
@@ -259,7 +304,7 @@ internal static class UcsPluginTools
             }
             var cs = plane.GetCoordinateSystem();
             SetCurrent(doc, cs.Origin, cs.Xaxis, cs.Yaxis);
-            return Finish(doc, db, tr, a.Name, a.MakeCurrent);
+            return Finish(doc, db, tr, a.Name, a.MakeCurrent, previous);
         });
 
     // ─────────── world / named ───────────

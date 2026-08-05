@@ -290,7 +290,7 @@
     },
     {
       "name": "save_document_as",
-      "description": "Save the currently active document to a new path. Optional dwgVersion is one of \u0022AC1027\u0022 (2013), \u0022AC1032\u0022 (2018), \u0022AC1024\u0022 (2010), etc. Defaults to current AutoCAD\u0027s native format.",
+      "description": "Write the active drawing to a new path. IMPORTANT: this writes a COPY. The open document keeps its own name and its own unsaved state - this is the managed Database.SaveAs, not AutoCAD\u0027s SAVEAS command, and there is no managed way to re-point an open document. So save_document afterwards still writes to the ORIGINAL path, and DBMOD still reports unsaved changes, both correctly. The result gives savedTo and the document\u0027s own path side by side, because confusing the two is the entire trap. Optional dwgVersion is one of \u0022AC1027\u0022 (2013), \u0022AC1032\u0022 (2018), \u0022AC1024\u0022 (2010); defaults to native.",
       "tags": [
         "save",
         "document",
@@ -356,6 +356,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-05T16:36:02.1311874Z"
+    "last_regenerated_utc": "2026-08-05T17:01:16.6116005Z"
   }
 }

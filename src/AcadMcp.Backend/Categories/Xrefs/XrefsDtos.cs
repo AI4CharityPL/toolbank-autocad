@@ -60,9 +60,14 @@ public sealed record ClipXrefPolyArgs(
 public sealed record XrefHandleArgs(
     [property: JsonPropertyName("handle")] string Handle);
 
-public sealed record SetClipDisplayArgs(
-    [property: JsonPropertyName("handle")]  string Handle,
-    [property: JsonPropertyName("visible")] bool Visible);
+public sealed record SetClipFrameDisplayArgs(
+    [property: JsonPropertyName("mode")] string Mode);
+
+public sealed record ClipFrameDisplayResult(
+    [property: JsonPropertyName("before")] string Before,
+    [property: JsonPropertyName("mode")]   string Mode,
+    [property: JsonPropertyName("scope")]  string Scope,
+    [property: JsonPropertyName("note")]   string Note);
 
 // ─────────────── layer overrides ───────────────
 

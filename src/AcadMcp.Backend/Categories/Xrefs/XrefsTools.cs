@@ -160,12 +160,15 @@ public static class XrefsTools
     public static Task<XrefClipResult> DeleteXrefClip(IPluginGateway gw, XrefHandleArgs args, CancellationToken ct)
         => XrefsProxy.CallAsync<XrefHandleArgs, XrefClipResult>(gw, "acad.xrefs.delete_xref_clip", args, T_NORMAL, ct);
 
-    [McpTool("set_xref_clip_display", "Show or hide the clip boundary frame itself, without changing what the clip hides. Frames are useful while laying out and wrong on an issued sheet.", "xrefs",
-        Intent = new[] { "pokaz ramke przyciecia", "ukryj obrys obciecia xrefa", "set xref clip frame visibility",
-                         "show clip boundary", "hide clipping frame", "widocznosc ramki podkladu" },
+    // KNOWN-GAPS A3, fixed. Was set_xref_clip_display and took a handle, which promised a
+    // per-reference scope XCLIPFRAME does not have.
+    [McpTool("set_clip_frame_display", "Show or hide clip boundary frames, for the WHOLE DRAWING. This does not change what any clip hides and it is not scoped to one reference: XCLIPFRAME is a drawing-wide system variable, so every clipped xref and block follows it together. Three modes, and the middle one is the useful one while laying out: 'hidden', 'display' (visible on screen, never plotted) and 'displayAndPlot'. The result reports the previous mode as well, so a caller can put it back.", "xrefs",
+        Intent = new[] { "pokaz ramki przyciecia", "ukryj obrysy obciecia xrefow",
+                         "set clip frame visibility", "hide clipping frames before plotting",
+                         "ramki podkladow widoczne ale nie drukowane", "xclipframe setting" },
         RequiresPlugin = true)]
-    public static Task<XrefClipResult> SetXrefClipDisplay(IPluginGateway gw, SetClipDisplayArgs args, CancellationToken ct)
-        => XrefsProxy.CallAsync<SetClipDisplayArgs, XrefClipResult>(gw, "acad.xrefs.set_xref_clip_display", args, T_NORMAL, ct);
+    public static Task<ClipFrameDisplayResult> SetClipFrameDisplay(IPluginGateway gw, SetClipFrameDisplayArgs args, CancellationToken ct)
+        => XrefsProxy.CallAsync<SetClipFrameDisplayArgs, ClipFrameDisplayResult>(gw, "acad.xrefs.set_clip_frame_display", args, T_NORMAL, ct);
 
     // ─────────────────────── layer overrides ───────────────────────
 

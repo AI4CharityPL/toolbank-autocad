@@ -23,6 +23,7 @@
     "display",
     "dwg",
     "find",
+    "frame",
     "get",
     "info",
     "invert",
@@ -75,6 +76,7 @@
     "get xref details",
     "grey out reference layer",
     "hide clipping frame",
+    "hide clipping frames before plotting",
     "informacje o referencji",
     "invert xref clip",
     "jakie podklady sa dolaczone",
@@ -107,6 +109,7 @@
     "point xref at another file",
     "pokaz caly xref",
     "pokaz ramke przyciecia",
+    "pokaz ramki przyciecia",
     "pokaz referencje w referencjach",
     "pokaz referencje zewnetrzne",
     "pokaz szczegoly xrefa",
@@ -121,6 +124,7 @@
     "przytnij xref wielokatem",
     "przywroc oryginalne wlasciwosci podkladu",
     "pull latest xref changes",
+    "ramki podkladow widoczne ale nie drukowane",
     "reference another drawing",
     "reference without propagating",
     "refresh every external reference",
@@ -134,6 +138,7 @@
     "reset xref layer overrides",
     "restore xref layer properties",
     "scal podklad z rysunkiem",
+    "set clip frame visibility",
     "set xref clip frame visibility",
     "set xref path",
     "show all references",
@@ -146,6 +151,7 @@
     "symbole zalezne od xrefa",
     "temporarily hide external reference",
     "ukryj obrys obciecia xrefa",
+    "ukryj obrysy obciecia xrefow",
     "ukryj referencje bez usuwania",
     "unload xref",
     "update all references",
@@ -166,6 +172,7 @@
     "wylistuj xrefy",
     "wylistuj zagniezdzone xrefy",
     "wyszarz podklad",
+    "xclipframe setting",
     "xref info",
     "xref nakladkowy",
     "xref symbol table entries",
@@ -486,21 +493,21 @@
       ]
     },
     {
-      "name": "set_xref_clip_display",
-      "description": "Show or hide the clip boundary frame itself, without changing what the clip hides. Frames are useful while laying out and wrong on an issued sheet.",
+      "name": "set_clip_frame_display",
+      "description": "Show or hide clip boundary frames, for the WHOLE DRAWING. This does not change what any clip hides and it is not scoped to one reference: XCLIPFRAME is a drawing-wide system variable, so every clipped xref and block follows it together. Three modes, and the middle one is the useful one while laying out: \u0027hidden\u0027, \u0027display\u0027 (visible on screen, never plotted) and \u0027displayAndPlot\u0027. The result reports the previous mode as well, so a caller can put it back.",
       "tags": [
         "set",
-        "xref",
         "clip",
+        "frame",
         "display"
       ],
       "intent": [
-        "pokaz ramke przyciecia",
-        "ukryj obrys obciecia xrefa",
-        "set xref clip frame visibility",
-        "show clip boundary",
-        "hide clipping frame",
-        "widocznosc ramki podkladu"
+        "pokaz ramki przyciecia",
+        "ukryj obrysy obciecia xrefow",
+        "set clip frame visibility",
+        "hide clipping frames before plotting",
+        "ramki podkladow widoczne ale nie drukowane",
+        "xclipframe setting"
       ]
     },
     {
@@ -571,6 +578,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:35.4215196Z"
+    "last_regenerated_utc": "2026-08-05T16:51:16.1858081Z"
   }
 }

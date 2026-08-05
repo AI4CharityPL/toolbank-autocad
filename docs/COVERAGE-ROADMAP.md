@@ -165,6 +165,20 @@ failing opaquely. **Sheet sets should be the first category built with a supervi
 COM, written before the code** — the same way rule 43 preceded `acad-ucs` and rule 44 preceded
 page setups.
 
+**That contract now exists: [rule 45](engineering-rules/45-sheet-sets-com.md), written 2026-08-05
+from `AcSmComponents.Interop` metadata rather than from documentation.** The COM surface is
+confirmed present — 134 types, all six interfaces this needs. Two things the contract settles that
+change the plan:
+
+* **`open_sheet_set` / `close_sheet_set` are not built.** `IAcSmSheetSetMgr.FindOpenDatabase(path)`
+  means every tool can take the `.DST` path and resolve it per call, so no handle is held across
+  calls and the "what if a second client opens a different set" question never arises. 23 tools,
+  not 25 — and the two that go are the two the roadmap was most worried about.
+* **First tranche is read-only and unblocks something already shipped.**
+  `fields.insert_field_sheet_set_property` exists and is blocked on `get_sheet_property`, so the
+  six read tools come first: they need none of the `Save()` discipline and they turn a dead field
+  live.
+
 **Four entries are somebody else's job:**
 
 | Entry | Belongs to |

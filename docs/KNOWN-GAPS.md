@@ -163,7 +163,39 @@ drawing's layouts carry no page setup. `PublishExecute` answered `eNullPtr`, whi
 the unconfigured-layout precondition added afterwards is the most likely cause but is **not
 confirmed to be the only one**. Needs a machine with a real plot device and a configured layout.
 
-### A4. Vision category (9 tools)
+### A4. Vision category (9 tools) — **2 verified, 1 verified, 6 blocked on backends**
+**2026-08-05: the sidecar was started and every tool was called. `scripts/verify-vision.py`, 19/19.**
+
+The entry said all nine needed "the sidecar started and at least one provider API key". Those are
+separable, and only four of the nine actually need a key.
+
+**Verified working.** `vision_health` and `vision_version` against a LIVE sidecar rather than an
+absent one — the second is the useful one: it reports every optional backend and every API key
+separately, so a caller knows what will work before trying it. `cross_validate_with_dxf` needs no
+model and no key at all and was never tested for no reason; it works, and it earns its keep — on
+a title-block sample it caught `POM. 1.03` against `POM 1.03`, exactly the dot-level OCR
+discrepancy it exists to find.
+
+**The important result, given nothing is installed here: every backend-requiring tool REFUSES and
+names what to install.** No hollow successes, no empty result that reads like an analysis which
+found nothing — which for an OCR tool would be the worst failure in this bank:
+
+    ocr_image, extract_titleblock, extract_dimensions
+        "Vision engine 'paddleocr' is not available. pip install paddleocr paddlepaddle"
+    detect_symbols
+        "Vision engine 'ultralytics' is not available. Run `pip install ultralytics`."
+    describe_image, classify_drawing
+        "No vision LLM provider available. Set ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY."
+
+A missing FILE is also refused before any backend is consulted, with the path named.
+
+**Still genuinely unverified: the six paths that need a backend present.** OCR needs
+`paddleocr`/`easyocr`/`tesseract`, symbol detection needs `ultralytics` and weights, and the two
+LLM tools need a provider key. Nothing about their behaviour with a working backend has been
+observed. Untested is still not the same as working — but "untested" now means six tools, not
+nine, and the failure mode of all six is known and honest.
+
+**Original entry, for the record:**
 **Status:** never verified.
 `vision_health` / `vision_version` correctly report the sidecar is unreachable. The other seven
 have not been run **at all** — they need the Python sidecar started and at least one provider API

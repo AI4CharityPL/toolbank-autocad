@@ -19,7 +19,7 @@ This is the **most important rule** because it makes the system self-improving.
 1. Identify which existing rule should have caught this. If one exists - **strengthen** it (add example, make wording sharper, add enforcement automation).
 2. If no existing rule covers the situation - **create** a new `.md` file:
    - Place in `docs/engineering-rules/`
-   - Number scheme: `00-09` foundation, `10-19` plugin invariants, `20-29` MCP tool authoring, `30-39` MCPBank manifest, `40-49` Vision sidecar, `50-59` workflow, `60-69` testing, `70-79` deployment, `80-89` performance, `90-99` security
+   - Number scheme: `00-09` foundation, `10-19` plugin invariants, `20-29` MCP tool authoring, `30-39` ToolBank manifest, `40-49` Vision sidecar, `50-59` workflow, `60-69` testing, `70-79` deployment, `80-89` performance, `90-99` security
    - YAML frontmatter: `description`, `globs` (optional), `alwaysApply` (boolean)
 3. Add an entry under `### Added` in `CHANGELOG.md` describing the new rule and what mistake triggered it.
 4. If possible, add automated enforcement (source generator check, NetArchTest, pre-commit hook entry).

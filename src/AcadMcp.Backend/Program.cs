@@ -279,7 +279,7 @@ public sealed record StartupOptions(
         Console.Error.WriteLine("Options:");
         Console.Error.WriteLine("  --transport stdio          Transport (default: stdio)");
         Console.Error.WriteLine("  --pipe <name>              Pipe name (default: acadmcp)");
-        Console.Error.WriteLine("  --regenerate-manifest      Update mcpbank-manifests/acad-<category>.json from [McpTool] metadata and exit");
+        Console.Error.WriteLine("  --regenerate-manifest      Update toolbank-manifests/acad-<category>.json from [McpTool] metadata and exit");
         Console.Error.WriteLine("  --repo-root <path>         Override repo root for --regenerate-manifest");
         Console.Error.WriteLine("  --ping-plugin              Connect to AutoCAD plugin pipe, run handshake + _echo + acad_status, exit");
         Console.Error.WriteLine("  --validators-self-check    Load bundled validator rules + standards (no AutoCAD needed) and exit non-zero on parse errors");

@@ -254,6 +254,6 @@ Before shipping a tool that drives a desktop application:
 
 ---
 
-*From [MCP Nexus for AutoCAD](https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD), MIT.
+*From [ToolBank for AutoCAD](https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD), MIT.
 The AutoCAD-specific version of all of this lives in `docs/engineering-rules/` — 56 rules,
 each written the day something surprised us.*

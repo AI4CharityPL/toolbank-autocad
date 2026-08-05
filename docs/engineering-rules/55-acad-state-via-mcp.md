@@ -70,4 +70,4 @@ Tak samo traktujemy inne stany rysunku — zawsze pierwszy krok to MCP, nie term
 | Jakie są layouty? | `acad.layouts.list_layouts` |
 | Czy konkretna encja istnieje po uchwycie? | `acad.selection.get_entity_info` |
 
-Wszystko to jest w namespace `acad-*` dostępnym przez `acad_load_category` / MCPBank — NIGDY z poziomu shella.
+Wszystko to jest w namespace `acad-*` dostępnym przez `acad_load_category` / ToolBank — NIGDY z poziomu shella.

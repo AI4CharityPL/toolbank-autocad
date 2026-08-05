@@ -9,7 +9,7 @@ Language conventions, code style, naming. C# and Python.
 - **Comments explaining CODE mechanics:** English.
 - **`[McpTool] Description` field:** English (LLM-facing).
 - **`[McpTool] Intent` examples:** ALWAYS BOTH PL and EN (5+ each minimum).
-- **MCPBank manifest `description_pl` and `description_en`:** both required.
+- **ToolBank manifest `description_pl` and `description_en`:** both required.
 - **README/CHANGELOG/docs/:** English with Polish allowed where it clarifies CAD norm references.
 
 ## C# style

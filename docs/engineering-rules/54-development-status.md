@@ -9,7 +9,7 @@ Project status and verification history live in docs/PHASE-7-STATUS.md; current 
 
 ## Rules for the agent
 
-- **Don't assume "done" without checking.** A tool existing in `mcpbank-manifests/` or having unit tests does not mean it works against real AutoCAD — this repo's own history has repeatedly found tools that were catalog-tested but never live-verified turn out to be broken. If you're about to rely on a tool's behavior, check whether it's live-verified per `docs/PHASE-7-STATUS.md`, and if in doubt, test it live yourself.
+- **Don't assume "done" without checking.** A tool existing in `toolbank-manifests/` or having unit tests does not mean it works against real AutoCAD — this repo's own history has repeatedly found tools that were catalog-tested but never live-verified turn out to be broken. If you're about to rely on a tool's behavior, check whether it's live-verified per `docs/PHASE-7-STATUS.md`, and if in doubt, test it live yourself.
 - **Don't silently "fix" a Known Limitation without flagging it.** If you find a fix for something listed there, verify it live against real AutoCAD before updating the docs — don't just remove the limitation entry because the code looks plausible.
 - **New feature work** should get the same treatment as everything documented in `docs/PHASE-7-STATUS.md`: implement, build, test, then verify live on real AutoCAD before considering it done.
 

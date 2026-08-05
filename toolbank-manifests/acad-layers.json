@@ -1,0 +1,489 @@
+{
+  "id": "acad-layers",
+  "name": "acad-layers",
+  "description": "AutoCAD layer (LayerTableRecord) management: create, rename, delete and list layers; query and set per-layer state (color by ACI or RGB, linetype, lineweight, plot style, plottable, frozen, locked, on/off, transparency); pick the current layer; bulk move entities between layers; and basic layer-state save / restore via AutoCAD\u0027s layer state manager. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-layers.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "color",
+    "compare",
+    "create",
+    "current",
+    "delete",
+    "description",
+    "dwg",
+    "export",
+    "get",
+    "import",
+    "layer",
+    "layers",
+    "linetype",
+    "lineweight",
+    "list",
+    "purge",
+    "rename",
+    "restore",
+    "save",
+    "set",
+    "state",
+    "states",
+    "unused"
+  ],
+  "intent_examples": [
+    "add new layer",
+    "annotate a layer state",
+    "apply layer state",
+    "change layer name",
+    "change layer state name",
+    "checkpoint layer visibility",
+    "co zmieni przywrocenie stanu warstw",
+    "color of layer",
+    "compare layer state to the drawing",
+    "create layer",
+    "czy stan warstw rozni sie od rysunku",
+    "delete layer",
+    "delete layer state",
+    "describe layer",
+    "describe what a layer state is for",
+    "dodaj opis do stanu warstw",
+    "dodaj warstwe",
+    "drop layer",
+    "drop layer state",
+    "export layer state to a file",
+    "freeze layer",
+    "get layer info",
+    "give a layer state a better name",
+    "grubosc warstwy",
+    "import layer state from a file",
+    "info o warstwie",
+    "kolor warstwy rgb",
+    "layer linetype",
+    "layer lineweight in mm",
+    "layer state from file",
+    "layer state to file",
+    "linia przerywana na warstwie",
+    "list all layers",
+    "list las",
+    "list layer states",
+    "load a las layer state",
+    "load las",
+    "lock layer",
+    "make layer current",
+    "new layer with color",
+    "opis stanu warstw",
+    "pobierz stan warstw z innego projektu",
+    "podpisz stan warstw",
+    "pokaz warstwe",
+    "poprawa nazwy stanu warstw",
+    "przemianuj stan warstw",
+    "przemianuj warstwe",
+    "przenies stan warstw do innego rysunku",
+    "przywroc stan warstw",
+    "purge layers",
+    "purge unused layers",
+    "remove a saved layer state",
+    "remove empty layers",
+    "remove layer",
+    "rename layer",
+    "rename layer state",
+    "rename layer to",
+    "restore layer state",
+    "save las",
+    "save layer state",
+    "save layer state as las",
+    "set current layer",
+    "set layer color",
+    "set layer linetype",
+    "set layer lineweight",
+    "set layer state description",
+    "show layer details",
+    "show layers",
+    "show saved layer states",
+    "skasuj warstwe",
+    "skasuj zapisany stan warstw",
+    "sprawdz stan warstw przed przywroceniem",
+    "stworz warstwe",
+    "switch active layer",
+    "thaw layer",
+    "ustaw biezaca warstwe",
+    "ustaw kolor warstwy",
+    "ustaw linetype warstwy",
+    "usun stan warstw",
+    "usun warstwe",
+    "warstwa grubosc",
+    "wczytaj plik las",
+    "wczytaj zapisany stan warstw",
+    "what layers exist",
+    "which layers does this state cover",
+    "would restoring this change anything",
+    "wszystkie warstwy",
+    "wszystkie zapisane stany warstw",
+    "wybierz warstwe biezaca",
+    "wyczysc nieuzywane warstwy",
+    "wyczysc stany warstw",
+    "wyczysc warstwy",
+    "wyeksportuj stan warstw do pliku",
+    "wylacz warstwe",
+    "wylistuj stany warstw",
+    "wylistuj warstwy",
+    "zaimportuj stan warstw z pliku",
+    "zamroz warstwe",
+    "zapisz konfiguracje warstw",
+    "zapisz stan warstw",
+    "zapisz stan warstw jako las",
+    "zmien grubosc linii warstwy",
+    "zmien kolor warstwy",
+    "zmien nazwe stanu warstw",
+    "zmien nazwe warstwy",
+    "zmien typ linii warstwy"
+  ],
+  "tools_summary": [
+    {
+      "name": "compare_layer_state",
+      "description": "Answer whether restoring this state would change anything, without restoring it, and list the layers it covers. Read-only. This is the call to make before restore_layer_state in a drawing somebody is working in: the difference between a no-op and a restore that silently reorganises their view.",
+      "tags": [
+        "compare",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "czy stan warstw rozni sie od rysunku",
+        "co zmieni przywrocenie stanu warstw",
+        "compare layer state to the drawing",
+        "would restoring this change anything",
+        "sprawdz stan warstw przed przywroceniem",
+        "which layers does this state cover"
+      ]
+    },
+    {
+      "name": "create_layer",
+      "description": "Create a new layer. Accepts color (RGB or ACI), linetype name, lineweight in mm, plottable flag and description.",
+      "tags": [
+        "create",
+        "layer"
+      ],
+      "intent": [
+        "stworz warstwe",
+        "dodaj warstwe",
+        "create layer",
+        "add new layer",
+        "new layer with color"
+      ]
+    },
+    {
+      "name": "delete_layer",
+      "description": "Delete a layer (only if no entities reference it). Layer 0 and Defpoints cannot be deleted.",
+      "tags": [
+        "delete",
+        "layer"
+      ],
+      "intent": [
+        "usun warstwe",
+        "delete layer",
+        "skasuj warstwe",
+        "remove layer",
+        "drop layer"
+      ]
+    },
+    {
+      "name": "delete_layer_state",
+      "description": "Delete a named layer state. THE LAYERS ARE NOT TOUCHED - a layer state is a recording of visibility and properties, so deleting it removes the recording and nothing else. The result says so explicitly, because this is a tool name an agent could reasonably fear means something more destructive.",
+      "tags": [
+        "delete",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "usun stan warstw",
+        "skasuj zapisany stan warstw",
+        "delete layer state",
+        "remove a saved layer state",
+        "wyczysc stany warstw",
+        "drop layer state"
+      ]
+    },
+    {
+      "name": "export_layer_state",
+      "description": "Write one named layer state out to a .las file so it can be reused in other drawings or kept under version control alongside the project. It writes a file, not the DWG, so the drawing is unchanged. The result reports the byte count, because an export that produced an empty file is otherwise indistinguishable from one that worked.",
+      "tags": [
+        "export",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "wyeksportuj stan warstw do pliku",
+        "zapisz stan warstw jako las",
+        "export layer state to a file",
+        "save layer state as las",
+        "przenies stan warstw do innego rysunku",
+        "layer state to file"
+      ]
+    },
+    {
+      "name": "get_layer",
+      "description": "Get full descriptor of one layer by name.",
+      "tags": [
+        "get",
+        "layer"
+      ],
+      "intent": [
+        "pokaz warstwe",
+        "get layer info",
+        "describe layer",
+        "info o warstwie",
+        "show layer details"
+      ]
+    },
+    {
+      "name": "import_layer_state",
+      "description": "Read a .las file into this drawing as a named layer state. The name comes from inside the file rather than from you, so the result reports which states actually appeared - established by comparing the drawing before and after rather than by assuming. AutoCAD refuses to import over an existing name; delete or rename the local one first.",
+      "tags": [
+        "import",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "zaimportuj stan warstw z pliku",
+        "wczytaj plik las",
+        "import layer state from a file",
+        "load a las layer state",
+        "pobierz stan warstw z innego projektu",
+        "layer state from file"
+      ]
+    },
+    {
+      "name": "list_layer_states",
+      "description": "List every saved named layer state in the active drawing.",
+      "tags": [
+        "list",
+        "layer",
+        "states"
+      ],
+      "intent": [
+        "wylistuj stany warstw",
+        "list layer states",
+        "list las",
+        "show saved layer states",
+        "wszystkie zapisane stany warstw"
+      ]
+    },
+    {
+      "name": "list_layers",
+      "description": "List every layer in the active drawing with color, linetype, lineweight, plottable/frozen/locked/off flags, plus the current layer name.",
+      "tags": [
+        "list",
+        "layers"
+      ],
+      "intent": [
+        "wylistuj warstwy",
+        "list all layers",
+        "show layers",
+        "wszystkie warstwy",
+        "what layers exist"
+      ]
+    },
+    {
+      "name": "purge_unused_layers",
+      "description": "Purge every layer that has no entity references and is not protected (0 / Defpoints / current). Returns number of layers removed.",
+      "tags": [
+        "purge",
+        "unused",
+        "layers"
+      ],
+      "intent": [
+        "wyczysc warstwy",
+        "purge unused layers",
+        "remove empty layers",
+        "wyczysc nieuzywane warstwy",
+        "purge layers"
+      ]
+    },
+    {
+      "name": "rename_layer",
+      "description": "Rename a layer. Layer 0 cannot be renamed; new name must be a valid AutoCAD symbol name.",
+      "tags": [
+        "rename",
+        "layer"
+      ],
+      "intent": [
+        "zmien nazwe warstwy",
+        "rename layer",
+        "przemianuj warstwe",
+        "change layer name",
+        "rename layer to"
+      ]
+    },
+    {
+      "name": "rename_layer_state",
+      "description": "Rename a named layer state. Refuses a name that is already taken rather than merging into it, and confirms both halves of the rename in the result - the old name gone and the new one present - since a rename that half happened is worse than one that failed outright.",
+      "tags": [
+        "rename",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "zmien nazwe stanu warstw",
+        "przemianuj stan warstw",
+        "rename layer state",
+        "give a layer state a better name",
+        "poprawa nazwy stanu warstw",
+        "change layer state name"
+      ]
+    },
+    {
+      "name": "restore_layer_state",
+      "description": "Restore a previously saved named layer state.",
+      "tags": [
+        "restore",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "przywroc stan warstw",
+        "restore layer state",
+        "load las",
+        "wczytaj zapisany stan warstw",
+        "apply layer state"
+      ]
+    },
+    {
+      "name": "save_layer_state",
+      "description": "Save the current visibility/lock/color/linetype state of every layer under a named layer state (LAS).",
+      "tags": [
+        "save",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "zapisz stan warstw",
+        "save layer state",
+        "save las",
+        "zapisz konfiguracje warstw",
+        "checkpoint layer visibility"
+      ]
+    },
+    {
+      "name": "set_current_layer",
+      "description": "Set the active (\u0022current\u0022) layer; subsequent draw operations default to this layer.",
+      "tags": [
+        "set",
+        "current",
+        "layer"
+      ],
+      "intent": [
+        "ustaw biezaca warstwe",
+        "set current layer",
+        "make layer current",
+        "switch active layer",
+        "wybierz warstwe biezaca"
+      ]
+    },
+    {
+      "name": "set_layer_color",
+      "description": "Set a layer\u0027s color (true RGB or ACI 1..255).",
+      "tags": [
+        "set",
+        "layer",
+        "color"
+      ],
+      "intent": [
+        "zmien kolor warstwy",
+        "set layer color",
+        "color of layer",
+        "ustaw kolor warstwy",
+        "kolor warstwy rgb"
+      ]
+    },
+    {
+      "name": "set_layer_linetype",
+      "description": "Set a layer\u0027s linetype (must already be loaded; returns LayerNotFound if linetype is missing).",
+      "tags": [
+        "set",
+        "layer",
+        "linetype"
+      ],
+      "intent": [
+        "zmien typ linii warstwy",
+        "set layer linetype",
+        "ustaw linetype warstwy",
+        "linia przerywana na warstwie",
+        "layer linetype"
+      ]
+    },
+    {
+      "name": "set_layer_lineweight",
+      "description": "Set a layer\u0027s lineweight in millimeters; snaps to nearest standard AutoCAD value (e.g. 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm).",
+      "tags": [
+        "set",
+        "layer",
+        "lineweight"
+      ],
+      "intent": [
+        "zmien grubosc linii warstwy",
+        "set layer lineweight",
+        "grubosc warstwy",
+        "layer lineweight in mm",
+        "warstwa grubosc"
+      ]
+    },
+    {
+      "name": "set_layer_state",
+      "description": "Toggle one or more layer state flags: frozen, locked, off, plottable. null = leave unchanged. Cannot freeze the current layer.",
+      "tags": [
+        "set",
+        "layer",
+        "state"
+      ],
+      "intent": [
+        "zamroz warstwe",
+        "freeze layer",
+        "lock layer",
+        "thaw layer",
+        "wylacz warstwe"
+      ]
+    },
+    {
+      "name": "set_layer_state_description",
+      "description": "Attach or replace the description on a named layer state - what it is for, which sheet it belongs to, which discipline it serves. Pass an empty description to clear it. Worth doing: a drawing holding six states called PLAN-1 through PLAN-6 with no descriptions is one an agent cannot choose between.",
+      "tags": [
+        "set",
+        "layer",
+        "state",
+        "description"
+      ],
+      "intent": [
+        "opis stanu warstw",
+        "dodaj opis do stanu warstw",
+        "set layer state description",
+        "describe what a layer state is for",
+        "podpisz stan warstw",
+        "annotate a layer state"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "layers",
+    "tool_count_target": 20,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase3_annotations_blocks",
+    "last_regenerated_utc": "2026-08-05T16:36:01.6669464Z"
+  }
+}

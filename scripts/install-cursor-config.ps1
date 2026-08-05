@@ -5,7 +5,7 @@
 .DESCRIPTION
     The acad-router is the ONLY AutoCAD MCP server that should be statically loaded
     in Cursor. All other categories (acad-geometry-2d, acad-architecture, ...) are
-    discovered and loaded on demand via MCPBank Dynamics, so they MUST NOT be added
+    discovered and loaded on demand via ToolBank Dynamics, so they MUST NOT be added
     to mcp.json.
     
     This script:

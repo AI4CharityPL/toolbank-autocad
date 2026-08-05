@@ -1,0 +1,230 @@
+{
+  "id": "acad-layouts",
+  "name": "acad-layouts",
+  "description": "AutoCAD paper-space layout management: create, list, rename, delete and switch the current layout; create and configure floating Viewport entities (size, center, scale, layer, on/off, locked, frozen layers) on a layout; configure plot settings (page size, plotter, orientation, plot area). All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-layouts.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "configure",
+    "create",
+    "current",
+    "delete",
+    "dwg",
+    "get",
+    "layout",
+    "layouts",
+    "list",
+    "paper",
+    "plot",
+    "rename",
+    "scale",
+    "set",
+    "sizes",
+    "viewport"
+  ],
+  "intent_examples": [
+    "add new tab",
+    "add viewport on layout",
+    "available paper formats",
+    "change layout name",
+    "change viewport scale",
+    "configure plot settings",
+    "create paperspace layout",
+    "create viewport",
+    "delete layout",
+    "describe layout",
+    "dodaj nowy layout",
+    "dodaj rzutnie",
+    "drop paperspace tab",
+    "enumerate plotter paper sizes",
+    "get layout info",
+    "info o layoucie",
+    "jakie rozmiary arkuszy",
+    "konfiguruj plot",
+    "list layouts",
+    "list paper sizes",
+    "make layout current",
+    "new layout tab",
+    "pokaz layout",
+    "przemianuj zakladke",
+    "remove layout tab",
+    "rename layout",
+    "rename layout to",
+    "rzutnia w layoucie",
+    "set current layout",
+    "set plotter and paper",
+    "set viewport scale",
+    "show available media",
+    "show layout details",
+    "show paperspace tabs",
+    "skala rzutni 1 do 50",
+    "skasuj zakladke",
+    "stworz layout",
+    "stworz viewport",
+    "switch active tab",
+    "ustaw biezacy layout",
+    "ustaw drukarke layoutu",
+    "ustaw rozmiar arkusza",
+    "ustaw skale rzutni",
+    "usun layout",
+    "viewport scale to 1:100",
+    "what layouts exist",
+    "which papers does the plotter support",
+    "wszystkie layouty",
+    "wybierz layout",
+    "wylistuj layouty",
+    "wylistuj rozmiary papieru",
+    "zmien nazwe layoutu"
+  ],
+  "tools_summary": [
+    {
+      "name": "configure_plot",
+      "description": "Configure a layout\u0027s plot settings: plotter / device name, paper size (accepts canonical \u0027ISO_full_bleed_A0_(1189.00_x_841.00_MM)\u0027, locale \u0027ISO A0 (841.00 x 1189.00 MM)\u0027, or fuzzy alias \u0027A0\u0027 / \u0027ISO A0\u0027 / \u0027a0\u0027 \u2014 all three resolve to the plotter\u0027s canonical name), named plot style table, and 0/90/180/270 plot rotation. Pass null on any field to leave it untouched. Call layouts.list_paper_sizes first if you\u0027re unsure which media strings the installed plotter accepts.",
+      "tags": [
+        "configure",
+        "plot"
+      ],
+      "intent": [
+        "konfiguruj plot",
+        "ustaw drukarke layoutu",
+        "configure plot settings",
+        "set plotter and paper",
+        "ustaw rozmiar arkusza"
+      ]
+    },
+    {
+      "name": "create_layout",
+      "description": "Create a new paper-space layout (tab). Optionally make it the current/active layout right after creation.",
+      "tags": [
+        "create",
+        "layout"
+      ],
+      "intent": [
+        "stworz layout",
+        "dodaj nowy layout",
+        "create paperspace layout",
+        "add new tab",
+        "new layout tab"
+      ]
+    },
+    {
+      "name": "delete_layout",
+      "description": "Delete a paper-space layout. Cannot delete the Model tab; cannot delete the last remaining paper-space tab.",
+      "tags": [
+        "delete",
+        "layout"
+      ],
+      "intent": [
+        "usun layout",
+        "delete layout",
+        "skasuj zakladke",
+        "remove layout tab",
+        "drop paperspace tab"
+      ]
+    },
+    {
+      "name": "get_layout",
+      "description": "Return descriptor of a single paper-space layout by name.",
+      "tags": [
+        "get",
+        "layout"
+      ],
+      "intent": [
+        "pokaz layout",
+        "get layout info",
+        "describe layout",
+        "info o layoucie",
+        "show layout details"
+      ]
+    },
+    {
+      "name": "list_layouts",
+      "description": "List every paper-space layout (tab) in the active drawing with its tab order, current flag, and configured plotter / paper size.",
+      "tags": [
+        "list",
+        "layouts"
+      ],
+      "intent": [
+        "wylistuj layouty",
+        "list layouts",
+        "show paperspace tabs",
+        "wszystkie layouty",
+        "what layouts exist"
+      ]
+    },
+    {
+      "name": "list_paper_sizes",
+      "description": "Enumerate every paper size supported by a plotter (plotter=null -\u003E the current layout\u0027s plotter or the first registered device). Returns the canonical media names (what configure_plot needs) plus the locale-facing display name. Call this before configure_plot if you\u0027re unsure which media strings the installed plotter accepts \u2014 especially for non-standard devices (e.g. \u0027DWG To PDF.pc3\u0027, \u0027Microsoft Print to PDF\u0027, pen plotters, PublishToWeb PNG). configure_plot accepts canonical / locale / fuzzy names (e.g. \u0027A0\u0027, \u0027ISO A0\u0027); use this tool when even fuzzy resolution fails.",
+      "tags": [
+        "list",
+        "paper",
+        "sizes"
+      ],
+      "intent": [
+        "list paper sizes",
+        "wylistuj rozmiary papieru",
+        "show available media",
+        "jakie rozmiary arkuszy",
+        "enumerate plotter paper sizes",
+        "which papers does the plotter support",
+        "available paper formats"
+      ]
+    },
+    {
+      "name": "rename_layout",
+      "description": "Rename a paper-space layout. The Model tab cannot be renamed; the new name must be unique and valid as an AutoCAD symbol name.",
+      "tags": [
+        "rename",
+        "layout"
+      ],
+      "intent": [
+        "zmien nazwe layoutu",
+        "rename layout",
+        "przemianuj zakladke",
+        "change layout name",
+        "rename layout to"
+      ]
+    },
+    {
+      "name": "set_current_layout",
+      "description": "Switch the active layout to the named tab (use \u0022Model\u0022 to return to model space). All subsequent draw / viewport tools target this layout.",
+      "tags": [
+        "set",
+        "current",
+        "layout"
+      ],
+      "intent": [
+        "ustaw biezacy layout",
+        "set current layout",
+        "switch active tab",
+        "make layout current",
+        "wybierz layout"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "layouts",
+    "tool_count_target": 8,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase3_annotations_blocks",
+    "last_regenerated_utc": "2026-08-05T13:09:29.7236204Z"
+  }
+}

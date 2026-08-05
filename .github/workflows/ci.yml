@@ -63,7 +63,7 @@ jobs:
           --logger "trx;LogFileName=test-results.trx"
           --results-directory artifacts/test-results
 
-      # Every category folder under Categories/ must have a matching MCPBank manifest and
+      # Every category folder under Categories/ must have a matching ToolBank manifest and
       # the tool names must agree. This is what stops the discovery layer advertising a
       # tool the server does not implement.
       - name: Manifest / code sync

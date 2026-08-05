@@ -1,0 +1,393 @@
+{
+  "id": "acad-blocks",
+  "name": "acad-blocks",
+  "description": "AutoCAD block (BlockTableRecord) authoring and instancing: define a block from existing entities, list / inspect / rename / purge block definitions, insert BlockReference instances with explicit attribute values, list and update attributes on existing references, explode references back to entities, and import block definitions across DWG files via WblockCloneObjects. All write operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-blocks.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "attributes",
+    "autocad",
+    "block",
+    "blocks",
+    "bulk",
+    "cad",
+    "define",
+    "definition",
+    "delete",
+    "dwg",
+    "explode",
+    "extract",
+    "file",
+    "from",
+    "get",
+    "insert",
+    "library",
+    "list",
+    "purge",
+    "redefine",
+    "reference",
+    "references",
+    "register",
+    "rename",
+    "set",
+    "swap",
+    "unused"
+  ],
+  "intent_examples": [
+    "add block library path",
+    "attrext one block",
+    "block from external dwg",
+    "block purge",
+    "block reference with attributes",
+    "bulk insert blocks",
+    "change block name",
+    "create block from selection",
+    "decompose block reference",
+    "define block btr",
+    "define block from dwg",
+    "delete block definition",
+    "dodaj folder blokow",
+    "drop block",
+    "edit attribute values",
+    "enumerate dwg files in library",
+    "explode block",
+    "explode insert",
+    "extract block references",
+    "find all instances of block",
+    "get block attributes",
+    "import block from file",
+    "import bloku z dwg",
+    "insert block reference",
+    "insert many blocks at once",
+    "insertuj blok",
+    "link dwg folder as library",
+    "list all blocks",
+    "list attributes of insert",
+    "list block libraries",
+    "list inserts of block",
+    "make block from entities",
+    "mass-insert block references",
+    "place block at point",
+    "pobierz atrybuty bloku",
+    "podmien blok",
+    "podmien geometrie bloku",
+    "podmien wszystkie wstawienia bloku",
+    "popraw atrybuty insertu",
+    "przemianuj blok",
+    "purge unused blocks",
+    "read block attribute values",
+    "redefine block",
+    "redefinuj blok",
+    "register block library",
+    "remove block btr",
+    "remove empty block defs",
+    "rename block",
+    "rename block to",
+    "replace all inserts of block",
+    "replace block geometry",
+    "rozbij blok",
+    "rozbij wstawienie bloku",
+    "set block attributes",
+    "show block definitions",
+    "show registered block folders",
+    "skasuj blok",
+    "stworz blok",
+    "substitute block definition globally",
+    "swap block",
+    "update block definition",
+    "update block reference attribs",
+    "ustaw atrybuty bloku",
+    "usun definicje bloku",
+    "wczytaj blok z pliku",
+    "what blocks exist",
+    "what libraries",
+    "wstaw blok",
+    "wstaw masowo bloki",
+    "wstaw wiele blokow",
+    "wszystkie bloki",
+    "wszystkie inserty bloku",
+    "wyczysc bloki",
+    "wyczysc nieuzywane bloki",
+    "wylistuj biblioteki blokow",
+    "wylistuj bloki",
+    "zarejestruj biblioteke blokow",
+    "zdefiniuj blok z encji",
+    "zmien nazwe bloku",
+    "znajdz wstawienia bloku"
+  ],
+  "tools_summary": [
+    {
+      "name": "bulk_insert",
+      "description": "Insert many BlockReferences in one pass. For each item: if the block name is already defined it is reused; otherwise (autoImport=true) the plugin searches every registered library (or only libraryName if given) for a matching \u003CblockName\u003E.dwg and imports it as a new definition before inserting. Attributes / scale / rotation / layer per item.",
+      "tags": [
+        "bulk",
+        "insert"
+      ],
+      "intent": [
+        "wstaw masowo bloki",
+        "bulk insert blocks",
+        "insert many blocks at once",
+        "wstaw wiele blokow",
+        "mass-insert block references"
+      ]
+    },
+    {
+      "name": "define_block",
+      "description": "Define a new BlockTableRecord (BTR) in the active drawing from a list of existing entity handles. The \u0027origin\u0027 point becomes the block\u0027s insertion (base) point. By default the source entities are erased after copying into the BTR.",
+      "tags": [
+        "define",
+        "block"
+      ],
+      "intent": [
+        "stworz blok",
+        "zdefiniuj blok z encji",
+        "create block from selection",
+        "define block btr",
+        "make block from entities"
+      ]
+    },
+    {
+      "name": "define_block_from_file",
+      "description": "Import an external .dwg file as a new block definition; the entire model space of the source DWG becomes the block.",
+      "tags": [
+        "define",
+        "block",
+        "from",
+        "file"
+      ],
+      "intent": [
+        "import bloku z dwg",
+        "wczytaj blok z pliku",
+        "define block from dwg",
+        "import block from file",
+        "block from external dwg"
+      ]
+    },
+    {
+      "name": "delete_block_definition",
+      "description": "Delete a block definition (BTR). Only succeeds if no BlockReference uses it. Use purge_unused_blocks to remove every unused block in one call.",
+      "tags": [
+        "delete",
+        "block",
+        "definition"
+      ],
+      "intent": [
+        "usun definicje bloku",
+        "delete block definition",
+        "skasuj blok",
+        "remove block btr",
+        "drop block"
+      ]
+    },
+    {
+      "name": "explode_block_reference",
+      "description": "Explode a BlockReference into its constituent entities in model space. Attributes are converted into DBText. Returns the list of newly created entity handles.",
+      "tags": [
+        "explode",
+        "block",
+        "reference"
+      ],
+      "intent": [
+        "rozbij blok",
+        "explode block",
+        "explode insert",
+        "rozbij wstawienie bloku",
+        "decompose block reference"
+      ]
+    },
+    {
+      "name": "extract_block_references",
+      "description": "Find every BlockReference (insert) of a given block definition (or all blocks if name is omitted). Returns each insert\u0027s position, scale, rotation, layer and attributes.",
+      "tags": [
+        "extract",
+        "block",
+        "references"
+      ],
+      "intent": [
+        "znajdz wstawienia bloku",
+        "extract block references",
+        "list inserts of block",
+        "find all instances of block",
+        "wszystkie inserty bloku"
+      ]
+    },
+    {
+      "name": "get_block_reference_attributes",
+      "description": "Return all attribute reference (AttributeReference) tag/value pairs of a single BlockReference by handle.",
+      "tags": [
+        "get",
+        "block",
+        "reference",
+        "attributes"
+      ],
+      "intent": [
+        "pobierz atrybuty bloku",
+        "get block attributes",
+        "read block attribute values",
+        "list attributes of insert",
+        "attrext one block"
+      ]
+    },
+    {
+      "name": "insert_block",
+      "description": "Insert a BlockReference of a defined block at the given position with optional non-uniform scale and rotation. Attributes are populated from the {tag: value} dictionary; missing tags fall back to defaults.",
+      "tags": [
+        "insert",
+        "block"
+      ],
+      "intent": [
+        "wstaw blok",
+        "insert block reference",
+        "insertuj blok",
+        "place block at point",
+        "block reference with attributes"
+      ]
+    },
+    {
+      "name": "library_list",
+      "description": "List every registered block library. When libraryName is given, only that library is returned and its .dwg file list is enumerated (when includeFiles=true, default).",
+      "tags": [
+        "library",
+        "list"
+      ],
+      "intent": [
+        "wylistuj biblioteki blokow",
+        "list block libraries",
+        "show registered block folders",
+        "what libraries",
+        "enumerate dwg files in library"
+      ]
+    },
+    {
+      "name": "library_register",
+      "description": "Register a filesystem folder as a named block library. The path is scanned for .dwg files (recursively by default) and persisted to a user-scoped catalog so subsequent sessions remember it. Libraries are consumed by bulk_insert and swap_block (auto-import).",
+      "tags": [
+        "library",
+        "register"
+      ],
+      "intent": [
+        "zarejestruj biblioteke blokow",
+        "register block library",
+        "add block library path",
+        "dodaj folder blokow",
+        "link dwg folder as library"
+      ]
+    },
+    {
+      "name": "list_blocks",
+      "description": "List every block definition in the drawing (excluding *Model_Space, *Paper_Space and other AutoCAD-internal records). Reports anonymous, dynamic and Xref flags.",
+      "tags": [
+        "list",
+        "blocks"
+      ],
+      "intent": [
+        "wylistuj bloki",
+        "list all blocks",
+        "show block definitions",
+        "wszystkie bloki",
+        "what blocks exist"
+      ]
+    },
+    {
+      "name": "purge_unused_blocks",
+      "description": "Purge every block definition that has no BlockReference and is not an internal record (Model_Space, Paper_Space, anonymous *D / *E records). Returns the count removed.",
+      "tags": [
+        "purge",
+        "unused",
+        "blocks"
+      ],
+      "intent": [
+        "wyczysc bloki",
+        "purge unused blocks",
+        "remove empty block defs",
+        "wyczysc nieuzywane bloki",
+        "block purge"
+      ]
+    },
+    {
+      "name": "redefine_block",
+      "description": "Replace the geometry of an existing block definition with a new entity set; existing block references are updated automatically. Source entities are erased by default.",
+      "tags": [
+        "redefine",
+        "block"
+      ],
+      "intent": [
+        "redefinuj blok",
+        "podmien geometrie bloku",
+        "redefine block",
+        "update block definition",
+        "replace block geometry"
+      ]
+    },
+    {
+      "name": "rename_block",
+      "description": "Rename a block definition. Cannot rename Model_Space / Paper_Space, anonymous blocks (starting with \u0027*\u0027) or Xrefs.",
+      "tags": [
+        "rename",
+        "block"
+      ],
+      "intent": [
+        "zmien nazwe bloku",
+        "rename block",
+        "przemianuj blok",
+        "change block name",
+        "rename block to"
+      ]
+    },
+    {
+      "name": "set_block_reference_attributes",
+      "description": "Update one or more attribute reference text strings on an existing BlockReference. Tags not present in the BlockReference are silently skipped. Returns the number of attributes that were actually updated.",
+      "tags": [
+        "set",
+        "block",
+        "reference",
+        "attributes"
+      ],
+      "intent": [
+        "ustaw atrybuty bloku",
+        "set block attributes",
+        "update block reference attribs",
+        "edit attribute values",
+        "popraw atrybuty insertu"
+      ]
+    },
+    {
+      "name": "swap_block",
+      "description": "Globally replace every BlockReference of oldName with newName, preserving position, rotation, scale and layer. When keepAttributes=true, compatible attribute tag/value pairs are copied onto the new BlockReference. If newName is not defined yet and autoImport=true, it is imported from the registered libraries first.",
+      "tags": [
+        "swap",
+        "block"
+      ],
+      "intent": [
+        "podmien blok",
+        "swap block",
+        "replace all inserts of block",
+        "podmien wszystkie wstawienia bloku",
+        "substitute block definition globally"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "blocks",
+    "tool_count_target": 16,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase3_annotations_blocks",
+    "last_regenerated_utc": "2026-08-05T13:09:25.7662192Z"
+  }
+}

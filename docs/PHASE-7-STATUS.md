@@ -53,7 +53,7 @@ Two real, unrelated bugs were found and fixed along the way; one defect was foun
 
 ### 7.4 Router / invariants — documentation/code sync — ✅ resolved
 
-**The problem:** three sources of truth had drifted apart. `RouterServer.cs` registers 10 tool stubs (including `acad_call`, the universal dispatcher). `mcpbank-manifests/acad-router.json`'s `tools_summary` only described 9 — `acad_call` was missing. `docs/engineering-rules/00-architecture-invariants.md` §6 said "~8 meta-tools" and listed 9 names (also without `acad_call`).
+**The problem:** three sources of truth had drifted apart. `RouterServer.cs` registers 10 tool stubs (including `acad_call`, the universal dispatcher). `toolbank-manifests/acad-router.json`'s `tools_summary` only described 9 — `acad_call` was missing. `docs/engineering-rules/00-architecture-invariants.md` §6 said "~8 meta-tools" and listed 9 names (also without `acad_call`).
 
 **Verified live:** a full 30/30-category sweep through the real `AcadMcp.Backend.exe --category router` (`tools/list`) returned exactly 10 tools, matching the code.
 

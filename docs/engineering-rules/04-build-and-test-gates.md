@@ -22,7 +22,7 @@ pwsh scripts/pre-commit.ps1
 | Touched area                                      | Extra check                                                  |
 | ------------------------------------------------- | ------------------------------------------------------------ |
 | `Categories/<X>/`                                 | `pwsh scripts/check-manifests.ps1` (sync category ↔ manifest) |
-| `mcpbank-manifests/`                              | `pwsh scripts/check-manifests.ps1`                            |
+| `toolbank-manifests/`                              | `pwsh scripts/check-manifests.ps1`                            |
 | `src/AcadMcp.Plugin/`                             | `dotnet build` for both `net48` and `net8.0-windows` targets  |
 | `src/AcadMcp.Vision/`                             | `cd src/AcadMcp.Vision && ruff check . && pytest`             |
 | `docs/engineering-rules/`                                  | YAML frontmatter linter (run by pre-commit hook)              |
@@ -35,7 +35,7 @@ Before declaring a Phase done:
 
 ```powershell
 pwsh scripts/package.ps1               # builds all launchers + bundles
-pwsh scripts/register-mcps.ps1 -DryRun # validates manifests load into MCPBank
+pwsh scripts/register-mcps.ps1 -DryRun # validates manifests load into ToolBank
 dotnet test --filter Category=ArchTest # NetArchTest invariant tests
 ```
 
@@ -43,7 +43,7 @@ dotnet test --filter Category=ArchTest # NetArchTest invariant tests
 
 - **Build fail:** fix immediately. Do not commit, do not move on.
 - **Test fail:** if the test was wrong (rare), fix it AND add a regression test for whatever you broke. If the code was wrong, fix the code.
-- **Manifest sync fail:** the category and `mcpbank-manifests/acad-<X>.json` are out of step. Update the manifest with new tools or remove deleted ones. Do not commit until in sync.
+- **Manifest sync fail:** the category and `toolbank-manifests/acad-<X>.json` are out of step. Update the manifest with new tools or remove deleted ones. Do not commit until in sync.
 - **Architecture test fail:** you broke an invariant from `00-architecture-invariants.md`. Stop, re-read that rule, refactor.
 
 ## When to skip a gate (almost never)

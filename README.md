@@ -1,6 +1,6 @@
-# MCP Nexus AutoCAD (v2025)
+# ToolBank AutoCAD (v2025)
 
-> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: 1000+ tools spread across dozens of specialized micro-servers, registered in MCP Nexus, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
+> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: 1000+ tools spread across dozens of specialized micro-servers, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
@@ -20,11 +20,11 @@ see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
 
 ## Architecture in one sentence
 
-Your AI client only ever sees `acad-router` (meta-tools) plus MCP Nexus. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
+Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
 ```
 AI Agent ── static ──> acad-router (10 meta-tools)
-         ── static ──> nexus-server + nexus-gateway (MCP Nexus discovery/dynamic modes)
+         ── static ──> toolbank-server + toolbank-gateway (ToolBank discovery/dynamic modes)
                             │ mcpd_find / mcpd_connect (lazy)
                             ▼
         ┌───────────────────┴────────────────────────┐
@@ -63,7 +63,7 @@ This repository is actually three separable things sharing one execution engine.
 | `AcadMcp.Shared`      | DTOs, pipe contracts, `ToolRequest`/`ToolResponse`                     |
 | `AcadMcp.SourceGen`   | Roslyn source generator enforcing `[McpTool]` with an `Intent` field  |
 | `AcadMcp.Vision`      | Python sidecar (FastAPI + gRPC, Claude Vision/GPT-4V, PaddleOCR)       |
-| `mcpbank-manifests/`  | JSON manifests for auto-registration in MCP Nexus                     |
+| `toolbank-manifests/`  | JSON manifests for auto-registration in ToolBank                     |
 | `bin-launchers/`      | Per-category `.cmd` launch scripts                                    |
 | `docs/engineering-rules/`      | A growing rulebook enforcing architectural invariants                 |
 
@@ -115,10 +115,10 @@ dotnet build src/AcadMcp.sln -c Release
 # 3. Generate a launcher for any category that is missing one
 powershell -ExecutionPolicy Bypass -File scripts\package.ps1
 
-# 4. Register every category with your local MCP Nexus instance
+# 4. Register every category with your local ToolBank instance
 powershell -ExecutionPolicy Bypass -File scripts\register-mcps.ps1
 
-# 5. Inject ONLY acad-router into your MCP client (MCP Nexus assumed already configured)
+# 5. Inject ONLY acad-router into your MCP client (ToolBank assumed already configured)
 powershell -ExecutionPolicy Bypass -File scripts\install-cursor-config.ps1
 
 # 6. Install the plugin into AutoCAD -- see "Installing into AutoCAD 2025" below
@@ -211,15 +211,15 @@ pwsh scripts/package.ps1
 
 `package.ps1` generates one `.cmd` launcher per category under `bin-launchers/` (e.g. `acad-geometry-2d.cmd`), each wrapping `AcadMcp.Backend.exe --category <name>`.
 
-### 2. Register every category with MCP Nexus
+### 2. Register every category with ToolBank
 
 ```powershell
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 31 categories (see [`mcpbank-manifests/`](../mcpbank-manifests)) with your local MCP Nexus instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~340 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 31 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~340 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
-The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `nexus-gateway` or `nexus-server` entry (current MCP Nexus CLI names) and falling back to the older `mcpbank-dynamic` / `mcpbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\mcpbank\registry\mcpd-registry.json`. Verified against both a `nexus-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
+The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `toolbank-gateway` or `toolbank-server` entry (current ToolBank CLI names) and falling back to the older `toolbank-dynamic` / `toolbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\toolbank\registry\mcpd-registry.json`. Verified against both a `toolbank-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
 ### 3. Point your MCP client at `acad-router` only
 
@@ -227,7 +227,7 @@ The script auto-detects your registry path from `~/.cursor/mcp.json`, checking f
 pwsh scripts/install-cursor-config.ps1
 ```
 
-Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through MCP Nexus. This assumes MCP Nexus itself is already configured in your client — see the [MCP Nexus repository](https://github.com/KrzysztofAugiewicz/MCPNexus) if it isn't.
+Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through ToolBank. This assumes ToolBank itself is already configured in your client — see the [ToolBank repository](https://github.com/KrzysztofAugiewicz/ToolBank) if it isn't.
 
 ### 4. Verify
 
@@ -235,7 +235,7 @@ Ask your AI client to call `acad_status`. With AutoCAD running and the Plugin lo
 
 ## 3. Companion — standalone in-app assistant (BYOK)
 
-A completely separate product from the MCP-client path above: a self-contained chat panel that lives inside AutoCAD itself. No external AI client, no MCP Nexus configuration needed — you bring your own API key (BYOK) for Anthropic, OpenAI, or Gemini, entered once inside the panel.
+A completely separate product from the MCP-client path above: a self-contained chat panel that lives inside AutoCAD itself. No external AI client, no ToolBank configuration needed — you bring your own API key (BYOK) for Anthropic, OpenAI, or Gemini, entered once inside the panel.
 
 It bundles its own copies of the Plugin and Backend, so it doesn't depend on the bundle installed in [§1](#1-the-plugin--foundation-always-required) — it runs independently, side by side with it if you have both installed.
 
@@ -270,7 +270,7 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**340 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`mcpbank-manifests/`](mcpbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
+**340 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`toolbank-manifests/`](toolbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
 
 ## Status
 
@@ -295,7 +295,7 @@ Per-discipline vision/YOLO detection is not part of this repository.
 - **Code:** English. **Domain comments (CAD/standards):** Polish is fine.
 - **MCP tool names:** `snake_case`, max 5 words, `<verb>_<entity>_<modifier?>` format.
 - **Every tool MUST carry `[McpTool]` with an `Intent` field (5+ examples, PL and EN)** — enforced by the source generator.
-- **Every category** has its own manifest at `mcpbank-manifests/acad-<category>.json`.
+- **Every category** has its own manifest at `toolbank-manifests/acad-<category>.json`.
 - **Cross-category references are forbidden** — shared helpers live in `Categories/_Shared/`.
 
 ## Authors

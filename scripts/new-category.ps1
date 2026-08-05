@@ -9,7 +9,7 @@
 
       src/AcadMcp.Backend/Categories/<Folder>/<Folder>Tools.cs   (stub [McpTool])
       src/AcadMcp.Backend/Categories/<Folder>/_README.md         (planned tool list)
-      mcpbank-manifests/acad-<name>.json                          (manifest with placeholders)
+      toolbank-manifests/acad-<name>.json                          (manifest with placeholders)
       bin-launchers/acad-<name>.cmd                               (Release exe launcher)
       tests/AcadMcp.Tests/Categories/<Folder>Tests.cs             (smoke test stub)
 
@@ -23,7 +23,7 @@
     Human-readable category title. Defaults to Title Cased Name.
 
 .PARAMETER Description
-    One-paragraph description (will land in mcpbank manifest "description" field).
+    One-paragraph description (will land in toolbank manifest "description" field).
     If omitted, a placeholder is inserted with a TODO marker.
 
 .PARAMETER Tags
@@ -86,7 +86,7 @@ $tagsFinal = @("autocad", "cad", "dwg", $nameKebab) + (@() + $Tags) | Select-Obj
 $catDir       = Join-Path $RepoRoot "src\AcadMcp.Backend\Categories\$folderName"
 $catCs        = Join-Path $catDir "$className.cs"
 $catReadme    = Join-Path $catDir "_README.md"
-$manifestPath = Join-Path $RepoRoot "mcpbank-manifests\$manifestId.json"
+$manifestPath = Join-Path $RepoRoot "toolbank-manifests\$manifestId.json"
 $launcherDir  = Join-Path $RepoRoot "bin-launchers"
 $launcherPath = Join-Path $launcherDir "$manifestId.cmd"
 $testsDir     = Join-Path $RepoRoot "tests\AcadMcp.Tests\Categories"
@@ -267,6 +267,6 @@ Write-Host "       - $($manifestPath.Substring($RepoRoot.Length+1)) (intent_exam
 Write-Host "       - $($catCs.Substring($RepoRoot.Length+1)) (real [McpTool] methods)" -ForegroundColor DarkGray
 Write-Host "  4. Regenerate manifest after adding tools:" -ForegroundColor White
 Write-Host "       dotnet run --project src/AcadMcp.Backend -- --category $nameKebab --regenerate-manifest" -ForegroundColor DarkGray
-Write-Host "  5. Register with MCPBank:" -ForegroundColor White
+Write-Host "  5. Register with ToolBank:" -ForegroundColor White
 Write-Host "       pwsh scripts/register-mcps.ps1" -ForegroundColor DarkGray
 exit 0

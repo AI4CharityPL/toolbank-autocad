@@ -1,0 +1,160 @@
+{
+  "id": "acad-callouts",
+  "name": "acad-callouts",
+  "description": "Sheet furniture: everything that makes a drawing readable as a document rather than as geometry. Draws the ISO 7200 border and title block (A0-A4, scaled so the plotted sheet is right), north arrows (simple, compass or ISO 129), scale bars for 1:50/1:100/1:200, section callouts that name the cut they refer to, and detail callouts (column, elevation profile, stair step). Reach for this last, once the plan itself is drawn. It does not cut sections - that is acad-sections. Title-block cells written here are static text: use acad-fields if they must track the drawing.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-callouts.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "arrow",
+    "autocad",
+    "bar",
+    "block",
+    "cad",
+    "callout",
+    "callouts",
+    "detail",
+    "dwg",
+    "insert",
+    "leaders",
+    "north",
+    "north-arrow",
+    "oznaczenia",
+    "pn-en-iso-129",
+    "scale",
+    "scale-bar",
+    "section",
+    "title"
+  ],
+  "intent_examples": [
+    "detail reference circle",
+    "graphic scale",
+    "insert detail callout",
+    "insert north arrow",
+    "insert scale bar",
+    "insert section callout",
+    "insert title block",
+    "linia ciecia z kolkiem",
+    "metryczka rysunku",
+    "north indicator",
+    "okno detalu 1:20",
+    "podzialka liniowa",
+    "ramka arkusza A1",
+    "rozka kompasu",
+    "section marker",
+    "sheet frame and stamp",
+    "skala graficzna",
+    "symbol N na planie",
+    "wstaw odnosnik detalu",
+    "wstaw podzialke",
+    "wstaw przekroj",
+    "wstaw strzalke polnocy",
+    "wstaw tabelke rysunkowa",
+    "zaznaczenie detalu na planie",
+    "znacznik przekroju A-A"
+  ],
+  "tools_summary": [
+    {
+      "name": "insert_detail_callout",
+      "description": "Mark a rectangular/circular area for a detail on a separate sheet. Draws a detail circle of radius radiusMm around center, a dashed-style leader line to leaderEndPoint, and a callout bubble containing the label and target scale. If leaderEndPoint is null, the bubble is positioned at radiusMm*2 to the upper-right of the centre.",
+      "tags": [
+        "insert",
+        "detail",
+        "callout"
+      ],
+      "intent": [
+        "wstaw odnosnik detalu",
+        "insert detail callout",
+        "okno detalu 1:20",
+        "detail reference circle",
+        "zaznaczenie detalu na planie"
+      ]
+    },
+    {
+      "name": "insert_north_arrow",
+      "description": "Insert a north arrow symbol (ISO 5455) at the given model-space position. The symbol is a circle plus an inscribed north-pointing arrow plus a \u0022N\u0022 label above. Plotted diameter is PlotNorthDiameterMm (30 mm) scaled by the requested drawing scale (1:100 \u2192 3000 mm drawing-unit diameter). Layer A-ANNO-NORT, colour inherited from the layer.",
+      "tags": [
+        "insert",
+        "north",
+        "arrow"
+      ],
+      "intent": [
+        "wstaw strzalke polnocy",
+        "insert north arrow",
+        "rozka kompasu",
+        "north indicator",
+        "symbol N na planie"
+      ]
+    },
+    {
+      "name": "insert_scale_bar",
+      "description": "Insert a horizontal graphic scale bar at the given position. The bar is a chequered 5-segment rectangle (alternating black/white segments 1-by-4 mm plotted high) with numeric labels under each segment and a \u00221:100\u0022 scale caption centred above. Segment meters auto-scale to the plan scale (1:50 \u2192 1 m segments, 1:200 \u2192 2 m segments).",
+      "tags": [
+        "insert",
+        "scale",
+        "bar"
+      ],
+      "intent": [
+        "wstaw podzialke",
+        "insert scale bar",
+        "skala graficzna",
+        "graphic scale",
+        "podzialka liniowa"
+      ]
+    },
+    {
+      "name": "insert_section_callout",
+      "description": "Insert a section cut-line plus two end markers (circle \u002B label letter) plus two view-direction arrows. Optional drawCutLine=true draws the dashed cut polyline between startPoint and endPoint; set it to false if the plan already has a cut line. label defaults to \u0022A\u0022 and creates markers reading \u0022A\u0022 on both ends (A-A section). viewDirection controls which side the triangle arrows point (right|left relative to the start\u2192end vector).",
+      "tags": [
+        "insert",
+        "section",
+        "callout"
+      ],
+      "intent": [
+        "wstaw przekroj",
+        "insert section callout",
+        "znacznik przekroju A-A",
+        "section marker",
+        "linia ciecia z kolkiem"
+      ]
+    },
+    {
+      "name": "insert_title_block",
+      "description": "Draw an ISO 7200 sheet border plus a 12-row project title block in the lower-right corner. sheetSize accepts A0/A1/A2/A3/A4; the block is scaled so that the plotted paper size matches. Pass fields=[{key, value}, ...] to fill the standard rows (PROJEKT, INWESTOR, ADRES, BRAN\u017BA, FAZA, STADIUM, RYSUNEK, SKALA, NR RYS., DATA, PROJEKTANT, SPRAWDZAJ\u0104CY); missing rows are left empty. Shorthand projectName/sheetNumber/author/date/titleText populate the most common rows if fields is not supplied.",
+      "tags": [
+        "insert",
+        "title",
+        "block"
+      ],
+      "intent": [
+        "wstaw tabelke rysunkowa",
+        "insert title block",
+        "ramka arkusza A1",
+        "sheet frame and stamp",
+        "metryczka rysunku"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "callouts",
+    "tool_count_target": 5,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-05T13:09:26.3305576Z"
+  }
+}

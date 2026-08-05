@@ -31,7 +31,7 @@ public sealed class McpToolAttribute : Attribute
     public string Category { get; }
 
     /// <summary>
-    /// Intent example phrases used by MCPBank's <c>find_tools</c> for semantic discovery.
+    /// Intent example phrases used by ToolBank's <c>find_tools</c> for semantic discovery.
     /// REQUIRED: minimum 5 entries combined PL+EN. Half PL, half EN recommended. Examples:
     /// <c>{ "narysuj okrag", "stworz kolo", "draw a circle", "create circle entity", "make round shape" }</c>.
     /// </summary>

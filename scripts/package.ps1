@@ -15,7 +15,7 @@
                          -WaitHealthy) before the .NET host, so the HTTP API is
                          reachable when the first vision tool fires
 
-    So: one launcher per manifest in mcpbank-manifests/, missing ones created from
+    So: one launcher per manifest in toolbank-manifests/, missing ones created from
     the standard template, existing ones left alone unless you pass -Force.
 
 .PARAMETER RepoRoot
@@ -53,7 +53,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Split-Path -Parent $scriptDir
 }
 
-$manifestDir = Join-Path $RepoRoot "mcpbank-manifests"
+$manifestDir = Join-Path $RepoRoot "toolbank-manifests"
 $launcherDir = Join-Path $RepoRoot "bin-launchers"
 
 if (-not (Test-Path $manifestDir)) {
@@ -113,7 +113,7 @@ foreach ($m in $manifests) {
     if ($exists) { $updated.Add($id) } else { $created.Add($id) }
 }
 
-# A launcher with no matching manifest is dead weight - MCP Nexus discovers categories
+# A launcher with no matching manifest is dead weight - ToolBank discovers categories
 # through the manifests, so nothing would ever route to it.
 $manifestIds = $manifests | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_.Name) }
 $orphans = Get-ChildItem -Path $launcherDir -Filter "acad-*.cmd" -ErrorAction SilentlyContinue |
@@ -131,7 +131,7 @@ if ($skipped.Count) {
 }
 if ($orphans) {
     Write-Host ("  WARNING - launcher without a manifest: {0}" -f ($orphans -join ", ")) -ForegroundColor Red
-    Write-Host "  Nothing will ever route to these: MCP Nexus discovers categories via manifests." -ForegroundColor Red
+    Write-Host "  Nothing will ever route to these: ToolBank discovers categories via manifests." -ForegroundColor Red
 }
 if ($DryRun) { Write-Host "  (dry run - nothing written)" -ForegroundColor Cyan }
 Write-Host ""

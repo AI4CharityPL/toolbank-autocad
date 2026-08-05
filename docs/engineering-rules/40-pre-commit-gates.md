@@ -7,7 +7,7 @@ What scripts/pre-commit.ps1 enforces, what it does NOT enforce, how to extend it
 ## What pre-commit MUST check (Tier 1)
 
 1. **Engineering rules well-formed** - every `docs/engineering-rules/*.md` is non-empty and starts with a heading.
-2. **Manifest hygiene** - `mcpbank-manifests/*.json` is valid JSON; no trailing commas; required fields present per `30-mcpbank-manifest.md`.
+2. **Manifest hygiene** - `toolbank-manifests/*.json` is valid JSON; no trailing commas; required fields present per `30-toolbank-manifest.md`.
 3. **No forbidden patterns** in staged C#:
    - No raw `Marshal.GetActiveObject(` (use `MarshalCompat`).
    - No `Application.DocumentManager.MdiActiveDocument` outside `UiThreadDispatcher` (per `10-acad-ui-thread.md`).

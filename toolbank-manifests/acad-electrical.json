@@ -1,0 +1,389 @@
+{
+  "id": "acad-electrical",
+  "name": "acad-electrical",
+  "description": "High-level electrical schematic \u002B ladder-logic drafting: ladder rails (L1 / N labelled at top), numbered horizontal rungs, NO and NC contacts as TWO different tools (the slash matters per rule 39 \u00A72), IEC-style coils with optional contact-rung cross-reference text, IEC vs ANSI resistor symbols (rectangle vs zig-zag), wire segments \u002B explicit wire-junction dots (rule 39 \u00A73), terminal blocks as numbered rectangles in a row, and IEC 81346 device tags with prefix validation (-K / -Q / -F / -S / -B / -M / -T / -G / -X / -W / -H). Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships an IEC \u002B JIC hybrid 12-layer electrical key. Pairs with acad-validators rules under validators/electrical/.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-electrical.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "block",
+    "cad",
+    "coil",
+    "contact",
+    "device",
+    "din",
+    "draw",
+    "dwg",
+    "electrical",
+    "ensure",
+    "health",
+    "junction",
+    "ladder",
+    "layers",
+    "nc",
+    "no",
+    "outline",
+    "panel",
+    "place",
+    "rail",
+    "rails",
+    "resistor",
+    "route",
+    "rung",
+    "tag",
+    "terminal",
+    "wire",
+    "wireway"
+  ],
+  "intent_examples": [
+    "breaker outline on rail",
+    "cable duct panel layout",
+    "cewka stycznika z xref",
+    "closed contact",
+    "co potrafi electrical",
+    "coil with contact rung references",
+    "contactor coil symbol",
+    "control wiring",
+    "create electrical schematic layer standard",
+    "device footprint panel layout",
+    "device tag with prefix validation",
+    "diagnostyka kategorii electrical",
+    "din rail layout",
+    "draw ladder rails L1 N",
+    "draw ladder rung with number",
+    "draw wire junction dot",
+    "draw wire signal control power",
+    "electrical category metadata",
+    "ensure schematic E-* layers",
+    "fizyczny obrys stycznika",
+    "horizontal control wire between rails",
+    "kanal kablowy w rozdzielni",
+    "kropka polaczenia przewodow",
+    "ladder diagram power rails",
+    "ladder rung",
+    "list electrical layer key",
+    "list IEC tag prefixes",
+    "listwa zaciskowa numerowana",
+    "narysuj koryto kablowe",
+    "narysuj przewod",
+    "narysuj rung 5 schematu",
+    "narysuj szyny ladder L1 N",
+    "NC contact schematic symbol",
+    "NO contact schematic symbol",
+    "open contact",
+    "place din rail panel",
+    "place IEC 81346 device tag",
+    "place normally closed contact",
+    "place normally open contact",
+    "place panel device outline",
+    "place relay coil schematic",
+    "place resistor schematic symbol",
+    "place terminal block 8 way",
+    "polacz styk z cewka",
+    "punkt polaczenia",
+    "resistor symbol with terminals",
+    "rezystor zigzag ANSI",
+    "route wireway trunking",
+    "schematic resistor R1",
+    "schematic wire between terminals",
+    "schematic wire junction marker",
+    "setup IEC electrical layer key",
+    "stworz wszystkie warstwy electrical",
+    "styk rozwierajacy NC",
+    "styk zwierajacy NO",
+    "szczebel drabiny z numerem",
+    "szyna montazowa 35mm",
+    "szyny zasilajace w schemacie",
+    "T joint dot",
+    "tag -F1 fuse",
+    "tag stycznika -K1",
+    "terminal strip with numbers",
+    "top-hat rail outline",
+    "vertical schematic rails",
+    "wireway channel",
+    "wlacz standardowe warstwy E-* w projekcie",
+    "wstaw cewke K1",
+    "wstaw listwe zaciskowa 8 pin",
+    "wstaw obrys urzadzenia w rozdzielni",
+    "wstaw rezystor IEC prostokat",
+    "wstaw styk NC normalnie zamkniety",
+    "wstaw styk NO normalnie otwarty",
+    "wstaw szyne din",
+    "wstaw tag urzadzenia -K1",
+    "X1-X8 terminals"
+  ],
+  "tools_summary": [
+    {
+      "name": "draw_ladder_rails",
+      "description": "Draw the two vertical power rails of a ladder diagram on layer E-WIRE-PWR (default, ACI 1, 0.50 mm Continuous), spaced widthMm apart and heightMm tall starting from topLeft. Place rail labels (default \u0027L1\u0027 and \u0027N\u0027 per the Polish/IEC convention, rule 39 \u00A79) above each rail on layer E-LBL-WIRE. Returns both rail handles and both label handles. To draw the rungs, follow with \u0060draw_ladder_rung\u0060 calls; the rails do NOT auto-create rungs.",
+      "tags": [
+        "draw",
+        "ladder",
+        "rails"
+      ],
+      "intent": [
+        "narysuj szyny ladder L1 N",
+        "draw ladder rails L1 N",
+        "szyny zasilajace w schemacie",
+        "ladder diagram power rails",
+        "vertical schematic rails"
+      ]
+    },
+    {
+      "name": "draw_ladder_rung",
+      "description": "Draw one horizontal rung between the left and right ladder rails at vertical position y on layer E-WIRE (default), and place its rung-number label (rungNumber) on the LEFT side at offset labelOffsetMm to the left of the left rail on layer E-LBL-RUNG. Per rule 39 \u00A74 rung numbers go on the LEFT rail and are sequential. Place the contacts to the LEFT of the coil on the rung; the coil itself sits at the RIGHT end (use place_coil for that). The rung is just the conductor \u2014 devices are added separately.",
+      "tags": [
+        "draw",
+        "ladder",
+        "rung"
+      ],
+      "intent": [
+        "narysuj rung 5 schematu",
+        "draw ladder rung with number",
+        "szczebel drabiny z numerem",
+        "ladder rung",
+        "horizontal control wire between rails"
+      ]
+    },
+    {
+      "name": "draw_wire",
+      "description": "Draw a wire (poly-line) between symbol terminals or rung devices. Routes to the right layer per \u0060kind\u0060: \u0027signal\u0027 \u2192 E-WIRE (default, ACI 7, 0.30 mm), \u0027power\u0027 \u2192 E-WIRE-PWR (ACI 1, 0.50 mm), \u0027control\u0027 \u2192 E-WIRE-CTRL (ACI 4, 0.25 mm). Pass \u0060layer\u0060 directly to override the routing. Per rule 39 \u00A77 wires MUST connect at SYMBOL TERMINALS (use the \u0060terminals\u0060 returned by place_resistor / place_contact_* / place_coil / place_terminal_block); a wire drawn to \u0027wherever the symbol body happens to start\u0027 breaks netlist extraction.",
+      "tags": [
+        "draw",
+        "wire"
+      ],
+      "intent": [
+        "narysuj przewod",
+        "draw wire signal control power",
+        "polacz styk z cewka",
+        "schematic wire between terminals",
+        "control wiring"
+      ]
+    },
+    {
+      "name": "draw_wire_junction",
+      "description": "Draw a filled junction dot at a wire intersection \u2014 the visual marker that the two wires ARE electrically connected (rule 39 \u00A73). Without a dot, two crossing wires are conventionally NOT connected. Implementation: a small filled Circle on layer E-WIRE (default) \u2014 agents who skip this on T or \u002B intersections produce ambiguous schematics that the inspector flags.",
+      "tags": [
+        "draw",
+        "wire",
+        "junction"
+      ],
+      "intent": [
+        "kropka polaczenia przewodow",
+        "draw wire junction dot",
+        "punkt polaczenia",
+        "schematic wire junction marker",
+        "T joint dot"
+      ]
+    },
+    {
+      "name": "electrical_health",
+      "description": "Report the 12-layer electrical-schematic key, the IEC 81346 device-tag prefix lookup table (rule 39 \u00A76), the supported symbol styles (\u0027iec\u0027 default, \u0027ansi\u0027) with the office default (5 mm unit size, rule 39 \u00A710), and the planned bundled-block list. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults \u2014 e.g. which prefix letter to use for a contactor \u2014 without making a real call to AutoCAD.",
+      "tags": [
+        "electrical",
+        "health"
+      ],
+      "intent": [
+        "co potrafi electrical",
+        "list electrical layer key",
+        "list IEC tag prefixes",
+        "diagnostyka kategorii electrical",
+        "electrical category metadata"
+      ]
+    },
+    {
+      "name": "ensure_electrical_layers",
+      "description": "Idempotently create the 12-layer electrical-schematic key (E-WIRE, E-WIRE-PWR, E-WIRE-CTRL, E-SYMBOL, E-TERM, E-LBL-WIRE, E-LBL-DEV, E-LBL-RUNG, E-XREF, E-TITLE, E-PANEL, E-NOTE) per rule 39 \u00A711 with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. E-WIRE-PWR = 0.50 mm Continuous ACI 1, E-WIRE-CTRL = 0.25 mm ACI 4, E-LBL-RUNG = 0.25 mm ACI 2). Existing layers are left alone, never overwritten. includePanel=true also creates E-PANEL for cross-sheet drawings; default false because v1 ships only the schematic side.",
+      "tags": [
+        "ensure",
+        "electrical",
+        "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy electrical",
+        "ensure schematic E-* layers",
+        "setup IEC electrical layer key",
+        "wlacz standardowe warstwy E-* w projekcie",
+        "create electrical schematic layer standard"
+      ]
+    },
+    {
+      "name": "place_coil",
+      "description": "Place a relay / contactor coil symbol at \u0060position\u0060, rotated by rotationDeg. style=\u0027iec\u0027 (default) draws an empty rectangle of width 3\u00D7unitSize \u00D7 height 2\u00D7unitSize with the device tag inside; style=\u0027ansi\u0027 draws a circle of radius unitSize with the tag inside. Optional \u0060tag\u0060 (e.g. \u0027-K1\u0027) is placed inside the symbol on layer E-LBL-DEV. Optional \u0060contactRungs\u0060 (a JSON array of rung numbers like 12, 14, 18) emits the cross-reference text below the coil on layer E-XREF (rule 39 \u00A75) \u2014 agents who omit this leave maintenance hunting through the drawing for K1\u0027s contacts. Exposes terminals \u0027A1\u0027 (top, IEC) and \u0027A2\u0027 (bottom, IEC).",
+      "tags": [
+        "place",
+        "coil"
+      ],
+      "intent": [
+        "wstaw cewke K1",
+        "place relay coil schematic",
+        "cewka stycznika z xref",
+        "coil with contact rung references",
+        "contactor coil symbol"
+      ]
+    },
+    {
+      "name": "place_contact_nc",
+      "description": "Place a Normally-Closed contact symbol at \u0060position\u0060, rotated by rotationDeg. NC contact opens only when its controlling coil is energised. Geometry: identical to NO (rule 39 \u00A72) PLUS a horizontal slash through the angled lever \u2014 the slash IS the NC marker. Exposes terminals \u0027in\u0027 (left) and \u0027out\u0027 (right). For NO use the SEPARATE place_contact_no tool.",
+      "tags": [
+        "place",
+        "contact",
+        "nc"
+      ],
+      "intent": [
+        "wstaw styk NC normalnie zamkniety",
+        "place normally closed contact",
+        "styk rozwierajacy NC",
+        "NC contact schematic symbol",
+        "closed contact"
+      ]
+    },
+    {
+      "name": "place_contact_no",
+      "description": "Place a Normally-Open contact symbol at \u0060position\u0060, rotated by rotationDeg. NO contact bridges only when its controlling coil is energised. Geometry: a horizontal bottom terminal line plus a short angled lever pointing up-and-away from the right terminal \u2014 NO horizontal slash (rule 39 \u00A72: the slash is what distinguishes NC from NO). Exposes terminals \u0027in\u0027 (left) and \u0027out\u0027 (right). For NC use the SEPARATE place_contact_nc tool \u2014 never call this with a \u0060kind\u0060 flag.",
+      "tags": [
+        "place",
+        "contact",
+        "no"
+      ],
+      "intent": [
+        "wstaw styk NO normalnie otwarty",
+        "place normally open contact",
+        "styk zwierajacy NO",
+        "NO contact schematic symbol",
+        "open contact"
+      ]
+    },
+    {
+      "name": "place_device_tag",
+      "description": "Place an IEC 81346 device tag as DBText on layer E-LBL-DEV. Accepts the short form (\u0027K1\u0027 / \u0027-K1\u0027), the location-qualified form (\u0027\u002BCAB1-K1\u0027) or the fully-qualified form (\u0027=PWR\u002BCAB1-K1\u0027) per rule 39 \u00A76a. The PREFIX letter is validated against the IEC 81346-2 set (-K / -Q / -F / -S / -B / -M / -T / -G / -X / -W / -H per rule 39 \u00A76) \u2014 agents who invent prefixes (\u0027-A1\u0027 for a contactor) get a fail-fast error with the allowed list. Returns the canonical string \u002B the prefix character \u002B a one-line description of what that prefix means.",
+      "tags": [
+        "place",
+        "device",
+        "tag"
+      ],
+      "intent": [
+        "wstaw tag urzadzenia -K1",
+        "place IEC 81346 device tag",
+        "tag stycznika -K1",
+        "device tag with prefix validation",
+        "tag -F1 fuse"
+      ]
+    },
+    {
+      "name": "place_din_rail",
+      "description": "Draw a DIN rail (EN 50022 top-hat rail, 35 mm wide by default) as a rectangle on layer E-PANEL (default) from start, lengthMm long, at rotationDeg. Pass slotPitchMm to also draw perpendicular tick marks every slotPitchMm along the rail as a visual device-spacing reference (omit for a plain rail outline). Returns the end point so a device outline or the next rail segment can be placed flush against it.",
+      "tags": [
+        "place",
+        "din",
+        "rail"
+      ],
+      "intent": [
+        "wstaw szyne din",
+        "place din rail panel",
+        "szyna montazowa 35mm",
+        "din rail layout",
+        "top-hat rail outline"
+      ]
+    },
+    {
+      "name": "place_panel_device_outline",
+      "description": "Draw a rectangular physical device footprint (breaker, contactor, relay body, etc.) on layer E-PANEL (default) for panel-layout drawings -- the physical counterpart to the schematic symbols above (place_coil etc. draw the SCHEMATIC symbol; this draws the PHYSICAL footprint you\u0027d mount on a DIN rail). origin is the top-left corner. Pass tag to also place a device tag label centred below the outline on E-LBL-DEV.",
+      "tags": [
+        "place",
+        "panel",
+        "device",
+        "outline"
+      ],
+      "intent": [
+        "wstaw obrys urzadzenia w rozdzielni",
+        "place panel device outline",
+        "fizyczny obrys stycznika",
+        "device footprint panel layout",
+        "breaker outline on rail"
+      ]
+    },
+    {
+      "name": "place_resistor",
+      "description": "Place a resistor symbol at \u0060position\u0060, rotated by rotationDeg (0\u00B0 = horizontal, terminals at left/right). style=\u0027iec\u0027 (default, Polish/EU) draws a rectangle of width 4\u00D7unitSize \u00D7 height 1.5\u00D7unitSize; style=\u0027ansi\u0027 draws a zig-zag of 6 zags spanning the same width. Both styles expose two terminals named \u00271\u0027 (left / start) and \u00272\u0027 (right / end) with their EXACT coordinates so subsequent draw_wire calls snap to them (rule 39 \u00A77). Default unitSize = 5 mm (rule 39 \u00A710).",
+      "tags": [
+        "place",
+        "resistor"
+      ],
+      "intent": [
+        "wstaw rezystor IEC prostokat",
+        "place resistor schematic symbol",
+        "rezystor zigzag ANSI",
+        "resistor symbol with terminals",
+        "schematic resistor R1"
+      ]
+    },
+    {
+      "name": "place_terminal_block",
+      "description": "Place a terminal block as \u0060count\u0060 numbered rectangles in a horizontal row starting at \u0060origin\u0060 (top-left corner), each rectangle of width pitchMm \u00D7 height heightMm, with sequential numbers (startNumber, startNumber\u002B1, \u2026) labelled below. Per rule 39 \u00A711 terminals live on layer E-TERM (ACI 6, 0.40 mm) and labels on E-LBL-WIRE. Returns each slot\u0027s body handle, label handle, AND its top \u002B bottom centre points so wires can snap to either side of the block.",
+      "tags": [
+        "place",
+        "terminal",
+        "block"
+      ],
+      "intent": [
+        "wstaw listwe zaciskowa 8 pin",
+        "place terminal block 8 way",
+        "listwa zaciskowa numerowana",
+        "terminal strip with numbers",
+        "X1-X8 terminals"
+      ]
+    },
+    {
+      "name": "route_wireway",
+      "description": "Draw a wireway / trunking channel along \u0060path\u0060 on layer E-PANEL (default) as a centreline plus two parallel edge lines offset \u00B1widthMm/2 (mitred at interior vertices, same offset approach as acad-civil.draw_road_corridor / acad-architecture.draw_walls_chain). Use this for the physical cable-management channel between panel devices, distinct from the schematic wire routing of draw_wire.",
+      "tags": [
+        "route",
+        "wireway"
+      ],
+      "intent": [
+        "narysuj koryto kablowe",
+        "route wireway trunking",
+        "kanal kablowy w rozdzielni",
+        "cable duct panel layout",
+        "wireway channel"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "electrical",
+    "tool_count_target": 15,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase6_domains",
+    "discipline": "electrical",
+    "depends_on_categories": [
+      "geometry-2d",
+      "layers",
+      "annotations"
+    ],
+    "paired_validators_dir": "validators/electrical/",
+    "v1_limitations": [
+      "Schematic side only \u2014 panel-layout tools (place_din_rail, place_panel_device_outline, route_wireway) ship in Phase 7 with their own paired validators.",
+      "Cross-reference auto-tracking is manual: the agent passes contactRungs explicitly to place_coil. Phase 7 ships an extractor that walks all contacts of a tag and back-fills the coil xref.",
+      "Bundled blocks under blocks/electrical/ (RES_*, COIL_*, CONTACT_*, MOTOR_*, FUSE_*, LAMP_*, TRANSFORMER_*, JUNCTION_DOT, TERMINAL_BLOCK_*WAY) ship in Phase 7; v1 tools synthesise geometry inline.",
+      "Wire-numbering schemes (sequential per IEC 60204 vs rung-position per JIC NFPA 79) are the agent\u0027s responsibility \u2014 the wire labels themselves are placed via acad-annotations.add_dbtext on layer E-LBL-WIRE."
+    ],
+    "last_regenerated_utc": "2026-08-05T13:09:27.1823219Z"
+  }
+}

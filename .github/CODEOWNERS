@@ -5,7 +5,7 @@
 # never merge unreviewed even when the diff looks mechanical.
 /src/AcadMcp.SourceGen/             @KrzysztofAugiewicz
 /src/AcadMcp.Backend/Mcp/           @KrzysztofAugiewicz
-/mcpbank-manifests/                 @KrzysztofAugiewicz
+/toolbank-manifests/                 @KrzysztofAugiewicz
 
 # The rules the code is held to.
 /docs/engineering-rules/            @KrzysztofAugiewicz

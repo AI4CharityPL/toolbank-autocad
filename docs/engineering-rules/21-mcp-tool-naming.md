@@ -2,7 +2,7 @@
 
 Tool naming convention. snake_case, max 5 words, verb-first.
 
-Tool names are PUBLIC contract. Once shipped to MCPBank, renaming = breaking change.
+Tool names are PUBLIC contract. Once shipped to ToolBank, renaming = breaking change.
 
 ## Rules
 

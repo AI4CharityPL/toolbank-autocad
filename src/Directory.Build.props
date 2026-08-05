@@ -8,16 +8,16 @@
     <WarningsAsErrors />
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
-    <Authors>Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors</Authors>
-    <Company>MCP Nexus AutoCAD</Company>
-    <Product>MCP Nexus AutoCAD</Product>
-    <Copyright>Copyright (c) 2026 Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors</Copyright>
+    <Authors>Krzysztof Augiewicz and the ToolBank AutoCAD contributors</Authors>
+    <Company>ToolBank AutoCAD</Company>
+    <Product>ToolBank AutoCAD</Product>
+    <Copyright>Copyright (c) 2026 Krzysztof Augiewicz and the ToolBank AutoCAD contributors</Copyright>
     <Version>1.0.0</Version>
     <NeutralLanguage>en-US</NeutralLanguage>
 
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

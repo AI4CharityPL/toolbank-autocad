@@ -2,7 +2,7 @@
 // Exposes a small set of meta-tools that orchestrate discovery of, and high-level
 // actions across, the rest of the categories. Uses in-process ToolRegistry so
 // the router can directly dispatch backend composite tools (no subprocess spawn,
-// no external MCPBank discovery needed).
+// no external ToolBank discovery needed).
 //
 // See section 1a of the plan and rule 00-architecture-invariants.md Invariant #6.
 

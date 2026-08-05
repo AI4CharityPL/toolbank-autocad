@@ -1,6 +1,6 @@
 # Third-party notices
 
-MCP Nexus AutoCAD is licensed under the [MIT License](LICENSE). That covers the code in
+ToolBank AutoCAD is licensed under the [MIT License](LICENSE). That covers the code in
 this repository. It does not cover the third-party software listed below, which stays
 under its own terms.
 

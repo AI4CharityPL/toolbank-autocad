@@ -546,7 +546,7 @@ Pozostały +0.3 do „12/10" = renderowanie 3D + vizualizacja elewacji + BIM-exp
 |---|---|---|---|
 | AutoCAD API `Hatch` wiązanie z boundary breaks po edycji | Wysokie | Major | Tool `regenerate_all(scope)` + test e2e |
 | Biblioteka bloków rośnie do GB | Średnie | Minor | Oddzielne repo `autocad-mcp-blocks` + sparse checkout |
-| Manifesty MCPBank rozjeżdżają się | Wysokie | Major | `check-manifests.ps1` w CI + `CheckManifestSync` MSBuild target już wymusza |
+| Manifesty ToolBank rozjeżdżają się | Wysokie | Major | `check-manifests.ps1` w CI + `CheckManifestSync` MSBuild target już wymusza |
 | Per-layer lineweight łamie istniejące rysunki | Średnie | Major | Migration script `assets/migrate-lineweights.ps1` + flag `respect_existing_lw` |
 | Persona arch-reviewer halucynuje | Średnie | Major | Determined rubric + JSON schema validation + 3× pass + majority vote |
 | Phase C safety regression podczas D12 regenerating | Niskie | CRITICAL | Checkpoint przed D12 + post-D12 `check_overlaps` × 5 scans → abort if regresja |

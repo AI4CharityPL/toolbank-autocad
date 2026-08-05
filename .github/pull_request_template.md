@@ -40,7 +40,7 @@ healthy JSON result while drawing the wrong thing. The return code is not the ev
 <!-- Delete if none. -->
 
 - [ ] Every `[McpTool]` carries `Intent =` with both English and Polish phrasings
-- [ ] The MCPBank manifest in `mcpbank-manifests/` was updated to match
+- [ ] The ToolBank manifest in `toolbank-manifests/` was updated to match
 - [ ] Argument names in the args record match the `[JsonPropertyName]` actually bound
 - [ ] The discovery catalogue and the action tool agree on parameter shape
       <!-- Four defects in one sweep were a catalogue advertising what the tool refused. -->

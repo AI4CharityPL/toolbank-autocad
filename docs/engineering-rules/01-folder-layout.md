@@ -52,7 +52,7 @@ Map of project folders - what goes where and what is FORBIDDEN where.
 - `models/` - YOLO/SAM weights (gitignored)
 - **FORBIDDEN:** business logic for AutoCAD geometry (sidecar only does pixels → text/objects); cross-validation with DXF happens in C# `Categories/Vision/`
 
-## `mcpbank-manifests/`
+## `toolbank-manifests/`
 
 - `acad-<category>.json` - one per category
 - `acad-router.json` - router manifest

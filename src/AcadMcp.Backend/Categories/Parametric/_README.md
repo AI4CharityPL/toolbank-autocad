@@ -28,7 +28,7 @@ The plugin closes its transaction before `Editor.Command` runs native
 
 ## v1 limitations
 
-See `mcpbank-manifests/acad-parametric.json` → `metadata.v1_limitations`.
+See `toolbank-manifests/acad-parametric.json` → `metadata.v1_limitations`.
 
 ## Paired validators
 

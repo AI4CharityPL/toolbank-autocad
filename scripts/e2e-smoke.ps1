@@ -3,7 +3,7 @@
 # For each category it spawns `AcadMcp.Backend.exe --category <name>` on stdio,
 # runs `initialize -> notifications/initialized -> tools/list -> shutdown -> exit`,
 # reads stdout line-by-line looking for the tools/list response (id=2) and asserts
-# the tool count matches the MCPBank manifest. The process is killed once the
+# the tool count matches the ToolBank manifest. The process is killed once the
 # expected response arrives (we don't rely on graceful exit; on Windows redirected
 # stdin closure is sometimes not observed by the child before we want to move on).
 #
@@ -23,7 +23,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $exe  = Join-Path $repo "src\AcadMcp.Backend\bin\Debug\net8.0\AcadMcp.Backend.exe"
-$manifests = Join-Path $repo "mcpbank-manifests"
+$manifests = Join-Path $repo "toolbank-manifests"
 
 if (-not (Test-Path $exe)) {
     Write-Error "Backend exe missing: $exe. Run `dotnet build src\AcadMcp.sln` first."

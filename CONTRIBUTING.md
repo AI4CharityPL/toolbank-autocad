@@ -75,7 +75,7 @@ is the top item in [docs/KNOWN-GAPS.md](docs/KNOWN-GAPS.md) section C — so for
 you.
 
 **5. Update the manifest.** Every `Categories/<Name>/` needs a matching
-`mcpbank-manifests/acad-<name>.json`. `scripts/check-manifests.ps1` enforces it, and the
+`toolbank-manifests/acad-<name>.json`. `scripts/check-manifests.ps1` enforces it, and the
 category description is the only thing an agent reads before choosing you, so write it as
 prose that also says what the category does *not* cover.
 

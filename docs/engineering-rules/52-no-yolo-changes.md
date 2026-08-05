@@ -32,7 +32,7 @@ Once a Phase is marked complete in CHANGELOG.md and tagged in git, its existing 
 This system has 30 microservers, a plugin, COM bridge, LISP, source generator, Python sidecar, and 1000+ tools. Local-looking changes have global blast radius.
 
 A 5-minute "improvement" to `Categories/Geometry2D/LineTools.cs` can break:
-- The MCPBank manifest sync check
+- The ToolBank manifest sync check
 - The architecture test asserting no cross-category refs
 - A vision test that screenshotted that exact tool's output
 - An auto-design loop fixture that depended on old tool name

@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report privately through
-[GitHub Security Advisories](https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/security/advisories/new).
+[GitHub Security Advisories](https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD/security/advisories/new).
 Please do not open a public issue for a vulnerability.
 
 Expect an acknowledgement within a week. This is a small project maintained alongside other

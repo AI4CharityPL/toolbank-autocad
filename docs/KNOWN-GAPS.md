@@ -347,9 +347,11 @@ From the original public-release plan; phases 1–2 landed, the rest did not.
   screenshots despite `assets/report/` holding finished renders.
 - **`Megasystem` placeholder branding** still in ~15 files (prose only; every shipped artefact
   was fixed in the licensing commit).
-- **MCPNexus (the Python repo)** — version sync 1.0.0→1.0.6, the `safety.py` blocker,
-  cross-repo install docs. None started; that repo is still private while `mcpnexus` is on PyPI
-  with 404 links.
+- **ToolBank (the Python repo)** — the `safety.py` blocker and cross-repo install docs.
+  Version sync is done (both now read one `__version__`). The repo is still **private** while
+  its PyPI page is public, so every link on that page 404s for anyone who is not the owner —
+  and the rename makes this sharper, because `toolbank` is not on PyPI yet at all: what is
+  published is `mcpnexus` 1.0.7, under a name the project no longer uses.
 
 ---
 

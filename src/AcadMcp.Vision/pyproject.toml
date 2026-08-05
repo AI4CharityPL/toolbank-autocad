@@ -3,7 +3,7 @@ name = "acadmcp-vision"
 version = "0.2.0"
 description = "AutoCAD MCP Vision sidecar - FastAPI HTTP API for OCR / vision LLM / YOLO / SAM."
 requires-python = ">=3.11"
-authors = [{ name = "Krzysztof Augiewicz and the MCP Nexus AutoCAD contributors" }]
+authors = [{ name = "Krzysztof Augiewicz and the ToolBank AutoCAD contributors" }]
 readme = "README.md"
 license = { text = "MIT" }
 dependencies = [

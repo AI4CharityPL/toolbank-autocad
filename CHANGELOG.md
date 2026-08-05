@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Changed
+
+- **Renamed to ToolBank throughout, and `mcpbank-manifests/` → `toolbank-manifests/`.**
+  The routing project this repo publishes its manifests for is now called ToolBank; the
+  full lineage is `mcpd` → `mcpbank` → `mcpnexus` → `toolbank`, so anything in this repo
+  still saying "MCPBank" or "MCP Nexus" was one or two renames stale. ("ToolVault" appears in
+  neither the lineage nor this repo: it was the intended name, got as far as a local commit,
+  and was dropped when an availability check found `toolvault` already on npm from a project
+  in the same niche. Checked before publishing, not after.) 304 occurrences over
+  92 files, plus four paths moved: the manifest directory, `MCPBANK-TECHNICAL-PROOF.md`, and
+  engineering rules 30 and 31 (numbers unchanged — they are the stable identifiers, only the
+  slugs moved).
+
+  The one part of this that was not cosmetic: `RepoRootDetector` treats the existence of the
+  manifest directory as one of its two repo-root markers, the other being `.git/`. Renaming
+  the directory without that literal would have kept working in every git checkout and failed
+  only in an installed layout, where there is no `.git/` to fall back on — a break that hides
+  in development and surfaces at a customer. The literal moved with the directory.
+
+  Also corrected three places where a blanket search-and-replace had quietly rewritten
+  statements of fact rather than names: the changelog below (whose dated entries name the
+  package as it was called at the time, and which had been made to cite `toolbank-discovery`
+  and `toolbank-dynamic` — commands that have never existed under any name), the
+  hospital-2026 findings (a record of a past fix, including a machine-local path), and a
+  `KNOWN-GAPS` line that would have claimed `toolbank` is on PyPI when what is published is
+  `mcpnexus` 1.0.7.
+
+  Verified: `AcadMcp.Backend` and the test project build with 0 warnings — which exercises the
+  renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
+  reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
+
 ### Added
 
 - **`viewports.set_viewport_ucs` and `viewports.set_viewport_annotation_scale`** — the two

@@ -34,7 +34,7 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         "ACAD0001",
         "[McpTool] missing Intent examples",
         "Tool '{0}' must declare Intent with at least 5 PL+EN example phrases (got {1}). " +
-        "Intent powers MCPBank semantic discovery via mcpd_find. See rule 20-mcp-tool-attribute.md.",
+        "Intent powers ToolBank semantic discovery via mcpd_find. See rule 20-mcp-tool-attribute.md.",
         "AcadMcp.Mcp",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);

@@ -11,7 +11,7 @@ Once a DTO in `AcadMcp.Shared` or a pipe message version is shipped to a build, 
 3. **Changing types:** forbidden. To change `int → long`, add a new field `<name>Long` and deprecate.
 4. **Removing fields:** forbidden until at least 2 minor versions of `Obsolete` warning + grep across `Categories/` confirms zero use.
 5. **Changing enum values:** forbidden. Append new values at the end. Never reorder.
-6. **Tool name changes:** forbidden once the tool is in a manifest pushed to MCPBank. Add new tool, deprecate old. Old continues to work, returns `deprecation_warning` field.
+6. **Tool name changes:** forbidden once the tool is in a manifest pushed to ToolBank. Add new tool, deprecate old. Old continues to work, returns `deprecation_warning` field.
 
 ## Versioning
 

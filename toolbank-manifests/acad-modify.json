@@ -1,0 +1,384 @@
+{
+  "id": "acad-modify",
+  "name": "acad-modify",
+  "description": "AutoCAD entity edit and transform operations: rigid transforms (move, rotate, scale, mirror, align two-point), copy and array (rectangular and polar), erase, undo / redo, common-property updates (layer, color, linetype, lineweight) including bulk match-properties from a source entity, and AutoCAD Group management (create / add / remove / rename / dissolve / list members). All operations require the AcadMcp .NET plugin loaded inside an open AutoCAD session and run inside a single transaction with a document lock so the AutoCAD UI stays consistent.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-modify.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "align",
+    "array",
+    "autocad",
+    "cad",
+    "color",
+    "copy",
+    "create",
+    "dwg",
+    "erase",
+    "group",
+    "layer",
+    "linetype",
+    "lineweight",
+    "match",
+    "mirror",
+    "modify",
+    "move",
+    "polar",
+    "properties",
+    "rectangular",
+    "redo",
+    "rotate",
+    "scale",
+    "set",
+    "undo",
+    "ungroup"
+  ],
+  "intent_examples": [
+    "align entities",
+    "apply properties to targets",
+    "array entities by rows and cols",
+    "build grid array",
+    "change color of entities",
+    "change entity layer",
+    "change line thickness",
+    "change line type",
+    "circular array",
+    "cofnij operacje",
+    "color rgb or aci",
+    "copy entities",
+    "copy props from source",
+    "create group",
+    "delete entities",
+    "delete group",
+    "displace selected",
+    "distribute around point",
+    "dopasuj obiekty",
+    "duplicate selection",
+    "erase entities",
+    "fit entities to two points",
+    "group selection",
+    "kopia z przesunieciem",
+    "kopiuj obiekty",
+    "kopiuj wlasciwosci",
+    "linia w mm",
+    "lustro 3d",
+    "lustro obiektow",
+    "macierz biegunowa",
+    "macierz kolowa",
+    "macierz prostokatna",
+    "make copies",
+    "make group from entities",
+    "match properties",
+    "matchprop entities",
+    "mirror across plane",
+    "mirror entities",
+    "move entities",
+    "move to layer",
+    "named group",
+    "obroc obiekty",
+    "polar array",
+    "ponow akcje",
+    "ponow operacje",
+    "przenies na warstwe",
+    "przesun obiekty",
+    "rectangular array",
+    "redo last",
+    "redo last edit",
+    "redo last undo",
+    "reflect selection",
+    "remove from drawing",
+    "remove named group",
+    "resize selection",
+    "rollback last edit",
+    "rotate around point",
+    "rotate entities",
+    "rotate selection",
+    "rozgrupuj",
+    "scale entities",
+    "set entity color",
+    "set entity lineweight",
+    "set layer of entities",
+    "set linetype on entities",
+    "set ltscale on entities",
+    "shift entities by vector",
+    "siatka kopii",
+    "skaluj obiekty",
+    "skasuj zaznaczone",
+    "spin selection by degrees",
+    "stworz grupe",
+    "translate selection",
+    "two point alignment",
+    "undo last",
+    "undo last action",
+    "ungroup",
+    "uniform scale selection",
+    "ustaw kolor",
+    "ustaw linetype",
+    "ustaw lineweight",
+    "usun grupe",
+    "usun obiekty",
+    "wycofaj ostatnia akcje",
+    "wyrownanie do dwoch punktow",
+    "zmien grubosc linii",
+    "zmien kolor obiektow",
+    "zmien skale obiektow",
+    "zmien typ linii",
+    "zmien warstwe obiektow"
+  ],
+  "tools_summary": [
+    {
+      "name": "align",
+      "description": "Align entities so that source point pair (A,B) maps onto target point pair (A,B). Optional uniform scale to make distances match.",
+      "tags": [
+        "align"
+      ],
+      "intent": [
+        "dopasuj obiekty",
+        "align entities",
+        "two point alignment",
+        "fit entities to two points",
+        "wyrownanie do dwoch punktow"
+      ]
+    },
+    {
+      "name": "array_polar",
+      "description": "Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path.",
+      "tags": [
+        "array",
+        "polar"
+      ],
+      "intent": [
+        "macierz biegunowa",
+        "macierz kolowa",
+        "polar array",
+        "circular array",
+        "distribute around point"
+      ]
+    },
+    {
+      "name": "array_rectangular",
+      "description": "Rectangular array (rows \u00D7 cols \u00D7 levels) by row, column and optional Z level spacing.",
+      "tags": [
+        "array",
+        "rectangular"
+      ],
+      "intent": [
+        "macierz prostokatna",
+        "siatka kopii",
+        "rectangular array",
+        "build grid array",
+        "array entities by rows and cols"
+      ]
+    },
+    {
+      "name": "copy",
+      "description": "Copy entities by translation from\u2192to. Set count \u003E 1 for an evenly stepped chain of copies.",
+      "tags": [
+        "copy"
+      ],
+      "intent": [
+        "kopiuj obiekty",
+        "copy entities",
+        "duplicate selection",
+        "make copies",
+        "kopia z przesunieciem"
+      ]
+    },
+    {
+      "name": "create_group",
+      "description": "Create a named AutoCAD Group containing the given entities. Selectable=true makes the group pickable as a unit.",
+      "tags": [
+        "create",
+        "group"
+      ],
+      "intent": [
+        "stworz grupe",
+        "create group",
+        "make group from entities",
+        "group selection",
+        "named group"
+      ]
+    },
+    {
+      "name": "erase",
+      "description": "Erase entities (soft delete \u2013 AutoCAD keeps them in the undo stack until purged).",
+      "tags": [
+        "erase"
+      ],
+      "intent": [
+        "usun obiekty",
+        "skasuj zaznaczone",
+        "erase entities",
+        "delete entities",
+        "remove from drawing"
+      ]
+    },
+    {
+      "name": "match_properties",
+      "description": "Copy generic properties (layer, color, linetype, lineweight, ltscale) from source entity onto target entities.",
+      "tags": [
+        "match",
+        "properties"
+      ],
+      "intent": [
+        "kopiuj wlasciwosci",
+        "match properties",
+        "matchprop entities",
+        "copy props from source",
+        "apply properties to targets"
+      ]
+    },
+    {
+      "name": "mirror",
+      "description": "Mirror entities through a plane defined by point \u002B normal (3D); optionally erase the source entities.",
+      "tags": [
+        "mirror"
+      ],
+      "intent": [
+        "lustro obiektow",
+        "mirror entities",
+        "mirror across plane",
+        "reflect selection",
+        "lustro 3d"
+      ]
+    },
+    {
+      "name": "move",
+      "description": "Translate one or more entities by the vector from\u2192to (WCS).",
+      "tags": [
+        "move"
+      ],
+      "intent": [
+        "przesun obiekty",
+        "move entities",
+        "translate selection",
+        "shift entities by vector",
+        "displace selected"
+      ]
+    },
+    {
+      "name": "rotate",
+      "description": "Rotate entities around a center by angle (degrees, CCW). Optional axis vector for 3D rotations (default Z).",
+      "tags": [
+        "rotate"
+      ],
+      "intent": [
+        "obroc obiekty",
+        "rotate entities",
+        "spin selection by degrees",
+        "rotate around point",
+        "rotate selection"
+      ]
+    },
+    {
+      "name": "scale",
+      "description": "Uniformly scale entities about a center point by a positive factor.",
+      "tags": [
+        "scale"
+      ],
+      "intent": [
+        "skaluj obiekty",
+        "zmien skale obiektow",
+        "scale entities",
+        "uniform scale selection",
+        "resize selection"
+      ]
+    },
+    {
+      "name": "set_color",
+      "description": "Set the entity color to a true RGB color or an ACI index (1..255).",
+      "tags": [
+        "set",
+        "color"
+      ],
+      "intent": [
+        "zmien kolor obiektow",
+        "ustaw kolor",
+        "set entity color",
+        "change color of entities",
+        "color rgb or aci"
+      ]
+    },
+    {
+      "name": "set_layer",
+      "description": "Move entities to the given layer (creates the layer if missing).",
+      "tags": [
+        "set",
+        "layer"
+      ],
+      "intent": [
+        "przenies na warstwe",
+        "zmien warstwe obiektow",
+        "set layer of entities",
+        "move to layer",
+        "change entity layer"
+      ]
+    },
+    {
+      "name": "set_linetype",
+      "description": "Set the linetype (by name) and optional linetype scale on entities. The linetype must already be loaded.",
+      "tags": [
+        "set",
+        "linetype"
+      ],
+      "intent": [
+        "zmien typ linii",
+        "ustaw linetype",
+        "set linetype on entities",
+        "change line type",
+        "set ltscale on entities"
+      ]
+    },
+    {
+      "name": "set_lineweight",
+      "description": "Set entity lineweight in millimeters. Common values: 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm.",
+      "tags": [
+        "set",
+        "lineweight"
+      ],
+      "intent": [
+        "zmien grubosc linii",
+        "ustaw lineweight",
+        "set entity lineweight",
+        "change line thickness",
+        "linia w mm"
+      ]
+    },
+    {
+      "name": "ungroup",
+      "description": "Delete a named Group (the underlying entities remain in the drawing).",
+      "tags": [
+        "ungroup"
+      ],
+      "intent": [
+        "rozgrupuj",
+        "usun grupe",
+        "ungroup",
+        "delete group",
+        "remove named group"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "modify",
+    "tool_count_target": 16,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase2_3d_modify",
+    "last_regenerated_utc": "2026-08-05T13:09:30.5919712Z"
+  }
+}

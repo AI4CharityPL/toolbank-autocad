@@ -1,0 +1,372 @@
+{
+  "id": "acad-mechanical",
+  "name": "acad-mechanical",
+  "description": "High-level mechanical drafting operations: visible / hidden / centre line classes (each pinned to its own layer \u002B linetype), section cutting plane lines with arrow heads \u002B labels, plan-view holes (through, counterbore, threaded with the canonical 3/4 minor-\u00D8 arc), bolt-head top views as flat-to-flat hexagons, and revision triangles \u002B tags. Composes primitives from acad-geometry-2d, acad-layers, acad-annotations and ships an ISO-mechanical 11-layer key \u002B ME-25 dim style. Pairs with acad-validators rules under validators/mechanical/.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-mechanical.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "bolt",
+    "cad",
+    "centerline",
+    "counterbore",
+    "cross",
+    "cut",
+    "draw",
+    "dwg",
+    "edge",
+    "ensure",
+    "hatch",
+    "head",
+    "health",
+    "hidden",
+    "hole",
+    "layers",
+    "line",
+    "mechanical",
+    "revision",
+    "section",
+    "side",
+    "threaded",
+    "through",
+    "top",
+    "triangle",
+    "view",
+    "visible"
+  ],
+  "intent_examples": [
+    "axes through center",
+    "blind hole side view drill point",
+    "centerline crosshair for hole",
+    "centerline ISO 128",
+    "circle with centerline crosshair",
+    "co potrafi mechanical",
+    "counterbore plan view",
+    "countersink side view flare",
+    "create ISO mechanical layer standard",
+    "cross-section fill pattern",
+    "cutting plane line ISO 128",
+    "diagnostyka kategorii mechanical",
+    "draw bolt hex head top view",
+    "draw centerline axis",
+    "draw centerline cross",
+    "draw counterbore hole top view",
+    "draw hidden edge line",
+    "draw hole side view section",
+    "draw revision triangle",
+    "draw section cut line A",
+    "draw section hatch steel",
+    "draw threaded hole top view",
+    "draw through hole top view",
+    "draw visible edge line",
+    "edge on visible layer",
+    "ensure mechanical layers ISO",
+    "hatch section by material",
+    "hex head bolt plan view",
+    "krzyz na okregu",
+    "krzyz osiowy okregu",
+    "linia kreskowa",
+    "linia osiowa CENTER",
+    "linia przekroju z grotami",
+    "linia widoczna",
+    "list mechanical layer key",
+    "ME-CENTER line",
+    "ME-HIDDEN line",
+    "ME-VISIBLE line",
+    "mechanical category metadata",
+    "mechanical material hatch lookup",
+    "narysuj krawedz ukryta",
+    "narysuj lecb sruby od gory",
+    "narysuj linie cieciowa A-A",
+    "narysuj os",
+    "narysuj otwor gwintowany",
+    "narysuj otwor pog\u0142ebiany",
+    "narysuj otwor przelotowy",
+    "narysuj widoczna krawedz",
+    "occluded edge",
+    "otwor przelotowy z osiami",
+    "otwor z gwintem M10",
+    "otwor z lukiem 3/4",
+    "otwor z pog\u0142ebieniem walcowym",
+    "pocketed bolt hole",
+    "przekroj otworu z gwintem",
+    "przekroj z materialem",
+    "revision marker triangle",
+    "rewizja nr 1",
+    "section cutting plane",
+    "setup ME-* layer key",
+    "sruba M10 widok z gory",
+    "stworz wszystkie warstwy mechaniczne",
+    "szesciokat plaski dla sruby",
+    "tag revision A",
+    "tapped hole plan view",
+    "through hole plan view",
+    "widok boczny otworu",
+    "wlacz standardowe warstwy ME-* w projekcie",
+    "wstaw trojkat rewizji",
+    "zakreskuj przekroj stali"
+  ],
+  "tools_summary": [
+    {
+      "name": "draw_bolt_head_top_view",
+      "description": "Draw the top view of a hex-head bolt per rule 37 \u00A75: a regular hexagon with two flats parallel to the X axis (rotated by rotationDeg) sized by flatToFlatMm, optionally a Continuous shank circle inside (rotation matters for the hexagon, not the circle), and a centreline crosshair on ME-CENTER sized to the across-corners radius. Pass nominalDiameterMm for documentation only \u2014 it\u0027s echoed back in the result for traceability but does not affect geometry. The across-corners diameter is reported.",
+      "tags": [
+        "draw",
+        "bolt",
+        "head",
+        "top",
+        "view"
+      ],
+      "intent": [
+        "narysuj lecb sruby od gory",
+        "draw bolt hex head top view",
+        "sruba M10 widok z gory",
+        "hex head bolt plan view",
+        "szesciokat plaski dla sruby"
+      ]
+    },
+    {
+      "name": "draw_centerline",
+      "description": "Draw an axis / centreline as a CENTER line on layer ME-CENTER (default). For round features prefer draw_centerline_cross which sizes the extension automatically per ISO 128.",
+      "tags": [
+        "draw",
+        "centerline"
+      ],
+      "intent": [
+        "narysuj os",
+        "draw centerline axis",
+        "linia osiowa CENTER",
+        "ME-CENTER line",
+        "centerline ISO 128"
+      ]
+    },
+    {
+      "name": "draw_centerline_cross",
+      "description": "Draw the canonical round-feature centreline crosshair: TWO perpendicular CENTER-linetype lines on layer ME-CENTER (default), each extending featureRadiusMm \u002B extensionMm beyond the centre point in both directions, rotated by rotationDeg. Per rule 37 \u00A72 this is what a circle\u0027s centreline SHOULD look like \u2014 agents who try to do it with two raw draw_centerline calls usually forget the extension and the drawing looks like a \u0060\u002B\u0060 glued to the circle.",
+      "tags": [
+        "draw",
+        "centerline",
+        "cross"
+      ],
+      "intent": [
+        "krzyz osiowy okregu",
+        "draw centerline cross",
+        "krzyz na okregu",
+        "centerline crosshair for hole",
+        "axes through center"
+      ]
+    },
+    {
+      "name": "draw_counterbore_hole",
+      "description": "Draw a plan-view counterbore hole: outer counterbore circle on layer ME-VISIBLE plus an inner through-hole circle on the same layer plus a centreline crosshair on ME-CENTER sized to the counterbore radius. counterboreDiameterMm MUST be greater than throughDiameterMm \u2014 the tool fails fast otherwise.",
+      "tags": [
+        "draw",
+        "counterbore",
+        "hole"
+      ],
+      "intent": [
+        "narysuj otwor pog\u0142ebiany",
+        "draw counterbore hole top view",
+        "otwor z pog\u0142ebieniem walcowym",
+        "counterbore plan view",
+        "pocketed bolt hole"
+      ]
+    },
+    {
+      "name": "draw_hidden_edge",
+      "description": "Draw an occluded edge as a HIDDEN line on layer ME-HIDDEN (default). Per rule 37 \u00A71 hidden geometry MUST live on its own layer \u2014 drafting it on ME-VISIBLE is the #1 \u0027looks fine, fails inspection\u0027 bug.",
+      "tags": [
+        "draw",
+        "hidden",
+        "edge"
+      ],
+      "intent": [
+        "narysuj krawedz ukryta",
+        "draw hidden edge line",
+        "linia kreskowa",
+        "ME-HIDDEN line",
+        "occluded edge"
+      ]
+    },
+    {
+      "name": "draw_hole_side_view",
+      "description": "Draw a hole\u0027s SIDE view (vertical cross-section through the hole axis) -- the plan-view hole tools (draw_through_hole etc.) only draw the top-down circle; this is the companion detail/section view. kind=\u0027through\u0027: two parallel wall lines, open at both ends (a through hole has no bottom). kind=\u0027blind\u0027: walls stepping down to a drill-point V at drillPointAngleDeg (118\u00B0 standard). kind=\u0027counterbore\u0027: wider walls for counterboreDepthMm then narrower walls to depthMm (requires counterboreDiameterMm \u002B counterboreDepthMm). kind=\u0027countersink\u0027: an angled flare from headDiameterMm down to diameterMm over countersinkAngleDeg (requires headDiameterMm), then straight walls to depthMm. Y runs downward from topCenter (the top surface) into the material. A centreline is always drawn on ME-CENTER (default) extending centerlineExtensionMm past both ends.",
+      "tags": [
+        "draw",
+        "hole",
+        "side",
+        "view"
+      ],
+      "intent": [
+        "widok boczny otworu",
+        "draw hole side view section",
+        "przekroj otworu z gwintem",
+        "blind hole side view drill point",
+        "countersink side view flare"
+      ]
+    },
+    {
+      "name": "draw_revision_triangle",
+      "description": "Draw the canonical revision marker per rule 37 \u00A76: a filled equilateral triangle (closed polyline \u002B SOLID hatch) on layer ME-REV with the revision letter or number drawn as DBText centred on the triangle. Returns BOTH the triangle handle and the text handle so the agent can later move them together. The triangle pointer sits at \u0060position\u0060; rotationDeg orients its tip (default 0\u00B0 = pointing UP).",
+      "tags": [
+        "draw",
+        "revision",
+        "triangle"
+      ],
+      "intent": [
+        "wstaw trojkat rewizji",
+        "draw revision triangle",
+        "rewizja nr 1",
+        "revision marker triangle",
+        "tag revision A"
+      ]
+    },
+    {
+      "name": "draw_section_cut_line",
+      "description": "Draw a section cutting plane line per ISO 128 type H: thick PHANTOM polyline on layer ME-SECTION (lineweight 0.70 mm by default via the ensured layer), arrow heads on each end pointing in the viewing direction (perpendicular to the cut, pointing OUTWARD from the start\u2192end direction by rotating \u002B90\u00B0), and a label DBText on layer ME-TEXT placed at each end. Returns all 5 entity handles. Per rule 37 \u00A73 the sectioned hatch is NOT drawn here \u2014 call acad-geometry2d.draw_hatch on the resulting sectioned-view boundary separately.",
+      "tags": [
+        "draw",
+        "section",
+        "cut",
+        "line"
+      ],
+      "intent": [
+        "narysuj linie cieciowa A-A",
+        "draw section cut line A",
+        "section cutting plane",
+        "linia przekroju z grotami",
+        "cutting plane line ISO 128"
+      ]
+    },
+    {
+      "name": "draw_section_hatch",
+      "description": "Apply a material-appropriate section hatch (ISO 128 \u00A76 / rule 37 \u00A78 convention -- steel ANSI31, cast iron ANSI32, aluminium ANSI37, etc., see mechanical_health.materials) over an existing closed boundary. This is the tool the header comment on this file used to say didn\u0027t exist in v1 -- it now looks up pattern/scale/angle from the same material table mechanical_health reports, so an agent doesn\u0027t have to hardcode hatch parameters per material. scaleOverride/angleOverrideDeg let you deviate from the table default for an unusual drawing scale.",
+      "tags": [
+        "draw",
+        "section",
+        "hatch"
+      ],
+      "intent": [
+        "zakreskuj przekroj stali",
+        "draw section hatch steel",
+        "przekroj z materialem",
+        "hatch section by material",
+        "cross-section fill pattern"
+      ]
+    },
+    {
+      "name": "draw_threaded_hole",
+      "description": "Draw a plan-view threaded (tapped) hole per rule 37 \u00A74 \u002B \u00A74a: a FULL outer circle at majorDiameterMm on layer ME-VISIBLE, an INNER 3/4 ARC at minorDiameterMm on layer ME-THREAD (HIDDEN linetype) \u2014 the gap demonstrates that the inner circle is the thread minor diameter, not a true geometric circle \u2014 plus a centreline crosshair on ME-CENTER. The arc gap is threadGapDeg wide (default 90\u00B0, so the arc spans 270\u00B0) starting at threadGapStartDeg (default 0\u00B0 = \u002BX axis). minorDiameterMm MUST be smaller than majorDiameterMm.",
+      "tags": [
+        "draw",
+        "threaded",
+        "hole"
+      ],
+      "intent": [
+        "narysuj otwor gwintowany",
+        "draw threaded hole top view",
+        "otwor z gwintem M10",
+        "tapped hole plan view",
+        "otwor z lukiem 3/4"
+      ]
+    },
+    {
+      "name": "draw_through_hole",
+      "description": "Draw a plan-view through hole: profile circle on layer ME-VISIBLE (default) at the requested diameter PLUS a centreline crosshair on ME-CENTER (default) extending centerlineExtensionMm past the circle on each axis (rule 37 \u00A74). Returns the profile circle and both centreline handles in one call.",
+      "tags": [
+        "draw",
+        "through",
+        "hole"
+      ],
+      "intent": [
+        "narysuj otwor przelotowy",
+        "draw through hole top view",
+        "otwor przelotowy z osiami",
+        "through hole plan view",
+        "circle with centerline crosshair"
+      ]
+    },
+    {
+      "name": "draw_visible_edge",
+      "description": "Draw a visible feature edge as a Continuous line on layer ME-VISIBLE (default). Use this rather than acad-geometry2d.draw_line whenever the line has semantic meaning \u2014 the layer assignment is what makes the drawing readable per ISO 128.",
+      "tags": [
+        "draw",
+        "visible",
+        "edge"
+      ],
+      "intent": [
+        "narysuj widoczna krawedz",
+        "draw visible edge line",
+        "linia widoczna",
+        "ME-VISIBLE line",
+        "edge on visible layer"
+      ]
+    },
+    {
+      "name": "ensure_mechanical_layers",
+      "description": "Idempotently create the ISO-mechanical 11-layer key (ME-VISIBLE, ME-HIDDEN, ME-CENTER, ME-DIMS, ME-TEXT, ME-SECTION, ME-HATCH, ME-THREAD, ME-CONSTRUCTION, ME-TITLE, ME-REV) per rule 37 \u00A79, with the prescribed AutoCAD Color Index, linetype AND lineweight (e.g. ME-VISIBLE = 0.50 mm Continuous, ME-HIDDEN = 0.25 mm HIDDEN, ME-CENTER = 0.18 mm CENTER, ME-SECTION = 0.70 mm PHANTOM). Existing layers are left alone, never overwritten. ME-CONSTRUCTION is non-plottable. includeConstruction=false skips it; includeRevision=false skips ME-REV.",
+      "tags": [
+        "ensure",
+        "mechanical",
+        "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy mechaniczne",
+        "ensure mechanical layers ISO",
+        "setup ME-* layer key",
+        "wlacz standardowe warstwy ME-* w projekcie",
+        "create ISO mechanical layer standard"
+      ]
+    },
+    {
+      "name": "mechanical_health",
+      "description": "Report the ISO-mechanical layer key, the material \u2192 hatch pattern lookup table (rule 37 \u00A78), and the planned bundled-block list. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults \u2014 e.g. which pattern to pass to acad-geometry2d.draw_hatch when sectioning steel \u2014 without making a real call to AutoCAD.",
+      "tags": [
+        "mechanical",
+        "health"
+      ],
+      "intent": [
+        "co potrafi mechanical",
+        "list mechanical layer key",
+        "mechanical material hatch lookup",
+        "diagnostyka kategorii mechanical",
+        "mechanical category metadata"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "mechanical",
+    "tool_count_target": 14,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase6_domains",
+    "discipline": "mechanical",
+    "depends_on_categories": [
+      "geometry-2d",
+      "layers",
+      "annotations"
+    ],
+    "paired_validators_dir": "validators/mechanical/",
+    "v1_limitations": [
+      "Side-view hole variants (counterbore depth, blind-hole drill point, countersink flare) ship in Phase 7.",
+      "draw_section_cut_line emits the cutting plane \u002B arrows \u002B labels but NOT the sectioned hatch \u2014 call acad-geometry2d.draw_hatch separately with a pattern from mechanical_health.materials.",
+      "Bundled blocks under blocks/mechanical/ (BOLT_HEX_M*, WASHER_FLAT_M*, BEARING_RADIAL_*) ship in Phase 7; v1 tools synthesise geometry inline."
+    ],
+    "last_regenerated_utc": "2026-08-05T13:09:30.2838282Z"
+  }
+}

@@ -6,7 +6,7 @@
 .DESCRIPTION
     Tier 1 checks ONLY:
       1. Engineering rules well-formed (docs/engineering-rules/*.md non-empty, starts with a heading)
-      2. mcpbank-manifests/*.json valid + required fields per rule 30
+      2. toolbank-manifests/*.json valid + required fields per rule 30
       3. Forbidden C# patterns (per rule 40)
       4. Secret regex on staged files
       5. CHANGELOG.md was touched if anything under src/ changed
@@ -151,9 +151,9 @@ foreach ($rf in $ruleFiles) {
 
 # 2. Manifests valid
 Write-Host ""
-Write-Host "[2/7] MCPBank manifests" -ForegroundColor Cyan
+Write-Host "[2/7] ToolBank manifests" -ForegroundColor Cyan
 $required = @("id", "name", "description", "transport", "tags", "intent_examples", "tools_summary")
-$mfFiles = Get-ChildItem -Path (Join-Path $RepoRoot "mcpbank-manifests") -Filter "acad-*.json" -ErrorAction SilentlyContinue
+$mfFiles = Get-ChildItem -Path (Join-Path $RepoRoot "toolbank-manifests") -Filter "acad-*.json" -ErrorAction SilentlyContinue
 foreach ($mf in $mfFiles) {
     try {
         $entry = Get-Content $mf.FullName -Raw | ConvertFrom-Json

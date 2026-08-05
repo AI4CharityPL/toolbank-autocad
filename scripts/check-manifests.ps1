@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    Verifies that for every C# category folder Categories/<Name>/ there is a matching MCPBank manifest
-    mcpbank-manifests/acad-<name>.json, and vice versa. Also verifies tool names in code match the manifest.
+    Verifies that for every C# category folder Categories/<Name>/ there is a matching ToolBank manifest
+    toolbank-manifests/acad-<name>.json, and vice versa. Also verifies tool names in code match the manifest.
 
 .DESCRIPTION
     Run by:
@@ -40,7 +40,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 }
 
 $categoriesRoot = Join-Path $RepoRoot "src\AcadMcp.Backend\Categories"
-$manifestsRoot  = Join-Path $RepoRoot "mcpbank-manifests"
+$manifestsRoot  = Join-Path $RepoRoot "toolbank-manifests"
 
 $problems = New-Object System.Collections.Generic.List[object]
 
@@ -136,7 +136,7 @@ foreach ($cat in $codeCats.Keys) {
     }
     if (-not $found) {
         Add-Problem -Code "MF1001" -Severity "error" `
-            -Message "Code category 'Categories/$cat/' has no matching manifest 'mcpbank-manifests/acad-$($cat.ToLowerInvariant()).json'" `
+            -Message "Code category 'Categories/$cat/' has no matching manifest 'toolbank-manifests/acad-$($cat.ToLowerInvariant()).json'" `
             -Where "Categories/$cat"
     }
 }
@@ -152,7 +152,7 @@ foreach ($mf in $manifestCats.Keys) {
     if (-not $found) {
         Add-Problem -Code "MF1002" -Severity "error" `
             -Message "Manifest 'acad-$mf.json' has no matching code category 'src/AcadMcp.Backend/Categories/<Name>/'" `
-            -Where "mcpbank-manifests/acad-$mf.json"
+            -Where "toolbank-manifests/acad-$mf.json"
     }
 }
 
@@ -175,7 +175,7 @@ foreach ($cat in $codeCats.Keys) {
     foreach ($t in $missingInManifest) {
         Add-Problem -Code "MF1003" -Severity "error" `
             -Message "Tool '$t' exists in code (Categories/$cat/) but is missing from manifest tools_summary" `
-            -Where "mcpbank-manifests/$manifestFile"
+            -Where "toolbank-manifests/$manifestFile"
     }
     foreach ($t in $extraInManifest) {
         Add-Problem -Code "MF1004" -Severity "error" `

@@ -14,7 +14,7 @@
       6. Verify      - live handshake with the plugin, if AutoCAD is running
 
     Only acad-router goes into your client config. The other 30 categories are
-    discovered on demand through MCP Nexus - that is the entire point of the
+    discovered on demand through ToolBank - that is the entire point of the
     architecture, and adding them statically would defeat it. See
     docs/engineering-rules/00-architecture-invariants.md, invariant 5.
 
@@ -77,7 +77,7 @@ function Write-Warn([string]$m) { Write-Host "      $m" -ForegroundColor Yellow;
 function Fail([string]$m, [int]$code = 1) { Write-Host ""; Write-Host "  FAILED: $m" -ForegroundColor Red; Write-Host ""; exit $code }
 
 Write-Host ""
-Write-Host "  MCP Nexus AutoCAD - setup" -ForegroundColor White
+Write-Host "  ToolBank AutoCAD - setup" -ForegroundColor White
 Write-Host "  repo   : $RepoRoot" -ForegroundColor DarkGray
 Write-Host "  client : $Client" -ForegroundColor DarkGray
 if ($DryRun) { Write-Host "  DRY RUN - nothing will be written" -ForegroundColor Cyan }
@@ -228,7 +228,7 @@ if ($Client -eq "none") {
     $stale = @($cfg.mcpServers.PSObject.Properties.Name | Where-Object { $_ -like 'acad-*' -and $_ -ne 'acad-router' })
     if ($stale.Count -gt 0) {
         Write-Warn ("Found {0} statically configured acad-* entries besides the router: {1}" -f $stale.Count, ($stale -join ", "))
-        Write-Info "These should be discovered through MCP Nexus, not pinned here (invariant 5). Left in place - remove them yourself if they were not deliberate."
+        Write-Info "These should be discovered through ToolBank, not pinned here (invariant 5). Left in place - remove them yourself if they were not deliberate."
     }
 
     if ($write -and -not $DryRun) {
@@ -297,8 +297,8 @@ if ($script:Warnings.Count -gt 0) {
 Write-Host ""
 Write-Host "  Next:" -ForegroundColor White
 if ($Client -ne "none") { Write-Host "    - restart $Client so it picks up acad-router" -ForegroundColor DarkGray }
-Write-Host "    - MCP Nexus must also be configured for the other 30 categories to be discoverable:" -ForegroundColor DarkGray
-Write-Host "      https://github.com/KrzysztofAugiewicz/MCPNexus" -ForegroundColor DarkGray
+Write-Host "    - ToolBank must also be configured for the other 30 categories to be discoverable:" -ForegroundColor DarkGray
+Write-Host "      https://github.com/KrzysztofAugiewicz/ToolBank" -ForegroundColor DarkGray
 Write-Host "      then: powershell -ExecutionPolicy Bypass -File scripts\register-mcps.ps1" -ForegroundColor DarkGray
 Write-Host "    - ask your client to call acad_status" -ForegroundColor DarkGray
 Write-Host ""

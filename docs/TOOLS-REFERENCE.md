@@ -1,6 +1,6 @@
 # AutoCAD MCP Megasystem — Full Tool Reference
 
-Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 340 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools total.
 
 ## Categories
 
@@ -427,7 +427,7 @@ Auto-generated from `mcpbank-manifests/acad-*.json`. 31 categories, 340 tools to
 | Tool | Description |
 |---|---|
 | `acad_status` | Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only). |
-| `acad_find_tools` | Semantic search across all acad-* MCP servers via MCP Nexus find_tools, filtered to our namespace. Returns ranked candidates with category and tool name. |
+| `acad_find_tools` | Semantic search across all acad-* MCP servers via ToolBank find_tools, filtered to our namespace. Returns ranked candidates with category and tool name. |
 | `acad_load_category` | Shortcut: connect to a single acad-<name> MCP server in lazy mode. Returns its tool list summary so you can pick the next call. |
 | `acad_recommend_categories` | Suggest the 1-3 most relevant categories for a free-text task description. Saves tokens by avoiding indiscriminate loading. |
 | `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |

@@ -127,11 +127,11 @@ if ($Mode -eq "Bundle") {
                     AppVersion="$version"
                     Name="AcadMcp"
                     Description="AutoCAD MCP plugin - named pipe server hosting AI agent tools"
-                    Author="MCP Nexus AutoCAD contributors"
+                    Author="ToolBank AutoCAD contributors"
                     ProductType="Application"
                     AutodeskProduct="AutoCAD">
-  <CompanyDetails Name="MCP Nexus AutoCAD contributors"
-                  Url="https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD"
+  <CompanyDetails Name="ToolBank AutoCAD contributors"
+                  Url="https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD"
                   Email="" />
   <Components Description="MCP plugin assembly">
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25" />

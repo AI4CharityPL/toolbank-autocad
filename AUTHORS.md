@@ -1,6 +1,6 @@
 # Authors
 
-**MCP Nexus AutoCAD (v2025)** — a large-scale MCP ecosystem for AutoCAD automation.
+**ToolBank AutoCAD (v2025)** — a large-scale MCP ecosystem for AutoCAD automation.
 
 ## Creators
 

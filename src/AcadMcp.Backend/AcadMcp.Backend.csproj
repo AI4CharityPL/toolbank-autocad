@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <!--
-    CheckManifestSync - verifies every code category has a matching mcpbank-manifests/acad-<name>.json
+    CheckManifestSync - verifies every code category has a matching toolbank-manifests/acad-<name>.json
     and that tool name lists are in sync. Runs after build in Release to keep dev iteration fast.
     Skip with `-p:SkipManifestCheck=true`.
   -->

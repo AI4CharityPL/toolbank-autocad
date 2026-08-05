@@ -6,7 +6,7 @@
 // else, so a discovery layer could tell a request was about styles but had nothing to rank
 // create_dimstyle above its twenty siblings with.
 //
-// Measured over this bank with MCP Nexus, 16 plain-language requests, half of them Polish, both
+// Measured over this bank with ToolBank, 16 plain-language requests, half of them Polish, both
 // registries built by the same script from the same 448 tools: top-3 37% -> 75%, and end to end
 // with a frontier model choosing, 56% -> 81%. Nothing about the search changed. That is the
 // whole reason these tests exist - the regression they guard against is invisible to every
@@ -57,7 +57,7 @@ public sealed class ManifestGenerationTests : IDisposable
 
     private JsonObject ReadManifest(string category)
     {
-        var path = Path.Combine(_repoRoot, "mcpbank-manifests", $"acad-{category}.json");
+        var path = Path.Combine(_repoRoot, "toolbank-manifests", $"acad-{category}.json");
         return (JsonNode.Parse(File.ReadAllText(path)) as JsonObject)!;
     }
 

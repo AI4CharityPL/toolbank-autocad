@@ -1,6 +1,6 @@
-// Generates / updates an MCPBank manifest for one category from [McpTool] metadata.
+// Generates / updates a ToolBank manifest for one category from [McpTool] metadata.
 // Used by `AcadMcp.Backend.exe --category <name> --regenerate-manifest`.
-// See rule 30-mcpbank-manifest.md.
+// See rule 30-toolbank-manifest.md.
 
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ public static class BankAutoRegister
         if (string.IsNullOrWhiteSpace(category))
             throw new ArgumentException("Category required", nameof(category));
 
-        var manifestDir = Path.Combine(repoRoot, "mcpbank-manifests");
+        var manifestDir = Path.Combine(repoRoot, "toolbank-manifests");
         Directory.CreateDirectory(manifestDir);
         var manifestPath = Path.Combine(manifestDir, $"acad-{category}.json");
         var launcherPath = Path.Combine(repoRoot, "bin-launchers", $"acad-{category}.cmd");
@@ -89,7 +89,7 @@ public static class BankAutoRegister
             // them, so the information existed the whole time and was being flattened away on
             // export.
             //
-            // Measured on MCP Nexus over this bank, 16 plain-language requests, half Polish:
+            // Measured on ToolBank over this bank, 16 plain-language requests, half Polish:
             // 43% -> 81% top-3, and 37% -> 87% end-to-end with a frontier model choosing. Nothing
             // about the search changed; only what the manifest says about each tool.
             toolsArr.Add(new JsonObject
@@ -115,7 +115,7 @@ public static class BankAutoRegister
             var s = i.GetValue<string>();
             if (string.IsNullOrWhiteSpace(s)) continue;
             // Skip leftover scaffold placeholders so they don't accumulate forever.
-            // See rule 31-mcpbank-discovery-hygiene.md.
+            // See rule 31-toolbank-discovery-hygiene.md.
             if (s.IndexOf("TODO", StringComparison.OrdinalIgnoreCase) >= 0) continue;
             if (s.StartsWith("(seed)", StringComparison.OrdinalIgnoreCase)) continue;
             intentBag.Add(s);
@@ -160,7 +160,7 @@ public static class BankAutoRegister
         {
             ["id"] = $"acad-{category}",
             ["name"] = $"acad-{category}",
-            ["description"] = $"AutoCAD MCP - category '{category}'. (Auto-generated stub - replace with a real description per rule 31-mcpbank-discovery-hygiene.md.)",
+            ["description"] = $"AutoCAD MCP - category '{category}'. (Auto-generated stub - replace with a real description per rule 31-toolbank-discovery-hygiene.md.)",
             ["transport"] = new JsonObject
             {
                 ["type"] = "stdio",

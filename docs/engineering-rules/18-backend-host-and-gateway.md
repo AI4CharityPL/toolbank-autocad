@@ -6,7 +6,7 @@ Backend stdio host - one process per category, one IPluginGateway per process, n
 
 ## Process model (mandatory)
 
-- One `AcadMcp.Backend.exe` per loaded MCP category. The MCP client / MCPBank starts/stops them on demand.
+- One `AcadMcp.Backend.exe` per loaded MCP category. The MCP client / ToolBank starts/stops them on demand.
 - Each process has exactly one `PluginPipeClient` instance, registered as singleton, lazy-connected on first tool call (NOT on `initialize`).
 - `--category router` is the only special case: starts `RouterServer`, no plugin connection at all.
 - Stdio is reserved for MCP JSON-RPC. Logs go to stderr only (rule 03).
@@ -52,7 +52,7 @@ Behaviour requirements:
 Backend exposes operator-only flags (NOT visible to MCP clients):
 
 - `--ping-plugin` connect, run `_echo` + `acad_status`, exit. Used by smoke tests.
-- `--regenerate-manifest` rewrite `mcpbank-manifests/acad-<category>.json` from `[McpTool]` metadata, exit.
+- `--regenerate-manifest` rewrite `toolbank-manifests/acad-<category>.json` from `[McpTool]` metadata, exit.
 - `--verbose` raise log level to `Debug`.
 
 If `--ping-plugin` succeeds but real tool calls fail, suspect the plugin's UI thread dispatcher (rule 10) or a missing `[McpTool]` registration (rule 20).

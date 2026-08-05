@@ -35,7 +35,7 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
 $config = if ($Release) { 'Release' } else { 'Debug' }
 $exe = Join-Path $repo "src\AcadMcp.Backend\bin\$config\net8.0\AcadMcp.Backend.exe"
-$manifests = Join-Path $repo "mcpbank-manifests"
+$manifests = Join-Path $repo "toolbank-manifests"
 
 if (-not (Test-Path $exe)) { throw "Backend exe missing: $exe. Run dotnet build src\AcadMcp.sln -c $config." }
 

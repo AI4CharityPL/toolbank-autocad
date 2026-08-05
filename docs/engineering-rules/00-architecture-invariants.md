@@ -31,15 +31,15 @@ Files in `src/AcadMcp.Backend/Categories/<X>/` contain ONLY:
 
 **No business logic in tool methods.** Real work happens in helpers or via plugin RPC. Tool method = parse args → call helper / pipe → return DTO.
 
-## 5. MCPBank is the ONLY discovery mechanism
+## 5. ToolBank is the ONLY discovery mechanism
 
-We do NOT register all 30 microservers in the user's `mcp.json`. Only `acad-router` lives there permanently (alongside `mcpbank-discovery` and `mcpbank-dynamic` which the user already has).
+We do NOT register all 30 microservers in the user's `mcp.json`. Only `acad-router` lives there permanently (alongside `toolbank-discovery` and `toolbank-dynamic` which the user already has).
 
-Categories are discovered via `mcpd_find` (semantic) and connected via `mcpd_connect(lazy_mode=true)`. Every category MUST have a manifest in `mcpbank-manifests/acad-<name>.json` with rich `intent_examples` PL+EN. Without this, the LLM cannot find your tools.
+Categories are discovered via `mcpd_find` (semantic) and connected via `mcpd_connect(lazy_mode=true)`. Every category MUST have a manifest in `toolbank-manifests/acad-<name>.json` with rich `intent_examples` PL+EN. Without this, the LLM cannot find your tools.
 
 ## 6. Router stays connected in the MCP client permanently
 
-`acad-router` exposes 10 meta-tools: `acad_status`, `acad_find_tools`, `acad_load_category`, `acad_recommend_categories`, `acad_explain_capabilities`, `acad_call`, `acad_describe_drawing`, `acad_undo_checkpoint`, `acad_restore_checkpoint`, `acad_design_iterate`. This list, `mcpbank-manifests/acad-router.json`, and `RouterServer.cs`'s tool stubs must always agree (Phase 7.4) -- verified 2026-07-29: manifest was missing `acad_call`, now fixed; count and names now match code exactly.
+`acad-router` exposes 10 meta-tools: `acad_status`, `acad_find_tools`, `acad_load_category`, `acad_recommend_categories`, `acad_explain_capabilities`, `acad_call`, `acad_describe_drawing`, `acad_undo_checkpoint`, `acad_restore_checkpoint`, `acad_design_iterate`. This list, `toolbank-manifests/acad-router.json`, and `RouterServer.cs`'s tool stubs must always agree (Phase 7.4) -- verified 2026-07-29: manifest was missing `acad_call`, now fixed; count and names now match code exactly.
 
 Router does NOT do AutoCAD work itself - it orchestrates. Adding heavy tools to the router = anti-pattern. Such tools belong in their own category.
 

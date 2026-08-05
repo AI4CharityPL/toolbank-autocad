@@ -170,7 +170,7 @@ dotnet run --project src\AcadMcp.Backend -c Release --no-build -- `
   --category furniture --regenerate-manifest
 ```
 
-(see rule 30-mcpbank-manifest.md for rationale). The pre-build
+(see rule 30-toolbank-manifest.md for rationale). The pre-build
 `check-manifests` gate will otherwise fail.
 
 ## 10. Interaction with other categories

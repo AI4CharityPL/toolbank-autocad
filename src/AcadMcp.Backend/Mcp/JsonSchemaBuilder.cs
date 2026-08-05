@@ -2,7 +2,7 @@
 //
 // Shared by CategoryServer (tools/list) and RouterServer (acad_load_category) so the two
 // can never disagree about what a tool's contract looks like - that kind of drift is
-// exactly what rule 31-mcpbank-discovery-hygiene.md is about.
+// exactly what rule 31-toolbank-discovery-hygiene.md is about.
 //
 // Why this exists at all: an MCP client only ever learns how to call a tool from this
 // schema. A bare {"type":"object"} for a Point2dDto tells the model nothing, and it will

@@ -1,0 +1,407 @@
+{
+  "id": "acad-architecture",
+  "name": "acad-architecture",
+  "description": "High-level architectural plan-view operations: walls (with centreline \u002B two faces), doors (with wall opening \u002B swing), windows (sill, glass, opening), columns, rooms (boundary \u002B tag with computed area), floor slabs, stairs, and intelligent dimensioning. Composes primitives from acad-geometry-2d, acad-blocks, acad-layers, acad-annotations, and acad-dimensions while auto-creating the AIA-style architectural layer key. Pairs with acad-validators rules under validators/architectural/.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-architecture.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "architectural",
+    "architecture",
+    "at",
+    "attach",
+    "autocad",
+    "cad",
+    "ceiling",
+    "chain",
+    "column",
+    "define",
+    "dimension",
+    "door",
+    "draw",
+    "dwg",
+    "elevator",
+    "ensure",
+    "grid",
+    "health",
+    "insert",
+    "layers",
+    "opening",
+    "ramp",
+    "rect",
+    "room",
+    "round",
+    "split",
+    "stair",
+    "tag",
+    "wall",
+    "walls",
+    "window"
+  ],
+  "intent_examples": [
+    "200 mm wall",
+    "architecture category metadata",
+    "attach room label",
+    "auto dimension between two points",
+    "ceiling tile grid 600x600",
+    "circular structural column",
+    "closed wall loop room outline",
+    "co potrafi architecture",
+    "create plan-view layer key",
+    "create room boundary with tag",
+    "cut hole in wall for opening",
+    "define room with number and name",
+    "diagnostyka kategorii architecture",
+    "dimension wall",
+    "dodaj etykiete pokoju",
+    "door at hinge point",
+    "draw connected walls polyline",
+    "draw door with swing arc",
+    "draw elevator placeholder",
+    "draw ramp 6 procent",
+    "draw rect column with center mark",
+    "draw round column with center mark",
+    "draw stair run with treads",
+    "draw suspended ceiling grid",
+    "draw wall from point to point",
+    "draw window with sill and header",
+    "drzwi otwierane w lewo",
+    "ensure architectural layers",
+    "insert accessible ramp",
+    "insert elevator shaft",
+    "insert rectangular column",
+    "insert round column",
+    "insert single door 900 mm",
+    "insert straight stair",
+    "insert window 1200 mm",
+    "kolumna okragla 400 mm",
+    "kolumna prostokatna z osiami",
+    "kratka sufitu akustycznego",
+    "label room with area m2",
+    "lancuch scian z polilinii",
+    "lift shaft X mark plan",
+    "linear dim along wall",
+    "list architecture layer key",
+    "narysuj kilka scian po kolei",
+    "narysuj sciane",
+    "narysuj siatke sufitu podwieszanego",
+    "okno o szerokosci 1.2 m",
+    "oznacz pomieszczenie z nazwa",
+    "postaw sciane od A do B",
+    "przytnij sciane pod okno",
+    "ramp with slope percent label",
+    "room ID tag",
+    "rysuj bieg schodow z kierunkiem",
+    "setup AIA layer standard",
+    "split wall at door jambs",
+    "stair UP arrow 10 stopni",
+    "structural column 400x400",
+    "stworz pokoj 101 z polem",
+    "stworz wszystkie warstwy architektoniczne",
+    "szyb windy z krzyzem",
+    "T-bar grid ceiling",
+    "tag room with number name area",
+    "trim wall for opening jamb1 jamb2",
+    "wall chain with mitred corners",
+    "wall with thickness",
+    "what blocks does architecture ship",
+    "window centered on wall",
+    "wlacz standardowe warstwy A-* w projekcie",
+    "wstaw drzwi w sciane",
+    "wstaw okno w sciane",
+    "wstaw pochylnie z oznaczeniem spadku",
+    "wstaw rampe dla niepelnosprawnych",
+    "wstaw schody proste",
+    "wstaw slup okragly",
+    "wstaw slup prostokatny",
+    "wstaw winde schemat",
+    "wymiar wzdluz sciany",
+    "wytnij otwor w scianie pod drzwi",
+    "zdefiniuj pomieszczenie",
+    "zwymiaruj sciane"
+  ],
+  "tools_summary": [
+    {
+      "name": "architecture_health",
+      "description": "Report the architectural layer key \u002B planned bundled block library used by this category. ReadOnly: does NOT touch the active drawing. Use this from the agent to discover defaults without making a real call to AutoCAD.",
+      "tags": [
+        "architecture",
+        "health"
+      ],
+      "intent": [
+        "co potrafi architecture",
+        "list architecture layer key",
+        "what blocks does architecture ship",
+        "diagnostyka kategorii architecture",
+        "architecture category metadata"
+      ]
+    },
+    {
+      "name": "attach_room_tag",
+      "description": "Attach a compact room tag built as a 3-line MTEXT-style stack (number / name / area) at a centroid. When areaM2 is null the third line is omitted. Implementation uses 3 stacked DBText rows on A-ROOM-IDEN because MText creation runs through acad-annotations in a later phase.",
+      "tags": [
+        "attach",
+        "room",
+        "tag"
+      ],
+      "intent": [
+        "dodaj etykiete pokoju",
+        "tag room with number name area",
+        "attach room label",
+        "oznacz pomieszczenie z nazwa",
+        "room ID tag"
+      ]
+    },
+    {
+      "name": "define_room",
+      "description": "Define a room: closed boundary polyline on A-ROOM-BNDY plus three text labels on A-ROOM-IDEN (room number, room name, computed area in m\u00B2). Area is computed from the polyline using the shoelace formula and reported in m\u00B2 (assuming the drawing is in millimetres). tagPosition defaults to the polygon\u0027s centroid. The whole result is one transactional \u0027room\u0027 the agent can later reference by handle.",
+      "tags": [
+        "define",
+        "room"
+      ],
+      "intent": [
+        "zdefiniuj pomieszczenie",
+        "define room with number and name",
+        "stworz pokoj 101 z polem",
+        "create room boundary with tag",
+        "label room with area m2"
+      ]
+    },
+    {
+      "name": "dimension_wall",
+      "description": "Place ONE dimension along a wall segment between two endpoints. Auto-picks linear vs aligned per rule 36 \u00A79: walls within 1\u00B0 of horizontal/vertical use linear (rotation locked); anything else uses aligned. forceLinear / forceAligned override the heuristic. offsetMm is the perpendicular distance from the wall axis to the dimension line.",
+      "tags": [
+        "dimension",
+        "wall"
+      ],
+      "intent": [
+        "zwymiaruj sciane",
+        "dimension wall",
+        "wymiar wzdluz sciany",
+        "linear dim along wall",
+        "auto dimension between two points"
+      ]
+    },
+    {
+      "name": "draw_ceiling_grid",
+      "description": "Draw a T-bar suspended ceiling grid inside a rectangular bounding box. Creates a closed border polyline plus N vertical and M horizontal interior lines spaced by tileWidthMm \u00D7 tileDepthMm. All entities land on A-CLNG (configurable). rotationDeg rotates the whole grid around the bbox centre (0 = axis-aligned). Returns the border handle plus separate lists of vertical/horizontal tile gridlines.",
+      "tags": [
+        "draw",
+        "ceiling",
+        "grid"
+      ],
+      "intent": [
+        "narysuj siatke sufitu podwieszanego",
+        "draw suspended ceiling grid",
+        "ceiling tile grid 600x600",
+        "kratka sufitu akustycznego",
+        "T-bar grid ceiling"
+      ]
+    },
+    {
+      "name": "draw_wall",
+      "description": "Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset \u00B1thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default \u2014 connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs.",
+      "tags": [
+        "draw",
+        "wall"
+      ],
+      "intent": [
+        "narysuj sciane",
+        "postaw sciane od A do B",
+        "draw wall from point to point",
+        "wall with thickness",
+        "200 mm wall"
+      ]
+    },
+    {
+      "name": "draw_walls_chain",
+      "description": "Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex \u2014 joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall \u00D7 N because it issues 3 polyline calls instead of 3\u00B7N line calls.",
+      "tags": [
+        "draw",
+        "walls",
+        "chain"
+      ],
+      "intent": [
+        "narysuj kilka scian po kolei",
+        "lancuch scian z polilinii",
+        "draw connected walls polyline",
+        "wall chain with mitred corners",
+        "closed wall loop room outline"
+      ]
+    },
+    {
+      "name": "ensure_architectural_layers",
+      "description": "Idempotently create the AIA-style architectural \u002B structural layer key (A-WALL, A-WALL-CTRL, A-DOOR, A-DOOR-SWING, A-GLAZ, A-ROOM-BNDY, A-ROOM-IDEN, A-CLNG, A-ROOF, A-STRS, A-ANNO-DIMS, A-ANNO-NOTE, plus structural S-COLS, S-COLS-CTRL, S-SLAB, S-SLAB-HATCH when includeStructural=true). Existing layers are left alone, never overwritten. Returns one outcome per layer (created | already_exists | failed).",
+      "tags": [
+        "ensure",
+        "architectural",
+        "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy architektoniczne",
+        "ensure architectural layers",
+        "setup AIA layer standard",
+        "wlacz standardowe warstwy A-* w projekcie",
+        "create plan-view layer key"
+      ]
+    },
+    {
+      "name": "insert_door",
+      "description": "Insert a door at a hinge point. Draws the door panel (rectangle width \u00D7 frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection=\u0027left\u0027 (default) hinges on the LEFT side of the wall axis; \u0027right\u0027 hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door\u0027s jambs (hinge -\u003E hinge \u002B widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
+      "tags": [
+        "insert",
+        "door"
+      ],
+      "intent": [
+        "wstaw drzwi w sciane",
+        "insert single door 900 mm",
+        "draw door with swing arc",
+        "drzwi otwierane w lewo",
+        "door at hinge point"
+      ]
+    },
+    {
+      "name": "insert_elevator",
+      "description": "Draw an elevator shaft on A-STRS as a rectangle with two diagonal lines (X) plus a centred label on A-ANNO-NOTE. No cab / mechanical details \u2014 use this as a plan-view placeholder for lifts/verticals. For more detail use acad-verticals in Phase D7.",
+      "tags": [
+        "insert",
+        "elevator"
+      ],
+      "intent": [
+        "wstaw winde schemat",
+        "insert elevator shaft",
+        "draw elevator placeholder",
+        "szyb windy z krzyzem",
+        "lift shaft X mark plan"
+      ]
+    },
+    {
+      "name": "insert_ramp",
+      "description": "Draw a simple rectangular ramp outline on A-STRS plus a slope arrow (shaft \u002B head) along the travel direction and a text label reporting the gradient as \u0027N% RAMP\u0027 on A-ANNO-NOTE. widthMm runs perpendicular to directionDeg, lengthMm runs along it.",
+      "tags": [
+        "insert",
+        "ramp"
+      ],
+      "intent": [
+        "wstaw rampe dla niepelnosprawnych",
+        "insert accessible ramp",
+        "ramp with slope percent label",
+        "draw ramp 6 procent",
+        "wstaw pochylnie z oznaczeniem spadku"
+      ]
+    },
+    {
+      "name": "insert_rect_column",
+      "description": "Insert a rectangular structural column profile on layer S-COLS plus a small crosshair centre-mark on S-COLS-CTRL. width = X-axis, depth = Y-axis (before rotation). Column is auto-centered on the supplied point.",
+      "tags": [
+        "insert",
+        "rect",
+        "column"
+      ],
+      "intent": [
+        "wstaw slup prostokatny",
+        "insert rectangular column",
+        "structural column 400x400",
+        "kolumna prostokatna z osiami",
+        "draw rect column with center mark"
+      ]
+    },
+    {
+      "name": "insert_round_column",
+      "description": "Insert a circular structural column on layer S-COLS plus a small crosshair centre-mark on S-COLS-CTRL.",
+      "tags": [
+        "insert",
+        "round",
+        "column"
+      ],
+      "intent": [
+        "wstaw slup okragly",
+        "insert round column",
+        "circular structural column",
+        "kolumna okragla 400 mm",
+        "draw round column with center mark"
+      ]
+    },
+    {
+      "name": "insert_stair",
+      "description": "Draw a simple straight-run stair on A-STRS: outline rectangle (widthMm \u00D7 runLengthMm), treadCount-1 perpendicular tread lines at equal spacing, and a travel-direction arrow (shaft \u002B head). The arrow ends with an \u0027UP\u0027 label (configurable) on A-ANNO-NOTE. directionDeg points along the run (0 = \u002BX). For multi-flight or spiral stairs use acad-verticals in Phase D7.",
+      "tags": [
+        "insert",
+        "stair"
+      ],
+      "intent": [
+        "wstaw schody proste",
+        "insert straight stair",
+        "rysuj bieg schodow z kierunkiem",
+        "draw stair run with treads",
+        "stair UP arrow 10 stopni"
+      ]
+    },
+    {
+      "name": "insert_window",
+      "description": "Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window\u0027s own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall\u0027s heading in degrees (0 = horizontal, \u002B90 = vertical going up).",
+      "tags": [
+        "insert",
+        "window"
+      ],
+      "intent": [
+        "wstaw okno w sciane",
+        "insert window 1200 mm",
+        "draw window with sill and header",
+        "okno o szerokosci 1.2 m",
+        "window centered on wall"
+      ]
+    },
+    {
+      "name": "split_wall_at_opening",
+      "description": "Cut a hole for a door/window in a wall entity \u2014 wrapper around acad.openings.cut_wall_for_opening. Workflow: (1) call split_wall_at_opening(wallHandle, jamb1, jamb2) BEFORE insert_door / insert_window so the wall faces are trimmed at the jambs; (2) then call the opening tool. v1 inherits the wrapped primitive\u0027s limitation (Line \u002B 2-vertex Polyline walls); multi-vertex polyline walls will be supported once acad-verticals lands in Phase D7.",
+      "tags": [
+        "split",
+        "wall",
+        "at",
+        "opening"
+      ],
+      "intent": [
+        "wytnij otwor w scianie pod drzwi",
+        "cut hole in wall for opening",
+        "split wall at door jambs",
+        "przytnij sciane pod okno",
+        "trim wall for opening jamb1 jamb2"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "architecture",
+    "tool_count_target": 16,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "phase6_domains",
+    "discipline": "architectural",
+    "depends_on_categories": [
+      "geometry-2d",
+      "layers",
+      "annotations",
+      "dimensions"
+    ],
+    "paired_validators_dir": "validators/architectural/",
+    "v1_limitations": [
+      "draw_walls_chain mitres at vertices but does not auto-clean wall T-junctions.",
+      "Block library under blocks/architectural/ ships with Phase 7; v1 tools synthesise geometry inline."
+    ],
+    "last_regenerated_utc": "2026-08-05T13:09:25.5010405Z"
+  }
+}

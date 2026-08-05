@@ -5,7 +5,7 @@ What this repository does **not** yet expose, organised into buildable phases.
 Written after a tool-by-tool live verification of all 340 existing tools against a running
 AutoCAD 2025 (see [PHASE-7-STATUS.md](PHASE-7-STATUS.md) and the `fix:` commits from that
 sweep). The gaps below were established by matching every one of the 337 unique tool names
-in `mcpbank-manifests/` against AutoCAD's command and API surface, not from memory.
+in `toolbank-manifests/` against AutoCAD's command and API surface, not from memory.
 
 **Target: complete coverage.** Tool count is not a constraint — the discovery layer costs a
 fixed number of tokens whether the registry holds 340 tools or 1,400, which is the entire

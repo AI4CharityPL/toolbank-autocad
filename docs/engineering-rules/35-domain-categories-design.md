@@ -67,7 +67,7 @@ Counter-example: `ensure_titleblock_for_layout` IS idempotent — it's an
 
 ## 5. Discipline isolation in the manifest
 
-Every domain manifest in `mcpbank-manifests/` MUST set:
+Every domain manifest in `toolbank-manifests/` MUST set:
 
 ```json
 {

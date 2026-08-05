@@ -1,0 +1,136 @@
+{
+  "id": "acad-sections",
+  "name": "acad-sections",
+  "description": "Section and elevation markers: the symbols that tell a reader which cut a drawing represents. Places section cut lines (A-A, B-B) with cut-plane markers, direction arrows and a depth range, elevation markers, and section titles; lists the section lines already in the drawing so a new one gets the next free letter. Follows PN-EN-ISO 128 and PN-B-01025 symbol conventions. This category draws the annotation, not the view - it does not generate the sectioned geometry, and the layout tab holding each section view is created through acad-layouts.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sections.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "cut-plane",
+    "dwg",
+    "elevation",
+    "insert",
+    "line",
+    "lines",
+    "list",
+    "marker",
+    "pn-b-01025",
+    "pn-en-iso-128",
+    "przekroje",
+    "section",
+    "sections",
+    "title"
+  ],
+  "intent_examples": [
+    "elevation view direction marker",
+    "insert elevation marker",
+    "insert section line",
+    "insert section title",
+    "inventory section cuts",
+    "linia przekroju ze strzalkami",
+    "list section lines",
+    "lista linii ciecia",
+    "napis przekroj pod widokiem",
+    "narysuj przekroj A-A",
+    "podpis przekroj A-A skala",
+    "scan section layer",
+    "section cut line with markers",
+    "symbol elewacji kierunkowy",
+    "view title caption",
+    "wstaw linie ciecia",
+    "wstaw marker elewacji",
+    "wstaw tytul przekroju",
+    "wypisz przekroje z rysunku",
+    "znacznik elewacji E"
+  ],
+  "tools_summary": [
+    {
+      "name": "insert_elevation_marker",
+      "description": "Insert an elevation-direction marker at the given model-space position. Geometry: a filled triangle pointing in the requested compass direction (N / E / S / W / NE / NW / SE / SW or bare degrees) on top of a short horizontal baseline, with the caption \u0022ELEWACJA \u003Cdirection\u003E\u0022 to the right. Differs from acad-callouts.insert_section_callout in that elevations have a directional triangle rather than a circle-in-triangle pair.",
+      "tags": [
+        "insert",
+        "elevation",
+        "marker"
+      ],
+      "intent": [
+        "wstaw marker elewacji",
+        "insert elevation marker",
+        "znacznik elewacji E",
+        "elevation view direction marker",
+        "symbol elewacji kierunkowy"
+      ]
+    },
+    {
+      "name": "insert_section_line",
+      "description": "Draw a section cut-line from startPoint to endPoint on layer A-DETL-SECT, apply DASHED2 linetype, add 90-degree offset ticks at both ends, then place labelled end markers with view-direction arrows via acad-callouts (unless drawEndMarkers=false). The offset ticks (6 mm plotted) signal that the cut-line\u0027s path is symbolic, not literal. sheetReference optional, viewDirection in {left|right} relative to the start\u2192end vector.",
+      "tags": [
+        "insert",
+        "section",
+        "line"
+      ],
+      "intent": [
+        "wstaw linie ciecia",
+        "insert section line",
+        "narysuj przekroj A-A",
+        "section cut line with markers",
+        "linia przekroju ze strzalkami"
+      ]
+    },
+    {
+      "name": "insert_section_title",
+      "description": "Place a section/view title beneath a drawn section (e.g. \u0022PRZEKR\u00D3J A-A\u0022 with \u0022SKALA 1:50\u0022 under it and an underline). position is the insertion point \u2014 typically the centre-bottom of the view. Customise caption (defaults to \u0022PRZEKR\u00D3J\u0022) for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line.",
+      "tags": [
+        "insert",
+        "section",
+        "title"
+      ],
+      "intent": [
+        "wstaw tytul przekroju",
+        "insert section title",
+        "podpis przekroj A-A skala",
+        "view title caption",
+        "napis przekroj pod widokiem"
+      ]
+    },
+    {
+      "name": "list_section_lines",
+      "description": "Inventory all entities on the A-DETL-SECT layer (or a caller-supplied layer via layerFilter). For every handle that is a curve, also queries acad.geometry2d.get_curve_length so the caller can sanity-check drawing-unit cut lengths against the target scale.",
+      "tags": [
+        "list",
+        "section",
+        "lines"
+      ],
+      "intent": [
+        "lista linii ciecia",
+        "list section lines",
+        "scan section layer",
+        "inventory section cuts",
+        "wypisz przekroje z rysunku"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "sections",
+    "tool_count_target": 4,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-05T13:09:32.9390451Z"
+  }
+}

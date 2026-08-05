@@ -1,5 +1,5 @@
 // Walks up the directory tree from the current binary to find the repo root.
-// Repo root has a `mcpbank-manifests/` folder OR a `.git/` folder.
+// Repo root has a `toolbank-manifests/` folder OR a `.git/` folder.
 
 using System.IO;
 
@@ -12,7 +12,7 @@ public static class RepoRootDetector
         var dir = new DirectoryInfo(System.AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (Directory.Exists(Path.Combine(dir.FullName, "mcpbank-manifests"))
+            if (Directory.Exists(Path.Combine(dir.FullName, "toolbank-manifests"))
                 || Directory.Exists(Path.Combine(dir.FullName, ".git")))
             {
                 return dir.FullName;

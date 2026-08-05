@@ -1,20 +1,20 @@
 <#
 .SYNOPSIS
-    Pushes all mcpbank-manifests/acad-*.json files into the local MCP Nexus registry.
+    Pushes all toolbank-manifests/acad-*.json files into the local ToolBank registry.
 
 .DESCRIPTION
-    Reads each acad-*.json from mcpbank-manifests/, validates required fields, then upserts
-    the entry (matched by id) into the MCP Nexus registry JSON.
+    Reads each acad-*.json from toolbank-manifests/, validates required fields, then upserts
+    the entry (matched by id) into the ToolBank registry JSON.
 
     Default registry path matches the user's existing setup:
-        C:\Users\DELL\mcpbank\registry\mcpd-registry.json
+        C:\Users\DELL\toolbank\registry\mcpd-registry.json
 
     Override with -Registry. Use -DryRun to preview without writing.
 
 .PARAMETER Registry
-    Full path to the MCP Nexus registry JSON. Auto-detected from the user's mcp.json if not provided
-    (looks for a "nexus-gateway" or "nexus-server" entry first; falls back to the older
-    "mcpbank-dynamic" / "mcpbank-discovery" names for configs that haven't been migrated yet).
+    Full path to the ToolBank registry JSON. Auto-detected from the user's mcp.json if not provided
+    (looks for a "toolbank-gateway" or "toolbank-server" entry first; falls back to the older
+    "toolbank-dynamic" / "toolbank-discovery" names for configs that haven't been migrated yet).
 
 .PARAMETER RepoRoot
     Repository root. Defaults to parent of script directory.
@@ -51,7 +51,7 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $RepoRoot = Split-Path -Parent $scriptDir
 }
 
-$manifestsDir = Join-Path $RepoRoot "mcpbank-manifests"
+$manifestsDir = Join-Path $RepoRoot "toolbank-manifests"
 if (-not (Test-Path $manifestsDir)) {
     Write-Error "Manifests directory not found: $manifestsDir"
     exit 2
@@ -62,16 +62,16 @@ if ([string]::IsNullOrWhiteSpace($Registry)) {
     if (Test-Path $cursorMcp) {
         try {
             $cfg = Get-Content $cursorMcp -Raw | ConvertFrom-Json
-            # Current MCP Nexus CLI names first; older "mcpbank-*" names kept as a
+            # Current ToolBank CLI names first; older "toolbank-*" names kept as a
             # fallback so configs that haven't been migrated yet still auto-detect.
-            $candidateKeys = @("nexus-gateway", "nexus-server", "mcpbank-dynamic", "mcpbank-discovery")
+            $candidateKeys = @("toolbank-gateway", "toolbank-server", "toolbank-dynamic", "toolbank-discovery")
             foreach ($key in $candidateKeys) {
                 $entry = $cfg.mcpServers.$key
                 if ($entry -and $entry.args) {
                     $idx = [array]::IndexOf($entry.args, "--registry")
                     if ($idx -ge 0 -and $idx + 1 -lt $entry.args.Count) {
                         $Registry = $entry.args[$idx + 1] -replace "/", "\"
-                        Write-Host "Detected MCP Nexus registry from mcp.json ('$key'): $Registry" -ForegroundColor DarkGray
+                        Write-Host "Detected ToolBank registry from mcp.json ('$key'): $Registry" -ForegroundColor DarkGray
                         break
                     }
                 }
@@ -79,7 +79,7 @@ if ([string]::IsNullOrWhiteSpace($Registry)) {
         } catch { }
     }
     if ([string]::IsNullOrWhiteSpace($Registry)) {
-        $Registry = Join-Path $env:USERPROFILE "mcpbank\registry\mcpd-registry.json"
+        $Registry = Join-Path $env:USERPROFILE "toolbank\registry\mcpd-registry.json"
         Write-Host "Falling back to default registry path: $Registry" -ForegroundColor DarkGray
     }
 }
@@ -92,7 +92,7 @@ if (-not (Test-Path $Registry)) {
     $fresh = [PSCustomObject]@{
         mcpd_version = "1.0"
         metadata = [PSCustomObject]@{
-            name        = "MCP Nexus Registry"
+            name        = "ToolBank Registry"
             description = "Created by AutoCAD MCP register-mcps.ps1"
             created_at  = $now
             updated_at  = $now

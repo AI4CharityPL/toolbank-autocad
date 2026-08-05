@@ -15,10 +15,10 @@
 AppId={{A7E5C9B2-8D14-49F1-AB73-2C9E1F0A6B55}
 AppName=AutoCAD AI Assistant
 AppVersion={#AppVersion}
-AppPublisher=MCP Nexus AutoCAD contributors
-AppPublisherURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD
-AppSupportURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/issues
-AppUpdatesURL=https://github.com/KrzysztofAugiewicz/MCPNexus-AutoCAD/releases
+AppPublisher=ToolBank AutoCAD contributors
+AppPublisherURL=https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD
+AppSupportURL=https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD/issues
+AppUpdatesURL=https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD/releases
 LicenseFile=..\LICENSE
 DefaultDirName={userappdata}\Autodesk\ApplicationPlugins\AcadMcpCompanion.bundle
 DisableDirPage=yes

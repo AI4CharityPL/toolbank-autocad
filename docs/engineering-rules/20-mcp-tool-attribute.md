@@ -13,7 +13,7 @@ The source generator `AcadMcp.SourceGen` SCANS for `[McpTool]` and emits the per
                  "Honors INSUNITS for radius interpretation.",
     category: "geometry-2d",                   // MUST match folder name (rule 24)
     Intent = new[] {
-        // 5+ examples MIN, mix PL and EN ~half/half. Powers MCPBank semantic search.
+        // 5+ examples MIN, mix PL and EN ~half/half. Powers ToolBank semantic search.
         "narysuj okrag o promieniu 100",
         "stworz kolo w punkcie 0,0",
         "dodaj okrag do rysunku",
@@ -34,7 +34,7 @@ public static DrawCircleResult DrawCircle(DrawCircleArgs args, CancellationToken
 
 1. **`Intent` REQUIRED, MIN 5 entries.** Source generator emits `ACAD0001` if missing or fewer.
 2. **At least 30% Polish, at least 30% English.** Hard to enforce automatically right now (Phase 6 will add detection); manually check.
-3. **Description in English.** LLMs handle better, MCPBank semantic search is multilingual.
+3. **Description in English.** LLMs handle better, ToolBank semantic search is multilingual.
 4. **`Description` includes the unit story** for any quantity (see rule 13).
 5. **`Description` mentions side effects** (creates entity, modifies layer, deletes selection, ...).
 6. **No emojis.** No marketing language. No "blazing fast". Just what it does.
@@ -68,6 +68,6 @@ public sealed record DrawCircleResult(EntityHandle Entity, string UnitsUsed);
 
 ## Why Intent matters
 
-`mcpd_find` in MCPBank does cosine similarity between user query and `intent_examples` from manifest. The richer + more diverse + more multilingual your Intent, the easier the agent finds your tool.
+`mcpd_find` in ToolBank does cosine similarity between user query and `intent_examples` from manifest. The richer + more diverse + more multilingual your Intent, the easier the agent finds your tool.
 
 A tool with weak Intent IS broken even if it works perfectly. Nobody will call it.

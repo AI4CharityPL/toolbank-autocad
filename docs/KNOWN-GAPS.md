@@ -280,6 +280,15 @@ factory first, which is a mechanical change worth doing before phase 3 adds more
 
 From the original public-release plan; phases 1–2 landed, the rest did not.
 
+- **Multi-sheet publishing.** `publish_sheets` produces a real PDF from ONE layout
+  ([A10](#a10-publish_sheets--single-sheet-now-verified-multi-sheet-still-failing)); two layouts
+  into one file still fails the same silent way — no file, no error, no Publisher log line. Both
+  layouts report `configured: true` on the same device but carry **different paper sizes**
+  (279.4 × 215.9 against 297 × 210), and `DsdData.IsHomogeneous` is hardcoded `false`. Next step
+  is to test whether the Publisher refuses a mixed-media set, and whether the answer is that flag
+  or forcing one shared page setup across the sheets. Single-sheet publishing is unaffected, so
+  this is a capability gap rather than a regression.
+
 - ~~**CI/CD — `.github/` does not exist at all.**~~ **Done.** `ci.yml` (build, test,
   manifest sync, whole-tree gate, Python sidecar), `codeql.yml`, `dependabot.yml`,
   `CODEOWNERS`, three issue forms, a PR template, plus `SECURITY.md`, `CONTRIBUTING.md` and

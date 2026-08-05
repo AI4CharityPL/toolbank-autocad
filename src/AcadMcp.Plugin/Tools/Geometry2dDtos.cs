@@ -147,3 +147,11 @@ internal sealed record ChamferArgsDto(
     [property: JsonPropertyName("handleB")] string HandleB,
     [property: JsonPropertyName("distA")]   double DistA,
     [property: JsonPropertyName("distB")]   double DistB);
+
+internal sealed record DrawMlineArgsDto(
+    [property: JsonPropertyName("vertices")]      List<Point2dDto>? Vertices,
+    [property: JsonPropertyName("style")]         string? Style,
+    [property: JsonPropertyName("scale")]         double? Scale,
+    [property: JsonPropertyName("justification")] string? Justification,
+    [property: JsonPropertyName("closed")]        bool Closed,
+    [property: JsonPropertyName("layer")]         string? Layer);

@@ -54,6 +54,11 @@ internal static class StylesPluginTools
         host.Register("acad.styles.modify_tablestyle", ModifyTableStyle);
         host.Register("acad.styles.delete_tablestyle", DeleteTableStyle);
         host.Register("acad.styles.set_current_tablestyle", SetCurrentTableStyle);
+
+        // Multiline styles live in their own file: they are an ordered list of parallel line
+        // elements rather than a bag of scalar properties, so none of the catalogue machinery
+        // above applies to them.
+        StylesMlinePluginTools.Register(host);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)

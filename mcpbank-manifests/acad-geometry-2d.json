@@ -41,6 +41,7 @@
     "length",
     "line",
     "list",
+    "mline",
     "mtext",
     "offset",
     "point",
@@ -101,12 +102,15 @@
     "draw a circle",
     "draw a line",
     "draw a point",
+    "draw an mline with a wall style",
     "draw arc",
     "draw donut shape",
     "draw ellipse",
     "draw hatch pattern",
     "draw infinite construction line",
+    "draw multiline",
     "draw multiline text block",
+    "draw parallel lines as one entity",
     "draw polygon",
     "draw polyline",
     "draw ray from point",
@@ -156,11 +160,13 @@
     "narysuj linie",
     "narysuj linie konstrukcyjna",
     "narysuj luk",
+    "narysuj multilinie",
     "narysuj okrag",
     "narysuj polilinie",
     "narysuj promien",
     "narysuj prostokat",
     "narysuj punkt",
+    "narysuj sciane stylem mline",
     "narysuj wielokat",
     "oblicz pole zamknietego ksztaltu",
     "obwod polilinii",
@@ -210,6 +216,7 @@
     "trim do granic",
     "usun obiekty",
     "where do curves cross",
+    "wielolinia po punktach",
     "wstaw napis",
     "wstaw punkt",
     "wstaw tekst wieloliniowy",
@@ -338,6 +345,22 @@
         "draw a line",
         "create line segment",
         "linia od punktu do punktu"
+      ]
+    },
+    {
+      "name": "draw_mline",
+      "description": "Draw a multiline (MLINE) through the given vertices using a named multiline style - the way a wall of a defined type is drawn in one call rather than as two offset polylines that must be kept parallel by hand. style defaults to the drawing\u0027s current one; create one first with create_mlinestyle. justification is \u0027top\u0027, \u0027zero\u0027 or \u0027bottom\u0027 and decides which of the style\u0027s parallel lines the vertices you pass actually lie on, so it changes where the wall sits relative to your points. scale multiplies every element offset, so a 200mm style drawn at scale 1.5 is 300mm wide.",
+      "tags": [
+        "draw",
+        "mline"
+      ],
+      "intent": [
+        "narysuj multilinie",
+        "narysuj sciane stylem mline",
+        "draw multiline",
+        "draw an mline with a wall style",
+        "wielolinia po punktach",
+        "draw parallel lines as one entity"
       ]
     },
     {
@@ -710,7 +733,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 32,
+    "tool_count_target": 33,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -724,6 +747,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-05T13:09:28.3265118Z"
+    "last_regenerated_utc": "2026-08-05T15:38:32.7872052Z"
   }
 }

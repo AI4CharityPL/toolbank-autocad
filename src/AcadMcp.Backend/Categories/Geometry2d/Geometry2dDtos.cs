@@ -194,3 +194,14 @@ public sealed record OkResult(
     [property: JsonPropertyName("ok")] bool Ok);
 
 #endregion
+
+// draw_mline — pulled forward from roadmap 3.1 because acad-styles 2.3 defines MLINE styles and
+// nothing in the bank could draw with one. A style no tool can apply is unusable by an agent and
+// impossible to check by sight.
+public sealed record DrawMlineArgs(
+    [property: JsonPropertyName("vertices")]      IReadOnlyList<Point2dDto> Vertices,
+    [property: JsonPropertyName("style")]         string? Style = null,
+    [property: JsonPropertyName("scale")]         double Scale = 1.0,
+    [property: JsonPropertyName("justification")] string Justification = "zero",
+    [property: JsonPropertyName("closed")]        bool Closed = false,
+    [property: JsonPropertyName("layer")]         string? Layer = null);

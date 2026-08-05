@@ -21,7 +21,10 @@ public class Geometry2dTests
 {
     private static readonly string[] ExpectedTools = new[]
     {
-        "draw_line", "draw_polyline", "draw_circle", "draw_arc", "draw_ellipse",
+        // draw_mline is here rather than in phase 3.1 with the rest of the geometry extensions:
+        // acad-styles gained MLINE style authoring and nothing in the bank could draw with one,
+        // which makes such a style both unusable by an agent and impossible to check by sight.
+        "draw_line", "draw_polyline", "draw_mline", "draw_circle", "draw_arc", "draw_ellipse",
         "draw_rectangle", "draw_polygon", "draw_spline", "draw_point", "draw_donut",
         "draw_xline", "draw_ray", "draw_text", "draw_mtext", "draw_hatch", "draw_revcloud",
         "get_entity", "list_entities_in_window", "get_curve_length", "get_area",

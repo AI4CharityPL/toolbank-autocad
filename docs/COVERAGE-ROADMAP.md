@@ -243,25 +243,53 @@ publish_sheets              set_publish_options        set_plot_stamp
 get_plot_area
 ```
 
-### 2.3 `acad-styles` — style authoring (≈30)
+### 2.3 `acad-styles` — style authoring (≈30 → **15 remaining**, 18 built)
 
-Today: text styles (4 tools), one hard-coded `ARCH-ISO` dimension style, plot styles (3). No
-authoring of anything else.
+Today: dimension, multileader and table style authoring (18 tools, all live-verified). Text
+styles live in `acad-annotations`, plot styles in `acad-plotstyles`.
 
-```
-create_dimstyle             modify_dimstyle            copy_dimstyle
-delete_dimstyle             set_current_dimstyle       apply_dimstyle_override
-list_dimstyle_overrides     import_dimstyle_from_dwg
-create_mleaderstyle         modify_mleaderstyle        list_mleaderstyles
-set_current_mleaderstyle    delete_mleaderstyle
-create_tablestyle           modify_tablestyle          list_tablestyles
-set_current_tablestyle      delete_tablestyle          set_table_cell_style
-create_mlinestyle           modify_mlinestyle          list_mlinestyles
-create_point_style          set_point_display_mode
-create_visual_style         list_visual_styles
-create_layer_filter         list_layer_filters         apply_layer_filter
-delete_layer_filter         create_layer_group_filter
-```
+**Revised 2026-08-05 against the managed API**, the same way 2.1 and 2.2 were. Every type below
+was confirmed present or absent by reading `acdbmgd` / `acmgd` / `accoremgd` metadata directly,
+not from memory. Three entries in the original list were wrong.
+
+| Group | Tools | API |
+|---|---|---|
+| Dimension styles | `apply_dimstyle_override` `list_dimstyle_overrides` `import_dimstyle_from_dwg` | `Dimension.GetDimstyleData()` / `SetDimstyleData()`; `IdMapping` + `DuplicateRecordCloning` |
+| Table styles | `set_table_cell_style` | `TableStyle.CellStyles` + `SetTextStyle` / `SetAlignment` / `SetColor` / `SetBackgroundColor` |
+| Multiline styles | `create_mlinestyle` `modify_mlinestyle` `list_mlinestyles` | `MlineStyle` — `Elements`, `StartAngle`, `EndAngle`, `Filled`, `FillColor`, caps, `ShowMiters` |
+| Layer filters | `create_layer_filter` `create_layer_group_filter` `list_layer_filters` `apply_layer_filter` `delete_layer_filter` | `LayerManager.LayerFilter`, `LayerFilterTree`, `LayerGroup`, `LayerFilterCollection` |
+| Visual styles | `list_visual_styles` `create_visual_style` | `DBVisualStyle` — see the caveat below |
+| Point display | `set_point_display` | PDMODE / PDSIZE system variables |
+
+**What the original list got wrong.**
+
+* **`create_point_style` and `set_point_display_mode` are one tool, not two, and neither is a
+  style.** There is no `PointStyle` type in the managed API — point display is the PDMODE and
+  PDSIZE system variables, which are global to the drawing. Shipping a `create_point_style` would
+  over-promise exactly the way `set_xref_clip_display` does in KNOWN-GAPS (A3). One honest tool:
+  `set_point_display(mode, size)`. Note both are **Int16** sysvars, so they need the `(short)`
+  cast or they throw `eInvalidInput` — see rule 26.
+* **`list_dimstyles` is already built — in `acad-dimensions`.** It was briefly added to this list
+  as a gap, wrongly: a grep across every manifest found it, alongside `set_entity_dimstyle` and
+  `ensure_architectural_dimstyle`. Leaving it here would have shipped a second tool doing the
+  same job under the same name in a different category, which is the one thing a discovery layer
+  cannot disambiguate for an agent. **Check the whole bank, not just the category you are working
+  in, before calling something missing.**
+* **Visual styles are already half-covered too.** `acad-viewports` has `set_viewport_visual_style`
+  — applying one. What is absent is authoring and enumeration, which is what this section adds.
+* **`draw_mline` is pulled forward from 3.1 into this tranche.** The roadmap put the MLINE style
+  tools in phase 2.3 and the tool that draws with them in phase 3.1, which would have shipped a
+  style nothing in the bank can apply — unusable by an agent and, worse, impossible to verify by
+  sight, since there would be no way to put one on screen. One tool moves; the rest of 3.1 stays
+  where it is. **A phase boundary that separates a definition from its only consumer is a
+  sequencing error, not a scope decision.**
+* **`create_visual_style` is not equivalent to its siblings.** `DBVisualStyle` exposes only
+  `Name`, `Description`, `Type` and an untyped `SetTrait` / `GetTrait` / `SetTraitFlag` pair —
+  there is no property surface to author against, unlike `MlineStyle` or `TableStyle`. Build
+  `list_visual_styles` first (safe: enumerate the dictionary), and treat `create_visual_style` as
+  preset-based — derive from a `VisualStyleType` and override named traits — rather than
+  pretending to expose the whole trait model. If the trait API does not behave, withhold it with
+  a reason rather than shipping something that returns success and changes nothing.
 
 ### 2.4 `acad-standards` — CAD management (≈14)
 

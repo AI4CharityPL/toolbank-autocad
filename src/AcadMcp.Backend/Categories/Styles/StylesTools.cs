@@ -169,4 +169,27 @@ public static class StylesTools
         RequiresPlugin = true)]
     public static Task<TableStyleResult> SetCurrentTableStyle(IPluginGateway gw, TableStyleNameArgs args, CancellationToken ct)
         => StylesProxy.CallAsync<TableStyleNameArgs, TableStyleResult>(gw, "acad.styles.set_current_tablestyle", args, T_NORMAL, ct);
+
+    // ─────────── multiline styles (roadmap 2.3) ───────────
+
+    [McpTool("list_mlinestyles", "List every multiline (MLINE) style in the drawing with its parallel line elements, total width, end caps and whether anything is currently drawn with it. Read-only. inUse matters before deleting or redefining one: AutoCAD refuses to change a style that existing MLINE entities reference, so this is the call that tells you why a redefinition would fail.", "styles",
+        Intent = new[] { "lista stylow multilinii", "jakie style mline sa w rysunku", "list multiline styles",
+                         "show mline styles", "wielolinie dostepne style", "what mline styles exist" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<MlineStyleListResult> ListMlineStyles(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, MlineStyleListResult>(gw, "acad.styles.list_mlinestyles", args, T_FAST, ct);
+
+    [McpTool("create_mlinestyle", "Define a named multiline (MLINE) style from a list of parallel line elements, each given an offset from the centreline plus an optional colour and linetype. This is how a wall type is defined once and drawn many times: a 200mm wall is two elements at +100 and -100. Offsets are in drawing units and may be negative. Refuses an existing name unless overwrite is true, and refuses to redefine a style that entities already use, because AutoCAD does not allow that and reporting success would be a lie.", "styles",
+        Intent = new[] { "utworz styl multilinii", "zdefiniuj styl sciany mline", "create multiline style",
+                         "define mline style for a 200mm wall", "nowy styl wielolinii", "wall type as mline style" },
+        RequiresPlugin = true)]
+    public static Task<MlineStyleResult> CreateMlineStyle(IPluginGateway gw, CreateMlineStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateMlineStyleArgs, MlineStyleResult>(gw, "acad.styles.create_mlinestyle", args, T_NORMAL, ct);
+
+    [McpTool("modify_mlinestyle", "Change an existing multiline style, leaving anything you do not pass alone. Passing elements REPLACES the whole element list rather than merging into it - a partial merge has no meaning when the elements are an ordered geometric set. Refuses a style that MLINE entities already reference, which is an AutoCAD restriction and not a choice made here.", "styles",
+        Intent = new[] { "zmien styl multilinii", "popraw offsety w stylu mline", "modify multiline style",
+                         "change mline style elements", "edytuj styl wielolinii", "adjust mline widths" },
+        RequiresPlugin = true)]
+    public static Task<MlineStyleResult> ModifyMlineStyle(IPluginGateway gw, ModifyMlineStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<ModifyMlineStyleArgs, MlineStyleResult>(gw, "acad.styles.modify_mlinestyle", args, T_NORMAL, ct);
 }

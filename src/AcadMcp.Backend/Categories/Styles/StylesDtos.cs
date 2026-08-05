@@ -140,3 +140,61 @@ public sealed record TableStyleResult(
 public sealed record TableStyleListResult(
     [property: JsonPropertyName("tableStyles")] IReadOnlyList<TableStyleInfo> TableStyles,
     [property: JsonPropertyName("count")]       int Count);
+
+// ─────────────── multiline styles (roadmap 2.3) ───────────────
+//
+// An MLINE style is a different shape from the three above: it is not a bag of scalar
+// properties but an ordered list of parallel line ELEMENTS, each with its own offset from the
+// centreline, colour and linetype. A wall drawn as one MLINE is exactly that - two elements at
+// +100 and -100 for a 200mm wall. So these take an array, not a properties dictionary, and no
+// list_mlinestyle_properties exists because there is no property catalogue to advertise.
+
+public sealed record MlineElementSpec(
+    [property: JsonPropertyName("offset")]      double Offset,
+    [property: JsonPropertyName("colorIndex")]  int? ColorIndex = null,
+    [property: JsonPropertyName("linetype")]    string? Linetype = null);
+
+public sealed record CreateMlineStyleArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("elements")]    IReadOnlyList<MlineElementSpec> Elements,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("showMiters")]  bool ShowMiters = false,
+    [property: JsonPropertyName("startAngle")]  double? StartAngle = null,
+    [property: JsonPropertyName("endAngle")]    double? EndAngle = null,
+    [property: JsonPropertyName("startCap")]    string? StartCap = null,
+    [property: JsonPropertyName("endCap")]      string? EndCap = null,
+    [property: JsonPropertyName("fillColorIndex")] int? FillColorIndex = null,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+public sealed record ModifyMlineStyleArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("elements")]    IReadOnlyList<MlineElementSpec>? Elements = null,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("showMiters")]  bool? ShowMiters = null,
+    [property: JsonPropertyName("startAngle")]  double? StartAngle = null,
+    [property: JsonPropertyName("endAngle")]    double? EndAngle = null,
+    [property: JsonPropertyName("startCap")]    string? StartCap = null,
+    [property: JsonPropertyName("endCap")]      string? EndCap = null,
+    [property: JsonPropertyName("fillColorIndex")] int? FillColorIndex = null);
+
+public sealed record MlineStyleInfo(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("elements")]    IReadOnlyList<MlineElementSpec> Elements,
+    [property: JsonPropertyName("totalWidth")]  double TotalWidth,
+    [property: JsonPropertyName("showMiters")]  bool ShowMiters,
+    [property: JsonPropertyName("startAngle")]  double StartAngle,
+    [property: JsonPropertyName("endAngle")]    double EndAngle,
+    [property: JsonPropertyName("startCap")]    string StartCap,
+    [property: JsonPropertyName("endCap")]      string EndCap,
+    [property: JsonPropertyName("filled")]      bool Filled,
+    [property: JsonPropertyName("inUse")]       bool InUse);
+
+public sealed record MlineStyleListResult(
+    [property: JsonPropertyName("styles")] IReadOnlyList<MlineStyleInfo> Styles,
+    [property: JsonPropertyName("count")]  int Count);
+
+public sealed record MlineStyleResult(
+    [property: JsonPropertyName("mlineStyle")] MlineStyleInfo MlineStyle,
+    [property: JsonPropertyName("created")]    bool Created,
+    [property: JsonPropertyName("note")]       string? Note = null);

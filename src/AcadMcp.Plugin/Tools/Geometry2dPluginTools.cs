@@ -31,6 +31,7 @@ internal static class Geometry2dPluginTools
     {
         host.Register("acad.geometry2d.draw_line", DrawLine);
         host.Register("acad.geometry2d.draw_polyline", DrawPolyline);
+        host.Register("acad.geometry2d.draw_mline", DrawMline);
         host.Register("acad.geometry2d.draw_circle", DrawCircle);
         host.Register("acad.geometry2d.draw_arc", DrawArc);
         host.Register("acad.geometry2d.draw_ellipse", DrawEllipse);
@@ -96,6 +97,50 @@ internal static class Geometry2dPluginTools
             for (int i = 0; i < a.Vertices.Count; i++)
                 pl.AddVertexAt(i, AcadEnv.ToPoint2d(a.Vertices[i]), 0, a.GlobalWidth ?? 0, a.GlobalWidth ?? 0);
             return Wrap(new { entity = AcadEnv.Persist(db, tr, pl, a.Layer) });
+        });
+
+    private static Task<ToolDispatchResult> DrawMline(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.draw_mline", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DrawMlineArgsDto>(args);
+            if (a.Vertices is null || a.Vertices.Count < 2)
+                throw new ArgumentException("mline needs >= 2 vertices");
+
+            var ml = new Mline();
+
+            // Style FIRST. Mline reads the style's element offsets when segments are appended, so
+            // appending before the style is set produces an entity drawn with STANDARD's single
+            // element regardless of what is assigned afterwards - a wall that returns success and
+            // draws one line.
+            var dict = (DBDictionary)tr.GetObject(db.MLStyleDictionaryId, OpenMode.ForRead);
+            if (!string.IsNullOrWhiteSpace(a.Style))
+            {
+                if (!dict.Contains(a.Style))
+                    throw new ArgumentException(
+                        "No multiline style named '" + a.Style + "'. Use list_mlinestyles, or create " +
+                        "one with create_mlinestyle.");
+                ml.Style = dict.GetAt(a.Style);
+            }
+            else
+            {
+                ml.Style = db.CmlstyleID;
+            }
+
+            ml.Normal = Vector3d.ZAxis;
+            ml.Scale = a.Scale ?? 1.0;
+            ml.Justification = (a.Justification ?? "zero").Trim().ToLowerInvariant() switch
+            {
+                "top" => MlineJustification.Top,
+                "zero" or "center" or "centre" => MlineJustification.Zero,
+                "bottom" => MlineJustification.Bottom,
+                _ => throw new ArgumentException(
+                    "justification must be 'top', 'zero' or 'bottom'; got '" + a.Justification + "'."),
+            };
+
+            foreach (var v in a.Vertices) ml.AppendSegment(AcadEnv.ToPoint3d(v));
+            if (a.Closed) ml.IsClosed = true;
+
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, ml, a.Layer) });
         });
 
     private static Task<ToolDispatchResult> DrawCircle(JsonObject args, CancellationToken ct) =>

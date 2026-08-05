@@ -22,6 +22,8 @@
     "list",
     "mleaderstyle",
     "mleaderstyles",
+    "mlinestyle",
+    "mlinestyles",
     "modify",
     "properties",
     "set",
@@ -31,11 +33,13 @@
     "tablestyles"
   ],
   "intent_examples": [
+    "adjust mline widths",
     "aktywny styl odnosnika",
     "aktywny styl tabeli",
     "aktywny styl wymiarowy",
     "change dimstyle text height",
     "change leader style text height",
+    "change mline style elements",
     "change table style text height",
     "clone dimstyle with changes",
     "co da sie zmienic w stylu odnosnika",
@@ -45,8 +49,10 @@
     "create a dimension style with 2.5 mm text",
     "create dimension style",
     "create mleader style",
+    "create multiline style",
     "create table style",
     "define dimension style for 1:50",
+    "define mline style for a 200mm wall",
     "define multileader style",
     "define schedule table style",
     "delete dimension style",
@@ -58,37 +64,44 @@
     "edit existing dimstyle",
     "edit multileader style",
     "edit schedule style",
+    "edytuj styl wielolinii",
     "get rid of dimension style",
     "get rid of multileader style",
     "get rid of schedule style",
     "jakie parametry stylu moge ustawic",
     "jakie sa style multileader",
     "jakie sa style tabeli",
+    "jakie style mline sa w rysunku",
     "jakie wlasciwosci stylu odnosnika moge ustawic",
     "jakie wlasciwosci stylu tabeli moge ustawic",
     "jakie wlasciwosci stylu wymiarowego moge ustawic",
     "list dimension style properties",
     "list mleader style properties",
     "list mleader styles",
+    "list multiline styles",
     "list table style properties",
     "list table styles",
     "lista parametrow stylu wymiarowania",
+    "lista stylow multilinii",
     "make this dimstyle active",
     "make this leader style active",
     "make this multileader style current",
     "make this table style active",
     "modify dimension style",
     "modify mleader style",
+    "modify multiline style",
     "modify table style",
     "multileader style property names",
     "new dimstyle with text height",
     "new leader style with 2.5 mm text",
     "new table style for schedules",
+    "nowy styl wielolinii",
     "parametry stylu multileader",
     "parametry stylu tabeli",
     "pokaz style odnosnika",
     "pokaz style tabel",
     "popraw dlugosc poziomki w stylu",
+    "popraw offsety w stylu mline",
     "popraw wysokosc tekstu w stylu",
     "popraw wysokosc tekstu w tabeli",
     "przelacz na styl multileader",
@@ -100,6 +113,7 @@
     "set current dimension style",
     "set current mleader style",
     "set current table style",
+    "show mline styles",
     "show multileader styles",
     "show table styles",
     "skasuj dimstyle",
@@ -117,15 +131,19 @@
     "usun styl odnosnika",
     "usun styl tabeli",
     "usun styl wymiarowy",
+    "utworz styl multilinii",
     "utworz styl odnosnika",
     "utworz styl tabeli",
     "utworz styl wymiarowy",
     "utworz styl wymiarowy dla skali 1:50",
+    "wall type as mline style",
     "what can I set on a dimstyle",
     "what can I set on a table style",
     "what can I set on an mleader style",
     "what leader styles exist",
+    "what mline styles exist",
     "what schedule styles exist",
+    "wielolinie dostepne style",
     "wlasny styl odnosnikow",
     "wlasny styl tabelki",
     "wlasny styl wymiarowania",
@@ -137,12 +155,14 @@
     "zdefiniuj nowy dimstyle",
     "zdefiniuj styl multileader",
     "zdefiniuj styl odnosnika z tekstem 2.5 mm",
+    "zdefiniuj styl sciany mline",
     "zdefiniuj styl zestawienia",
     "zduplikuj dimstyle pod nowa nazwa",
     "zmiana parametrow odnosnika",
     "zmiana parametrow tabeli",
     "zmiana parametrow wymiarowania",
     "zmien dlugosc poziomki w stylu multileader",
+    "zmien styl multilinii",
     "zmien styl odnosnika",
     "zmien styl tabeli",
     "zmien styl wymiarowy"
@@ -194,6 +214,22 @@
         "new leader style with 2.5 mm text",
         "define multileader style",
         "wlasny styl odnosnikow"
+      ]
+    },
+    {
+      "name": "create_mlinestyle",
+      "description": "Define a named multiline (MLINE) style from a list of parallel line elements, each given an offset from the centreline plus an optional colour and linetype. This is how a wall type is defined once and drawn many times: a 200mm wall is two elements at \u002B100 and -100. Offsets are in drawing units and may be negative. Refuses an existing name unless overwrite is true, and refuses to redefine a style that entities already use, because AutoCAD does not allow that and reporting success would be a lie.",
+      "tags": [
+        "create",
+        "mlinestyle"
+      ],
+      "intent": [
+        "utworz styl multilinii",
+        "zdefiniuj styl sciany mline",
+        "create multiline style",
+        "define mline style for a 200mm wall",
+        "nowy styl wielolinii",
+        "wall type as mline style"
       ]
     },
     {
@@ -311,6 +347,22 @@
       ]
     },
     {
+      "name": "list_mlinestyles",
+      "description": "List every multiline (MLINE) style in the drawing with its parallel line elements, total width, end caps and whether anything is currently drawn with it. Read-only. inUse matters before deleting or redefining one: AutoCAD refuses to change a style that existing MLINE entities reference, so this is the call that tells you why a redefinition would fail.",
+      "tags": [
+        "list",
+        "mlinestyles"
+      ],
+      "intent": [
+        "lista stylow multilinii",
+        "jakie style mline sa w rysunku",
+        "list multiline styles",
+        "show mline styles",
+        "wielolinie dostepne style",
+        "what mline styles exist"
+      ]
+    },
+    {
       "name": "list_tablestyle_properties",
       "description": "List every table-style property this bank can set, with the API member behind it, which row it applies to, what it does and its range. Read-only. Text heights are per row - titleTextHeight, headerTextHeight, dataTextHeight - because a schedule\u0027s caption, its column headings and its content are three different sizes and pretending otherwise is how tables end up unreadable.",
       "tags": [
@@ -373,6 +425,22 @@
         "change leader style text height",
         "edit multileader style",
         "zmiana parametrow odnosnika"
+      ]
+    },
+    {
+      "name": "modify_mlinestyle",
+      "description": "Change an existing multiline style, leaving anything you do not pass alone. Passing elements REPLACES the whole element list rather than merging into it - a partial merge has no meaning when the elements are an ordered geometric set. Refuses a style that MLINE entities already reference, which is an AutoCAD restriction and not a choice made here.",
+      "tags": [
+        "modify",
+        "mlinestyle"
+      ],
+      "intent": [
+        "zmien styl multilinii",
+        "popraw offsety w stylu mline",
+        "modify multiline style",
+        "change mline style elements",
+        "edytuj styl wielolinii",
+        "adjust mline widths"
       ]
     },
     {
@@ -445,7 +513,7 @@
   ],
   "metadata": {
     "category": "styles",
-    "tool_count_target": 18,
+    "tool_count_target": 21,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -459,6 +527,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:33.4875934Z"
+    "last_regenerated_utc": "2026-08-05T15:38:32.4833938Z"
   }
 }

@@ -37,6 +37,14 @@ public static class Geometry2dTools
     public static Task<EntityResult> DrawPolyline(IPluginGateway gw, DrawPolylineArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawPolylineArgs, EntityResult>(gw, "acad.geometry2d.draw_polyline", args, T_SLOW, ct);
 
+    [McpTool("draw_mline", "Draw a multiline (MLINE) through the given vertices using a named multiline style - the way a wall of a defined type is drawn in one call rather than as two offset polylines that must be kept parallel by hand. style defaults to the drawing's current one; create one first with create_mlinestyle. justification is 'top', 'zero' or 'bottom' and decides which of the style's parallel lines the vertices you pass actually lie on, so it changes where the wall sits relative to your points. scale multiplies every element offset, so a 200mm style drawn at scale 1.5 is 300mm wide.", "geometry-2d",
+        Intent = new[] { "narysuj multilinie", "narysuj sciane stylem mline", "draw multiline",
+                         "draw an mline with a wall style", "wielolinia po punktach",
+                         "draw parallel lines as one entity" },
+        RequiresPlugin = true)]
+    public static Task<EntityResult> DrawMline(IPluginGateway gw, DrawMlineArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<DrawMlineArgs, EntityResult>(gw, "acad.geometry2d.draw_mline", args, T_SLOW, ct);
+
     [McpTool("draw_circle", "Draw a circle by center point and radius.", "geometry-2d",
         Intent = new[] { "narysuj okrag", "stworz kolo", "draw a circle", "create circle", "circle by center and radius" },
         RequiresPlugin = true)]

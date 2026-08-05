@@ -51,3 +51,34 @@ internal sealed record CreateTableStyleArgsDto(
 internal sealed record ModifyTableStyleArgsDto(
     [property: JsonPropertyName("name")]       string Name,
     [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+internal sealed record MlineElementSpecDto(
+    [property: JsonPropertyName("offset")]     double Offset,
+    [property: JsonPropertyName("colorIndex")] int? ColorIndex = null,
+    [property: JsonPropertyName("linetype")]   string? Linetype = null);
+
+internal sealed record CreateMlineStyleArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("elements")]    IReadOnlyList<MlineElementSpecDto>? Elements = null,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("showMiters")]  bool ShowMiters = false,
+    [property: JsonPropertyName("startAngle")]  double? StartAngle = null,
+    [property: JsonPropertyName("endAngle")]    double? EndAngle = null,
+    [property: JsonPropertyName("startCap")]    string? StartCap = null,
+    [property: JsonPropertyName("endCap")]      string? EndCap = null,
+    [property: JsonPropertyName("fillColorIndex")] int? FillColorIndex = null,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite = false);
+
+internal sealed record ModifyMlineStyleArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("elements")]    IReadOnlyList<MlineElementSpecDto>? Elements = null,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("showMiters")]  bool? ShowMiters = null,
+    [property: JsonPropertyName("startAngle")]  double? StartAngle = null,
+    [property: JsonPropertyName("endAngle")]    double? EndAngle = null,
+    [property: JsonPropertyName("startCap")]    string? StartCap = null,
+    [property: JsonPropertyName("endCap")]      string? EndCap = null,
+    [property: JsonPropertyName("fillColorIndex")] int? FillColorIndex = null);
+
+internal sealed record MlineStyleNameArgsDto(
+    [property: JsonPropertyName("name")] string Name);

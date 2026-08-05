@@ -243,7 +243,7 @@ publish_sheets              set_publish_options        set_plot_stamp
 get_plot_area
 ```
 
-### 2.3 `acad-styles` — style authoring (≈30 → **3 remaining**, 29 built + `draw_mline`)
+### 2.3 `acad-styles` — style authoring — **COMPLETE**. 32 built + `draw_mline`, one withheld.
 
 Today: dimension, multileader and table style authoring (18 tools, all live-verified). Text
 styles live in `acad-annotations`, plot styles in `acad-plotstyles`.
@@ -627,7 +627,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **22** | **in progress** |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **47** | **in progress** — 2.3 complete, 2.4 next |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → *needs diff* | 0 | not started |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → *likely lower* | 0 | not started |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → *needs diff* | 0 | not started |

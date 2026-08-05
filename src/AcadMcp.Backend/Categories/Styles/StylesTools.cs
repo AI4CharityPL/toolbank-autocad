@@ -28,6 +28,10 @@ public static class StylesTools
     private const int T_FAST = 5_000;
     private const int T_NORMAL = 15_000;
 
+    // Opening a second Database and cloning across it is the only operation in this category
+    // that touches the filesystem, and a template on a slow network share is a real case.
+    private const int T_SLOW = 60_000;
+
     [McpTool("list_dimstyle_properties", "List every dimension-style property this bank can set, with the AutoCAD DIMVAR behind it, what it does, and its valid range. Read-only. Call this first: the property names here are plain (textHeight, arrowSize, decimalPlaces) rather than DIMVAR spellings, because nobody should have to know that a text height is called DIMTXT in order to set one.", "styles",
         Intent = new[] { "jakie wlasciwosci stylu wymiarowego moge ustawic", "lista parametrow stylu wymiarowania",
                          "list dimension style properties", "what can I set on a dimstyle",
@@ -263,4 +267,30 @@ public static class StylesTools
         RequiresPlugin = true)]
     public static Task<PointDisplayResult> SetPointDisplay(IPluginGateway gw, SetPointDisplayArgs args, CancellationToken ct)
         => StylesProxy.CallAsync<SetPointDisplayArgs, PointDisplayResult>(gw, "acad.styles.set_point_display", args, T_NORMAL, ct);
+
+    // ─────────── dimension overrides + cross-drawing import (roadmap 2.3) ───────────
+
+    [McpTool("list_dimstyle_overrides", "Report the properties on which ONE dimension differs from the named style it carries, with both values side by side. Read-only. This is the tool for the question 'why does this dimension look different from the others' - AutoCAD stores no list of overrides, so it is worked out by comparing the dimension's effective values against its style. count 0 means it matches on every property this bank authors, which the note says explicitly rather than leaving as an empty answer.", "styles",
+        Intent = new[] { "co jest nadpisane w tym wymiarze", "dlaczego ten wymiar wyglada inaczej",
+                         "list dimension overrides", "why does this dimension differ from its style",
+                         "nadpisania stylu wymiaru", "which dimension properties are overridden" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<DimOverrideListResult> ListDimStyleOverrides(IPluginGateway gw, DimOverrideQueryArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<DimOverrideQueryArgs, DimOverrideListResult>(gw, "acad.styles.list_dimstyle_overrides", args, T_FAST, ct);
+
+    [McpTool("apply_dimstyle_override", "Override chosen properties on ONE dimension entity, leaving its named style and every other dimension untouched. Use this when a single dimension needs a smaller text or a different arrow without inventing a whole style for it. Property names are the same as create_dimstyle - see list_dimstyle_properties. The result reports every override the dimension carries afterwards, not just the ones just set, so a caller sees the accumulated state.", "styles",
+        Intent = new[] { "nadpisz styl w tym wymiarze", "zmien wysokosc tekstu tylko w tym wymiarze",
+                         "apply dimension override", "override text height on one dimension",
+                         "wyjatek od stylu wymiarowego", "change one dimension without changing the style" },
+        RequiresPlugin = true)]
+    public static Task<DimOverrideApplyResult> ApplyDimStyleOverride(IPluginGateway gw, ApplyDimOverrideArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<ApplyDimOverrideArgs, DimOverrideApplyResult>(gw, "acad.styles.apply_dimstyle_override", args, T_NORMAL, ct);
+
+    [McpTool("import_dimstyle_from_dwg", "Copy dimension styles out of another drawing file into this one - the practical way to adopt an office standard without rebuilding it property by property. Name the styles to take, or omit names to take every non-Standard one. The result separates three outcomes - imported (was not here), replaced (was here and overwrite was true) and skipped (was here and left alone) - because collapsing the middle case into either of the others misreports what happened to the drawing. Omitting names takes every non-Standard style, which includes template defaults like ISO-25 and Annotative.", "styles",
+        Intent = new[] { "zaimportuj styl wymiarowy z innego rysunku", "pobierz style z pliku dwg",
+                         "import dimension styles from another drawing", "copy dimstyles from a template",
+                         "przenies standard biurowy do rysunku", "load office dimension styles" },
+        RequiresPlugin = true)]
+    public static Task<ImportDimStyleResult> ImportDimStyleFromDwg(IPluginGateway gw, ImportDimStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<ImportDimStyleArgs, ImportDimStyleResult>(gw, "acad.styles.import_dimstyle_from_dwg", args, T_SLOW, ct);
 }

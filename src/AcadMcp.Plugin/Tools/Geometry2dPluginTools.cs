@@ -357,7 +357,7 @@ internal static class Geometry2dPluginTools
             if (max < min) (min, max) = (max, min);
             double target = (min + max) / 2.0;
 
-            var pts = a.Vertices.Select(AcadEnv.ToPoint2d).ToList();
+            var pts = a.Vertices.Select(v => AcadEnv.ToPoint2d(v)).ToList();
 
             // Arcs must bulge away from the enclosed area. Positive bulge turns to the left of
             // travel, which is inward on a CCW ring, so the sign follows the signed area.

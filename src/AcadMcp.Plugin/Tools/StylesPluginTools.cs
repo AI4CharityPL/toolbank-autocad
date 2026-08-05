@@ -68,6 +68,11 @@ internal static class StylesPluginTools
         // Table cell styles, visual styles and point display: three small groups whose shapes
         // have nothing in common with the style records above.
         StylesMiscPluginTools.Register(host);
+
+        // Dimension overrides work through Dimension.GetDimstyleData/SetDimstyleData rather than
+        // the style table, and the import path opens a second Database. Neither belongs among the
+        // symbol-table code above.
+        StylesDimOverridePluginTools.Register(host);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -106,14 +111,14 @@ internal static class StylesPluginTools
     }
 
     /// <summary>Read every property this bank authors back off a style, by its wire name.</summary>
-    private static Dictionary<string, double> ReadProps(DimStyleTableRecord rec)
+    internal static Dictionary<string, double> ReadProps(DimStyleTableRecord rec)
     {
         var d = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in DimStyleProperties.All) d[p.Name] = GetProp(rec, p.DimVar);
         return d;
     }
 
-    private static double GetProp(DimStyleTableRecord r, string dimVar) => dimVar switch
+    internal static double GetProp(DimStyleTableRecord r, string dimVar) => dimVar switch
     {
         "DIMSCALE" => r.Dimscale,
         "DIMTXT"   => r.Dimtxt,
@@ -133,7 +138,7 @@ internal static class StylesPluginTools
         _ => throw new InvalidOperationException($"No reader wired for {dimVar}."),
     };
 
-    private static void SetProp(DimStyleTableRecord r, string dimVar, double v)
+    internal static void SetProp(DimStyleTableRecord r, string dimVar, double v)
     {
         switch (dimVar)
         {

@@ -309,3 +309,48 @@ public sealed record PointDisplayResult(
     [property: JsonPropertyName("before")] PointDisplayState Before,
     [property: JsonPropertyName("after")]  PointDisplayState After,
     [property: JsonPropertyName("note")]   string Note);
+
+// ─────────────── dimension overrides + cross-drawing import (roadmap 2.3) ───────────────
+
+public sealed record DimOverrideQueryArgs(
+    [property: JsonPropertyName("handle")] string Handle);
+
+public sealed record ApplyDimOverrideArgs(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double> Properties);
+
+public sealed record DimOverrideInfo(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("dimVar")]     string DimVar,
+    [property: JsonPropertyName("value")]      double Value,
+    [property: JsonPropertyName("styleValue")] double StyleValue);
+
+public sealed record DimOverrideListResult(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("styleName")] string StyleName,
+    [property: JsonPropertyName("overrides")] IReadOnlyList<DimOverrideInfo> Overrides,
+    [property: JsonPropertyName("count")]     int Count,
+    [property: JsonPropertyName("note")]      string? Note = null);
+
+public sealed record DimOverrideApplyResult(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("styleName")] string StyleName,
+    [property: JsonPropertyName("applied")]   IReadOnlyList<string> Applied,
+    [property: JsonPropertyName("overrides")] IReadOnlyList<DimOverrideInfo> Overrides);
+
+public sealed record ImportDimStyleArgs(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("names")]     IReadOnlyList<string>? Names = null,
+    [property: JsonPropertyName("overwrite")] bool Overwrite = false);
+
+// Three outcomes, not two. A style can be new here, or already present and overwritten, or
+// already present and left alone - and collapsing the middle case into either of the others
+// misreports what happened to the drawing. The first version had only imported/skipped and
+// reported an honest overwrite as "skipped".
+public sealed record ImportDimStyleResult(
+    [property: JsonPropertyName("source")]    string Source,
+    [property: JsonPropertyName("requested")] IReadOnlyList<string> Requested,
+    [property: JsonPropertyName("imported")]  IReadOnlyList<string> Imported,
+    [property: JsonPropertyName("replaced")]  IReadOnlyList<string> Replaced,
+    [property: JsonPropertyName("skipped")]   IReadOnlyList<string> Skipped,
+    [property: JsonPropertyName("note")]      string? Note = null);

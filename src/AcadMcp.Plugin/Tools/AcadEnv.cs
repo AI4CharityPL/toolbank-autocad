@@ -3,6 +3,7 @@
 //
 // See rule 11 (transactions), rule 12 (error mapping), rule 19 (impl pattern).
 
+using System.Runtime.CompilerServices;
 using System;
 using System.Globalization;
 using AcadMcp.Shared;
@@ -75,11 +76,56 @@ internal static class AcadEnv
         return id;
     }
 
-    public static Point2d ToPoint2d(Point2dDto p) => new(p.X, p.Y);
-    public static Point3d ToPoint3d(Point2dDto p, double z = 0) => new(p.X, p.Y, z);
-    public static Point3d ToPoint3d(Point3dDto p) => new(p.X, p.Y, p.Z);
-    public static Vector3d ToVector3d(Vector3dDto v) => new(v.X, v.Y, v.Z);
-    public static Vector3d ToVector3d(Point3dDto p) => new(p.X, p.Y, p.Z);
+    /// <summary>
+    /// Turn the caller's expression for a point argument into the wire name a client would have
+    /// sent, so a missing point names itself: <c>a.DimLinePoint</c> becomes <c>dimLinePoint</c>.
+    /// </summary>
+    private static string WireName(string? expr)
+    {
+        if (string.IsNullOrWhiteSpace(expr)) return "a point argument";
+        var last = expr!.Substring(expr.LastIndexOf('.') + 1).Trim();
+        if (last.Length == 0) return "a point argument";
+        return char.ToLowerInvariant(last[0]) + last.Substring(1);
+    }
+
+    /// <summary>
+    /// Reject a missing point by name rather than dereferencing null.
+    /// </summary>
+    /// <remarks>
+    /// These five converters are called from 122 places across the bank, and none of them used to
+    /// check for null. A tool invoked without a required point therefore answered
+    /// "Object reference not set to an instance of an object" — which names nothing, points at
+    /// nothing, and leaves an agent no move except to guess. It was found by calling
+    /// dimension_linear with the wrong argument names; every other point-taking tool in the bank
+    /// behaved the same way.
+    ///
+    /// CallerArgumentExpression means no call site had to change: the compiler supplies the text
+    /// of the argument, and WireName turns it back into what the client actually sent.
+    /// </remarks>
+    private static T Require<T>(T? dto, string? expr) where T : class
+        => dto ?? throw new ArgumentException(
+            WireName(expr) + " is required and was not supplied. Points are objects like " +
+            "{ \"x\": 0, \"y\": 0 } - check the tool's schema for the exact argument names.");
+
+    public static Point2d ToPoint2d(Point2dDto p,
+        [CallerArgumentExpression(nameof(p))] string? expr = null)
+    { var q = Require(p, expr); return new(q.X, q.Y); }
+
+    public static Point3d ToPoint3d(Point2dDto p, double z = 0,
+        [CallerArgumentExpression(nameof(p))] string? expr = null)
+    { var q = Require(p, expr); return new(q.X, q.Y, z); }
+
+    public static Point3d ToPoint3d(Point3dDto p,
+        [CallerArgumentExpression(nameof(p))] string? expr = null)
+    { var q = Require(p, expr); return new(q.X, q.Y, q.Z); }
+
+    public static Vector3d ToVector3d(Vector3dDto v,
+        [CallerArgumentExpression(nameof(v))] string? expr = null)
+    { var q = Require(v, expr); return new(q.X, q.Y, q.Z); }
+
+    public static Vector3d ToVector3d(Point3dDto p,
+        [CallerArgumentExpression(nameof(p))] string? expr = null)
+    { var q = Require(p, expr); return new(q.X, q.Y, q.Z); }
     public static Point2dDto FromPoint(Point2d p) => new(p.X, p.Y);
     public static Point2dDto FromPoint(Point3d p) => new(p.X, p.Y);
     public static Point3dDto FromPoint3d(Point3d p) => new(p.X, p.Y, p.Z);

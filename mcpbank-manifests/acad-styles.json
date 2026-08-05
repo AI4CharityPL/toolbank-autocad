@@ -10,6 +10,7 @@
   },
   "lazy_mode": true,
   "tags": [
+    "apply",
     "authoring",
     "autocad",
     "cad",
@@ -23,7 +24,9 @@
     "dwg",
     "filter",
     "filters",
+    "from",
     "group",
+    "import",
     "layer",
     "list",
     "mleaderstyle",
@@ -31,6 +34,8 @@
     "mlinestyle",
     "mlinestyles",
     "modify",
+    "override",
+    "overrides",
     "point",
     "properties",
     "set",
@@ -47,15 +52,19 @@
     "aktywny styl odnosnika",
     "aktywny styl tabeli",
     "aktywny styl wymiarowy",
+    "apply dimension override",
     "change dimstyle text height",
     "change leader style text height",
     "change mline style elements",
+    "change one dimension without changing the style",
     "change table style text height",
     "clone dimstyle with changes",
     "co da sie zmienic w stylu odnosnika",
     "co da sie zmienic w stylu tabeli",
     "co da sie zmienic w stylu wymiarowym",
+    "co jest nadpisane w tym wymiarze",
     "copy dimension style",
+    "copy dimstyles from a template",
     "create a dimension style with 2.5 mm text",
     "create dimension style",
     "create layer filter",
@@ -73,6 +82,7 @@
     "delete mleader style",
     "delete table style",
     "dimstyle property names",
+    "dlaczego ten wymiar wyglada inaczej",
     "drop layer filter",
     "duplicate dimstyle for another scale",
     "duplicate this dimstyle for 1:100",
@@ -90,6 +100,7 @@
     "get rid of schedule style",
     "group specific layers together",
     "grupuj warstwy wyrazeniem",
+    "import dimension styles from another drawing",
     "jak wyswietlac punkty",
     "jakie filtry warstw sa w rysunku",
     "jakie parametry stylu moge ustawic",
@@ -103,6 +114,7 @@
     "kolor tla komorki tabeli",
     "layer filter for architectural layers",
     "layer group from a list",
+    "list dimension overrides",
     "list dimension style properties",
     "list layer filters",
     "list mleader style properties",
@@ -115,6 +127,7 @@
     "lista parametrow stylu wymiarowania",
     "lista stylow multilinii",
     "lista stylow wizualnych",
+    "load office dimension styles",
     "make a conceptual visual style",
     "make points show as crosses",
     "make this dimstyle active",
@@ -126,13 +139,17 @@
     "modify multiline style",
     "modify table style",
     "multileader style property names",
+    "nadpisania stylu wymiaru",
+    "nadpisz styl w tym wymiarze",
     "new dimstyle with text height",
     "new leader style with 2.5 mm text",
     "new table style for schedules",
     "nowy styl wielolinii",
     "nowy styl wyswietlania",
+    "override text height on one dimension",
     "parametry stylu multileader",
     "parametry stylu tabeli",
+    "pobierz style z pliku dwg",
     "point display mode pdmode",
     "pokaz style odnosnika",
     "pokaz style tabel",
@@ -143,6 +160,7 @@
     "przelacz na styl multileader",
     "przelacz na styl wymiarowania",
     "przelacz na styl zestawienia",
+    "przenies standard biurowy do rysunku",
     "remove a layer filter",
     "remove unused dimstyle",
     "remove unused leader style",
@@ -198,16 +216,20 @@
     "what mline styles exist",
     "what schedule styles exist",
     "what visual styles exist",
+    "which dimension properties are overridden",
+    "why does this dimension differ from its style",
     "wielolinie dostepne style",
     "wlasny styl odnosnikow",
     "wlasny styl tabelki",
     "wlasny styl wizualizacji",
     "wlasny styl wymiarowania",
+    "wyjatek od stylu wymiarowego",
     "wykasuj styl odnosnikow",
     "wykasuj styl tabelki",
     "wykasuj styl wymiarowania",
     "wylistuj style odnosnikow",
     "wylistuj style tabel",
+    "zaimportuj styl wymiarowy z innego rysunku",
     "zdefiniuj nowy dimstyle",
     "zdefiniuj styl multileader",
     "zdefiniuj styl odnosnika z tekstem 2.5 mm",
@@ -223,9 +245,27 @@
     "zmien styl tabeli",
     "zmien styl wymiarowy",
     "zmien wyglad punktow",
+    "zmien wysokosc tekstu tylko w tym wymiarze",
     "zmien wysokosc tekstu w naglowku tabeli"
   ],
   "tools_summary": [
+    {
+      "name": "apply_dimstyle_override",
+      "description": "Override chosen properties on ONE dimension entity, leaving its named style and every other dimension untouched. Use this when a single dimension needs a smaller text or a different arrow without inventing a whole style for it. Property names are the same as create_dimstyle - see list_dimstyle_properties. The result reports every override the dimension carries afterwards, not just the ones just set, so a caller sees the accumulated state.",
+      "tags": [
+        "apply",
+        "dimstyle",
+        "override"
+      ],
+      "intent": [
+        "nadpisz styl w tym wymiarze",
+        "zmien wysokosc tekstu tylko w tym wymiarze",
+        "apply dimension override",
+        "override text height on one dimension",
+        "wyjatek od stylu wymiarowego",
+        "change one dimension without changing the style"
+      ]
+    },
     {
       "name": "copy_dimstyle",
       "description": "Duplicate a dimension style under a new name, optionally overriding some properties in the same call. This is how a 1:100 style is made from a 1:50 one: copy it, override scale, done - and the two changes stay atomic instead of leaving a half-made style behind if the second call fails.",
@@ -421,6 +461,41 @@
         "remove unused table style",
         "get rid of schedule style",
         "wykasuj styl tabelki"
+      ]
+    },
+    {
+      "name": "import_dimstyle_from_dwg",
+      "description": "Copy dimension styles out of another drawing file into this one - the practical way to adopt an office standard without rebuilding it property by property. Name the styles to take, or omit names to take every non-Standard one. Existing names are SKIPPED unless overwrite is true, and the result lists imported and skipped separately, read back from the clone mapping rather than from what was asked for, because \u0027imported\u0027 that quietly meant \u0027did nothing\u0027 is the exact failure this reports around.",
+      "tags": [
+        "import",
+        "dimstyle",
+        "from",
+        "dwg"
+      ],
+      "intent": [
+        "zaimportuj styl wymiarowy z innego rysunku",
+        "pobierz style z pliku dwg",
+        "import dimension styles from another drawing",
+        "copy dimstyles from a template",
+        "przenies standard biurowy do rysunku",
+        "load office dimension styles"
+      ]
+    },
+    {
+      "name": "list_dimstyle_overrides",
+      "description": "Report the properties on which ONE dimension differs from the named style it carries, with both values side by side. Read-only. This is the tool for the question \u0027why does this dimension look different from the others\u0027 - AutoCAD stores no list of overrides, so it is worked out by comparing the dimension\u0027s effective values against its style. count 0 means it matches on every property this bank authors, which the note says explicitly rather than leaving as an empty answer.",
+      "tags": [
+        "list",
+        "dimstyle",
+        "overrides"
+      ],
+      "intent": [
+        "co jest nadpisane w tym wymiarze",
+        "dlaczego ten wymiar wyglada inaczej",
+        "list dimension overrides",
+        "why does this dimension differ from its style",
+        "nadpisania stylu wymiaru",
+        "which dimension properties are overridden"
       ]
     },
     {
@@ -709,7 +784,7 @@
   ],
   "metadata": {
     "category": "styles",
-    "tool_count_target": 29,
+    "tool_count_target": 32,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -723,6 +798,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T16:04:07.6795525Z"
+    "last_regenerated_utc": "2026-08-05T16:14:19.3288924Z"
   }
 }

@@ -116,3 +116,15 @@ internal sealed record SetPointDisplayArgsDto(
     [property: JsonPropertyName("surround")] string? Surround,
     [property: JsonPropertyName("mode")]     int? Mode,
     [property: JsonPropertyName("size")]     double? Size);
+
+internal sealed record DimOverrideQueryArgsDto(
+    [property: JsonPropertyName("handle")] string Handle);
+
+internal sealed record ApplyDimOverrideArgsDto(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("properties")] IReadOnlyDictionary<string, double>? Properties);
+
+internal sealed record ImportDimStyleArgsDto(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("names")]     IReadOnlyList<string>? Names,
+    [property: JsonPropertyName("overwrite")] bool Overwrite);

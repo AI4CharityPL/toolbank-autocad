@@ -135,6 +135,13 @@
       "description": "Align entities so that source point pair (A,B) maps onto target point pair (A,B). Optional uniform scale to make distances match.",
       "tags": [
         "align"
+      ],
+      "intent": [
+        "dopasuj obiekty",
+        "align entities",
+        "two point alignment",
+        "fit entities to two points",
+        "wyrownanie do dwoch punktow"
       ]
     },
     {
@@ -143,6 +150,13 @@
       "tags": [
         "array",
         "polar"
+      ],
+      "intent": [
+        "macierz biegunowa",
+        "macierz kolowa",
+        "polar array",
+        "circular array",
+        "distribute around point"
       ]
     },
     {
@@ -151,6 +165,13 @@
       "tags": [
         "array",
         "rectangular"
+      ],
+      "intent": [
+        "macierz prostokatna",
+        "siatka kopii",
+        "rectangular array",
+        "build grid array",
+        "array entities by rows and cols"
       ]
     },
     {
@@ -158,6 +179,13 @@
       "description": "Copy entities by translation from\u2192to. Set count \u003E 1 for an evenly stepped chain of copies.",
       "tags": [
         "copy"
+      ],
+      "intent": [
+        "kopiuj obiekty",
+        "copy entities",
+        "duplicate selection",
+        "make copies",
+        "kopia z przesunieciem"
       ]
     },
     {
@@ -166,6 +194,13 @@
       "tags": [
         "create",
         "group"
+      ],
+      "intent": [
+        "stworz grupe",
+        "create group",
+        "make group from entities",
+        "group selection",
+        "named group"
       ]
     },
     {
@@ -173,6 +208,13 @@
       "description": "Erase entities (soft delete \u2013 AutoCAD keeps them in the undo stack until purged).",
       "tags": [
         "erase"
+      ],
+      "intent": [
+        "usun obiekty",
+        "skasuj zaznaczone",
+        "erase entities",
+        "delete entities",
+        "remove from drawing"
       ]
     },
     {
@@ -181,6 +223,13 @@
       "tags": [
         "match",
         "properties"
+      ],
+      "intent": [
+        "kopiuj wlasciwosci",
+        "match properties",
+        "matchprop entities",
+        "copy props from source",
+        "apply properties to targets"
       ]
     },
     {
@@ -188,6 +237,13 @@
       "description": "Mirror entities through a plane defined by point \u002B normal (3D); optionally erase the source entities.",
       "tags": [
         "mirror"
+      ],
+      "intent": [
+        "lustro obiektow",
+        "mirror entities",
+        "mirror across plane",
+        "reflect selection",
+        "lustro 3d"
       ]
     },
     {
@@ -195,6 +251,13 @@
       "description": "Translate one or more entities by the vector from\u2192to (WCS).",
       "tags": [
         "move"
+      ],
+      "intent": [
+        "przesun obiekty",
+        "move entities",
+        "translate selection",
+        "shift entities by vector",
+        "displace selected"
       ]
     },
     {
@@ -202,6 +265,13 @@
       "description": "Rotate entities around a center by angle (degrees, CCW). Optional axis vector for 3D rotations (default Z).",
       "tags": [
         "rotate"
+      ],
+      "intent": [
+        "obroc obiekty",
+        "rotate entities",
+        "spin selection by degrees",
+        "rotate around point",
+        "rotate selection"
       ]
     },
     {
@@ -209,6 +279,13 @@
       "description": "Uniformly scale entities about a center point by a positive factor.",
       "tags": [
         "scale"
+      ],
+      "intent": [
+        "skaluj obiekty",
+        "zmien skale obiektow",
+        "scale entities",
+        "uniform scale selection",
+        "resize selection"
       ]
     },
     {
@@ -217,6 +294,13 @@
       "tags": [
         "set",
         "color"
+      ],
+      "intent": [
+        "zmien kolor obiektow",
+        "ustaw kolor",
+        "set entity color",
+        "change color of entities",
+        "color rgb or aci"
       ]
     },
     {
@@ -225,6 +309,13 @@
       "tags": [
         "set",
         "layer"
+      ],
+      "intent": [
+        "przenies na warstwe",
+        "zmien warstwe obiektow",
+        "set layer of entities",
+        "move to layer",
+        "change entity layer"
       ]
     },
     {
@@ -233,6 +324,13 @@
       "tags": [
         "set",
         "linetype"
+      ],
+      "intent": [
+        "zmien typ linii",
+        "ustaw linetype",
+        "set linetype on entities",
+        "change line type",
+        "set ltscale on entities"
       ]
     },
     {
@@ -241,6 +339,13 @@
       "tags": [
         "set",
         "lineweight"
+      ],
+      "intent": [
+        "zmien grubosc linii",
+        "ustaw lineweight",
+        "set entity lineweight",
+        "change line thickness",
+        "linia w mm"
       ]
     },
     {
@@ -248,6 +353,13 @@
       "description": "Delete a named Group (the underlying entities remain in the drawing).",
       "tags": [
         "ungroup"
+      ],
+      "intent": [
+        "rozgrupuj",
+        "usun grupe",
+        "ungroup",
+        "delete group",
+        "remove named group"
       ]
     }
   ],
@@ -267,6 +379,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-04T15:17:03.5796080Z"
+    "last_regenerated_utc": "2026-08-05T13:09:30.5919712Z"
   }
 }

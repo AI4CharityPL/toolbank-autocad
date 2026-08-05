@@ -135,6 +135,14 @@
         "create",
         "ucs",
         "3point"
+      ],
+      "intent": [
+        "utworz uklad wspolrzednych z trzech punktow",
+        "zdefiniuj ucs przez punkty",
+        "create ucs from 3 points",
+        "define coordinate system by origin and axes",
+        "set ucs three point",
+        "nowy uklad na podstawie punktow"
       ]
     },
     {
@@ -145,6 +153,14 @@
         "ucs",
         "from",
         "entity"
+      ],
+      "intent": [
+        "ustaw ucs wedlug obiektu",
+        "wyrownaj uklad do encji",
+        "create ucs from object",
+        "align ucs to entity",
+        "coordinate system from existing geometry",
+        "uklad wedlug istniejacego elementu"
       ]
     },
     {
@@ -155,6 +171,14 @@
         "ucs",
         "from",
         "view"
+      ],
+      "intent": [
+        "ukd rownolegly do ekranu",
+        "uklad wspolrzednych z widoku",
+        "create ucs from view",
+        "ucs view",
+        "align ucs to screen",
+        "tekst prostopadle do ekranu na izometrii"
       ]
     },
     {
@@ -164,6 +188,14 @@
         "create",
         "ucs",
         "origin"
+      ],
+      "intent": [
+        "przesun poczatek ukladu",
+        "ustaw origin ucs",
+        "move ucs origin",
+        "shift coordinate system origin",
+        "set local origin",
+        "nowy punkt zerowy"
       ]
     },
     {
@@ -173,6 +205,14 @@
         "create",
         "ucs",
         "zaxis"
+      ],
+      "intent": [
+        "utworz ucs z kierunku osi z",
+        "uklad na plaszczyznie pochylej",
+        "create ucs from z axis",
+        "ucs on inclined plane",
+        "define coordinate system by normal",
+        "uklad dla polaci dachu"
       ]
     },
     {
@@ -181,6 +221,14 @@
       "tags": [
         "delete",
         "ucs"
+      ],
+      "intent": [
+        "usun nazwany uklad",
+        "skasuj ucs",
+        "delete named ucs",
+        "remove saved coordinate system",
+        "drop ucs by name",
+        "wykasuj uklad wspolrzednych"
       ]
     },
     {
@@ -190,6 +238,14 @@
         "get",
         "current",
         "ucs"
+      ],
+      "intent": [
+        "pokaz biezacy uklad",
+        "jaki jest aktualny ucs",
+        "get current ucs",
+        "what coordinate system is active",
+        "current ucs origin and axes",
+        "aktualny uklad wspolrzednych"
       ]
     },
     {
@@ -198,6 +254,14 @@
       "tags": [
         "list",
         "ucs"
+      ],
+      "intent": [
+        "wylistuj uklady wspolrzednych",
+        "jakie ucs sa zapisane",
+        "list named ucs",
+        "show all coordinate systems",
+        "what ucs exist in this drawing",
+        "zapisane uklady"
       ]
     },
     {
@@ -206,6 +270,14 @@
       "tags": [
         "rename",
         "ucs"
+      ],
+      "intent": [
+        "zmien nazwe ukladu",
+        "przemianuj ucs",
+        "rename named ucs",
+        "change ucs name",
+        "rename saved coordinate system",
+        "nowa nazwa ukladu"
       ]
     },
     {
@@ -214,6 +286,14 @@
       "tags": [
         "restore",
         "ucs"
+      ],
+      "intent": [
+        "przywroc zapisany uklad",
+        "wczytaj nazwany ucs",
+        "restore named ucs",
+        "switch to saved coordinate system",
+        "load ucs by name",
+        "uzyj zapisanego ukladu"
       ]
     },
     {
@@ -222,6 +302,14 @@
       "tags": [
         "rotate",
         "ucs"
+      ],
+      "intent": [
+        "obroc uklad wspolrzednych",
+        "obroc ucs wokol osi z",
+        "rotate ucs",
+        "turn coordinate system",
+        "align ucs to angled wall",
+        "obrot ukladu o kat"
       ]
     },
     {
@@ -230,6 +318,14 @@
       "tags": [
         "save",
         "ucs"
+      ],
+      "intent": [
+        "zapisz uklad wspolrzednych",
+        "nazwij biezacy ucs",
+        "save named ucs",
+        "store current coordinate system",
+        "name this ucs",
+        "zachowaj uklad pod nazwa"
       ]
     },
     {
@@ -239,6 +335,14 @@
         "set",
         "ucs",
         "previous"
+      ],
+      "intent": [
+        "wroc do poprzedniego ukd",
+        "cofnij zmiane ukladu wspolrzednych",
+        "set ucs previous",
+        "undo ucs change",
+        "previous coordinate system",
+        "poprzedni uklad wspolrzednych"
       ]
     },
     {
@@ -248,6 +352,14 @@
         "set",
         "ucs",
         "world"
+      ],
+      "intent": [
+        "przywroc uklad swiatowy",
+        "ustaw ucs na world",
+        "set ucs to world",
+        "reset coordinate system",
+        "back to wcs",
+        "wroc do globalnego ukladu"
       ]
     },
     {
@@ -256,6 +368,14 @@
       "tags": [
         "transform",
         "point"
+      ],
+      "intent": [
+        "przelicz punkt miedzy ukladami",
+        "zamien wspolrzedne ucs na world",
+        "transform point between coordinate systems",
+        "convert ucs coordinates to wcs",
+        "translate point to another ucs",
+        "przeliczenie wspolrzednych"
       ]
     }
   ],
@@ -275,6 +395,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T16:43:02.0774661Z"
+    "last_regenerated_utc": "2026-08-05T13:09:33.7594068Z"
   }
 }

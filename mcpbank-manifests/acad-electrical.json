@@ -125,6 +125,13 @@
         "draw",
         "ladder",
         "rails"
+      ],
+      "intent": [
+        "narysuj szyny ladder L1 N",
+        "draw ladder rails L1 N",
+        "szyny zasilajace w schemacie",
+        "ladder diagram power rails",
+        "vertical schematic rails"
       ]
     },
     {
@@ -134,6 +141,13 @@
         "draw",
         "ladder",
         "rung"
+      ],
+      "intent": [
+        "narysuj rung 5 schematu",
+        "draw ladder rung with number",
+        "szczebel drabiny z numerem",
+        "ladder rung",
+        "horizontal control wire between rails"
       ]
     },
     {
@@ -142,6 +156,13 @@
       "tags": [
         "draw",
         "wire"
+      ],
+      "intent": [
+        "narysuj przewod",
+        "draw wire signal control power",
+        "polacz styk z cewka",
+        "schematic wire between terminals",
+        "control wiring"
       ]
     },
     {
@@ -151,6 +172,13 @@
         "draw",
         "wire",
         "junction"
+      ],
+      "intent": [
+        "kropka polaczenia przewodow",
+        "draw wire junction dot",
+        "punkt polaczenia",
+        "schematic wire junction marker",
+        "T joint dot"
       ]
     },
     {
@@ -159,6 +187,13 @@
       "tags": [
         "electrical",
         "health"
+      ],
+      "intent": [
+        "co potrafi electrical",
+        "list electrical layer key",
+        "list IEC tag prefixes",
+        "diagnostyka kategorii electrical",
+        "electrical category metadata"
       ]
     },
     {
@@ -168,6 +203,13 @@
         "ensure",
         "electrical",
         "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy electrical",
+        "ensure schematic E-* layers",
+        "setup IEC electrical layer key",
+        "wlacz standardowe warstwy E-* w projekcie",
+        "create electrical schematic layer standard"
       ]
     },
     {
@@ -176,6 +218,13 @@
       "tags": [
         "place",
         "coil"
+      ],
+      "intent": [
+        "wstaw cewke K1",
+        "place relay coil schematic",
+        "cewka stycznika z xref",
+        "coil with contact rung references",
+        "contactor coil symbol"
       ]
     },
     {
@@ -185,6 +234,13 @@
         "place",
         "contact",
         "nc"
+      ],
+      "intent": [
+        "wstaw styk NC normalnie zamkniety",
+        "place normally closed contact",
+        "styk rozwierajacy NC",
+        "NC contact schematic symbol",
+        "closed contact"
       ]
     },
     {
@@ -194,6 +250,13 @@
         "place",
         "contact",
         "no"
+      ],
+      "intent": [
+        "wstaw styk NO normalnie otwarty",
+        "place normally open contact",
+        "styk zwierajacy NO",
+        "NO contact schematic symbol",
+        "open contact"
       ]
     },
     {
@@ -203,6 +266,13 @@
         "place",
         "device",
         "tag"
+      ],
+      "intent": [
+        "wstaw tag urzadzenia -K1",
+        "place IEC 81346 device tag",
+        "tag stycznika -K1",
+        "device tag with prefix validation",
+        "tag -F1 fuse"
       ]
     },
     {
@@ -212,6 +282,13 @@
         "place",
         "din",
         "rail"
+      ],
+      "intent": [
+        "wstaw szyne din",
+        "place din rail panel",
+        "szyna montazowa 35mm",
+        "din rail layout",
+        "top-hat rail outline"
       ]
     },
     {
@@ -222,6 +299,13 @@
         "panel",
         "device",
         "outline"
+      ],
+      "intent": [
+        "wstaw obrys urzadzenia w rozdzielni",
+        "place panel device outline",
+        "fizyczny obrys stycznika",
+        "device footprint panel layout",
+        "breaker outline on rail"
       ]
     },
     {
@@ -230,6 +314,13 @@
       "tags": [
         "place",
         "resistor"
+      ],
+      "intent": [
+        "wstaw rezystor IEC prostokat",
+        "place resistor schematic symbol",
+        "rezystor zigzag ANSI",
+        "resistor symbol with terminals",
+        "schematic resistor R1"
       ]
     },
     {
@@ -239,6 +330,13 @@
         "place",
         "terminal",
         "block"
+      ],
+      "intent": [
+        "wstaw listwe zaciskowa 8 pin",
+        "place terminal block 8 way",
+        "listwa zaciskowa numerowana",
+        "terminal strip with numbers",
+        "X1-X8 terminals"
       ]
     },
     {
@@ -247,6 +345,13 @@
       "tags": [
         "route",
         "wireway"
+      ],
+      "intent": [
+        "narysuj koryto kablowe",
+        "route wireway trunking",
+        "kanal kablowy w rozdzielni",
+        "cable duct panel layout",
+        "wireway channel"
       ]
     }
   ],
@@ -279,6 +384,6 @@
       "Bundled blocks under blocks/electrical/ (RES_*, COIL_*, CONTACT_*, MOTOR_*, FUSE_*, LAMP_*, TRANSFORMER_*, JUNCTION_DOT, TERMINAL_BLOCK_*WAY) ship in Phase 7; v1 tools synthesise geometry inline.",
       "Wire-numbering schemes (sequential per IEC 60204 vs rung-position per JIC NFPA 79) are the agent\u0027s responsibility \u2014 the wire labels themselves are placed via acad-annotations.add_dbtext on layer E-LBL-WIRE."
     ],
-    "last_regenerated_utc": "2026-07-29T21:05:50.0770909Z"
+    "last_regenerated_utc": "2026-08-05T13:09:27.1823219Z"
   }
 }

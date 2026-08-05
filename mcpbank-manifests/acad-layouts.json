@@ -90,6 +90,13 @@
       "tags": [
         "configure",
         "plot"
+      ],
+      "intent": [
+        "konfiguruj plot",
+        "ustaw drukarke layoutu",
+        "configure plot settings",
+        "set plotter and paper",
+        "ustaw rozmiar arkusza"
       ]
     },
     {
@@ -98,6 +105,13 @@
       "tags": [
         "create",
         "layout"
+      ],
+      "intent": [
+        "stworz layout",
+        "dodaj nowy layout",
+        "create paperspace layout",
+        "add new tab",
+        "new layout tab"
       ]
     },
     {
@@ -106,6 +120,13 @@
       "tags": [
         "delete",
         "layout"
+      ],
+      "intent": [
+        "usun layout",
+        "delete layout",
+        "skasuj zakladke",
+        "remove layout tab",
+        "drop paperspace tab"
       ]
     },
     {
@@ -114,6 +135,13 @@
       "tags": [
         "get",
         "layout"
+      ],
+      "intent": [
+        "pokaz layout",
+        "get layout info",
+        "describe layout",
+        "info o layoucie",
+        "show layout details"
       ]
     },
     {
@@ -122,6 +150,13 @@
       "tags": [
         "list",
         "layouts"
+      ],
+      "intent": [
+        "wylistuj layouty",
+        "list layouts",
+        "show paperspace tabs",
+        "wszystkie layouty",
+        "what layouts exist"
       ]
     },
     {
@@ -131,6 +166,15 @@
         "list",
         "paper",
         "sizes"
+      ],
+      "intent": [
+        "list paper sizes",
+        "wylistuj rozmiary papieru",
+        "show available media",
+        "jakie rozmiary arkuszy",
+        "enumerate plotter paper sizes",
+        "which papers does the plotter support",
+        "available paper formats"
       ]
     },
     {
@@ -139,6 +183,13 @@
       "tags": [
         "rename",
         "layout"
+      ],
+      "intent": [
+        "zmien nazwe layoutu",
+        "rename layout",
+        "przemianuj zakladke",
+        "change layout name",
+        "rename layout to"
       ]
     },
     {
@@ -148,6 +199,13 @@
         "set",
         "current",
         "layout"
+      ],
+      "intent": [
+        "ustaw biezacy layout",
+        "set current layout",
+        "switch active tab",
+        "make layout current",
+        "wybierz layout"
       ]
     }
   ],
@@ -167,6 +225,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-03T22:09:39.8760805Z"
+    "last_regenerated_utc": "2026-08-05T13:09:29.7236204Z"
   }
 }

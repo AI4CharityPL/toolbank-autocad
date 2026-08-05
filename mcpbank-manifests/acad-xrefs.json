@@ -187,6 +187,14 @@
       "tags": [
         "attach",
         "xref"
+      ],
+      "intent": [
+        "podlacz rysunek jako xref",
+        "dolacz plik dwg jako referencje",
+        "attach external reference",
+        "attach xref",
+        "reference another drawing",
+        "wstaw podklad z innego pliku"
       ]
     },
     {
@@ -196,6 +204,14 @@
         "attach",
         "xref",
         "overlay"
+      ],
+      "intent": [
+        "podlacz jako nakladka",
+        "dolacz xref jako overlay",
+        "attach as overlay",
+        "overlay external reference",
+        "reference without propagating",
+        "xref nakladkowy"
       ]
     },
     {
@@ -204,6 +220,14 @@
       "tags": [
         "bind",
         "xref"
+      ],
+      "intent": [
+        "zwiaz xref na stale",
+        "wbuduj referencje w rysunek",
+        "bind xref",
+        "make xref permanent",
+        "convert xref to block",
+        "scal podklad z rysunkiem"
       ]
     },
     {
@@ -214,6 +238,14 @@
         "xref",
         "by",
         "object"
+      ],
+      "intent": [
+        "przytnij xref do narysowanego obrysu",
+        "obetnij referencje istniejaca polilinia",
+        "clip xref by object",
+        "clip xref to existing boundary",
+        "use drawn outline to clip xref",
+        "przycinanie xrefa po obiekcie"
       ]
     },
     {
@@ -223,6 +255,14 @@
         "clip",
         "xref",
         "polygonal"
+      ],
+      "intent": [
+        "przytnij xref wielokatem",
+        "obetnij referencje po obrysie",
+        "clip xref polygon",
+        "polygonal xref clip",
+        "crop reference to shape",
+        "przytnij podklad do konturu"
       ]
     },
     {
@@ -232,6 +272,14 @@
         "clip",
         "xref",
         "rect"
+      ],
+      "intent": [
+        "przytnij xref prostokatem",
+        "obetnij referencje do obszaru",
+        "clip xref rectangle",
+        "crop external reference",
+        "limit xref to window",
+        "ogranicz widoczny fragment podkladu"
       ]
     },
     {
@@ -241,6 +289,14 @@
         "delete",
         "xref",
         "clip"
+      ],
+      "intent": [
+        "usun przyciecie xrefa",
+        "pokaz caly xref",
+        "delete xref clip",
+        "remove clip boundary",
+        "show whole reference",
+        "odblokuj caly podklad"
       ]
     },
     {
@@ -249,6 +305,14 @@
       "tags": [
         "detach",
         "xref"
+      ],
+      "intent": [
+        "odlacz xref",
+        "usun referencje zewnetrzna",
+        "detach xref",
+        "remove external reference",
+        "get rid of xref",
+        "skasuj podklad"
       ]
     },
     {
@@ -258,6 +322,14 @@
         "find",
         "missing",
         "xrefs"
+      ],
+      "intent": [
+        "znajdz brakujace xrefy",
+        "ktore referencje sa nierozwiazane",
+        "find missing xrefs",
+        "which xrefs are not found",
+        "broken external references",
+        "zepsute sciezki podkladow"
       ]
     },
     {
@@ -267,6 +339,14 @@
         "get",
         "xref",
         "info"
+      ],
+      "intent": [
+        "pokaz szczegoly xrefa",
+        "informacje o referencji",
+        "get xref details",
+        "xref info",
+        "describe external reference",
+        "gdzie jest wstawiony ten xref"
       ]
     },
     {
@@ -276,6 +356,14 @@
         "invert",
         "xref",
         "clip"
+      ],
+      "intent": [
+        "odwroc przyciecie xrefa",
+        "zamien wnetrze z zewnetrzem obciecia",
+        "invert xref clip",
+        "flip clip boundary",
+        "show outside instead of inside",
+        "odwroc obszar podkladu"
       ]
     },
     {
@@ -285,6 +373,14 @@
         "list",
         "nested",
         "xrefs"
+      ],
+      "intent": [
+        "wylistuj zagniezdzone xrefy",
+        "pokaz referencje w referencjach",
+        "list nested xrefs",
+        "show nested external references",
+        "which xrefs come from other xrefs",
+        "xrefy posrednie"
       ]
     },
     {
@@ -295,6 +391,14 @@
         "xref",
         "dependent",
         "symbols"
+      ],
+      "intent": [
+        "wylistuj warstwy z xrefa",
+        "jakie style przychodza z referencji",
+        "list xref dependent symbols",
+        "what layers does this xref bring",
+        "xref symbol table entries",
+        "symbole zalezne od xrefa"
       ]
     },
     {
@@ -303,6 +407,14 @@
       "tags": [
         "list",
         "xrefs"
+      ],
+      "intent": [
+        "wylistuj xrefy",
+        "pokaz referencje zewnetrzne",
+        "list external references",
+        "what xrefs are in this drawing",
+        "show all references",
+        "jakie podklady sa dolaczone"
       ]
     },
     {
@@ -312,6 +424,14 @@
         "reload",
         "all",
         "xrefs"
+      ],
+      "intent": [
+        "przeladuj wszystkie xrefy",
+        "odswiez wszystkie referencje",
+        "reload all xrefs",
+        "refresh every external reference",
+        "update all references",
+        "zaktualizuj wszystkie podklady"
       ]
     },
     {
@@ -320,6 +440,14 @@
       "tags": [
         "reload",
         "xref"
+      ],
+      "intent": [
+        "przeladuj xref",
+        "odswiez referencje",
+        "reload xref",
+        "refresh external reference",
+        "pull latest xref changes",
+        "zaktualizuj podklad"
       ]
     },
     {
@@ -329,6 +457,14 @@
         "repath",
         "all",
         "xrefs"
+      ],
+      "intent": [
+        "napraw wszystkie sciezki xrefow",
+        "zmien katalog referencji hurtowo",
+        "repath all xrefs",
+        "bulk fix xref paths",
+        "move xref folder",
+        "podmien prefiks sciezek podkladow"
       ]
     },
     {
@@ -339,6 +475,14 @@
         "xref",
         "layer",
         "overrides"
+      ],
+      "intent": [
+        "usun nadpisania warstw xrefa",
+        "przywroc oryginalne wlasciwosci podkladu",
+        "reset xref layer overrides",
+        "clear reference layer overrides",
+        "restore xref layer properties",
+        "cofnij wyszarzenie"
       ]
     },
     {
@@ -349,6 +493,14 @@
         "xref",
         "clip",
         "display"
+      ],
+      "intent": [
+        "pokaz ramke przyciecia",
+        "ukryj obrys obciecia xrefa",
+        "set xref clip frame visibility",
+        "show clip boundary",
+        "hide clipping frame",
+        "widocznosc ramki podkladu"
       ]
     },
     {
@@ -359,6 +511,14 @@
         "xref",
         "layer",
         "override"
+      ],
+      "intent": [
+        "nadpisz warstwe z xrefa",
+        "wyszarz podklad",
+        "override xref layer",
+        "grey out reference layer",
+        "change xref layer colour",
+        "zmien kolor warstwy referencji"
       ]
     },
     {
@@ -368,6 +528,14 @@
         "set",
         "xref",
         "path"
+      ],
+      "intent": [
+        "zmien sciezke xrefa",
+        "napraw sciezke referencji",
+        "set xref path",
+        "repath external reference",
+        "point xref at another file",
+        "przekieruj podklad"
       ]
     },
     {
@@ -376,6 +544,14 @@
       "tags": [
         "unload",
         "xref"
+      ],
+      "intent": [
+        "wyladuj xref",
+        "ukryj referencje bez usuwania",
+        "unload xref",
+        "temporarily hide external reference",
+        "stop loading xref",
+        "wylacz podklad"
       ]
     }
   ],
@@ -395,6 +571,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T16:43:02.3344066Z"
+    "last_regenerated_utc": "2026-08-05T13:09:35.4215196Z"
   }
 }

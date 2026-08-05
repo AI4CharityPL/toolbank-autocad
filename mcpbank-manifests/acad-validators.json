@@ -25,6 +25,7 @@
     "intersect",
     "list",
     "overlap",
+    "overlaps",
     "reload",
     "rule",
     "rules",
@@ -106,6 +107,13 @@
         "add",
         "validator",
         "rule"
+      ],
+      "intent": [
+        "dodaj nowa regule walidacji",
+        "add custom validator rule",
+        "register new validator yaml",
+        "stworz wlasna regule",
+        "create user rule"
       ]
     },
     {
@@ -115,17 +123,33 @@
         "auto",
         "fix",
         "violations"
+      ],
+      "intent": [
+        "napraw bledy walidacji",
+        "auto fix violations",
+        "apply automatic fixes",
+        "wykonaj poprawki automatycznie",
+        "fix the report"
       ]
     },
     {
       "name": "check_overlaps",
-      "description": "Purely geometric overlap / intersection scanner. Finds pairs of entities whose bounding boxes (or curves, for mode=polyline_crosses_polyline) overlap or cross. Use cases: doors actually piercing walls, labels stacked on top of each other, notes touching geometry. Args: layersA (required), layersB (default layersA), mode bbox_intersect|centroid_in_bbox|polyline_crosses_polyline, tolerance mm, optional window rectangle. Result is sorted by severity then overlap area.",
+      "description": "Find pairs of entities whose bounding boxes (or curves, for mode=\u0022polyline_crosses_polyline\u0022) overlap or intersect. Purely geometric - schema-free, does NOT need a validator rule. Intended for the AI visual-review pipeline: e.g. \u0022which A-DOOR entities actually pierce an A-WALL-* polyline\u0022 or \u0022which A-ANNO-TEXT labels stack on top of each other\u0022. Args: layersA (required, e.g. [\u0022A-DOOR\u0022]), layersB (optional, defaults to layersA for self-overlap), mode in { \u0022bbox_intersect\u0022 (default), \u0022centroid_in_bbox\u0022, \u0022polyline_crosses_polyline\u0022 }, tolerance (mm, default 0), optional window rectangle to restrict to a region, maxResults (default 500). Result is sorted by severity (critical=2\u002B curve intersections, major=1 intersection or overlap\u003E10000 sq-mm, minor=smaller overlap) then by overlap area descending. Handles are order-stable across calls.",
       "tags": [
-        "overlap",
-        "intersect",
-        "geometric",
         "check",
-        "collision"
+        "overlaps"
+      ],
+      "intent": [
+        "znajdz nakladajace sie obiekty",
+        "check overlaps between layers",
+        "find entities that intersect",
+        "drzwi przecinajace sciany",
+        "doors crossing walls",
+        "overlapping labels",
+        "text overlaps text",
+        "geometric overlap scan",
+        "which entities collide",
+        "pokaz nakladki"
       ]
     },
     {
@@ -134,6 +158,13 @@
       "tags": [
         "explain",
         "rule"
+      ],
+      "intent": [
+        "pokaz tresc reguly",
+        "explain validator rule",
+        "what does this rule check",
+        "co sprawdza ta regula",
+        "rule details"
       ]
     },
     {
@@ -142,6 +173,13 @@
       "tags": [
         "list",
         "standards"
+      ],
+      "intent": [
+        "wylistuj standardy",
+        "list cad standards",
+        "show standard presets",
+        "available standards",
+        "jakie standardy sa dostepne"
       ]
     },
     {
@@ -150,6 +188,13 @@
       "tags": [
         "list",
         "validators"
+      ],
+      "intent": [
+        "wylistuj reguly walidacji",
+        "list validator rules",
+        "show available rules",
+        "pokaz dostepne walidatory",
+        "what validators are available"
       ]
     },
     {
@@ -158,6 +203,13 @@
       "tags": [
         "list",
         "violations"
+      ],
+      "intent": [
+        "pokaz ostatnie naruszenia",
+        "list last violations",
+        "what violations did we find",
+        "ostatnie bledy walidacji",
+        "show last validation report"
       ]
     },
     {
@@ -167,6 +219,13 @@
         "reload",
         "validator",
         "rules"
+      ],
+      "intent": [
+        "przeladuj reguly walidacji",
+        "reload validator rules",
+        "rescan rules folder",
+        "odswiez baze regul",
+        "refresh validators"
       ]
     },
     {
@@ -176,6 +235,13 @@
         "validate",
         "against",
         "standard"
+      ],
+      "intent": [
+        "zwaliduj wedlug standardu",
+        "run standard preset",
+        "validate against standard",
+        "sprawdz wg normy",
+        "check standard compliance"
       ]
     },
     {
@@ -184,6 +250,13 @@
       "tags": [
         "validate",
         "drawing"
+      ],
+      "intent": [
+        "zwaliduj rysunek",
+        "validate active drawing",
+        "run validators on dwg",
+        "sprawdz poprawnosc rysunku",
+        "check drawing for errors"
       ]
     },
     {
@@ -193,6 +266,13 @@
         "validate",
         "with",
         "rule"
+      ],
+      "intent": [
+        "zwaliduj jedna regula",
+        "run a single validator rule",
+        "validate against rule",
+        "sprawdz ta regule",
+        "check one rule only"
       ]
     }
   ],
@@ -218,6 +298,6 @@
       "polish-arch-baseline"
     ],
     "user_rules_dir": "%LOCALAPPDATA%\\AcadMcp\\validators\\_user",
-    "last_regenerated_utc": "2026-04-22T13:45:18.5432997Z"
+    "last_regenerated_utc": "2026-08-05T13:09:34.0308044Z"
   }
 }

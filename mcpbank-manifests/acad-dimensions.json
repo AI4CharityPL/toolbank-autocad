@@ -141,6 +141,13 @@
         "arch",
         "tick",
         "style"
+      ],
+      "intent": [
+        "zamien styl wymiarow na warstwie",
+        "apply arch tick style",
+        "retrofit dim layer to arch",
+        "zmien wszystkie wymiary na warstwie",
+        "normalise dim layer style"
       ]
     },
     {
@@ -150,6 +157,13 @@
         "auto",
         "dim",
         "walls"
+      ],
+      "intent": [
+        "automatycznie wymiaruj sciany",
+        "auto dim walls",
+        "chain dimensions across walls",
+        "zrob lancuch wymiarow po scianach",
+        "batch dimension building facade"
       ]
     },
     {
@@ -158,6 +172,13 @@
       "tags": [
         "dimension",
         "aligned"
+      ],
+      "intent": [
+        "wymiar rownolegly",
+        "aligned dimension",
+        "dimension parallel to segment",
+        "wymiar wzdluz krawedzi",
+        "dimaligned"
       ]
     },
     {
@@ -167,6 +188,13 @@
         "dimension",
         "angular",
         "2l"
+      ],
+      "intent": [
+        "wymiar katowy 2 linie",
+        "angular dimension two lines",
+        "kat miedzy liniami",
+        "angle between two lines",
+        "angular dim from lines"
       ]
     },
     {
@@ -176,6 +204,13 @@
         "dimension",
         "angular",
         "3p"
+      ],
+      "intent": [
+        "wymiar katowy 3 punkty",
+        "angular dimension three points",
+        "kat z trzech punktow",
+        "angle 3 points",
+        "angular dim from vertex"
       ]
     },
     {
@@ -185,6 +220,13 @@
         "dimension",
         "arc",
         "length"
+      ],
+      "intent": [
+        "wymiar dlugosci luku",
+        "arc length dimension",
+        "dlugosc luku wymiar",
+        "dim arc length",
+        "dimarc"
       ]
     },
     {
@@ -194,6 +236,13 @@
         "dimension",
         "baseline",
         "chain"
+      ],
+      "intent": [
+        "lancuch wymiarow bazowych",
+        "baseline dimension chain",
+        "wymiary od bazy",
+        "baseline chain dimensions",
+        "dimbaseline"
       ]
     },
     {
@@ -203,6 +252,13 @@
         "dimension",
         "continued",
         "chain"
+      ],
+      "intent": [
+        "lancuch wymiarow ciaglych",
+        "continued dimension chain",
+        "wymiary ciagle",
+        "continued chain dimensions",
+        "dimcontinue"
       ]
     },
     {
@@ -212,6 +268,13 @@
         "dimension",
         "cumulative",
         "chain"
+      ],
+      "intent": [
+        "lancuch wymiarow narastajacych",
+        "cumulative dimension chain",
+        "running totals dimension",
+        "wymiary kumulatywne od bazy",
+        "biegnace sumy wymiarow"
       ]
     },
     {
@@ -220,6 +283,13 @@
       "tags": [
         "dimension",
         "diametric"
+      ],
+      "intent": [
+        "wymiar srednicy",
+        "diametric dimension",
+        "srednica okregu wymiar",
+        "dim diameter of circle",
+        "dimdiameter"
       ]
     },
     {
@@ -228,6 +298,13 @@
       "tags": [
         "dimension",
         "linear"
+      ],
+      "intent": [
+        "wymiar liniowy",
+        "linear dimension",
+        "horizontal dimension",
+        "wymiar poziomy",
+        "rotated linear dim"
       ]
     },
     {
@@ -236,6 +313,13 @@
       "tags": [
         "dimension",
         "ordinate"
+      ],
+      "intent": [
+        "wymiar wspolrzednych",
+        "ordinate dimension",
+        "dim x ordinate",
+        "dim y ordinate",
+        "wspolrzedna od ukladu"
       ]
     },
     {
@@ -244,6 +328,13 @@
       "tags": [
         "dimension",
         "overall"
+      ],
+      "intent": [
+        "wymiar ogolny budynku",
+        "overall dimension",
+        "outer dimension of entities",
+        "dim total width",
+        "dim overall length"
       ]
     },
     {
@@ -252,6 +343,13 @@
       "tags": [
         "dimension",
         "radial"
+      ],
+      "intent": [
+        "wymiar promienia",
+        "radial dimension",
+        "promien okregu wymiar",
+        "dim radius of circle",
+        "dimradius"
       ]
     },
     {
@@ -261,6 +359,13 @@
         "ensure",
         "architectural",
         "dimstyle"
+      ],
+      "intent": [
+        "stworz styl wymiarowania architektoniczny",
+        "ensure ARCH-ISO dimstyle",
+        "setup architectural dim style",
+        "dimstyle z kreskami architektonicznymi",
+        "tick marks dimension style"
       ]
     },
     {
@@ -269,6 +374,13 @@
       "tags": [
         "list",
         "dimstyles"
+      ],
+      "intent": [
+        "wylistuj style wymiarowania",
+        "list dimension styles",
+        "show dimstyles",
+        "wszystkie dimstyles",
+        "what dimstyles exist"
       ]
     },
     {
@@ -278,6 +390,13 @@
         "set",
         "entity",
         "dimstyle"
+      ],
+      "intent": [
+        "zmien styl wymiarow",
+        "set dimstyle on dimension",
+        "apply dimstyle to entities",
+        "ustaw styl wymiarowania",
+        "swap dimension style"
       ]
     }
   ],
@@ -297,6 +416,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-04-24T09:11:38.8721252Z"
+    "last_regenerated_utc": "2026-08-05T13:09:26.8886394Z"
   }
 }

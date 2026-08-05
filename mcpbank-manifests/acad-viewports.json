@@ -172,6 +172,14 @@
         "viewport",
         "by",
         "object"
+      ],
+      "intent": [
+        "przytnij rzutnie do obiektu",
+        "obetnij okno widokowe ksztaltem",
+        "clip viewport by object",
+        "clip viewport to existing polyline",
+        "non-rectangular viewport from shape",
+        "rzutnia w ksztalcie narysowanej figury"
       ]
     },
     {
@@ -181,6 +189,14 @@
         "create",
         "polygonal",
         "viewport"
+      ],
+      "intent": [
+        "utworz rzutnie wielokatna",
+        "nieprostokatne okno widokowe",
+        "create polygonal viewport",
+        "irregular viewport shape",
+        "L-shaped viewport",
+        "rzutnia o dowolnym ksztalcie"
       ]
     },
     {
@@ -189,6 +205,14 @@
       "tags": [
         "create",
         "viewport"
+      ],
+      "intent": [
+        "utworz rzutnie",
+        "dodaj okno widokowe na arkuszu",
+        "create viewport",
+        "add paperspace viewport",
+        "make a viewport on the layout",
+        "wstaw rzutnie na uklad"
       ]
     },
     {
@@ -197,6 +221,14 @@
       "tags": [
         "delete",
         "viewport"
+      ],
+      "intent": [
+        "usun rzutnie",
+        "skasuj okno widokowe",
+        "delete viewport",
+        "remove paperspace viewport",
+        "get rid of viewport",
+        "wykasuj rzutnie z arkusza"
       ]
     },
     {
@@ -208,6 +240,14 @@
         "extents",
         "in",
         "model"
+      ],
+      "intent": [
+        "jaki obszar modelu pokazuje rzutnia",
+        "zakres rzutni w modelu",
+        "viewport extents in model space",
+        "what does this viewport show",
+        "model area covered by viewport",
+        "wspolrzedne widoku rzutni"
       ]
     },
     {
@@ -217,6 +257,14 @@
         "get",
         "viewport",
         "info"
+      ],
+      "intent": [
+        "pokaz szczegoly rzutni",
+        "informacje o oknie widokowym",
+        "get viewport details",
+        "describe viewport",
+        "viewport properties",
+        "wlasciwosci rzutni"
       ]
     },
     {
@@ -225,6 +273,14 @@
       "tags": [
         "list",
         "viewports"
+      ],
+      "intent": [
+        "wylistuj rzutnie",
+        "pokaz okna widokowe",
+        "list viewports",
+        "what viewports are on this layout",
+        "show all paperspace views",
+        "jakie rzutnie sa na arkuszu"
       ]
     },
     {
@@ -235,6 +291,14 @@
         "viewport",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "ustaw skale adnotacyjna rzutni",
+        "skala opisu w oknie widokowym",
+        "set viewport annotation scale",
+        "annotation scale for this sheet",
+        "text size in viewport",
+        "skala adnotacji na arkuszu"
       ]
     },
     {
@@ -245,6 +309,14 @@
         "viewport",
         "layer",
         "freeze"
+      ],
+      "intent": [
+        "zamroz warstwy w rzutni",
+        "ukryj warstwy tylko na tym arkuszu",
+        "freeze layers in viewport",
+        "hide layers in this viewport only",
+        "per viewport layer freeze",
+        "wylacz warstwe w jednej rzutni"
       ]
     },
     {
@@ -255,6 +327,14 @@
         "viewport",
         "layer",
         "thaw"
+      ],
+      "intent": [
+        "odmroz warstwy w rzutni",
+        "pokaz ponownie warstwy na arkuszu",
+        "thaw layers in viewport",
+        "unfreeze layers in this viewport",
+        "show layer again in viewport",
+        "wlacz warstwe w rzutni"
       ]
     },
     {
@@ -264,6 +344,14 @@
         "set",
         "viewport",
         "lock"
+      ],
+      "intent": [
+        "zablokuj rzutnie",
+        "odblokuj okno widokowe",
+        "lock viewport",
+        "unlock viewport",
+        "prevent viewport zoom",
+        "zabezpiecz skale rzutni"
       ]
     },
     {
@@ -274,6 +362,14 @@
         "viewport",
         "on",
         "off"
+      ],
+      "intent": [
+        "wlacz rzutnie",
+        "wylacz okno widokowe",
+        "turn viewport on",
+        "turn viewport off",
+        "hide viewport contents",
+        "rzutnia niewidoczna"
       ]
     },
     {
@@ -283,6 +379,14 @@
         "set",
         "viewport",
         "scale"
+      ],
+      "intent": [
+        "ustaw skale rzutni",
+        "zmien skale okna widokowego",
+        "set viewport scale",
+        "scale viewport to 1:50",
+        "change drawing scale of viewport",
+        "skala rzutni 1 do 100"
       ]
     },
     {
@@ -293,6 +397,14 @@
         "viewport",
         "shade",
         "plot"
+      ],
+      "intent": [
+        "ustaw tryb wydruku rzutni",
+        "rzutnia z ukrytymi krawedziami",
+        "set viewport shade plot",
+        "plot viewport as hidden",
+        "wireframe plot mode",
+        "sposob plotowania rzutni"
       ]
     },
     {
@@ -302,6 +414,14 @@
         "set",
         "viewport",
         "twist"
+      ],
+      "intent": [
+        "obroc widok w rzutni",
+        "przekrec zawartosc okna widokowego",
+        "set viewport twist angle",
+        "rotate view inside viewport",
+        "align building to sheet",
+        "wyprostuj skrzydlo na arkuszu"
       ]
     },
     {
@@ -311,6 +431,14 @@
         "set",
         "viewport",
         "ucs"
+      ],
+      "intent": [
+        "ustaw ukd dla rzutni",
+        "wlasny uklad wspolrzednych w rzutni",
+        "set viewport ucs",
+        "per-viewport coordinate system",
+        "rotate coordinates in this viewport only",
+        "uklad wspolrzednych tylko w tym oknie"
       ]
     },
     {
@@ -321,6 +449,14 @@
         "viewport",
         "view",
         "direction"
+      ],
+      "intent": [
+        "ustaw kierunek patrzenia rzutni",
+        "widok z gory w rzutni",
+        "set viewport view direction",
+        "make this viewport an elevation",
+        "isometric viewport",
+        "rzut izometryczny na arkuszu"
       ]
     },
     {
@@ -331,6 +467,14 @@
         "viewport",
         "visual",
         "style"
+      ],
+      "intent": [
+        "ustaw styl wizualny rzutni",
+        "widok realistyczny w oknie",
+        "set viewport visual style",
+        "hidden line viewport",
+        "conceptual style on sheet",
+        "styl wyswietlania rzutni"
       ]
     },
     {
@@ -342,6 +486,14 @@
         "to",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "zsynchronizuj skale rzutni ze skala adnotacyjna",
+        "napraw rozjechane skale rzutni",
+        "sync viewport scale to annotation scale",
+        "viewport zoom does not match text size",
+        "fix mismatched viewport scale",
+        "skala widoku nie zgadza sie z opisem"
       ]
     }
   ],
@@ -361,6 +513,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T16:18:37.7189668Z"
+    "last_regenerated_utc": "2026-08-05T13:09:34.8601559Z"
   }
 }

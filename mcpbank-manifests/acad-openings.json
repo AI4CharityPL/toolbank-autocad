@@ -116,6 +116,14 @@
         "wall",
         "for",
         "opening"
+      ],
+      "intent": [
+        "przetnij sciane dla drzwi",
+        "zrob otwor w scianie",
+        "cut wall for opening",
+        "split wall at jambs",
+        "open hole in wall",
+        "rozciac sciane na otwor"
       ]
     },
     {
@@ -126,6 +134,14 @@
         "door",
         "by",
         "points"
+      ],
+      "intent": [
+        "narysuj drzwi szybko",
+        "szkicowy lisc drzwi",
+        "sketch door swing",
+        "draw door by two points",
+        "quick door",
+        "mark up door"
       ]
     },
     {
@@ -136,6 +152,14 @@
         "window",
         "by",
         "points"
+      ],
+      "intent": [
+        "narysuj okno szybko",
+        "szkicowe okno",
+        "sketch window",
+        "draw window by two points",
+        "quick window",
+        "mark up window"
       ]
     },
     {
@@ -144,6 +168,14 @@
       "tags": [
         "export",
         "schedule"
+      ],
+      "intent": [
+        "eksportuj harmonogram drzwi",
+        "eksportuj harmonogram okien",
+        "export door schedule CSV",
+        "export window schedule JSON",
+        "wygeneruj tabele stolarki",
+        "door and window schedule"
       ]
     },
     {
@@ -152,6 +184,18 @@
       "tags": [
         "insert",
         "door"
+      ],
+      "intent": [
+        "wstaw drzwi REI 60",
+        "dodaj drzwi przeciwpozarowe",
+        "insert door",
+        "place fire door REI 120",
+        "drzwi przesuwne",
+        "sliding door",
+        "hospital door",
+        "lead lined door",
+        "drzwi olowiane RTG",
+        "drzwi pojedyncze szerokosc 900"
       ]
     },
     {
@@ -161,6 +205,13 @@
         "insert",
         "opening",
         "generic"
+      ],
+      "intent": [
+        "wstaw otwor z nazwy bloku",
+        "insert opening by block name",
+        "place opening by canonical name",
+        "add catalog opening block",
+        "generic insert of DOOR-* or WIN-*"
       ]
     },
     {
@@ -169,6 +220,17 @@
       "tags": [
         "insert",
         "window"
+      ],
+      "intent": [
+        "wstaw okno",
+        "dodaj okno przeciwpozarowe",
+        "insert window",
+        "place window RC3 burglary",
+        "casement window",
+        "okno uchylno-rozwierne",
+        "okno szpitalne EI30",
+        "okno stale",
+        "fire window EI60"
       ]
     },
     {
@@ -178,6 +240,14 @@
         "list",
         "opening",
         "catalog"
+      ],
+      "intent": [
+        "lista katalogu drzwi i okien",
+        "katalog otworow",
+        "list opening catalog",
+        "show available doors windows",
+        "enumerate door window blocks",
+        "opening families"
       ]
     },
     {
@@ -188,6 +258,13 @@
         "openings",
         "in",
         "model"
+      ],
+      "intent": [
+        "lista drzwi i okien w modelu",
+        "enumerate openings in model",
+        "list placed doors",
+        "find windows on layer",
+        "show openings inventory"
       ]
     },
     {
@@ -196,6 +273,14 @@
       "tags": [
         "renumber",
         "openings"
+      ],
+      "intent": [
+        "przenumeruj drzwi",
+        "przenumeruj okna",
+        "renumber doors windows",
+        "renumber openings spatially",
+        "reset D-001 numbering",
+        "uporzadkuj numeracje otworow"
       ]
     }
   ],
@@ -215,6 +300,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T08:40:42.8801084Z"
+    "last_regenerated_utc": "2026-08-05T13:09:30.8827599Z"
   }
 }

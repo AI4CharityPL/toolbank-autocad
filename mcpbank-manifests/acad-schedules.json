@@ -90,30 +90,54 @@
   "tools_summary": [
     {
       "name": "audit_all_rooms",
-      "description": "READ-ONLY batch audit of every room label in the drawing. For each label, measures the REAL area (get_room_region), compares to the stated m² on the label, counts doors/windows/furniture in the detected region, and flags leaks, label mismatches, missing doors and furniture type conflicts. Optional exportCsvPath (use 'auto' for %LOCALAPPDATA%\\AcadMcp\\reports\\). Does NOT modify the drawing.",
+      "description": "READ-ONLY batch audit of every room label in the drawing. For each label, measures the REAL area (get_room_region), compares to the stated m\u00B2 on the label, counts doors/windows/furniture in the detected region, and flags leaks, label mismatches, missing doors and furniture type conflicts. Optional exportCsvPath (use \u0027auto\u0027 for %LOCALAPPDATA%\\AcadMcp\\reports\\). Does NOT modify the drawing.",
       "tags": [
         "audit",
         "all",
         "rooms"
+      ],
+      "intent": [
+        "audyt wszystkich pomieszczen",
+        "audit all rooms",
+        "sprawdz metraz wszystkich sal",
+        "batch room area audit",
+        "raport pomieszczen powierzchnia meble",
+        "hospital room audit report"
       ]
     },
     {
       "name": "correct_all_room_areas",
-      "description": "Batch wrapper around correct_room_area: scans every room label and rewrites the m² token when the measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. Modifies the drawing only when apply=true.",
+      "description": "Batch wrapper around correct_room_area: scans every room label and rewrites the m\u00B2 token when the measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. Modifies the drawing only when apply=true.",
       "tags": [
         "correct",
         "all",
         "room",
         "areas"
+      ],
+      "intent": [
+        "popraw wszystkie powierzchnie sal",
+        "correct all room areas",
+        "batch update room labels m2",
+        "masowa korekta metrazu",
+        "napraw etykiety powierzchni",
+        "fix all room area labels"
       ]
     },
     {
       "name": "correct_room_area",
-      "description": "Verify and, if needed, CORRECT a space's stated area on its label. Measures the REAL area with the wall-aware boundary detector (get_room_region) and compares it to the area written on the label (e.g. '200 m²'). When they differ by more than tolerancePct (or when explicitAreaM2 is supplied), it rewrites the 'N m²' token on the label text in place (reusing update_dbtext/update_mtext). Use apply=false for a dry-run that only reports the discrepancy. Works on ALL layers and is space-agnostic (room, office, garden, …). Modifies the drawing only when a correction is applied.",
+      "description": "Verify and, if needed, CORRECT a space\u0027s stated area on its label. Measures the REAL area with the wall-aware boundary detector (get_room_region) and compares it to the area written on the label (e.g. \u0027200 m\u00B2\u0027). When they differ by more than tolerancePct (or when explicitAreaM2 is supplied), it rewrites the \u0027N m\u00B2\u0027 token on the label text in place (reusing update_dbtext/update_mtext). Use apply=false for a dry-run that only reports the discrepancy. Works on ALL layers and is space-agnostic (room, office, garden, \u2026). Modifies the drawing only when a correction is applied.",
       "tags": [
         "correct",
         "room",
         "area"
+      ],
+      "intent": [
+        "popraw powierzchnie sali",
+        "correct room area label",
+        "zaktualizuj metraz pomieszczenia na rysunku",
+        "fix wrong area 200 m2 on label",
+        "sprawdz i popraw powierzchnie pomieszczenia",
+        "recalculate and update room area"
       ]
     },
     {
@@ -123,24 +147,45 @@
         "generate",
         "door",
         "schedule"
+      ],
+      "intent": [
+        "zestawienie stolarki drzwiowej",
+        "generate door schedule",
+        "tabela drzwi z atrybutami",
+        "build doors schedule table",
+        "drzwi lista z REI RC"
       ]
     },
     {
       "name": "generate_finish_legend",
-      "description": "Emit a finish legend (LEGENDA WYKOŃCZEŃ) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes. Layer A-ANNO-LEGN by default.",
+      "description": "Emit a finish legend (LEGENDA WYKO\u0143CZE\u0143) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes. Layer A-ANNO-LEGN by default.",
       "tags": [
         "generate",
         "finish",
         "legend"
+      ],
+      "intent": [
+        "legenda wykonczen",
+        "generate finish legend",
+        "lista wykonczen podlogi sciany",
+        "finish code table",
+        "legenda materialow"
       ]
     },
     {
       "name": "generate_room_schedule",
-      "description": "Build a room schedule table (ZESTAWIENIE POMIESZCZEŃ) from every DBText/MText label on the configured room-label layers (default A-ROOM-IDEN / A-ANNO-ROOM). If boundaryLayer is set, each room's area (m²) is computed from the closed polyline on that layer that contains the label. Auto-numbers rows 101, 102, … when autoNumber=true.",
+      "description": "Build a room schedule table (ZESTAWIENIE POMIESZCZE\u0143) from every DBText/MText label on the configured room-label layers (default A-ROOM-IDEN / A-ANNO-ROOM). If boundaryLayer is set, each room\u0027s area (m\u00B2) is computed from the closed polyline on that layer that contains the label. Auto-numbers rows 101, 102, \u2026 when autoNumber=true.",
       "tags": [
         "generate",
         "room",
         "schedule"
+      ],
+      "intent": [
+        "zestawienie pomieszczen",
+        "generate room schedule",
+        "tabela pomieszczen",
+        "list rooms with areas",
+        "wykaz pomieszczen z powierzchniami"
       ]
     },
     {
@@ -150,23 +195,45 @@
         "generate",
         "window",
         "schedule"
+      ],
+      "intent": [
+        "zestawienie stolarki okiennej",
+        "generate window schedule",
+        "tabela okien",
+        "build windows schedule table",
+        "lista okien z parapetami"
       ]
     },
     {
       "name": "get_room_data",
-      "description": "READ-ONLY, universal. Locate ONE space (room, office, apartment room, classroom, yard/garden, hall, …) by its number or name (substring, case-insensitive) and return a full dossier: number + name, MEASURED area (m², computed from a wall-aware flood-fill of the actual boundary) plus the labelled area (labelAreaM2, parsed from the label text) when present, bounding-box dimensions (width × depth in mm), the boundary detection method, and every door, window and furniture/equipment item that lies inside the room (furniture tested against the traced outline, openings against the perimeter). Scans labels on ALL layers by default (not just A-ROOM-*). Use this to gather accurate data BEFORE drawing a schedule or generating a visualization. Does NOT modify the drawing.",
+      "description": "READ-ONLY, universal. Locate ONE space (room, office, apartment room, classroom, yard/garden, hall, \u2026) by its number or name (substring, case-insensitive) and return a full dossier: number \u002B name, MEASURED area (m\u00B2, computed from a wall-aware flood-fill of the actual boundary) plus the labelled area (labelAreaM2, parsed from the label text) when present, bounding-box dimensions (width \u00D7 depth in mm), the boundary detection method, and every door, window and furniture/equipment item that lies inside the room (furniture tested against the traced outline, openings against the perimeter). Scans labels on ALL layers by default (not just A-ROOM-*). Use this to gather accurate data BEFORE drawing a schedule or generating a visualization. Does NOT modify the drawing.",
       "tags": [
         "get",
         "room",
         "data"
+      ],
+      "intent": [
+        "dane pomieszczenia",
+        "get room data",
+        "znajdz sale po numerze",
+        "find room by number A-304",
+        "wymiary okna drzwi meble pomieszczenia",
+        "room dimensions doors windows furniture"
       ]
     },
     {
       "name": "update_schedules",
-      "description": "Find existing schedule tables by their title cell (ZESTAWIENIE STOLARKI / POMIESZCZEŃ / LEGENDA WYKOŃCZEŃ) and rebuild each one from current drawing content. Old tables are erased and replaced at the same insertion point. Useful after inserting/removing openings or rooms; one call keeps every schedule in sync.",
+      "description": "Find existing schedule tables by their title cell (ZESTAWIENIE STOLARKI / POMIESZCZE\u0143 / LEGENDA WYKO\u0143CZE\u0143) and rebuild each one from current drawing content. Old tables are erased and replaced at the same insertion point. Useful after inserting/removing openings or rooms; one call keeps every schedule in sync.",
       "tags": [
         "update",
         "schedules"
+      ],
+      "intent": [
+        "zaktualizuj zestawienia",
+        "update schedules",
+        "refresh door window schedules",
+        "odswiez tabele stolarki",
+        "regenerate schedules after changes"
       ]
     }
   ],
@@ -186,6 +253,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-06-08T19:03:12.2341285Z"
+    "last_regenerated_utc": "2026-08-05T13:09:32.6519063Z"
   }
 }

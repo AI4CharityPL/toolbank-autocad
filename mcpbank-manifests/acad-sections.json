@@ -52,29 +52,50 @@
   "tools_summary": [
     {
       "name": "insert_elevation_marker",
-      "description": "Insert an elevation-direction marker at the given model-space position. Geometry: a filled triangle pointing in the requested compass direction (N / E / S / W / NE / NW / SE / SW or bare degrees) on top of a short horizontal baseline, with the caption \"ELEWACJA <direction>\" to the right. Differs from acad-callouts.insert_section_callout in that elevations have a directional triangle rather than a circle-in-triangle pair.",
+      "description": "Insert an elevation-direction marker at the given model-space position. Geometry: a filled triangle pointing in the requested compass direction (N / E / S / W / NE / NW / SE / SW or bare degrees) on top of a short horizontal baseline, with the caption \u0022ELEWACJA \u003Cdirection\u003E\u0022 to the right. Differs from acad-callouts.insert_section_callout in that elevations have a directional triangle rather than a circle-in-triangle pair.",
       "tags": [
         "insert",
         "elevation",
         "marker"
+      ],
+      "intent": [
+        "wstaw marker elewacji",
+        "insert elevation marker",
+        "znacznik elewacji E",
+        "elevation view direction marker",
+        "symbol elewacji kierunkowy"
       ]
     },
     {
       "name": "insert_section_line",
-      "description": "Draw a section cut-line from startPoint to endPoint on layer A-DETL-SECT, apply DASHED2 linetype, add 90-degree offset ticks at both ends, then place labelled end markers with view-direction arrows via acad-callouts (unless drawEndMarkers=false). The offset ticks (6 mm plotted) signal that the cut-line's path is symbolic, not literal. sheetReference optional, viewDirection in {left|right} relative to the start→end vector.",
+      "description": "Draw a section cut-line from startPoint to endPoint on layer A-DETL-SECT, apply DASHED2 linetype, add 90-degree offset ticks at both ends, then place labelled end markers with view-direction arrows via acad-callouts (unless drawEndMarkers=false). The offset ticks (6 mm plotted) signal that the cut-line\u0027s path is symbolic, not literal. sheetReference optional, viewDirection in {left|right} relative to the start\u2192end vector.",
       "tags": [
         "insert",
         "section",
         "line"
+      ],
+      "intent": [
+        "wstaw linie ciecia",
+        "insert section line",
+        "narysuj przekroj A-A",
+        "section cut line with markers",
+        "linia przekroju ze strzalkami"
       ]
     },
     {
       "name": "insert_section_title",
-      "description": "Place a section/view title beneath a drawn section (e.g. \"PRZEKRÓJ A-A\" with \"SKALA 1:50\" under it and an underline). position is the insertion point — typically the centre-bottom of the view. Customise caption (defaults to \"PRZEKRÓJ\") for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line.",
+      "description": "Place a section/view title beneath a drawn section (e.g. \u0022PRZEKR\u00D3J A-A\u0022 with \u0022SKALA 1:50\u0022 under it and an underline). position is the insertion point \u2014 typically the centre-bottom of the view. Customise caption (defaults to \u0022PRZEKR\u00D3J\u0022) for elevations / axonometric views. drawUnderline=true adds an 80 mm plotted horizontal rule between the caption and the scale line.",
       "tags": [
         "insert",
         "section",
         "title"
+      ],
+      "intent": [
+        "wstaw tytul przekroju",
+        "insert section title",
+        "podpis przekroj A-A skala",
+        "view title caption",
+        "napis przekroj pod widokiem"
       ]
     },
     {
@@ -84,6 +105,13 @@
         "list",
         "section",
         "lines"
+      ],
+      "intent": [
+        "lista linii ciecia",
+        "list section lines",
+        "scan section layer",
+        "inventory section cuts",
+        "wypisz przekroje z rysunku"
       ]
     }
   ],
@@ -103,6 +131,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T11:28:06.7177614Z"
+    "last_regenerated_utc": "2026-08-05T13:09:32.9390451Z"
   }
 }

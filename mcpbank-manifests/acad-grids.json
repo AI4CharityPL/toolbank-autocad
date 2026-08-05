@@ -69,6 +69,13 @@
         "add",
         "grid",
         "axis"
+      ],
+      "intent": [
+        "dodaj os modulowa",
+        "add grid axis",
+        "insert single axis with bubble",
+        "os konstrukcyjna z balonikiem",
+        "labeled axis line"
       ]
     },
     {
@@ -78,6 +85,13 @@
         "add",
         "grid",
         "bubble"
+      ],
+      "intent": [
+        "dodaj balonik osi",
+        "add grid bubble",
+        "axis bubble circle",
+        "insert axis marker",
+        "k\u00F3\u0142ko z oznaczeniem osi"
       ]
     },
     {
@@ -86,6 +100,13 @@
       "tags": [
         "delete",
         "grid"
+      ],
+      "intent": [
+        "usun siatke osi",
+        "delete grid",
+        "clear grid axes",
+        "wyczysc baloniki",
+        "remove column grid"
       ]
     },
     {
@@ -94,6 +115,13 @@
       "tags": [
         "draw",
         "grid"
+      ],
+      "intent": [
+        "narysuj siatke modulowa",
+        "draw column grid",
+        "generate axis grid",
+        "siatka konstrukcyjna",
+        "structural grid with bubbles"
       ]
     },
     {
@@ -103,6 +131,13 @@
         "list",
         "grid",
         "axes"
+      ],
+      "intent": [
+        "wyswietl siatke osi",
+        "list grid axes",
+        "enumerate axis bubbles",
+        "ile osi siatki w rysunku",
+        "grid inventory read-only"
       ]
     },
     {
@@ -112,6 +147,13 @@
         "snap",
         "to",
         "grid"
+      ],
+      "intent": [
+        "przyciagnij do siatki",
+        "snap point to grid",
+        "align to nearest axis",
+        "nearest grid intersection",
+        "nearest axis for coords"
       ]
     }
   ],
@@ -131,6 +173,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T09:44:12.2622500Z"
+    "last_regenerated_utc": "2026-08-05T13:09:28.8892860Z"
   }
 }

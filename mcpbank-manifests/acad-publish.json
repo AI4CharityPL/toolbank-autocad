@@ -88,6 +88,14 @@
         "apply",
         "page",
         "setup"
+      ],
+      "intent": [
+        "zastosuj ustawienia strony do arkuszy",
+        "ustaw ten sam wydruk na wszystkich ukladach",
+        "apply page setup to layouts",
+        "make all sheets plot the same",
+        "assign page setup",
+        "przypisz konfiguracje wydruku do ukladu"
       ]
     },
     {
@@ -97,6 +105,14 @@
         "create",
         "page",
         "setup"
+      ],
+      "intent": [
+        "utworz nazwane ustawienia strony",
+        "zdefiniuj page setup",
+        "create page setup",
+        "named plot configuration",
+        "reusable sheet setup",
+        "zapisz konfiguracje wydruku pod nazwa"
       ]
     },
     {
@@ -106,6 +122,14 @@
         "delete",
         "page",
         "setup"
+      ],
+      "intent": [
+        "usun nazwane ustawienia strony",
+        "skasuj page setup",
+        "delete page setup",
+        "remove named plot configuration",
+        "get rid of sheet setup",
+        "wykasuj konfiguracje wydruku"
       ]
     },
     {
@@ -115,6 +139,14 @@
         "get",
         "plot",
         "area"
+      ],
+      "intent": [
+        "jaki obszar zostanie wydrukowany",
+        "sprawdz ustawienia wydruku ukladu",
+        "get plot area",
+        "what will this layout plot",
+        "plot extents and margins",
+        "podglad obszaru wydruku"
       ]
     },
     {
@@ -124,6 +156,14 @@
         "list",
         "page",
         "setups"
+      ],
+      "intent": [
+        "wylistuj ustawienia strony",
+        "jakie sa page setupy",
+        "list page setups",
+        "show named plot configurations",
+        "what sheet setups exist",
+        "pokaz konfiguracje wydruku"
       ]
     },
     {
@@ -132,6 +172,14 @@
       "tags": [
         "publish",
         "sheets"
+      ],
+      "intent": [
+        "opublikuj arkusze do jednego pdf",
+        "wielostronicowy pdf z ukladow",
+        "publish sheets to one pdf",
+        "multi-sheet pdf from layouts",
+        "export all sheets into a single file",
+        "zestaw arkuszy do jednego pliku"
       ]
     }
   ],
@@ -151,6 +199,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T21:19:38.0055517Z"
+    "last_regenerated_utc": "2026-08-05T13:09:32.0642793Z"
   }
 }

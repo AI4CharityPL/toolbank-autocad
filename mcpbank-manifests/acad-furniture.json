@@ -111,6 +111,18 @@
       "tags": [
         "insert",
         "bed"
+      ],
+      "intent": [
+        "wstaw lozko",
+        "dodaj lozko ICU",
+        "wstaw stol operacyjny",
+        "insert bed",
+        "place ICU bed",
+        "add hospital bed",
+        "operating table",
+        "lozko pediatryczne",
+        "lozko bariatryczne",
+        "labour bed"
       ]
     },
     {
@@ -119,6 +131,15 @@
       "tags": [
         "insert",
         "cabinet"
+      ],
+      "intent": [
+        "wstaw szafe",
+        "dodaj szafke medyczna",
+        "insert cabinet",
+        "file cabinet",
+        "wardrobe",
+        "medical cabinet",
+        "szafa na dokumenty"
       ]
     },
     {
@@ -127,6 +148,15 @@
       "tags": [
         "insert",
         "chair"
+      ],
+      "intent": [
+        "wstaw krzeslo",
+        "dodaj fotel",
+        "insert chair",
+        "place office chair",
+        "wheelchair",
+        "stolek badawczy",
+        "armchair"
       ]
     },
     {
@@ -135,6 +165,14 @@
       "tags": [
         "insert",
         "desk"
+      ],
+      "intent": [
+        "wstaw biurko",
+        "dodaj stanowisko pielegniarki",
+        "insert desk",
+        "reception desk",
+        "nurse station",
+        "biurko recepcyjne"
       ]
     },
     {
@@ -143,6 +181,13 @@
       "tags": [
         "insert",
         "furniture"
+      ],
+      "intent": [
+        "wstaw mebel z katalogu",
+        "insert furniture block by name",
+        "place furniture from catalog",
+        "add catalog block to drawing",
+        "generic insert of any FURN-* block"
       ]
     },
     {
@@ -151,6 +196,14 @@
       "tags": [
         "insert",
         "sofa"
+      ],
+      "intent": [
+        "wstaw sofe",
+        "dodaj kanape poczekalnia",
+        "insert sofa",
+        "couch",
+        "waiting room sofa",
+        "sofa kliniczna"
       ]
     },
     {
@@ -159,6 +212,15 @@
       "tags": [
         "insert",
         "table"
+      ],
+      "intent": [
+        "wstaw stol",
+        "dodaj stol konferencyjny",
+        "insert table",
+        "round table",
+        "coffee table",
+        "meeting table",
+        "stol badawczy"
       ]
     },
     {
@@ -168,6 +230,14 @@
         "list",
         "furniture",
         "catalog"
+      ],
+      "intent": [
+        "lista mebli katalog",
+        "co mamy w katalogu mebli",
+        "list furniture catalog",
+        "show available furniture",
+        "enumerate furniture blocks",
+        "katalog bloczkow meblowych"
       ]
     },
     {
@@ -178,6 +248,13 @@
         "furniture",
         "in",
         "model"
+      ],
+      "intent": [
+        "lista mebli w rysunku",
+        "enumerate furniture in model",
+        "list placed furniture",
+        "find furniture on layer",
+        "show all beds in drawing"
       ]
     },
     {
@@ -186,6 +263,17 @@
       "tags": [
         "populate",
         "room"
+      ],
+      "intent": [
+        "zaludnij pokoj meblami",
+        "wypelnij meblami preset",
+        "populate room with preset",
+        "auto-furnish room",
+        "wstaw meble w pokoj przez preset",
+        "ICU room preset",
+        "sala chorych preset",
+        "gabinet lekarski preset",
+        "office furniture preset"
       ]
     }
   ],
@@ -205,6 +293,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T08:20:47.5832912Z"
+    "last_regenerated_utc": "2026-08-05T13:09:28.0272828Z"
   }
 }

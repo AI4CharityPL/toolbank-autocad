@@ -107,6 +107,16 @@
       "tags": [
         "insert",
         "basin"
+      ],
+      "intent": [
+        "wstaw umywalke",
+        "dodaj podwojna umywalke",
+        "insert wash basin",
+        "place accessible basin",
+        "place double basin",
+        "umywalka dla niepelnosprawnych",
+        "wall-mounted basin",
+        "umywalka dwustanowiskowa"
       ]
     },
     {
@@ -115,6 +125,16 @@
       "tags": [
         "insert",
         "bathtub"
+      ],
+      "intent": [
+        "wstaw wanne",
+        "dodaj wanne narozna",
+        "insert bathtub",
+        "corner bathtub",
+        "wanna prostokatna",
+        "rectangle bathtub",
+        "mini bathtub",
+        "freestanding bathtub"
       ]
     },
     {
@@ -123,6 +143,13 @@
       "tags": [
         "insert",
         "plumbing"
+      ],
+      "intent": [
+        "wstaw urzadzenie sanitarne katalog",
+        "insert plumbing block by name",
+        "place sanitary fixture from catalog",
+        "add catalog plumbing to drawing",
+        "generic sanitary fixture insert"
       ]
     },
     {
@@ -131,6 +158,16 @@
       "tags": [
         "insert",
         "shower"
+      ],
+      "intent": [
+        "wstaw prysznic",
+        "dodaj kabine prysznicowa",
+        "insert shower",
+        "walk-in shower",
+        "prysznic bezbarierowy",
+        "shower tray",
+        "square shower",
+        "rectangular shower"
       ]
     },
     {
@@ -139,6 +176,15 @@
       "tags": [
         "insert",
         "urinal"
+      ],
+      "intent": [
+        "wstaw pisuar",
+        "dodaj pisuar dla niepelnosprawnych",
+        "insert urinal",
+        "wall-hung urinal",
+        "accessible urinal",
+        "pisuar akustyczny",
+        "pisuar o obnizonej wysokosci"
       ]
     },
     {
@@ -147,6 +193,16 @@
       "tags": [
         "insert",
         "wc"
+      ],
+      "intent": [
+        "wstaw WC",
+        "dodaj miska ustepowa",
+        "insert toilet",
+        "insert WC",
+        "place accessible WC",
+        "wstaw WC dla niepelnosprawnych",
+        "wall-hung toilet",
+        "bidet kombi"
       ]
     },
     {
@@ -156,6 +212,15 @@
         "list",
         "plumbing",
         "catalog"
+      ],
+      "intent": [
+        "lista urzadzen sanitarnych",
+        "katalog plumbing",
+        "list plumbing catalog",
+        "show available plumbing fixtures",
+        "enumerate sanitary blocks",
+        "co mamy w katalogu lazienkowym",
+        "what sanitary fixtures available"
       ]
     },
     {
@@ -166,6 +231,14 @@
         "plumbing",
         "in",
         "model"
+      ],
+      "intent": [
+        "lista urzadzen sanitarnych w rysunku",
+        "enumerate plumbing in model",
+        "list placed sanitary fixtures",
+        "find plumbing on layer",
+        "show all WCs in drawing",
+        "show all basins in drawing"
       ]
     },
     {
@@ -174,6 +247,17 @@
       "tags": [
         "populate",
         "bathroom"
+      ],
+      "intent": [
+        "zaludnij lazienke preset",
+        "wypelnij WC preset",
+        "populate bathroom with preset",
+        "auto-furnish WC",
+        "lazienka szpitalna preset",
+        "WC ogolnodostepne preset",
+        "wc accessible preset",
+        "bathroom residential preset",
+        "lazienka szpitalna pacjenta"
       ]
     }
   ],
@@ -193,6 +277,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T08:30:10.5397478Z"
+    "last_regenerated_utc": "2026-08-05T13:09:31.7576346Z"
   }
 }

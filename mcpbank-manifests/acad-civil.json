@@ -106,6 +106,13 @@
       "tags": [
         "civil",
         "health"
+      ],
+      "intent": [
+        "co potrafi civil",
+        "list civil layer key",
+        "civil parcel tolerances",
+        "diagnostyka kategorii civil",
+        "civil category metadata"
       ]
     },
     {
@@ -115,6 +122,13 @@
         "draw",
         "alignment",
         "curve"
+      ],
+      "intent": [
+        "narysuj luk osi drogi",
+        "draw alignment circular curve",
+        "luk poziomy drogi",
+        "road centerline curve",
+        "alignment arc segment"
       ]
     },
     {
@@ -124,6 +138,13 @@
         "draw",
         "alignment",
         "spiral"
+      ],
+      "intent": [
+        "narysuj klotoide",
+        "draw spiral transition curve",
+        "krzywa przejsciowa drogi",
+        "clothoid alignment segment",
+        "euler spiral road curve"
       ]
     },
     {
@@ -133,6 +154,13 @@
         "draw",
         "alignment",
         "tangent"
+      ],
+      "intent": [
+        "narysuj odcinek prostej drogi",
+        "draw alignment tangent segment",
+        "tangenta osi drogi",
+        "road centerline tangent",
+        "alignment straight segment"
       ]
     },
     {
@@ -142,6 +170,13 @@
         "draw",
         "contour",
         "line"
+      ],
+      "intent": [
+        "narysuj warstwice glowna",
+        "draw major contour line with label",
+        "contour line topograficzna",
+        "warstwica 250m",
+        "topographic contour line"
       ]
     },
     {
@@ -151,6 +186,13 @@
         "draw",
         "north",
         "arrow"
+      ],
+      "intent": [
+        "wstaw strzalke polnocy",
+        "draw north arrow",
+        "true north arrow with rotation",
+        "kompas N",
+        "north indicator"
       ]
     },
     {
@@ -159,6 +201,13 @@
       "tags": [
         "draw",
         "parcel"
+      ],
+      "intent": [
+        "narysuj dzialke z bearings",
+        "draw parcel from bearing distance legs",
+        "polyline dzialki geodezyjnej",
+        "parcel closure check",
+        "lot polygon from surveyor traverse"
       ]
     },
     {
@@ -168,6 +217,13 @@
         "draw",
         "road",
         "corridor"
+      ],
+      "intent": [
+        "narysuj korytarz drogowy",
+        "draw road corridor edges",
+        "krawedzie jezdni offset",
+        "road pavement edges",
+        "draw road with width"
       ]
     },
     {
@@ -177,6 +233,13 @@
         "draw",
         "vertical",
         "profile"
+      ],
+      "intent": [
+        "narysuj profil podluzny drogi",
+        "draw vertical alignment profile",
+        "niweleta drogi",
+        "road profile grade line",
+        "PVI vertical curve profile"
       ]
     },
     {
@@ -186,6 +249,13 @@
         "ensure",
         "civil",
         "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy civil",
+        "ensure civil engineering layers",
+        "setup C-* layer key",
+        "wlacz standardowe warstwy C-* w projekcie",
+        "create civil layer standard"
       ]
     },
     {
@@ -195,6 +265,13 @@
         "place",
         "spot",
         "elevation"
+      ],
+      "intent": [
+        "punkt wysokosciowy \u002B102.45",
+        "place spot elevation cross \u002B text",
+        "rzedna terenu",
+        "spot elevation marker",
+        "geodetic point with elevation"
       ]
     },
     {
@@ -204,6 +281,13 @@
         "place",
         "station",
         "labels"
+      ],
+      "intent": [
+        "wstaw stacjonowanie 0\u002B020",
+        "place stationing labels along road",
+        "etykiety stacjonowania",
+        "station labels every 20m",
+        "chainage labels along centerline"
       ]
     }
   ],
@@ -236,6 +320,6 @@
       "draw_road_corridor mitres internal vertices using the average-normal method without acute-corner self-intersection check; this is fine for v1 alignments, sharper corners arrive with the spiral support in Phase 7.",
       "draw_north_arrow synthesises a basic triangle inline; the COMPASS variant ships with the Phase-7 block library under blocks/civil/."
     ],
-    "last_regenerated_utc": "2026-07-29T21:05:49.7799395Z"
+    "last_regenerated_utc": "2026-08-05T13:09:26.6175005Z"
   }
 }

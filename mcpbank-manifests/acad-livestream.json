@@ -39,26 +39,47 @@
   "tools_summary": [
     {
       "name": "clear_events",
-      "description": "Discard all currently buffered events (does not affect future capture, only the backlog). Use this to reset state, e.g. at the start of a design_iterate loop so old noise doesn't show up in the first poll.",
+      "description": "Discard all currently buffered events (does not affect future capture, only the backlog). Use this to reset state, e.g. at the start of a design_iterate loop so old noise doesn\u0027t show up in the first poll.",
       "tags": [
         "clear",
         "events"
+      ],
+      "intent": [
+        "wyczysc bufor zdarzen",
+        "clear event buffer",
+        "reset livestream events",
+        "wyczysc historie zdarzen",
+        "discard buffered events"
       ]
     },
     {
       "name": "livestream_status",
-      "description": "Report the event ring buffer's current size, capacity (2000), the highest sequence number issued so far (headSeq), how many older events have been dropped to stay within capacity, and how many documents currently have event hooks attached.",
+      "description": "Report the event ring buffer\u0027s current size, capacity (2000), the highest sequence number issued so far (headSeq), how many older events have been dropped to stay within capacity, and how many documents currently have event hooks attached.",
       "tags": [
         "livestream",
         "status"
+      ],
+      "intent": [
+        "status bufora zdarzen",
+        "livestream buffer status",
+        "how many events buffered",
+        "diagnostyka livestream",
+        "event buffer diagnostics"
       ]
     },
     {
       "name": "poll_events",
-      "description": "Return entity-change and command-lifecycle events captured since sinceSeq (default 0 = from the start of the current buffer, which holds the most recent 2000 events). Each event has a monotonic seq -- pass the previous response's nextSeq back in as sinceSeq to get only what happened since your last poll. maxCount caps how many are returned in one call (default 200). Events are captured live via AutoCAD Database.ObjectAppended/Modified/Erased and Document.CommandWillStart/CommandEnded hooks, not by re-scanning the drawing.",
+      "description": "Return entity-change and command-lifecycle events captured since sinceSeq (default 0 = from the start of the current buffer, which holds the most recent 2000 events). Each event has a monotonic seq -- pass the previous response\u0027s nextSeq back in as sinceSeq to get only what happened since your last poll. maxCount caps how many are returned in one call (default 200). Events are captured live via AutoCAD Database.ObjectAppended/Modified/Erased and Document.CommandWillStart/CommandEnded hooks, not by re-scanning the drawing.",
       "tags": [
         "poll",
         "events"
+      ],
+      "intent": [
+        "co sie zmienilo od ostatniego razu",
+        "poll recent events",
+        "what changed since last check",
+        "pobierz zdarzenia rysunku",
+        "get entity change events"
       ]
     }
   ],
@@ -77,6 +98,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "tool_count_target": 3,
-    "last_regenerated_utc": "2026-07-29T20:52:41.8870798Z"
+    "last_regenerated_utc": "2026-08-05T13:09:30.0064408Z"
   }
 }

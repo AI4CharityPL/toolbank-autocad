@@ -87,6 +87,13 @@
       "tags": [
         "classify",
         "drawing"
+      ],
+      "intent": [
+        "rozpoznaj typ rysunku",
+        "co to za rysunek",
+        "classify this drawing",
+        "what kind of drawing is this",
+        "is this a plan or a section"
       ]
     },
     {
@@ -97,14 +104,28 @@
         "validate",
         "with",
         "dxf"
+      ],
+      "intent": [
+        "porownaj ocr z dxf",
+        "sprawdz zgodnosc tekstu z dxf",
+        "cross validate ocr against dxf",
+        "diff ocr text and dxf strings",
+        "weryfikuj rozpoznany tekst wzgledem rysunku"
       ]
     },
     {
       "name": "describe_image",
-      "description": "Free-form vision LLM description of any image (defaults to a CAD-reviewer prompt). Provider is \u0022auto\u0022 (prefer Anthropic if ANTHROPIC_API_KEY is set, else OpenAI), \u0022anthropic\u0022 or \u0022openai\u0022. Image is downscaled to \u003C=1568 px long side and JPEG-compressed q85 before sending. Cached by content hash \u002B provider \u002B first 64 chars of prompt.",
+      "description": "Free-form vision LLM description of any image (defaults to a CAD-reviewer prompt). Provider is \u0022auto\u0022 (prefer Anthropic if ANTHROPIC_API_KEY is set, else OpenAI), \u0022anthropic\u0022 or \u0022openai\u0022. Image is downscaled to \u003C=1568 px long side and JPEG-compressed q85 before sending. OPTIONAL persona argument selects a curated review template: \u0022architect-reviewer\u0022 (EN, Polish licensed architect reviewing a hospital floor plan at 1:100, structured output under walls-and-openings / doors / labels / code-compliance / visual-craft, with severity critical|major|minor and suggested MCP fix), \u0022architect-reviewer-pl\u0022 (same in Polish), \u0022delta-compare\u0022 (before/after regression check). When persona is set and prompt is left at default, the persona template replaces the prompt; otherwise the prompt is appended as \u0022User focus: ...\u0022. Cached by content hash \u002B provider \u002B persona \u002B first 64 chars of the composed prompt.",
       "tags": [
         "describe",
         "image"
+      ],
+      "intent": [
+        "opisz ten rysunek",
+        "co widac na tym rysunku",
+        "describe this drawing",
+        "ai vision review of drawing",
+        "vision llm describe image"
       ]
     },
     {
@@ -113,6 +134,14 @@
       "tags": [
         "detect",
         "symbols"
+      ],
+      "intent": [
+        "wykryj symbole na rysunku",
+        "znajdz drzwi i okna",
+        "detect cad symbols",
+        "find doors and windows",
+        "yolo on drawing",
+        "znajdz symbole p\u0026id"
       ]
     },
     {
@@ -121,6 +150,13 @@
       "tags": [
         "extract",
         "dimensions"
+      ],
+      "intent": [
+        "wyciagnij wymiary z rysunku",
+        "rozpoznaj wymiary z rysunku",
+        "extract dimensions from drawing",
+        "find numeric callouts on drawing",
+        "ocr the dimensions on this drawing"
       ]
     },
     {
@@ -129,6 +165,13 @@
       "tags": [
         "extract",
         "titleblock"
+      ],
+      "intent": [
+        "wyciagnij tabelke rysunkowa",
+        "rozpoznaj tabliczke tytulowa",
+        "extract title block",
+        "parse drawing title block",
+        "get drawing number scale and date"
       ]
     },
     {
@@ -137,6 +180,14 @@
       "tags": [
         "ocr",
         "image"
+      ],
+      "intent": [
+        "ocr na rysunku",
+        "rozpoznaj tekst z rysunku",
+        "ocr a drawing",
+        "extract text from drawing",
+        "ocr pdf page",
+        "rozpoznaj tekst na stronie pdf"
       ]
     },
     {
@@ -145,6 +196,13 @@
       "tags": [
         "vision",
         "health"
+      ],
+      "intent": [
+        "sprawdz status sidecara vision",
+        "czy sidecar dziala",
+        "vision sidecar health",
+        "ping vision sidecar",
+        "is vision sidecar running"
       ]
     },
     {
@@ -153,6 +211,13 @@
       "tags": [
         "vision",
         "version"
+      ],
+      "intent": [
+        "co potrafi sidecar vision",
+        "ktore modele sa zaladowane",
+        "vision sidecar capabilities",
+        "what vision models are available",
+        "what vision providers are configured"
       ]
     }
   ],
@@ -183,6 +248,6 @@
     "version": "0.2.0",
     "tool_count_target": 9,
     "phase": "phase4_vision_sidecar",
-    "last_regenerated_utc": "2026-04-22T13:09:27.8282458Z"
+    "last_regenerated_utc": "2026-08-05T13:09:35.1349329Z"
   }
 }

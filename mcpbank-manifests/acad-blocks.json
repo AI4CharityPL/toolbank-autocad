@@ -127,6 +127,13 @@
       "tags": [
         "bulk",
         "insert"
+      ],
+      "intent": [
+        "wstaw masowo bloki",
+        "bulk insert blocks",
+        "insert many blocks at once",
+        "wstaw wiele blokow",
+        "mass-insert block references"
       ]
     },
     {
@@ -135,6 +142,13 @@
       "tags": [
         "define",
         "block"
+      ],
+      "intent": [
+        "stworz blok",
+        "zdefiniuj blok z encji",
+        "create block from selection",
+        "define block btr",
+        "make block from entities"
       ]
     },
     {
@@ -145,6 +159,13 @@
         "block",
         "from",
         "file"
+      ],
+      "intent": [
+        "import bloku z dwg",
+        "wczytaj blok z pliku",
+        "define block from dwg",
+        "import block from file",
+        "block from external dwg"
       ]
     },
     {
@@ -154,6 +175,13 @@
         "delete",
         "block",
         "definition"
+      ],
+      "intent": [
+        "usun definicje bloku",
+        "delete block definition",
+        "skasuj blok",
+        "remove block btr",
+        "drop block"
       ]
     },
     {
@@ -163,6 +191,13 @@
         "explode",
         "block",
         "reference"
+      ],
+      "intent": [
+        "rozbij blok",
+        "explode block",
+        "explode insert",
+        "rozbij wstawienie bloku",
+        "decompose block reference"
       ]
     },
     {
@@ -172,6 +207,13 @@
         "extract",
         "block",
         "references"
+      ],
+      "intent": [
+        "znajdz wstawienia bloku",
+        "extract block references",
+        "list inserts of block",
+        "find all instances of block",
+        "wszystkie inserty bloku"
       ]
     },
     {
@@ -182,6 +224,13 @@
         "block",
         "reference",
         "attributes"
+      ],
+      "intent": [
+        "pobierz atrybuty bloku",
+        "get block attributes",
+        "read block attribute values",
+        "list attributes of insert",
+        "attrext one block"
       ]
     },
     {
@@ -190,6 +239,13 @@
       "tags": [
         "insert",
         "block"
+      ],
+      "intent": [
+        "wstaw blok",
+        "insert block reference",
+        "insertuj blok",
+        "place block at point",
+        "block reference with attributes"
       ]
     },
     {
@@ -198,6 +254,13 @@
       "tags": [
         "library",
         "list"
+      ],
+      "intent": [
+        "wylistuj biblioteki blokow",
+        "list block libraries",
+        "show registered block folders",
+        "what libraries",
+        "enumerate dwg files in library"
       ]
     },
     {
@@ -206,6 +269,13 @@
       "tags": [
         "library",
         "register"
+      ],
+      "intent": [
+        "zarejestruj biblioteke blokow",
+        "register block library",
+        "add block library path",
+        "dodaj folder blokow",
+        "link dwg folder as library"
       ]
     },
     {
@@ -214,6 +284,13 @@
       "tags": [
         "list",
         "blocks"
+      ],
+      "intent": [
+        "wylistuj bloki",
+        "list all blocks",
+        "show block definitions",
+        "wszystkie bloki",
+        "what blocks exist"
       ]
     },
     {
@@ -223,6 +300,13 @@
         "purge",
         "unused",
         "blocks"
+      ],
+      "intent": [
+        "wyczysc bloki",
+        "purge unused blocks",
+        "remove empty block defs",
+        "wyczysc nieuzywane bloki",
+        "block purge"
       ]
     },
     {
@@ -231,6 +315,13 @@
       "tags": [
         "redefine",
         "block"
+      ],
+      "intent": [
+        "redefinuj blok",
+        "podmien geometrie bloku",
+        "redefine block",
+        "update block definition",
+        "replace block geometry"
       ]
     },
     {
@@ -239,6 +330,13 @@
       "tags": [
         "rename",
         "block"
+      ],
+      "intent": [
+        "zmien nazwe bloku",
+        "rename block",
+        "przemianuj blok",
+        "change block name",
+        "rename block to"
       ]
     },
     {
@@ -249,6 +347,13 @@
         "block",
         "reference",
         "attributes"
+      ],
+      "intent": [
+        "ustaw atrybuty bloku",
+        "set block attributes",
+        "update block reference attribs",
+        "edit attribute values",
+        "popraw atrybuty insertu"
       ]
     },
     {
@@ -257,6 +362,13 @@
       "tags": [
         "swap",
         "block"
+      ],
+      "intent": [
+        "podmien blok",
+        "swap block",
+        "replace all inserts of block",
+        "podmien wszystkie wstawienia bloku",
+        "substitute block definition globally"
       ]
     }
   ],
@@ -276,6 +388,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-04-24T09:15:13.9069595Z"
+    "last_regenerated_utc": "2026-08-05T13:09:25.7662192Z"
   }
 }

@@ -48,6 +48,28 @@ public static class BankAutoRegister
                        ?? throw new InvalidOperationException($"Could not parse {manifestPath}");
         }
 
+        // Never replace a populated tools_summary with an empty one.
+        //
+        // Not every manifest is generated from [McpTool] metadata. acad-router lists the ten
+        // meta-tools that RouterServer.cs defines directly, and there is no Categories/Router/
+        // for the catalogue to scan - so regenerating it hands this method an empty tool list
+        // and, without this guard, silently deletes ten real tools from the bank. That is
+        // exactly what a blanket "regenerate every category" loop did, and the only signal was
+        // a tool count quietly dropping from 448 to 438.
+        //
+        // An empty catalogue for a category that already has tools is always a bug in the
+        // caller, never a legitimate instruction to empty the file.
+        var existingCount = (manifest["tools_summary"] as JsonArray)?.Count ?? 0;
+        if (tools.Count == 0 && existingCount > 0)
+        {
+            throw new InvalidOperationException(
+                $"Refusing to regenerate '{manifestPath}': the in-process catalogue reports no " +
+                $"tools for category '{category}', but the manifest already lists {existingCount}. " +
+                "This manifest is maintained by hand (its tools are not declared with [McpTool] " +
+                "in a Categories/ folder) - exclude it from bulk regeneration rather than " +
+                "letting it be emptied.");
+        }
+
         var toolsArr = new JsonArray();
         var tagBag = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var intentBag = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -58,11 +80,26 @@ public static class BankAutoRegister
             foreach (var tag in derivedTags) tagBag.Add(tag);
             foreach (var ex in t.Intent) intentBag.Add(ex);
 
+            // Intent phrasings belong to the TOOL, not only to the category.
+            //
+            // They used to be written solely into the category-level intent_examples bag above,
+            // which meant a discovery layer could tell that a request was about styles but had
+            // nothing to rank create_dimstyle above its twenty siblings with. Every one of these
+            // phrasings is hand-written and the McpTool source generator refuses to build without
+            // them, so the information existed the whole time and was being flattened away on
+            // export.
+            //
+            // Measured on MCP Nexus over this bank, 16 plain-language requests, half Polish:
+            // 43% -> 81% top-3, and 37% -> 87% end-to-end with a frontier model choosing. Nothing
+            // about the search changed; only what the manifest says about each tool.
             toolsArr.Add(new JsonObject
             {
                 ["name"] = t.Name,
                 ["description"] = t.Description,
                 ["tags"] = new JsonArray(derivedTags.Select(s => (JsonNode)JsonValue.Create(s)).ToArray()),
+                ["intent"] = new JsonArray(
+                    t.Intent.Where(s => !string.IsNullOrWhiteSpace(s))
+                            .Select(s => (JsonNode)JsonValue.Create(s)).ToArray()),
             });
         }
 

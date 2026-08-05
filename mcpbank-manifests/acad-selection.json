@@ -1,7 +1,7 @@
 {
   "id": "acad-selection",
   "name": "acad-selection",
-  "description": "Non-interactive entity selection over the active drawing's ModelSpace: pick by criteria (layer, color, type/DXF name, handle list), by geometry (rectangular window, fence polyline, polygon, all-in-modelspace), apply free-form filter predicates, build named selection sets stored as Xrecords in the NamedObjectsDictionary, and load/list/delete those sets later. Returns lists of entity handles that downstream tools (acad-modify, acad-geometry-2d, acad-geometry-3d, etc.) can consume directly. Never opens an interactive 'Select objects:' prompt - rule 14-acad-no-blocking-prompts. All read paths are flagged ReadOnly = true; only saving a named set writes to the database.",
+  "description": "Non-interactive entity selection over the active drawing\u0027s ModelSpace: pick by criteria (layer, color, type/DXF name, handle list), by geometry (rectangular window, fence polyline, polygon, all-in-modelspace), apply free-form filter predicates, build named selection sets stored as Xrecords in the NamedObjectsDictionary, and load/list/delete those sets later. Returns lists of entity handles that downstream tools (acad-modify, acad-geometry-2d, acad-geometry-3d, etc.) can consume directly. Never opens an interactive \u0027Select objects:\u0027 prompt - rule 14-acad-no-blocking-prompts. All read paths are flagged ReadOnly = true; only saving a named set writes to the database.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-selection.cmd",
@@ -100,6 +100,13 @@
       "tags": [
         "count",
         "entities"
+      ],
+      "intent": [
+        "policz obiekty",
+        "count entities",
+        "how many entities",
+        "count by type",
+        "ile obiektow"
       ]
     },
     {
@@ -108,6 +115,13 @@
       "tags": [
         "filter",
         "entities"
+      ],
+      "intent": [
+        "filtruj zaznaczenie",
+        "filter selection",
+        "narrow selection by criteria",
+        "filter entities",
+        "apply filter to selection"
       ]
     },
     {
@@ -117,6 +131,13 @@
         "load",
         "selection",
         "set"
+      ],
+      "intent": [
+        "wczytaj zestaw selekcji",
+        "load selection set",
+        "ssget load",
+        "restore named selection",
+        "get saved selection by name"
       ]
     },
     {
@@ -126,6 +147,13 @@
         "save",
         "selection",
         "set"
+      ],
+      "intent": [
+        "zapisz zestaw selekcji",
+        "save selection set",
+        "ssget save",
+        "store named selection",
+        "save selection by name"
       ]
     },
     {
@@ -134,6 +162,13 @@
       "tags": [
         "select",
         "all"
+      ],
+      "intent": [
+        "zaznacz wszystko",
+        "select all entities",
+        "select everything",
+        "wszystkie obiekty",
+        "all model space entities"
       ]
     },
     {
@@ -143,6 +178,13 @@
         "select",
         "by",
         "color"
+      ],
+      "intent": [
+        "zaznacz po kolorze",
+        "select by color",
+        "all entities of color",
+        "filter entities by color",
+        "select red entities"
       ]
     },
     {
@@ -152,6 +194,13 @@
         "select",
         "by",
         "handle"
+      ],
+      "intent": [
+        "zaznacz po uchwytach",
+        "select by handle",
+        "lookup by handles",
+        "resolve handles",
+        "find entities by handle"
       ]
     },
     {
@@ -161,6 +210,13 @@
         "select",
         "by",
         "layer"
+      ],
+      "intent": [
+        "zaznacz po warstwie",
+        "select by layer",
+        "all entities on layer",
+        "obiekty na warstwie",
+        "filter by layer"
       ]
     },
     {
@@ -170,6 +226,13 @@
         "select",
         "by",
         "type"
+      ],
+      "intent": [
+        "zaznacz po typie",
+        "select by entity type",
+        "all lines",
+        "all polylines",
+        "select dxf type"
       ]
     },
     {
@@ -178,6 +241,13 @@
       "tags": [
         "select",
         "fence"
+      ],
+      "intent": [
+        "zaznacz plotem",
+        "select by fence",
+        "fence selection",
+        "polyline fence pick",
+        "select crossing fence"
       ]
     },
     {
@@ -186,6 +256,13 @@
       "tags": [
         "select",
         "polygon"
+      ],
+      "intent": [
+        "zaznacz wielokatem",
+        "select by polygon",
+        "polygon window",
+        "polygon crossing",
+        "select inside polygon"
       ]
     },
     {
@@ -194,6 +271,13 @@
       "tags": [
         "select",
         "window"
+      ],
+      "intent": [
+        "zaznacz oknem",
+        "select by window",
+        "window selection",
+        "crossing selection",
+        "select inside box"
       ]
     }
   ],
@@ -213,6 +297,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-04-22T11:57:30.2791437Z"
+    "last_regenerated_utc": "2026-08-05T13:09:33.2143600Z"
   }
 }

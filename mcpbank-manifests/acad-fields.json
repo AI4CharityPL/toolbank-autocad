@@ -155,6 +155,14 @@
         "field",
         "to",
         "text"
+      ],
+      "intent": [
+        "zamien pole na tekst",
+        "zamroz wartosc pola",
+        "convert field to static text",
+        "freeze field value",
+        "make field permanent text",
+        "usun powiazanie pola"
       ]
     },
     {
@@ -165,6 +173,14 @@
         "field",
         "evaluation",
         "mode"
+      ],
+      "intent": [
+        "sprawdz tryb aktualizacji pol",
+        "jakie jest fieldeval",
+        "get field evaluation mode",
+        "when do fields update currently",
+        "read fieldeval",
+        "aktualny tryb pol"
       ]
     },
     {
@@ -174,6 +190,14 @@
         "get",
         "field",
         "expression"
+      ],
+      "intent": [
+        "pokaz wyrazenie pola",
+        "do czego odwoluje sie pole",
+        "get field expression",
+        "what is this field bound to",
+        "inspect field code",
+        "kod pola"
       ]
     },
     {
@@ -183,6 +207,14 @@
         "insert",
         "field",
         "area"
+      ],
+      "intent": [
+        "wstaw pole z powierzchnia",
+        "powierzchnia pomieszczenia w m2 jako pole",
+        "insert area field",
+        "live area label in square metres",
+        "auto-updating room area",
+        "metraz jako pole dynamiczne"
       ]
     },
     {
@@ -193,6 +225,14 @@
         "field",
         "block",
         "attribute"
+      ],
+      "intent": [
+        "wstaw pole z atrybutem bloku",
+        "numer drzwi jako pole",
+        "insert block attribute field",
+        "echo block attribute elsewhere",
+        "field bound to block tag",
+        "atrybut bloku w innym miejscu"
       ]
     },
     {
@@ -202,6 +242,14 @@
         "insert",
         "field",
         "date"
+      ],
+      "intent": [
+        "wstaw pole z data",
+        "data ktora sie aktualizuje",
+        "insert date field",
+        "add auto-updating date",
+        "title block date field",
+        "dynamiczna data na rysunku"
       ]
     },
     {
@@ -211,6 +259,14 @@
         "insert",
         "field",
         "expression"
+      ],
+      "intent": [
+        "wstaw pole z wyrazeniem",
+        "wlasne pole acvar",
+        "insert raw field expression",
+        "custom field code",
+        "arbitrary field expression",
+        "surowe wyrazenie pola"
       ]
     },
     {
@@ -220,6 +276,14 @@
         "insert",
         "field",
         "filename"
+      ],
+      "intent": [
+        "wstaw pole z nazwa pliku",
+        "nazwa rysunku jako pole",
+        "insert filename field",
+        "show drawing name automatically",
+        "file name field",
+        "sciezka pliku na rysunku"
       ]
     },
     {
@@ -229,6 +293,14 @@
         "insert",
         "field",
         "formula"
+      ],
+      "intent": [
+        "wstaw pole z formula",
+        "obliczenie jako pole",
+        "insert formula field",
+        "calculated field",
+        "arithmetic field expression",
+        "pole liczace z innych pol"
       ]
     },
     {
@@ -239,6 +311,14 @@
         "field",
         "layout",
         "name"
+      ],
+      "intent": [
+        "wstaw pole z nazwa arkusza",
+        "numer arkusza jako pole",
+        "insert layout name field",
+        "sheet number field",
+        "tab name field",
+        "nazwa ukladu w tabelce"
       ]
     },
     {
@@ -249,6 +329,14 @@
         "field",
         "object",
         "property"
+      ],
+      "intent": [
+        "wstaw pole z wlasciwoscia obiektu",
+        "powierzchnia jako pole dynamiczne",
+        "insert object property field",
+        "field bound to entity area",
+        "auto-updating area label",
+        "pole powiazane z geometria"
       ]
     },
     {
@@ -259,6 +347,14 @@
         "field",
         "plot",
         "info"
+      ],
+      "intent": [
+        "wstaw pole z informacja o wydruku",
+        "format arkusza jako pole",
+        "insert plot info field",
+        "paper size field in title block",
+        "plot scale field",
+        "urzadzenie drukujace jako pole"
       ]
     },
     {
@@ -269,6 +365,14 @@
         "field",
         "system",
         "variable"
+      ],
+      "intent": [
+        "wstaw pole ze zmienna systemowa",
+        "kto rysowal jako pole",
+        "insert system variable field",
+        "sysvar field",
+        "loginname field",
+        "zmienna systemowa na rysunku"
       ]
     },
     {
@@ -277,6 +381,14 @@
       "tags": [
         "list",
         "fields"
+      ],
+      "intent": [
+        "wylistuj pola",
+        "gdzie sa pola dynamiczne",
+        "list fields in drawing",
+        "show all fields",
+        "which text is a field",
+        "jakie pola sa na rysunku"
       ]
     },
     {
@@ -287,6 +399,14 @@
         "field",
         "evaluation",
         "mode"
+      ],
+      "intent": [
+        "ustaw kiedy pola sie przeliczaja",
+        "wylacz automatyczne pola",
+        "set field evaluation mode",
+        "fieldeval setting",
+        "when do fields update",
+        "tryb aktualizacji pol"
       ]
     },
     {
@@ -296,6 +416,14 @@
         "set",
         "field",
         "format"
+      ],
+      "intent": [
+        "zmien format pola",
+        "ustaw liczbe miejsc po przecinku w polu",
+        "set field format",
+        "change field decimal places",
+        "reformat existing field",
+        "format wyswietlania pola"
       ]
     },
     {
@@ -304,6 +432,14 @@
       "tags": [
         "update",
         "fields"
+      ],
+      "intent": [
+        "zaktualizuj pola",
+        "przelicz pola teraz",
+        "update fields",
+        "refresh all fields",
+        "recalculate field values",
+        "odswiez wartosci pol"
       ]
     }
   ],
@@ -323,6 +459,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T19:40:56.8672216Z"
+    "last_regenerated_utc": "2026-08-05T13:09:27.4613688Z"
   }
 }

@@ -120,6 +120,13 @@
       "tags": [
         "draw",
         "box"
+      ],
+      "intent": [
+        "narysuj prostopadloscian",
+        "stworz bryle prostopadloscienna",
+        "draw 3d box",
+        "create box solid",
+        "box from two corners"
       ]
     },
     {
@@ -128,6 +135,13 @@
       "tags": [
         "draw",
         "cone"
+      ],
+      "intent": [
+        "narysuj stozek",
+        "stworz stozek scinany",
+        "draw cone",
+        "create cone solid",
+        "frustum cone"
       ]
     },
     {
@@ -136,6 +150,13 @@
       "tags": [
         "draw",
         "cylinder"
+      ],
+      "intent": [
+        "narysuj walec",
+        "stworz cylinder",
+        "draw cylinder",
+        "create cylinder solid",
+        "cylinder by base radius and height"
       ]
     },
     {
@@ -145,6 +166,13 @@
         "draw",
         "planar",
         "surface"
+      ],
+      "intent": [
+        "narysuj powierzchnie plaska",
+        "stworz planar surface",
+        "draw planar surface from boundary",
+        "create planar surface",
+        "make surface from closed curve"
       ]
     },
     {
@@ -153,6 +181,13 @@
       "tags": [
         "draw",
         "pyramid"
+      ],
+      "intent": [
+        "narysuj ostroslup",
+        "stworz piramide",
+        "draw pyramid",
+        "create pyramid solid",
+        "frustum pyramid n sides"
       ]
     },
     {
@@ -161,6 +196,13 @@
       "tags": [
         "draw",
         "sphere"
+      ],
+      "intent": [
+        "narysuj kule",
+        "stworz sfere",
+        "draw sphere",
+        "create sphere solid",
+        "sphere by center and radius"
       ]
     },
     {
@@ -169,6 +211,13 @@
       "tags": [
         "draw",
         "torus"
+      ],
+      "intent": [
+        "narysuj torus",
+        "stworz pierscien",
+        "draw torus",
+        "create torus solid",
+        "donut shape solid"
       ]
     },
     {
@@ -177,6 +226,13 @@
       "tags": [
         "draw",
         "wedge"
+      ],
+      "intent": [
+        "narysuj klin",
+        "stworz pryzme prostokatna",
+        "draw wedge",
+        "create wedge solid",
+        "right angle prism"
       ]
     },
     {
@@ -185,6 +241,13 @@
       "tags": [
         "extrude",
         "curve"
+      ],
+      "intent": [
+        "wyciagnij polilinie",
+        "extruduj krzywa",
+        "extrude polyline",
+        "create solid by extrusion",
+        "extrude with taper"
       ]
     },
     {
@@ -195,6 +258,13 @@
         "3d",
         "bounding",
         "box"
+      ],
+      "intent": [
+        "bounding box 3d",
+        "wymiary bryly",
+        "get 3d bounding box",
+        "compute extents 3d",
+        "axis aligned bbox"
       ]
     },
     {
@@ -204,6 +274,13 @@
         "get",
         "3d",
         "centroid"
+      ],
+      "intent": [
+        "srodek ciezkosci",
+        "centroid bryly",
+        "compute solid centroid",
+        "get center of mass 3d",
+        "where is centroid"
       ]
     },
     {
@@ -213,6 +290,13 @@
         "get",
         "mass",
         "properties"
+      ],
+      "intent": [
+        "wlasciwosci masowe",
+        "moment bezwladnosci",
+        "compute mass properties",
+        "get inertia and centroid",
+        "full mass props of solid"
       ]
     },
     {
@@ -222,6 +306,13 @@
         "get",
         "surface",
         "area"
+      ],
+      "intent": [
+        "policz pole powierzchni 3d",
+        "powierzchnia bryly",
+        "compute surface area",
+        "get total surface area",
+        "measure 3d area"
       ]
     },
     {
@@ -230,6 +321,13 @@
       "tags": [
         "get",
         "volume"
+      ],
+      "intent": [
+        "policz objetosc",
+        "ile wynosi objetosc",
+        "compute solid volume",
+        "get volume of solid",
+        "measure 3d volume"
       ]
     },
     {
@@ -238,6 +336,13 @@
       "tags": [
         "revolve",
         "curve"
+      ],
+      "intent": [
+        "obrot krzywej",
+        "revolve polilinie",
+        "revolve curve around axis",
+        "create solid of revolution",
+        "spin curve to make solid"
       ]
     }
   ],
@@ -257,6 +362,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-04-22T11:46:23.4499596Z"
+    "last_regenerated_utc": "2026-08-05T13:09:28.6109899Z"
   }
 }

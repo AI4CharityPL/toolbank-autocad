@@ -135,6 +135,14 @@
         "add",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "dodaj skale do obiektu adnotacyjnego",
+        "tekst ma byc widoczny w skali 1:100",
+        "add annotation scale to object",
+        "give object another scale representation",
+        "text missing in viewport scale",
+        "reprezentacja w skali"
       ]
     },
     {
@@ -145,6 +153,14 @@
         "scale",
         "to",
         "list"
+      ],
+      "intent": [
+        "dodaj skale do rysunku",
+        "utworz skale 1:25",
+        "add annotation scale to drawing",
+        "define new scale",
+        "create scale entry",
+        "nowa skala na liscie"
       ]
     },
     {
@@ -155,6 +171,14 @@
         "scale",
         "from",
         "list"
+      ],
+      "intent": [
+        "usun skale z listy",
+        "skasuj skale rysunku",
+        "delete annotation scale",
+        "remove scale from drawing",
+        "drop unused scale",
+        "usun niepotrzebna skale"
       ]
     },
     {
@@ -164,6 +188,14 @@
         "get",
         "annotation",
         "settings"
+      ],
+      "intent": [
+        "pokaz ustawienia adnotacji",
+        "jakie sa annoallvisible i annoautoscale",
+        "get annotation settings",
+        "read annotative sysvars",
+        "annotation visibility settings",
+        "ustawienia adnotacyjne"
       ]
     },
     {
@@ -174,6 +206,14 @@
         "current",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "jaka jest biezaca skala adnotacji",
+        "pokaz cannoscale",
+        "get current annotation scale",
+        "what annotation scale is active",
+        "current scale",
+        "aktualna skala"
       ]
     },
     {
@@ -183,6 +223,14 @@
         "list",
         "annotative",
         "objects"
+      ],
+      "intent": [
+        "wylistuj obiekty adnotacyjne",
+        "co jest adnotacyjne w rysunku",
+        "list annotative objects",
+        "find all annotative entities",
+        "which objects have scale 1:50",
+        "obiekty skalowane"
       ]
     },
     {
@@ -193,6 +241,14 @@
         "object",
         "annotation",
         "scales"
+      ],
+      "intent": [
+        "jakie skale ma obiekt",
+        "wylistuj skale obiektu adnotacyjnego",
+        "list object annotation scales",
+        "which scales does this text have",
+        "show scale representations",
+        "reprezentacje skal encji"
       ]
     },
     {
@@ -202,6 +258,14 @@
         "list",
         "scale",
         "list"
+      ],
+      "intent": [
+        "wylistuj skale rysunku",
+        "jakie skale sa dostepne",
+        "list annotation scales",
+        "show drawing scale list",
+        "available scales",
+        "lista skal w rysunku"
       ]
     },
     {
@@ -211,6 +275,14 @@
         "remove",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "usun skale z obiektu adnotacyjnego",
+        "ukryj tekst w danej skali",
+        "remove annotation scale from object",
+        "drop scale representation",
+        "hide annotative object at scale",
+        "usun reprezentacje skali"
       ]
     },
     {
@@ -220,6 +292,14 @@
         "reset",
         "scale",
         "list"
+      ],
+      "intent": [
+        "zresetuj liste skal",
+        "przywroc domyslne skale",
+        "reset scale list",
+        "restore default scales",
+        "clean up scale list",
+        "wyczysc liste skal"
       ]
     },
     {
@@ -229,6 +309,14 @@
         "set",
         "annotation",
         "visibility"
+      ],
+      "intent": [
+        "pokaz wszystkie adnotacje",
+        "annoallvisible",
+        "set annotation visibility",
+        "show only current scale annotations",
+        "hide annotations without this scale",
+        "widocznosc adnotacji"
       ]
     },
     {
@@ -237,6 +325,14 @@
       "tags": [
         "set",
         "annotative"
+      ],
+      "intent": [
+        "ustaw obiekt jako adnotacyjny",
+        "wlacz adnotacyjnosc tekstu",
+        "make object annotative",
+        "set annotative flag",
+        "turn annotative off",
+        "obiekt skalowany adnotacyjnie"
       ]
     },
     {
@@ -247,6 +343,14 @@
         "auto",
         "add",
         "scale"
+      ],
+      "intent": [
+        "automatyczne dodawanie skal",
+        "annoautoscale",
+        "set auto add annotation scale",
+        "auto add scale to annotative objects",
+        "stop objects gaining scales",
+        "automatyczna skala"
       ]
     },
     {
@@ -257,6 +361,14 @@
         "current",
         "annotation",
         "scale"
+      ],
+      "intent": [
+        "ustaw biezaca skale adnotacji",
+        "zmien cannoscale",
+        "set current annotation scale",
+        "change active annotation scale",
+        "set model space scale",
+        "aktualna skala adnotacyjna"
       ]
     },
     {
@@ -266,6 +378,14 @@
         "sync",
         "scale",
         "positions"
+      ],
+      "intent": [
+        "zsynchronizuj pozycje skal",
+        "wyrownaj polozenie reprezentacji",
+        "sync annotative scale positions",
+        "reset scale positions",
+        "make all scales match current",
+        "ujednolic pozycje adnotacji"
       ]
     }
   ],
@@ -285,6 +405,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-04T11:01:23.8296642Z"
+    "last_regenerated_utc": "2026-08-05T13:09:25.1918677Z"
   }
 }

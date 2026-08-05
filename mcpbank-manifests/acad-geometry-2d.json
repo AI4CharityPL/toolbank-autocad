@@ -226,6 +226,13 @@
       "tags": [
         "chamfer",
         "corner"
+      ],
+      "intent": [
+        "scinaj naroznik",
+        "chamfer polilinii",
+        "chamfer corner with two distances",
+        "bevel corner between curves",
+        "create chamfer segment"
       ]
     },
     {
@@ -234,6 +241,13 @@
       "tags": [
         "delete",
         "entities"
+      ],
+      "intent": [
+        "usun obiekty",
+        "skasuj encje",
+        "delete entities by handle",
+        "erase multiple entities",
+        "remove from drawing"
       ]
     },
     {
@@ -242,6 +256,13 @@
       "tags": [
         "draw",
         "arc"
+      ],
+      "intent": [
+        "narysuj luk",
+        "stworz luk okregu",
+        "draw arc",
+        "create arc",
+        "arc by center radius and angle"
       ]
     },
     {
@@ -250,6 +271,13 @@
       "tags": [
         "draw",
         "circle"
+      ],
+      "intent": [
+        "narysuj okrag",
+        "stworz kolo",
+        "draw a circle",
+        "create circle",
+        "circle by center and radius"
       ]
     },
     {
@@ -258,6 +286,13 @@
       "tags": [
         "draw",
         "donut"
+      ],
+      "intent": [
+        "narysuj donut",
+        "stworz pierscien",
+        "draw donut shape",
+        "create annulus",
+        "filled ring"
       ]
     },
     {
@@ -266,6 +301,13 @@
       "tags": [
         "draw",
         "ellipse"
+      ],
+      "intent": [
+        "narysuj elipse",
+        "stworz elipse",
+        "draw ellipse",
+        "create ellipse",
+        "ellipse by axes"
       ]
     },
     {
@@ -274,6 +316,13 @@
       "tags": [
         "draw",
         "hatch"
+      ],
+      "intent": [
+        "narysuj kreskowanie",
+        "wypelnij obszar wzorem",
+        "draw hatch pattern",
+        "fill area with hatch",
+        "associative hatch over boundary"
       ]
     },
     {
@@ -282,6 +331,13 @@
       "tags": [
         "draw",
         "line"
+      ],
+      "intent": [
+        "narysuj linie",
+        "stworz odcinek",
+        "draw a line",
+        "create line segment",
+        "linia od punktu do punktu"
       ]
     },
     {
@@ -290,6 +346,13 @@
       "tags": [
         "draw",
         "mtext"
+      ],
+      "intent": [
+        "wstaw tekst wieloliniowy",
+        "dodaj mtext",
+        "draw multiline text block",
+        "add wrapped text",
+        "mtext at point"
       ]
     },
     {
@@ -298,6 +361,13 @@
       "tags": [
         "draw",
         "point"
+      ],
+      "intent": [
+        "wstaw punkt",
+        "narysuj punkt",
+        "draw a point",
+        "create point entity",
+        "point at coordinate"
       ]
     },
     {
@@ -306,6 +376,13 @@
       "tags": [
         "draw",
         "polygon"
+      ],
+      "intent": [
+        "narysuj wielokat",
+        "stworz wielokat foremny",
+        "draw polygon",
+        "create regular polygon",
+        "polygon with N sides"
       ]
     },
     {
@@ -314,6 +391,13 @@
       "tags": [
         "draw",
         "polyline"
+      ],
+      "intent": [
+        "narysuj polilinie",
+        "stworz polilinie",
+        "draw polyline",
+        "create polyline",
+        "polyline through points"
       ]
     },
     {
@@ -322,6 +406,13 @@
       "tags": [
         "draw",
         "ray"
+      ],
+      "intent": [
+        "narysuj promien",
+        "stworz ray",
+        "draw ray from point",
+        "create ray entity",
+        "half infinite line"
       ]
     },
     {
@@ -330,6 +421,13 @@
       "tags": [
         "draw",
         "rectangle"
+      ],
+      "intent": [
+        "narysuj prostokat",
+        "stworz prostokat",
+        "draw rectangle",
+        "create rectangle",
+        "rectangle by two corners"
       ]
     },
     {
@@ -338,6 +436,13 @@
       "tags": [
         "draw",
         "revcloud"
+      ],
+      "intent": [
+        "narysuj chmure rewizji",
+        "rysuj revcloud",
+        "draw revision cloud",
+        "create revcloud markup",
+        "cloud over polyline"
       ]
     },
     {
@@ -346,6 +451,13 @@
       "tags": [
         "draw",
         "spline"
+      ],
+      "intent": [
+        "narysuj krzywa sklejana",
+        "stworz spline",
+        "draw spline curve",
+        "create spline",
+        "spline through points"
       ]
     },
     {
@@ -354,6 +466,13 @@
       "tags": [
         "draw",
         "text"
+      ],
+      "intent": [
+        "wstaw napis",
+        "dodaj tekst jednolinijkowy",
+        "draw single line text",
+        "add dtext",
+        "label at point"
       ]
     },
     {
@@ -362,6 +481,13 @@
       "tags": [
         "draw",
         "xline"
+      ],
+      "intent": [
+        "narysuj linie konstrukcyjna",
+        "stworz xline",
+        "draw infinite construction line",
+        "create xline",
+        "infinite line through point"
       ]
     },
     {
@@ -370,6 +496,13 @@
       "tags": [
         "explode",
         "entity"
+      ],
+      "intent": [
+        "rozbij obiekt",
+        "explode polilinie",
+        "explode entity into primitives",
+        "decompose into segments",
+        "break apart entity"
       ]
     },
     {
@@ -378,6 +511,13 @@
       "tags": [
         "extend",
         "curve"
+      ],
+      "intent": [
+        "wydluz krzywa",
+        "extend do granic",
+        "extend a curve to boundary",
+        "lengthen curve to entity",
+        "extend line to circle"
       ]
     },
     {
@@ -386,6 +526,13 @@
       "tags": [
         "fillet",
         "corner"
+      ],
+      "intent": [
+        "zaokraglij naroznik",
+        "fillet polilinii",
+        "fillet corner with radius",
+        "round corner between curves",
+        "create fillet arc"
       ]
     },
     {
@@ -394,6 +541,13 @@
       "tags": [
         "get",
         "area"
+      ],
+      "intent": [
+        "podaj pole powierzchni",
+        "oblicz pole zamknietego ksztaltu",
+        "get enclosed area",
+        "compute area of shape",
+        "area of closed polyline"
       ]
     },
     {
@@ -403,6 +557,13 @@
         "get",
         "bounding",
         "box"
+      ],
+      "intent": [
+        "podaj prostokat ograniczajacy",
+        "bbox encji",
+        "get bounding box",
+        "compute aabb of entity",
+        "extents of entity"
       ]
     },
     {
@@ -412,6 +573,13 @@
         "get",
         "curve",
         "length"
+      ],
+      "intent": [
+        "podaj dlugosc krzywej",
+        "obwod polilinii",
+        "get curve length",
+        "compute perimeter",
+        "length of polyline"
       ]
     },
     {
@@ -421,6 +589,13 @@
         "get",
         "distance",
         "points"
+      ],
+      "intent": [
+        "odleglosc miedzy punktami",
+        "podaj dystans dwoch punktow",
+        "get distance between points",
+        "compute distance points",
+        "length between coordinates"
       ]
     },
     {
@@ -431,6 +606,13 @@
         "distance",
         "to",
         "entity"
+      ],
+      "intent": [
+        "odleglosc punktu od krzywej",
+        "najkrotsza odleglosc do encji",
+        "get distance to entity",
+        "closest distance from point to curve",
+        "perpendicular distance"
       ]
     },
     {
@@ -439,6 +621,13 @@
       "tags": [
         "get",
         "entity"
+      ],
+      "intent": [
+        "pobierz info o obiekcie",
+        "opisz encje",
+        "get entity details",
+        "describe entity by handle",
+        "fetch entity properties"
       ]
     },
     {
@@ -447,6 +636,13 @@
       "tags": [
         "get",
         "intersections"
+      ],
+      "intent": [
+        "punkty przeciecia krzywych",
+        "znajdz przeciecia",
+        "get curve intersections",
+        "compute intersections of two curves",
+        "where do curves cross"
       ]
     },
     {
@@ -455,6 +651,13 @@
       "tags": [
         "join",
         "curves"
+      ],
+      "intent": [
+        "polacz krzywe",
+        "scal segmenty",
+        "join multiple curves",
+        "merge curves into polyline",
+        "connect collinear segments"
       ]
     },
     {
@@ -465,6 +668,13 @@
         "entities",
         "in",
         "window"
+      ],
+      "intent": [
+        "znajdz obiekty w oknie",
+        "lista obiektow w prostokacie",
+        "list entities in window",
+        "find entities in rectangle",
+        "select inside box"
       ]
     },
     {
@@ -473,6 +683,13 @@
       "tags": [
         "offset",
         "curve"
+      ],
+      "intent": [
+        "przesun krzywa rownolegle",
+        "offset polilinii",
+        "offset a curve by distance",
+        "parallel copy curve",
+        "create offset entity"
       ]
     },
     {
@@ -481,6 +698,13 @@
       "tags": [
         "trim",
         "curve"
+      ],
+      "intent": [
+        "przytnij krzywa",
+        "trim do granic",
+        "trim a curve to boundaries",
+        "shorten curve at boundary",
+        "remove segment between intersections"
       ]
     }
   ],
@@ -500,6 +724,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-04-22T11:24:58.4692376Z"
+    "last_regenerated_utc": "2026-08-05T13:09:28.3265118Z"
   }
 }

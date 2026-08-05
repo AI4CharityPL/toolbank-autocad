@@ -53,6 +53,13 @@
         "plotstyle",
         "to",
         "layout"
+      ],
+      "intent": [
+        "przypisz CTB do arkusza",
+        "apply plot style to layout",
+        "ustaw lineweight na layout",
+        "set CTB for paperspace",
+        "plotstyle na arkuszu roboczym"
       ]
     },
     {
@@ -61,6 +68,13 @@
       "tags": [
         "ensure",
         "ctb"
+      ],
+      "intent": [
+        "zainstaluj CTB",
+        "ensure plot style table",
+        "skopiuj CTB do autocad",
+        "install HOSPITAL-ISO ctb",
+        "wczytaj plotstyle do autocad"
       ]
     },
     {
@@ -69,6 +83,13 @@
       "tags": [
         "list",
         "plotstyles"
+      ],
+      "intent": [
+        "lista CTB",
+        "list plot styles",
+        "jakie plotstyle sa dostepne",
+        "show available CTB STB",
+        "enum plot style table"
       ]
     }
   ],
@@ -88,6 +109,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-04-24T11:43:43.6761467Z"
+    "last_regenerated_utc": "2026-08-05T13:09:31.4495644Z"
   }
 }

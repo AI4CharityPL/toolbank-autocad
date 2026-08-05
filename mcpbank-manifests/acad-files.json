@@ -43,6 +43,7 @@
     "describe current dwg",
     "drawing purge",
     "eksportuj plik",
+    "export drawing region to png",
     "export drawing to format",
     "export to dxf",
     "export to pdf",
@@ -65,6 +66,7 @@
     "purge bazy",
     "purge database",
     "remove all unused records",
+    "render window to png",
     "save active as",
     "save active document",
     "save as pdf",
@@ -72,6 +74,7 @@
     "save document to path",
     "save dwg",
     "save dwg as",
+    "screenshot a drawing area",
     "show open dwgs",
     "sprawdz bledy w rysunku",
     "stworz nowy rysunek",
@@ -86,7 +89,8 @@
     "zapisz aktywny dokument",
     "zapisz dokument jako",
     "zapisz jako",
-    "zapisz rysunek"
+    "zapisz rysunek",
+    "zrob zrzut fragmentu rysunku"
   ],
   "tools_summary": [
     {
@@ -95,6 +99,13 @@
       "tags": [
         "audit",
         "database"
+      ],
+      "intent": [
+        "audyt bazy",
+        "audit database",
+        "sprawdz bledy w rysunku",
+        "audit drawing",
+        "fix database errors"
       ]
     },
     {
@@ -103,14 +114,32 @@
       "tags": [
         "close",
         "document"
+      ],
+      "intent": [
+        "zamknij rysunek",
+        "close document",
+        "close active dwg",
+        "zamknij aktywny dokument",
+        "close drawing"
       ]
     },
     {
       "name": "export_file",
-      "description": "Export the active document to the given path. Format is one of \u0022DWG\u0022, \u0022DXF\u0022, \u0022PDF\u0022, \u0022DWF\u0022, \u0022DWFX\u0022, \u0022IMAGE\u0022 (PNG). Optional layout name (default: current). Scope is \u0022Display\u0022 / \u0022Extents\u0022 / \u0022Limits\u0022 / \u0022Window\u0022 (PDF/DWF only).",
+      "description": "Export the active document to the given path. Format is one of \u0022DWG\u0022, \u0022DXF\u0022, \u0022PDF\u0022, \u0022DWF\u0022, \u0022DWFX\u0022, \u0022IMAGE\u0022 / \u0022PNG\u0022. Optional layout name (default: current). Scope is \u0022Display\u0022 / \u0022Extents\u0022 / \u0022Limits\u0022 / \u0022Window\u0022 / \u0022View\u0022 / \u0022Layout\u0022. When scope=\u0022Window\u0022 you MUST supply the model-space rectangle in \u0060window\u0060: { xMin, yMin, xMax, yMax } in drawing units. For raster (PNG/IMAGE) and vector plots you may supply \u0060widthPx\u0060 / \u0060heightPx\u0060 to request an output resolution (PNG only; ignored for DWG/DXF). Typical usage for AI visual review: { format:\u0022PNG\u0022, scope:\u0022Window\u0022, window:{xMin:0,yMin:0,xMax:80000,yMax:60000}, widthPx:4000, heightPx:3000 }.",
       "tags": [
         "export",
         "file"
+      ],
+      "intent": [
+        "eksportuj plik",
+        "export to pdf",
+        "export to dxf",
+        "export drawing to format",
+        "save as pdf",
+        "export drawing region to png",
+        "render window to png",
+        "screenshot a drawing area",
+        "zrob zrzut fragmentu rysunku"
       ]
     },
     {
@@ -120,6 +149,13 @@
         "get",
         "active",
         "document"
+      ],
+      "intent": [
+        "info o aktywnym rysunku",
+        "get active document",
+        "describe current dwg",
+        "active drawing info",
+        "info o biezacym dokumencie"
       ]
     },
     {
@@ -128,6 +164,13 @@
       "tags": [
         "import",
         "file"
+      ],
+      "intent": [
+        "importuj plik",
+        "import dwg into current",
+        "import dxf",
+        "merge dwg into active",
+        "wstaw plik dwg"
       ]
     },
     {
@@ -136,6 +179,13 @@
       "tags": [
         "list",
         "documents"
+      ],
+      "intent": [
+        "wylistuj otwarte rysunki",
+        "list open documents",
+        "show open dwgs",
+        "wszystkie otwarte dokumenty",
+        "what documents are open"
       ]
     },
     {
@@ -144,6 +194,13 @@
       "tags": [
         "new",
         "document"
+      ],
+      "intent": [
+        "nowy rysunek",
+        "new document",
+        "create new dwg",
+        "stworz nowy rysunek",
+        "fresh drawing"
       ]
     },
     {
@@ -152,6 +209,13 @@
       "tags": [
         "open",
         "document"
+      ],
+      "intent": [
+        "otworz rysunek",
+        "open dwg file",
+        "wczytaj dwg",
+        "open drawing",
+        "load dwg"
       ]
     },
     {
@@ -160,6 +224,13 @@
       "tags": [
         "purge",
         "database"
+      ],
+      "intent": [
+        "purge bazy",
+        "purge database",
+        "wyczysc cala baze",
+        "remove all unused records",
+        "drawing purge"
       ]
     },
     {
@@ -168,6 +239,13 @@
       "tags": [
         "save",
         "document"
+      ],
+      "intent": [
+        "zapisz rysunek",
+        "save current dwg",
+        "save active document",
+        "save dwg",
+        "zapisz aktywny dokument"
       ]
     },
     {
@@ -177,6 +255,13 @@
         "save",
         "document",
         "as"
+      ],
+      "intent": [
+        "zapisz jako",
+        "save dwg as",
+        "save active as",
+        "save document to path",
+        "zapisz dokument jako"
       ]
     }
   ],
@@ -196,6 +281,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-04-22T12:37:08.2710974Z"
+    "last_regenerated_utc": "2026-08-05T13:09:27.7361098Z"
   }
 }

@@ -131,6 +131,13 @@
       "tags": [
         "architecture",
         "health"
+      ],
+      "intent": [
+        "co potrafi architecture",
+        "list architecture layer key",
+        "what blocks does architecture ship",
+        "diagnostyka kategorii architecture",
+        "architecture category metadata"
       ]
     },
     {
@@ -140,6 +147,13 @@
         "attach",
         "room",
         "tag"
+      ],
+      "intent": [
+        "dodaj etykiete pokoju",
+        "tag room with number name area",
+        "attach room label",
+        "oznacz pomieszczenie z nazwa",
+        "room ID tag"
       ]
     },
     {
@@ -148,6 +162,13 @@
       "tags": [
         "define",
         "room"
+      ],
+      "intent": [
+        "zdefiniuj pomieszczenie",
+        "define room with number and name",
+        "stworz pokoj 101 z polem",
+        "create room boundary with tag",
+        "label room with area m2"
       ]
     },
     {
@@ -156,6 +177,13 @@
       "tags": [
         "dimension",
         "wall"
+      ],
+      "intent": [
+        "zwymiaruj sciane",
+        "dimension wall",
+        "wymiar wzdluz sciany",
+        "linear dim along wall",
+        "auto dimension between two points"
       ]
     },
     {
@@ -165,6 +193,13 @@
         "draw",
         "ceiling",
         "grid"
+      ],
+      "intent": [
+        "narysuj siatke sufitu podwieszanego",
+        "draw suspended ceiling grid",
+        "ceiling tile grid 600x600",
+        "kratka sufitu akustycznego",
+        "T-bar grid ceiling"
       ]
     },
     {
@@ -173,6 +208,13 @@
       "tags": [
         "draw",
         "wall"
+      ],
+      "intent": [
+        "narysuj sciane",
+        "postaw sciane od A do B",
+        "draw wall from point to point",
+        "wall with thickness",
+        "200 mm wall"
       ]
     },
     {
@@ -182,6 +224,13 @@
         "draw",
         "walls",
         "chain"
+      ],
+      "intent": [
+        "narysuj kilka scian po kolei",
+        "lancuch scian z polilinii",
+        "draw connected walls polyline",
+        "wall chain with mitred corners",
+        "closed wall loop room outline"
       ]
     },
     {
@@ -191,6 +240,13 @@
         "ensure",
         "architectural",
         "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy architektoniczne",
+        "ensure architectural layers",
+        "setup AIA layer standard",
+        "wlacz standardowe warstwy A-* w projekcie",
+        "create plan-view layer key"
       ]
     },
     {
@@ -199,6 +255,13 @@
       "tags": [
         "insert",
         "door"
+      ],
+      "intent": [
+        "wstaw drzwi w sciane",
+        "insert single door 900 mm",
+        "draw door with swing arc",
+        "drzwi otwierane w lewo",
+        "door at hinge point"
       ]
     },
     {
@@ -207,6 +270,13 @@
       "tags": [
         "insert",
         "elevator"
+      ],
+      "intent": [
+        "wstaw winde schemat",
+        "insert elevator shaft",
+        "draw elevator placeholder",
+        "szyb windy z krzyzem",
+        "lift shaft X mark plan"
       ]
     },
     {
@@ -215,6 +285,13 @@
       "tags": [
         "insert",
         "ramp"
+      ],
+      "intent": [
+        "wstaw rampe dla niepelnosprawnych",
+        "insert accessible ramp",
+        "ramp with slope percent label",
+        "draw ramp 6 procent",
+        "wstaw pochylnie z oznaczeniem spadku"
       ]
     },
     {
@@ -224,6 +301,13 @@
         "insert",
         "rect",
         "column"
+      ],
+      "intent": [
+        "wstaw slup prostokatny",
+        "insert rectangular column",
+        "structural column 400x400",
+        "kolumna prostokatna z osiami",
+        "draw rect column with center mark"
       ]
     },
     {
@@ -233,6 +317,13 @@
         "insert",
         "round",
         "column"
+      ],
+      "intent": [
+        "wstaw slup okragly",
+        "insert round column",
+        "circular structural column",
+        "kolumna okragla 400 mm",
+        "draw round column with center mark"
       ]
     },
     {
@@ -241,6 +332,13 @@
       "tags": [
         "insert",
         "stair"
+      ],
+      "intent": [
+        "wstaw schody proste",
+        "insert straight stair",
+        "rysuj bieg schodow z kierunkiem",
+        "draw stair run with treads",
+        "stair UP arrow 10 stopni"
       ]
     },
     {
@@ -249,6 +347,13 @@
       "tags": [
         "insert",
         "window"
+      ],
+      "intent": [
+        "wstaw okno w sciane",
+        "insert window 1200 mm",
+        "draw window with sill and header",
+        "okno o szerokosci 1.2 m",
+        "window centered on wall"
       ]
     },
     {
@@ -259,6 +364,13 @@
         "wall",
         "at",
         "opening"
+      ],
+      "intent": [
+        "wytnij otwor w scianie pod drzwi",
+        "cut hole in wall for opening",
+        "split wall at door jambs",
+        "przytnij sciane pod okno",
+        "trim wall for opening jamb1 jamb2"
       ]
     }
   ],
@@ -290,6 +402,6 @@
       "draw_walls_chain mitres at vertices but does not auto-clean wall T-junctions.",
       "Block library under blocks/architectural/ ships with Phase 7; v1 tools synthesise geometry inline."
     ],
-    "last_regenerated_utc": "2026-08-04T15:38:19.5920347Z"
+    "last_regenerated_utc": "2026-08-05T13:09:25.5010405Z"
   }
 }

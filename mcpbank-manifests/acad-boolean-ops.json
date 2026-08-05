@@ -1,7 +1,7 @@
 {
   "id": "acad-boolean-ops",
   "name": "acad-boolean-ops",
-  "description": "Boolean (Constructive Solid Geometry) operations on AutoCAD 3D solids and 2D regions: union / subtract / intersect on Solid3d entities, the same set on Region entities, plus utilities for building Regions from closed planar curves and probing whether two entities intersect (boolean test or actual intersection points). All operations consume the 'tool' entity (it is removed from ModelSpace) just like the AutoCAD UNION / SUBTRACT / INTERSECT commands, and require the AcadMcp .NET plugin loaded inside an open AutoCAD session. Not supported on AutoCAD LT.",
+  "description": "Boolean (Constructive Solid Geometry) operations on AutoCAD 3D solids and 2D regions: union / subtract / intersect on Solid3d entities, the same set on Region entities, plus utilities for building Regions from closed planar curves and probing whether two entities intersect (boolean test or actual intersection points). All operations consume the \u0027tool\u0027 entity (it is removed from ModelSpace) just like the AutoCAD UNION / SUBTRACT / INTERSECT commands, and require the AcadMcp .NET plugin loaded inside an open AutoCAD session. Not supported on AutoCAD LT.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-boolean-ops.cmd",
@@ -73,6 +73,13 @@
       "tags": [
         "check",
         "intersection"
+      ],
+      "intent": [
+        "czy bryly sie przecinaja",
+        "sprawdz czy obiekty sie przecinaja",
+        "check entity intersection",
+        "do entities overlap",
+        "test 3d intersection"
       ]
     },
     {
@@ -81,6 +88,13 @@
       "tags": [
         "create",
         "region"
+      ],
+      "intent": [
+        "stworz region",
+        "konwertuj polilinie na region",
+        "create region from curves",
+        "make region",
+        "convert curves to region"
       ]
     },
     {
@@ -89,6 +103,13 @@
       "tags": [
         "intersect",
         "regions"
+      ],
+      "intent": [
+        "czesc wspolna regionow",
+        "iloczyn regionow",
+        "boolean intersect regions",
+        "intersect 2d regions",
+        "common area of regions"
       ]
     },
     {
@@ -97,6 +118,13 @@
       "tags": [
         "intersect",
         "solids"
+      ],
+      "intent": [
+        "czesc wspolna bryl",
+        "iloczyn bool bryl",
+        "boolean intersect solids",
+        "intersect solids",
+        "common volume of solids"
       ]
     },
     {
@@ -105,6 +133,13 @@
       "tags": [
         "subtract",
         "regions"
+      ],
+      "intent": [
+        "odejmij regiony",
+        "roznica regionow",
+        "boolean subtract regions",
+        "subtract 2d regions",
+        "punch hole in region"
       ]
     },
     {
@@ -113,6 +148,13 @@
       "tags": [
         "subtract",
         "solids"
+      ],
+      "intent": [
+        "odejmij bryle",
+        "roznica bool bryl",
+        "boolean subtract solids",
+        "subtract solids",
+        "carve solid"
       ]
     },
     {
@@ -121,6 +163,13 @@
       "tags": [
         "union",
         "regions"
+      ],
+      "intent": [
+        "scal regiony",
+        "suma regionow",
+        "boolean union regions",
+        "merge 2d regions",
+        "combine regions"
       ]
     },
     {
@@ -129,6 +178,13 @@
       "tags": [
         "union",
         "solids"
+      ],
+      "intent": [
+        "scal bryly",
+        "suma boolowska bryl",
+        "boolean union solids",
+        "merge solids",
+        "combine 3d solids"
       ]
     }
   ],
@@ -148,6 +204,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-04-22T11:50:06.2157552Z"
+    "last_regenerated_utc": "2026-08-05T13:09:26.0487415Z"
   }
 }

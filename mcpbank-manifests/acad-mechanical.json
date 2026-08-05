@@ -121,6 +121,13 @@
         "head",
         "top",
         "view"
+      ],
+      "intent": [
+        "narysuj lecb sruby od gory",
+        "draw bolt hex head top view",
+        "sruba M10 widok z gory",
+        "hex head bolt plan view",
+        "szesciokat plaski dla sruby"
       ]
     },
     {
@@ -129,6 +136,13 @@
       "tags": [
         "draw",
         "centerline"
+      ],
+      "intent": [
+        "narysuj os",
+        "draw centerline axis",
+        "linia osiowa CENTER",
+        "ME-CENTER line",
+        "centerline ISO 128"
       ]
     },
     {
@@ -138,6 +152,13 @@
         "draw",
         "centerline",
         "cross"
+      ],
+      "intent": [
+        "krzyz osiowy okregu",
+        "draw centerline cross",
+        "krzyz na okregu",
+        "centerline crosshair for hole",
+        "axes through center"
       ]
     },
     {
@@ -147,6 +168,13 @@
         "draw",
         "counterbore",
         "hole"
+      ],
+      "intent": [
+        "narysuj otwor pog\u0142ebiany",
+        "draw counterbore hole top view",
+        "otwor z pog\u0142ebieniem walcowym",
+        "counterbore plan view",
+        "pocketed bolt hole"
       ]
     },
     {
@@ -156,6 +184,13 @@
         "draw",
         "hidden",
         "edge"
+      ],
+      "intent": [
+        "narysuj krawedz ukryta",
+        "draw hidden edge line",
+        "linia kreskowa",
+        "ME-HIDDEN line",
+        "occluded edge"
       ]
     },
     {
@@ -166,6 +201,13 @@
         "hole",
         "side",
         "view"
+      ],
+      "intent": [
+        "widok boczny otworu",
+        "draw hole side view section",
+        "przekroj otworu z gwintem",
+        "blind hole side view drill point",
+        "countersink side view flare"
       ]
     },
     {
@@ -175,6 +217,13 @@
         "draw",
         "revision",
         "triangle"
+      ],
+      "intent": [
+        "wstaw trojkat rewizji",
+        "draw revision triangle",
+        "rewizja nr 1",
+        "revision marker triangle",
+        "tag revision A"
       ]
     },
     {
@@ -185,6 +234,13 @@
         "section",
         "cut",
         "line"
+      ],
+      "intent": [
+        "narysuj linie cieciowa A-A",
+        "draw section cut line A",
+        "section cutting plane",
+        "linia przekroju z grotami",
+        "cutting plane line ISO 128"
       ]
     },
     {
@@ -194,6 +250,13 @@
         "draw",
         "section",
         "hatch"
+      ],
+      "intent": [
+        "zakreskuj przekroj stali",
+        "draw section hatch steel",
+        "przekroj z materialem",
+        "hatch section by material",
+        "cross-section fill pattern"
       ]
     },
     {
@@ -203,6 +266,13 @@
         "draw",
         "threaded",
         "hole"
+      ],
+      "intent": [
+        "narysuj otwor gwintowany",
+        "draw threaded hole top view",
+        "otwor z gwintem M10",
+        "tapped hole plan view",
+        "otwor z lukiem 3/4"
       ]
     },
     {
@@ -212,6 +282,13 @@
         "draw",
         "through",
         "hole"
+      ],
+      "intent": [
+        "narysuj otwor przelotowy",
+        "draw through hole top view",
+        "otwor przelotowy z osiami",
+        "through hole plan view",
+        "circle with centerline crosshair"
       ]
     },
     {
@@ -221,6 +298,13 @@
         "draw",
         "visible",
         "edge"
+      ],
+      "intent": [
+        "narysuj widoczna krawedz",
+        "draw visible edge line",
+        "linia widoczna",
+        "ME-VISIBLE line",
+        "edge on visible layer"
       ]
     },
     {
@@ -230,6 +314,13 @@
         "ensure",
         "mechanical",
         "layers"
+      ],
+      "intent": [
+        "stworz wszystkie warstwy mechaniczne",
+        "ensure mechanical layers ISO",
+        "setup ME-* layer key",
+        "wlacz standardowe warstwy ME-* w projekcie",
+        "create ISO mechanical layer standard"
       ]
     },
     {
@@ -238,6 +329,13 @@
       "tags": [
         "mechanical",
         "health"
+      ],
+      "intent": [
+        "co potrafi mechanical",
+        "list mechanical layer key",
+        "mechanical material hatch lookup",
+        "diagnostyka kategorii mechanical",
+        "mechanical category metadata"
       ]
     }
   ],
@@ -269,6 +367,6 @@
       "draw_section_cut_line emits the cutting plane \u002B arrows \u002B labels but NOT the sectioned hatch \u2014 call acad-geometry2d.draw_hatch separately with a pattern from mechanical_health.materials.",
       "Bundled blocks under blocks/mechanical/ (BOLT_HEX_M*, WASHER_FLAT_M*, BEARING_RADIAL_*) ship in Phase 7; v1 tools synthesise geometry inline."
     ],
-    "last_regenerated_utc": "2026-07-29T21:05:49.5141229Z"
+    "last_regenerated_utc": "2026-08-05T13:09:30.2838282Z"
   }
 }

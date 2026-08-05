@@ -91,7 +91,28 @@ Cost me one diagnostic cycle.
 logs that the setting is global, but a caller reading the signature will reasonably expect it to
 scope to one reference. Either rename it or drop the handle argument.
 
-### A9. `DBMOD` stays non-zero after `files.save_document_as`
+### ~~A9. `DBMOD` stays non-zero after `files.save_document_as`~~
+**Resolved 2026-08-05 by investigating it. DBMOD was right; the tool's report was wrong.**
+
+`Database.SaveAs` writes a **copy**. It is not AutoCAD's SAVEAS command and it does not re-point
+the open document, which keeps its own name and its own unsaved state — and the managed API
+offers no way to rename an open document. So the drawing in memory genuinely still had unsaved
+changes, because it was never saved: a copy of it was written elsewhere. `publish_sheets` reading
+DBMOD and refusing was correct behaviour, not a false positive, and the `allowUnsaved` argument
+added to work around it is still the right escape hatch for publishing a copy.
+
+The real defect was the report. `save_document_as` returned only `BuildDocumentInfo(doc)`, whose
+`path` is the document's own name — so a caller asking to save to a path got back `Rysunek7.dwg`
+and **no indication that anything had been written anywhere**. The file was there, 14,173 bytes,
+unmentioned. The result now carries `savedTo`, `bytes` and the document's own path side by side,
+and the description states outright that `save_document` afterwards still writes to the original.
+
+Noted while measuring, and left open: the `isModified` field in document info is a **reflection
+fallback, not a measurement**. `Document.IsModified` is not public, the lookup fails, and the
+field reports `false` regardless of state — which is why it disagreed with DBMOD. It should
+either read something real or stop being reported.
+
+**Original entry, for the record:**
 **Status:** found 2026-08-04 while building `publish_sheets`. Not investigated.
 `publish_sheets` guards against publishing a drawing with unsaved changes, because the Publisher
 reads the DWG from disk rather than from memory. The guard reads `DBMOD`, and `DBMOD` was still

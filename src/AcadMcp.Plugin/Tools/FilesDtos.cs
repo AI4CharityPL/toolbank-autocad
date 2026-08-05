@@ -50,3 +50,16 @@ internal sealed record DocumentInfoDto(
     [property: JsonPropertyName("isModified")]  bool IsModified,
     [property: JsonPropertyName("dwgVersion")]  string? DwgVersion,
     [property: JsonPropertyName("entityCount")] int EntityCount);
+
+internal sealed record SetDrawingPropertiesArgsDto(
+    [property: JsonPropertyName("title")]          string? Title,
+    [property: JsonPropertyName("subject")]        string? Subject,
+    [property: JsonPropertyName("author")]         string? Author,
+    [property: JsonPropertyName("keywords")]       string? Keywords,
+    [property: JsonPropertyName("comments")]       string? Comments,
+    [property: JsonPropertyName("revisionNumber")] string? RevisionNumber,
+    [property: JsonPropertyName("hyperlinkBase")]  string? HyperlinkBase);
+
+internal sealed record SetCustomPropertyArgsDto(
+    [property: JsonPropertyName("name")]  string Name,
+    [property: JsonPropertyName("value")] string? Value);

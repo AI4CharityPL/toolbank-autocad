@@ -74,3 +74,42 @@ public sealed record AuditResult(
 
 public sealed record FilesAffectedCount(
     [property: JsonPropertyName("affected")] int Affected);
+
+// ─────────────── drawing properties, DWGPROPS (roadmap 2.4) ───────────────
+
+public sealed record SetDrawingPropertiesArgs(
+    [property: JsonPropertyName("title")]          string? Title = null,
+    [property: JsonPropertyName("subject")]        string? Subject = null,
+    [property: JsonPropertyName("author")]         string? Author = null,
+    [property: JsonPropertyName("keywords")]       string? Keywords = null,
+    [property: JsonPropertyName("comments")]       string? Comments = null,
+    [property: JsonPropertyName("revisionNumber")] string? RevisionNumber = null,
+    [property: JsonPropertyName("hyperlinkBase")]  string? HyperlinkBase = null);
+
+public sealed record SetCustomPropertyArgs(
+    [property: JsonPropertyName("name")]  string Name,
+    [property: JsonPropertyName("value")] string? Value = null);
+
+public sealed record DrawingProperties(
+    [property: JsonPropertyName("title")]          string Title,
+    [property: JsonPropertyName("subject")]        string Subject,
+    [property: JsonPropertyName("author")]         string Author,
+    [property: JsonPropertyName("keywords")]       string Keywords,
+    [property: JsonPropertyName("comments")]       string Comments,
+    [property: JsonPropertyName("lastSavedBy")]    string LastSavedBy,
+    [property: JsonPropertyName("revisionNumber")] string RevisionNumber,
+    [property: JsonPropertyName("hyperlinkBase")]  string HyperlinkBase,
+    [property: JsonPropertyName("custom")]         IReadOnlyDictionary<string, string> Custom);
+
+public sealed record DrawingPropertiesResult(
+    [property: JsonPropertyName("properties")] DrawingProperties Properties,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record DrawingPropertiesApplyResult(
+    [property: JsonPropertyName("applied")]    IReadOnlyList<string> Applied,
+    [property: JsonPropertyName("properties")] DrawingProperties Properties);
+
+public sealed record CustomPropertyResult(
+    [property: JsonPropertyName("name")]       string Name,
+    [property: JsonPropertyName("action")]     string Action,
+    [property: JsonPropertyName("properties")] DrawingProperties Properties);

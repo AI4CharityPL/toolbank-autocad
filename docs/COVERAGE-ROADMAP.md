@@ -291,16 +291,47 @@ not from memory. Three entries in the original list were wrong.
   pretending to expose the whole trait model. If the trait API does not behave, withhold it with
   a reason rather than shipping something that returns success and changes nothing.
 
-### 2.4 `acad-standards` — CAD management (≈14)
+### 2.4 CAD management — **COMPLETE**. 9 built, no `acad-standards` category, 5 struck.
 
-```
-create_dws_standard         associate_standard         list_associated_standards
-check_standards             fix_standards_violation    list_standards_violations
-configure_standards_plugin  batch_standards_audit
-create_layer_translation_map apply_layer_translation
-export_layer_state_las      import_layer_state_las
-list_drawing_properties     set_drawing_properties
-```
+**Revised 2026-08-05 against the managed API and against the rest of this bank.** This section
+was the worst-planned in Phase 2: ten of its fourteen tools are unbuildable, and eight of those
+ten already exist under different names.
+
+**The DWS half does not exist in managed code, and is already covered anyway.** `StandardsAudit`,
+`AcStMgr`, `StandardsPlugin` and `DwsFile` are all absent from `acdbmgd` / `acmgd` / `accoremgd` —
+AutoCAD's CAD Standards feature (DWS files, STANDARDS, CHECKSTANDARDS) is ObjectARX and COM only.
+That alone would make these eight a supervised-COM project like 2.1. But they should not be built
+at all, because **`acad-validators` already does every one of them**, in managed code, with rules
+an agent can read:
+
+| Planned here | Already in `acad-validators` |
+|---|---|
+| `create_dws_standard` | YAML rule files under `validators/_standards/` |
+| `associate_standard` / `list_associated_standards` | `list_standards` |
+| `check_standards` / `batch_standards_audit` | `validate_drawing`, `validate_against_standard` |
+| `list_standards_violations` | `list_violations` |
+| `fix_standards_violation` | `auto_fix_violations` |
+| `configure_standards_plugin` | `add_validator_rule`, `reload_validator_rules` |
+
+A second standards system reachable only through COM, duplicating one that already ships and
+already carries `polish-arch-baseline`, would be worse than nothing: an agent would have two
+tools for one question and no way to choose. **Struck.**
+
+**Layer translation is unreachable too.** `LayerTranslation` is absent from the managed
+assemblies; LAYTRANS is a command with no exposed mapping API. Two tools struck.
+
+**What is real, and where it belongs.** Nothing here justifies a new category — the four
+surviving tools are layer-state and document-level work, and both already have owners:
+
+| Category | Tools | API |
+|---|---|---|
+| `acad-layers` (has 4 layer-state tools) | `export_layer_state` `import_layer_state` `delete_layer_state` `rename_layer_state` `set_layer_state_description` `compare_layer_state` | `LayerStateManager.ExportLayerState` / `ImportLayerState` / `DeleteLayerState` / `RenameLayerState` / `SetLayerStateDescription` / `CompareLayerStateToDb` |
+| `acad-files` | `list_drawing_properties` `set_drawing_properties` `set_drawing_custom_property` | `DatabaseSummaryInfo`, `DatabaseSummaryInfoBuilder` — title, subject, author, keywords, comments, revision, hyperlink base, plus arbitrary custom properties |
+
+Nine tools, not fourteen, and no new category. The extra layer-state tools beyond the two
+planned come from the same `LayerStateManager` the export/import pair lives on: an agent that can
+save and restore a layer state but cannot delete, rename or describe one is stuck with whatever
+it created first.
 
 **Phase 2 total: ≈84 tools.**
 
@@ -627,7 +658,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **47** | **in progress** — 2.3 complete, 2.4 next |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **66** | **56** | **2.2, 2.3, 2.4 complete**; only 2.1 sheetsets remains, and it needs a supervised COM contract first |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → *needs diff* | 0 | not started |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → *likely lower* | 0 | not started |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → *needs diff* | 0 | not started |

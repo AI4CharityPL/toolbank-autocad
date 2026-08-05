@@ -86,4 +86,29 @@ public static class FilesTools
         RequiresPlugin = true)]
     public static Task<DocumentResult> NewDocument(IPluginGateway gw, FilesEmptyArgs args, CancellationToken ct)
         => FilesProxy.CallAsync<FilesEmptyArgs, DocumentResult>(gw, "acad.files.new_document", args, T_NORMAL, ct);
+
+    // ─────────── drawing properties, DWGPROPS (roadmap 2.4) ───────────
+
+    [McpTool("list_drawing_properties", "Read the drawing's own properties - title, subject, author, keywords, comments, last saved by, revision number, hyperlink base - plus every custom name/value pair on it. Read-only. Worth knowing: acad-fields can bind a field to any of these, so a title block that reads its project name from here updates itself instead of being retyped on every sheet.", "files",
+        Intent = new[] { "wlasciwosci rysunku", "jakie sa dane dokumentu", "list drawing properties",
+                         "read dwgprops", "autor i tytul rysunku", "drawing metadata" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<DrawingPropertiesResult> ListDrawingProperties(IPluginGateway gw, FilesEmptyArgs args, CancellationToken ct)
+        => FilesProxy.CallAsync<FilesEmptyArgs, DrawingPropertiesResult>(gw, "acad.files.list_drawing_properties", args, T_FAST, ct);
+
+    [McpTool("set_drawing_properties", "Set any of the drawing's standard properties, leaving the rest alone. Omitting a field leaves it unchanged; passing an empty string clears it deliberately - the two are different and both are supported. Custom name/value pairs go through set_drawing_custom_property instead. The result reports every property afterwards, not just the changed ones, so a caller can see that nothing else moved.", "files",
+        Intent = new[] { "ustaw wlasciwosci rysunku", "wpisz autora i tytul", "set drawing properties",
+                         "set the drawing title and author", "dane dokumentu dwgprops",
+                         "fill in drawing metadata" },
+        RequiresPlugin = true)]
+    public static Task<DrawingPropertiesApplyResult> SetDrawingProperties(IPluginGateway gw, SetDrawingPropertiesArgs args, CancellationToken ct)
+        => FilesProxy.CallAsync<SetDrawingPropertiesArgs, DrawingPropertiesApplyResult>(gw, "acad.files.set_drawing_properties", args, T_NORMAL, ct);
+
+    [McpTool("set_drawing_custom_property", "Add, replace or remove one custom drawing property - an arbitrary name/value pair such as PROJECT-NUMBER or CLIENT. Pass value:null to remove it. These are the properties worth binding a title-block field to, because unlike the standard set they can be named after whatever the project actually tracks. The result says which of add, replace or remove happened.", "files",
+        Intent = new[] { "dodaj wlasna wlasciwosc rysunku", "numer projektu jako wlasciwosc",
+                         "set a custom drawing property", "add a project number property",
+                         "usun wlasna wlasciwosc dokumentu", "custom dwgprops field" },
+        RequiresPlugin = true)]
+    public static Task<CustomPropertyResult> SetDrawingCustomProperty(IPluginGateway gw, SetCustomPropertyArgs args, CancellationToken ct)
+        => FilesProxy.CallAsync<SetCustomPropertyArgs, CustomPropertyResult>(gw, "acad.files.set_drawing_custom_property", args, T_NORMAL, ct);
 }

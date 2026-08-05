@@ -102,4 +102,57 @@ public static class LayersTools
         ReadOnly = true)]
     public static Task<StringListResult> ListLayerStates(IPluginGateway gw, EmptyArgs args, CancellationToken ct)
         => LayersProxy.CallAsync<EmptyArgs, StringListResult>(gw, "acad.layers.list_layer_states", args, T_FAST, ct);
+
+    // ─────────── named layer states, beyond save/restore/list (roadmap 2.4) ───────────
+    //
+    // Roadmap 2.4 planned an acad-standards category. Ten of its fourteen tools have no managed
+    // API and eight of those already exist in acad-validators, so it was struck; what survived is
+    // this group and the drawing-property tools in acad-files. See COVERAGE-ROADMAP 2.4.
+
+    [McpTool("export_layer_state", "Write one named layer state out to a .las file so it can be reused in other drawings or kept under version control alongside the project. It writes a file, not the DWG, so the drawing is unchanged. The result reports the byte count, because an export that produced an empty file is otherwise indistinguishable from one that worked.", "layers",
+        Intent = new[] { "wyeksportuj stan warstw do pliku", "zapisz stan warstw jako las",
+                         "export layer state to a file", "save layer state as las",
+                         "przenies stan warstw do innego rysunku", "layer state to file" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<LayerStateExportResult> ExportLayerState(IPluginGateway gw, LayerStateFileArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<LayerStateFileArgs, LayerStateExportResult>(gw, "acad.layers.export_layer_state", args, T_NORMAL, ct);
+
+    [McpTool("import_layer_state", "Read a .las file into this drawing as a named layer state. The name comes from inside the file rather than from you, so the result reports which states actually appeared - established by comparing the drawing before and after rather than by assuming. AutoCAD refuses to import over an existing name; delete or rename the local one first.", "layers",
+        Intent = new[] { "zaimportuj stan warstw z pliku", "wczytaj plik las",
+                         "import layer state from a file", "load a las layer state",
+                         "pobierz stan warstw z innego projektu", "layer state from file" },
+        RequiresPlugin = true)]
+    public static Task<LayerStateImportResult> ImportLayerState(IPluginGateway gw, LayerStateFileArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<LayerStateFileArgs, LayerStateImportResult>(gw, "acad.layers.import_layer_state", args, T_NORMAL, ct);
+
+    [McpTool("delete_layer_state", "Delete a named layer state. THE LAYERS ARE NOT TOUCHED - a layer state is a recording of visibility and properties, so deleting it removes the recording and nothing else. The result says so explicitly, because this is a tool name an agent could reasonably fear means something more destructive.", "layers",
+        Intent = new[] { "usun stan warstw", "skasuj zapisany stan warstw", "delete layer state",
+                         "remove a saved layer state", "wyczysc stany warstw", "drop layer state" },
+        RequiresPlugin = true)]
+    public static Task<LayerStateDeleteResult> DeleteLayerState(IPluginGateway gw, LayerStateNameArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<LayerStateNameArgs, LayerStateDeleteResult>(gw, "acad.layers.delete_layer_state", args, T_NORMAL, ct);
+
+    [McpTool("rename_layer_state", "Rename a named layer state. Refuses a name that is already taken rather than merging into it, and confirms both halves of the rename in the result - the old name gone and the new one present - since a rename that half happened is worse than one that failed outright.", "layers",
+        Intent = new[] { "zmien nazwe stanu warstw", "przemianuj stan warstw", "rename layer state",
+                         "give a layer state a better name", "poprawa nazwy stanu warstw",
+                         "change layer state name" },
+        RequiresPlugin = true)]
+    public static Task<LayerStateRenameResult> RenameLayerState(IPluginGateway gw, RenameLayerStateArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<RenameLayerStateArgs, LayerStateRenameResult>(gw, "acad.layers.rename_layer_state", args, T_NORMAL, ct);
+
+    [McpTool("set_layer_state_description", "Attach or replace the description on a named layer state - what it is for, which sheet it belongs to, which discipline it serves. Pass an empty description to clear it. Worth doing: a drawing holding six states called PLAN-1 through PLAN-6 with no descriptions is one an agent cannot choose between.", "layers",
+        Intent = new[] { "opis stanu warstw", "dodaj opis do stanu warstw", "set layer state description",
+                         "describe what a layer state is for", "podpisz stan warstw",
+                         "annotate a layer state" },
+        RequiresPlugin = true)]
+    public static Task<LayerStateDescriptionResult> SetLayerStateDescription(IPluginGateway gw, LayerStateDescriptionArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<LayerStateDescriptionArgs, LayerStateDescriptionResult>(gw, "acad.layers.set_layer_state_description", args, T_NORMAL, ct);
+
+    [McpTool("compare_layer_state", "Answer whether restoring this state would change anything, without restoring it, and list the layers it covers. Read-only. This is the call to make before restore_layer_state in a drawing somebody is working in: the difference between a no-op and a restore that silently reorganises their view.", "layers",
+        Intent = new[] { "czy stan warstw rozni sie od rysunku", "co zmieni przywrocenie stanu warstw",
+                         "compare layer state to the drawing", "would restoring this change anything",
+                         "sprawdz stan warstw przed przywroceniem", "which layers does this state cover" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<LayerStateCompareResult> CompareLayerState(IPluginGateway gw, LayerStateNameArgs args, CancellationToken ct)
+        => LayersProxy.CallAsync<LayerStateNameArgs, LayerStateCompareResult>(gw, "acad.layers.compare_layer_state", args, T_FAST, ct);
 }

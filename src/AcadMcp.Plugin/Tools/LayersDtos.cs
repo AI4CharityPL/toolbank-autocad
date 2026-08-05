@@ -45,3 +45,19 @@ internal sealed record RenameLayerArgsDto(
 internal sealed record SaveLayerStateArgsDto(
     [property: JsonPropertyName("name")]        string Name,
     [property: JsonPropertyName("description")] string? Description = null);
+
+internal sealed record LayerStateNameArgsDto(
+    [property: JsonPropertyName("name")] string Name);
+
+internal sealed record LayerStateFileArgsDto(
+    [property: JsonPropertyName("name")]      string Name,
+    [property: JsonPropertyName("path")]      string? Path,
+    [property: JsonPropertyName("overwrite")] bool Overwrite);
+
+internal sealed record RenameLayerStateArgsDto(
+    [property: JsonPropertyName("name")]    string Name,
+    [property: JsonPropertyName("newName")] string NewName);
+
+internal sealed record LayerStateDescriptionArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string? Description);

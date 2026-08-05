@@ -63,3 +63,54 @@ public sealed record AffectedCount(
 
 public sealed record StringListResult(
     [property: JsonPropertyName("items")] IReadOnlyList<string> Items);
+
+// ─────────────── named layer states, beyond save/restore/list (roadmap 2.4) ───────────────
+
+public sealed record LayerStateNameArgs(
+    [property: JsonPropertyName("name")] string Name);
+
+public sealed record LayerStateFileArgs(
+    [property: JsonPropertyName("name")]      string Name,
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("overwrite")] bool Overwrite = false);
+
+public sealed record RenameLayerStateArgs(
+    [property: JsonPropertyName("name")]    string Name,
+    [property: JsonPropertyName("newName")] string NewName);
+
+public sealed record LayerStateDescriptionArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string? Description = null);
+
+public sealed record LayerStateExportResult(
+    [property: JsonPropertyName("name")]  string Name,
+    [property: JsonPropertyName("path")]  string Path,
+    [property: JsonPropertyName("bytes")] long Bytes);
+
+public sealed record LayerStateImportResult(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("imported")] IReadOnlyList<string> Imported,
+    [property: JsonPropertyName("count")]    int Count,
+    [property: JsonPropertyName("note")]     string? Note = null);
+
+public sealed record LayerStateDeleteResult(
+    [property: JsonPropertyName("name")]    string Name,
+    [property: JsonPropertyName("deleted")] bool Deleted,
+    [property: JsonPropertyName("note")]    string Note);
+
+public sealed record LayerStateRenameResult(
+    [property: JsonPropertyName("oldName")] string OldName,
+    [property: JsonPropertyName("name")]    string Name,
+    [property: JsonPropertyName("renamed")] bool Renamed);
+
+public sealed record LayerStateDescriptionResult(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string Description);
+
+public sealed record LayerStateCompareResult(
+    [property: JsonPropertyName("name")]                  string Name,
+    [property: JsonPropertyName("description")]           string Description,
+    [property: JsonPropertyName("matchesCurrentDrawing")] bool MatchesCurrentDrawing,
+    [property: JsonPropertyName("layers")]                IReadOnlyList<string> Layers,
+    [property: JsonPropertyName("layerCount")]            int LayerCount,
+    [property: JsonPropertyName("note")]                  string Note);

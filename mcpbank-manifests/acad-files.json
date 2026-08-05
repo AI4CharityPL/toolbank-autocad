@@ -16,9 +16,11 @@
     "autocad",
     "cad",
     "close",
+    "custom",
     "database",
     "document",
     "documents",
+    "drawing",
     "dwg",
     "export",
     "file",
@@ -28,25 +30,35 @@
     "list",
     "new",
     "open",
+    "properties",
+    "property",
     "purge",
-    "save"
+    "save",
+    "set"
   ],
   "intent_examples": [
     "active drawing info",
+    "add a project number property",
     "audit database",
     "audit drawing",
     "audyt bazy",
+    "autor i tytul rysunku",
     "close active dwg",
     "close document",
     "close drawing",
     "create new dwg",
+    "custom dwgprops field",
+    "dane dokumentu dwgprops",
     "describe current dwg",
+    "dodaj wlasna wlasciwosc rysunku",
+    "drawing metadata",
     "drawing purge",
     "eksportuj plik",
     "export drawing region to png",
     "export drawing to format",
     "export to dxf",
     "export to pdf",
+    "fill in drawing metadata",
     "fix database errors",
     "fresh drawing",
     "get active document",
@@ -55,16 +67,20 @@
     "importuj plik",
     "info o aktywnym rysunku",
     "info o biezacym dokumencie",
+    "jakie sa dane dokumentu",
+    "list drawing properties",
     "list open documents",
     "load dwg",
     "merge dwg into active",
     "new document",
     "nowy rysunek",
+    "numer projektu jako wlasciwosc",
     "open drawing",
     "open dwg file",
     "otworz rysunek",
     "purge bazy",
     "purge database",
+    "read dwgprops",
     "remove all unused records",
     "render window to png",
     "save active as",
@@ -75,11 +91,18 @@
     "save dwg",
     "save dwg as",
     "screenshot a drawing area",
+    "set a custom drawing property",
+    "set drawing properties",
+    "set the drawing title and author",
     "show open dwgs",
     "sprawdz bledy w rysunku",
     "stworz nowy rysunek",
+    "ustaw wlasciwosci rysunku",
+    "usun wlasna wlasciwosc dokumentu",
     "wczytaj dwg",
     "what documents are open",
+    "wlasciwosci rysunku",
+    "wpisz autora i tytul",
     "wstaw plik dwg",
     "wszystkie otwarte dokumenty",
     "wyczysc cala baze",
@@ -189,6 +212,23 @@
       ]
     },
     {
+      "name": "list_drawing_properties",
+      "description": "Read the drawing\u0027s own properties - title, subject, author, keywords, comments, last saved by, revision number, hyperlink base - plus every custom name/value pair on it. Read-only. Worth knowing: acad-fields can bind a field to any of these, so a title block that reads its project name from here updates itself instead of being retyped on every sheet.",
+      "tags": [
+        "list",
+        "drawing",
+        "properties"
+      ],
+      "intent": [
+        "wlasciwosci rysunku",
+        "jakie sa dane dokumentu",
+        "list drawing properties",
+        "read dwgprops",
+        "autor i tytul rysunku",
+        "drawing metadata"
+      ]
+    },
+    {
       "name": "new_document",
       "description": "Create a brand new empty document based on the default template (acad.dwt) and make it active.",
       "tags": [
@@ -263,11 +303,46 @@
         "save document to path",
         "zapisz dokument jako"
       ]
+    },
+    {
+      "name": "set_drawing_custom_property",
+      "description": "Add, replace or remove one custom drawing property - an arbitrary name/value pair such as PROJECT-NUMBER or CLIENT. Pass value:null to remove it. These are the properties worth binding a title-block field to, because unlike the standard set they can be named after whatever the project actually tracks. The result says which of add, replace or remove happened.",
+      "tags": [
+        "set",
+        "drawing",
+        "custom",
+        "property"
+      ],
+      "intent": [
+        "dodaj wlasna wlasciwosc rysunku",
+        "numer projektu jako wlasciwosc",
+        "set a custom drawing property",
+        "add a project number property",
+        "usun wlasna wlasciwosc dokumentu",
+        "custom dwgprops field"
+      ]
+    },
+    {
+      "name": "set_drawing_properties",
+      "description": "Set any of the drawing\u0027s standard properties, leaving the rest alone. Omitting a field leaves it unchanged; passing an empty string clears it deliberately - the two are different and both are supported. Custom name/value pairs go through set_drawing_custom_property instead. The result reports every property afterwards, not just the changed ones, so a caller can see that nothing else moved.",
+      "tags": [
+        "set",
+        "drawing",
+        "properties"
+      ],
+      "intent": [
+        "ustaw wlasciwosci rysunku",
+        "wpisz autora i tytul",
+        "set drawing properties",
+        "set the drawing title and author",
+        "dane dokumentu dwgprops",
+        "fill in drawing metadata"
+      ]
     }
   ],
   "metadata": {
     "category": "files",
-    "tool_count_target": 11,
+    "tool_count_target": 14,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -281,6 +356,6 @@
     "owner": "MCP Nexus AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-05T13:09:27.7361098Z"
+    "last_regenerated_utc": "2026-08-05T16:36:02.1311874Z"
   }
 }

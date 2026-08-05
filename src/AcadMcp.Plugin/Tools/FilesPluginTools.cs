@@ -50,6 +50,11 @@ internal static class FilesPluginTools
         host.Register("acad.files.export_file",          ExportFile);
         host.Register("acad.files.purge_database",       PurgeDatabase);
         host.Register("acad.files.audit_database",       AuditDatabase);
+
+        // Drawing properties (DWGPROPS). Separate file: DatabaseSummaryInfo is immutable and
+        // written through a builder, which is a different shape from every document operation
+        // above it.
+        FilesPropertiesPluginTools.Register(host);
         host.Register("acad.files.new_document",         NewDocument);
     }
 

@@ -49,6 +49,11 @@ internal static class LayersPluginTools
         host.Register("acad.layers.save_layer_state",     SaveLayerState);
         host.Register("acad.layers.restore_layer_state",  RestoreLayerState);
         host.Register("acad.layers.list_layer_states",    ListLayerStates);
+
+        // The rest of the LayerStateManager surface: export/import to .las, delete, rename,
+        // describe and compare. Separate file because none of the symbol-table patterns above
+        // apply - LayerStateManager writes on its own, outside any transaction opened here.
+        LayersStatePluginTools.Register(host);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)

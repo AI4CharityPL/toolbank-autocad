@@ -121,7 +121,7 @@ had just been saved. Worked around with an explicit `allowUnsaved` argument and 
 names this entry. Whether `save_document_as` fails to clear the flag, or `DBMOD` means something
 narrower than "has unsaved changes", is unresolved.
 
-### A10. `publish_sheets` — single sheet **now verified**, multi-sheet still failing
+### ~~A10. `publish_sheets` happy path is unverified~~ — **single AND multi-sheet now verified**
 
 **2026-08-05. The original entry was wrong about the cause, and wrong about the machine.**
 It said this needed "a machine with a real plot device" because "the only plot devices here are
@@ -148,11 +148,28 @@ variants. The blocker was never hardware. It was four separate defects in a row:
 **Verified working:** one layout to PDF produces a real file — `%PDF-1.7`, 3,092 bytes, valid
 trailer, one page.
 
-**Still open — multi-sheet.** Publishing two layouts into one PDF fails the same silent way
-(no file, no log). Both layouts report `configured: true` on the same device, but their **paper
-sizes differ**: 279.4 × 215.9 against 297 × 210. `DsdData.IsHomogeneous` is currently hardcoded
-`false`; the next thing to test is whether the Publisher refuses a mixed-media set, and whether
-that flag or a shared page setup is the answer. Single-sheet publishing is unaffected.
+**Multi-sheet: fixed, and it was a fifth defect rather than the paper-size theory.** Publishing
+two layouts hung for ten minutes behind a modal AutoCAD dialog — *"one or more sheets could not be
+processed, the plot job was cancelled, remove the non-plottable sheets"*. The Publisher log said
+exactly why: `BLAD: Nie znaleziono ukladu` (layout not found) for every sheet. The layouts existed
+in the OPEN drawing but not in the FILE ON DISK, which is what the Publisher reads — and the
+DBMOD guard had been warning about precisely that until `allowUnsaved:true` overrode it. The guard
+was the one part of the chain that was right all along.
+
+`publish_sheets` now reads the file on disk before publishing and refuses by name, in 0.0 s
+instead of ten minutes, quoting what is actually on disk and pointing at the `save_document_as`
+copy semantics as the likely cause. Verified both ways: two layouts saved to disk publish into one
+4,936-byte 3-page PDF; a layout created after the save is refused without a dialog, a hang or a
+file.
+
+**And a bank-wide defect this exposed.** `PluginPipeClient.CallToolAsync` packed `timeoutMs` into
+the request and left the plugin to honour it. The plugin does — until a handler is blocked on a
+modal dialog, at which point it never reaches its own timeout check, never replies, and the client
+`await` had only the caller's `CancellationToken` to wake it. **Every timeout in the bank was
+advisory.** `publish_sheets` declares 300 s and hung for ten minutes until the process was killed
+by hand. The client now enforces the timeout too, with a 2 s grace so the plugin's own better
+message wins when it can produce one, and the timeout text says to look at the AutoCAD window -
+because the tool cannot.
 
 **Original entry, for the record:**
 **Status:** shipped with its guards verified and its success path not.
@@ -312,14 +329,9 @@ factory first, which is a mechanical change worth doing before phase 3 adds more
 
 From the original public-release plan; phases 1–2 landed, the rest did not.
 
-- **Multi-sheet publishing.** `publish_sheets` produces a real PDF from ONE layout
-  ([A10](#a10-publish_sheets--single-sheet-now-verified-multi-sheet-still-failing)); two layouts
-  into one file still fails the same silent way — no file, no error, no Publisher log line. Both
-  layouts report `configured: true` on the same device but carry **different paper sizes**
-  (279.4 × 215.9 against 297 × 210), and `DsdData.IsHomogeneous` is hardcoded `false`. Next step
-  is to test whether the Publisher refuses a mixed-media set, and whether the answer is that flag
-  or forcing one shared page setup across the sheets. Single-sheet publishing is unaffected, so
-  this is a capability gap rather than a regression.
+- ~~**Multi-sheet publishing.**~~ **Done 2026-08-05.** Two layouts into one 3-page PDF, verified;
+  the cause was layouts present in memory and absent from the file on disk, not the paper-size
+  theory this entry proposed. See A10.
 
 - ~~**CI/CD — `.github/` does not exist at all.**~~ **Done.** `ci.yml` (build, test,
   manifest sync, whole-tree gate, Python sidecar), `codeql.yml`, `dependabot.yml`,

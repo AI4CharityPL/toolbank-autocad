@@ -27,6 +27,12 @@ public sealed class PluginPipeClient : IAsyncDisposable
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<ToolResponse>> _pending = new();
     private readonly CancellationTokenSource _disposed = new();
+
+    /// <summary>
+    /// Extra time the client waits beyond a tool's declared timeout, so the plugin's own refusal -
+    /// which names the tool and the reason - wins the race whenever it can produce one.
+    /// </summary>
+    private const int TimeoutGraceMs = 2_000;
     private NamedPipeClientStream? _stream;
     private Task? _readLoop;
     private HandshakeResponse? _handshake;
@@ -102,11 +108,38 @@ public sealed class PluginPipeClient : IAsyncDisposable
         try
         {
             await SendAsync(MessageKind.Tool, req, ct).ConfigureAwait(false);
-            using var reg = ct.Register(() =>
+
+            // The timeout has to be enforced HERE as well as inside the plugin.
+            //
+            // It was previously only packed into the request above and left to the plugin to
+            // honour, and the plugin honours it faithfully - right up until it cannot. A handler
+            // blocked on a MODAL AutoCAD dialog never reaches its own timeout check, never
+            // replies, and this await had nothing but `ct` to wake it. So every timeout in the
+            // bank was advisory: publish_sheets declares T_LONG = 300 s and hung for ten minutes
+            // before the caller was killed by hand, taking the backend process with it.
+            //
+            // A grace margin on top of the declared timeout keeps the plugin's own, more
+            // informative refusal winning the race whenever it is able to produce one.
+            using var timeout = new CancellationTokenSource(
+                timeoutMs > 0 ? timeoutMs + TimeoutGraceMs : Timeout.Infinite);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+            using var reg = linked.Token.Register(() =>
             {
                 _ = SendAsync(MessageKind.Cancel, new CancelRequest(correlationId), CancellationToken.None);
             });
-            return await tcs.Task.WaitAsync(ct).ConfigureAwait(false);
+
+            try
+            {
+                return await tcs.Task.WaitAsync(linked.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested && !ct.IsCancellationRequested)
+            {
+                throw new TimeoutException(
+                    $"Plugin tool '{tool}' did not answer within {timeoutMs} ms. The request was " +
+                    "sent and a cancel was sent after it, but AutoCAD never replied - which most " +
+                    "often means a handler is blocked on a modal dialog inside AutoCAD. Look at " +
+                    "the AutoCAD window; the tool cannot see what is on screen.");
+            }
         }
         finally
         {

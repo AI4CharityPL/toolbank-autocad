@@ -362,6 +362,7 @@ internal static class PublishPluginTools
             if (missing.Count > 0)
                 throw new ArgumentException($"No such layout(s): {string.Join(", ", missing)}.");
 
+
             // The Publisher reads the DWG from disk, not the in-memory database. An unsaved
             // drawing publishes whatever was last written, silently.
             var dwg = db.Filename;
@@ -399,6 +400,47 @@ internal static class PublishPluginTools
                     $"through: {string.Join(", ", unconfigured)}. Use publish.apply_page_setup with a named " +
                     "setup, or layouts.configure_plot, then check with publish.get_plot_area that " +
                     "'configured' comes back true.");
+
+            // The layouts must exist in the FILE ON DISK, not only in memory. The check above
+            // asks LayoutManager, which answers about the open drawing; the Publisher reads the
+            // DWG from disk and neither of them is wrong.
+            //
+            // This is what multi-sheet publishing failed on, and the failure was maximally
+            // unhelpful: AutoCAD raised a MODAL dialog saying "one or more sheets could not be
+            // processed, remove the non-plottable sheets" and the call never returned, so the
+            // tool could not even read its own Publisher log - which said, precisely,
+            // "BLAD: Nie znaleziono ukladu" (layout not found) for every sheet.
+            //
+            // Checking here converts a hang into a sentence. It also implements exactly what the
+            // dialog advises: do not hand the Publisher a sheet it cannot find.
+            var onDiskLayouts = new List<string>();
+            try
+            {
+                using var probe = new Database(false, true);
+                probe.ReadDwgFile(dwg, FileOpenMode.OpenForReadAndAllShare, true, null);
+                using var ptr = probe.TransactionManager.StartTransaction();
+                var pdict = (DBDictionary)ptr.GetObject(probe.LayoutDictionaryId, OpenMode.ForRead);
+                foreach (DBDictionaryEntry e in pdict) onDiskLayouts.Add(e.Key);
+                ptr.Commit();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Could not read '{dwg}' from disk to confirm which layouts it holds, and the " +
+                    "Publisher reads that file rather than the drawing in memory: " + ex.Message, ex);
+            }
+
+            var notOnDisk = a.Layouts
+                .Where(l => !onDiskLayouts.Any(d => string.Equals(d, l, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            if (notOnDisk.Count > 0)
+                throw new InvalidOperationException(
+                    "These layouts exist in the open drawing but NOT in the file on disk: " +
+                    string.Join(", ", notOnDisk) + ". The Publisher reads " + dwg + ", so it would " +
+                    "cancel the whole job over them. Save the drawing first - and note that " +
+                    "files.save_document_as writes a COPY without re-pointing the open document, so " +
+                    "the save that matters here is files.save_document on a document already opened " +
+                    "from this path. On disk right now: " + string.Join(", ", onDiskLayouts) + ".");
 
             var entries = new DsdEntryCollection();
             foreach (var name in a.Layouts)

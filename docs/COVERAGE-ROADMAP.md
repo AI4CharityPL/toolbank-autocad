@@ -146,7 +146,7 @@ set_paperspace_scale_link       list_objects_by_annotation_scale
 
 Turning a finished model into deliverables.
 
-### 2.1 `acad-sheetsets` — sheet set manager (≈24 → **18 planned**)
+### 2.1 `acad-sheetsets` — sheet set manager (≈24 → **23 planned**, **6 built and verified**)
 
 **Revised 2026-08-04 after checking the API rather than assuming it.** The original list was
 written from the AutoCAD feature set, not from what is reachable, and three things about it were
@@ -743,7 +743,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **66** | **56** | **2.2, 2.3, 2.4 complete**; only 2.1 sheetsets remains, and it needs a supervised COM contract first |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **62** | **2.2, 2.3, 2.4 complete**; 2.1 has its COM contract (rule 45) and its read half built and verified — 17 write tools remain |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | 1 | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | 0 | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |

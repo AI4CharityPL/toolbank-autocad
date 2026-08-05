@@ -107,3 +107,25 @@ Decided in the roadmap revision and repeated here so it is not re-litigated:
 | `publish_sheet_set` | `acad-publish` — a publish operation that happens to take a sheet set |
 | `create_sheet_list_table`, `update_sheet_list_table` | `acad-schedules` — a sheet list is one more schedule, not a new mechanism |
 | `archive_sheet_set`, `etransmit_sheet_set` | eTransmit is its own subsystem with its own packaging rules |
+
+---
+
+## 10. What a COM signature does NOT tell you
+
+Added after building the first tranche. Three separate rounds of diagnosis went into the COM
+entry layer before a single tool returned data, and none of the three causes is discoverable from
+the type metadata:
+
+| Signature says | It actually does |
+|---|---|
+| `FindOpenDatabase(String) -> AcSmDatabase` | **Throws `E_FAIL`** when no sheet set is open, instead of returning null. "Not open" is the normal case for a path nobody has touched, so this must be caught and treated as absence — and until it was, it threw before any later diagnostic could run, making every failure look like the same opaque error. |
+| `OpenDatabase(String, Boolean)` | The flag's meaning is **not in the metadata**, and ObjectARX documents it inconsistently. Both values are attempted and each failure reported separately. Guessing a boolean's polarity has cost this repository twice already — `IdPair.IsCloned` and `CompareLayerStateToDb`, both of which made a tool report the opposite of the truth. |
+| `Close(AcSmDatabase)` | Will not accept `IAcSmDatabase`. The coclass is required even though every other call in the graph is interface-typed. |
+
+**The rule this produces:** in COM, a nullable-looking return may throw, an undocumented flag is a
+coin toss to be tried rather than guessed, and interface types are not interchangeable with their
+coclasses. None of that is true of the managed API, which is why this category needed its own
+contract before its own code.
+
+Verified against `Sample/Sheet Sets/Architectural/IRD Addition.dst`: 11 sheets, 2 subsets
+(Architectural 6, Structural 4), sheets addressable by name and by number.

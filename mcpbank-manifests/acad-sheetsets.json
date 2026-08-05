@@ -1,0 +1,188 @@
+{
+  "id": "acad-sheetsets",
+  "name": "acad-sheetsets",
+  "description": "AutoCAD MCP - category \u0027sheetsets\u0027. (Auto-generated stub - replace with a real description per rule 31-mcpbank-discovery-hygiene.md.)",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sheetsets.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "custom",
+    "dwg",
+    "get",
+    "info",
+    "list",
+    "path",
+    "properties",
+    "property",
+    "set",
+    "sheet",
+    "sheets",
+    "sheetsets",
+    "subsets"
+  ],
+  "intent_examples": [
+    "check dst file",
+    "co tabliczka moze pobrac z zestawu",
+    "czy ten plik dst jest poprawny",
+    "dane arkusza do tabliczki",
+    "get a sheet property",
+    "ile arkuszy ma ten zestaw",
+    "informacje o zestawie arkuszy",
+    "jak podzielony jest zestaw arkuszy",
+    "jaki numer ma ten arkusz",
+    "jakie arkusze sa w tym zestawie",
+    "list sheet set custom properties",
+    "list sheets in a sheet set",
+    "list subsets of a sheet set",
+    "lista arkuszy w zestawie",
+    "lista podzestawow",
+    "nazwa zestawu arkuszy z pliku",
+    "numer projektu w zestawie",
+    "numery arkuszy",
+    "otworz zestaw arkuszy dst",
+    "podzestawy branzowe",
+    "project-wide properties",
+    "read sheet number and title",
+    "resolve sheet set file",
+    "sheet custom property value",
+    "sheet numbers and titles",
+    "sheet set categories",
+    "sheet set info",
+    "sheet set organisation",
+    "sheet set project data",
+    "show all sheets",
+    "sprawdz sciezke zestawu arkuszy",
+    "summarise a sheet set",
+    "validate a sheet set path",
+    "what is in this sheet set",
+    "wlasciwosci arkusza",
+    "wlasne wlasciwosci zestawu arkuszy"
+  ],
+  "tools_summary": [
+    {
+      "name": "get_sheet_property",
+      "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say \u0027A-101\u0027 at least as often as they say a sheet\u0027s name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
+      "tags": [
+        "get",
+        "sheet",
+        "property"
+      ],
+      "intent": [
+        "wlasciwosci arkusza",
+        "jaki numer ma ten arkusz",
+        "get a sheet property",
+        "read sheet number and title",
+        "dane arkusza do tabliczki",
+        "sheet custom property value"
+      ]
+    },
+    {
+      "name": "get_sheet_set_info",
+      "description": "Summarise a sheet set file: its name, description, how many sheets it holds and how many subsets. Read-only. Takes the .DST path - every tool in this category does, because none of them hold a sheet set open between calls. Start here to confirm a path is a readable sheet set before asking it anything else.",
+      "tags": [
+        "get",
+        "sheet",
+        "set",
+        "info"
+      ],
+      "intent": [
+        "informacje o zestawie arkuszy",
+        "ile arkuszy ma ten zestaw",
+        "sheet set info",
+        "summarise a sheet set",
+        "otworz zestaw arkuszy dst",
+        "what is in this sheet set"
+      ]
+    },
+    {
+      "name": "get_sheet_set_path",
+      "description": "Confirm a .DST path resolves to a readable sheet set and report its name and description. Read-only. Cheaper than get_sheet_set_info because it does not walk the sheet tree, so it is the call to make when all you need is to validate a path before passing it to the other tools.",
+      "tags": [
+        "get",
+        "sheet",
+        "set",
+        "path"
+      ],
+      "intent": [
+        "sprawdz sciezke zestawu arkuszy",
+        "czy ten plik dst jest poprawny",
+        "validate a sheet set path",
+        "resolve sheet set file",
+        "nazwa zestawu arkuszy z pliku",
+        "check dst file"
+      ]
+    },
+    {
+      "name": "list_custom_properties",
+      "description": "List the custom properties defined at SHEET SET level - the project-wide values a title block binds to, such as client or project number. Read-only. Per-sheet custom properties are reported by get_sheet_property instead, because a sheet can override the set and reporting both here would hide which value actually applies.",
+      "tags": [
+        "list",
+        "custom",
+        "properties"
+      ],
+      "intent": [
+        "wlasne wlasciwosci zestawu arkuszy",
+        "numer projektu w zestawie",
+        "list sheet set custom properties",
+        "project-wide properties",
+        "co tabliczka moze pobrac z zestawu",
+        "sheet set project data"
+      ]
+    },
+    {
+      "name": "list_sheets",
+      "description": "List every sheet in a sheet set - number, name, title, description, the subset it sits under, and whether it is marked do-not-plot. Read-only. Subsets are walked recursively and each sheet reports its full subset path, so a nested set reads as a flat list an agent can act on rather than a tree it has to traverse.",
+      "tags": [
+        "list",
+        "sheets"
+      ],
+      "intent": [
+        "lista arkuszy w zestawie",
+        "jakie arkusze sa w tym zestawie",
+        "list sheets in a sheet set",
+        "show all sheets",
+        "numery arkuszy",
+        "sheet numbers and titles"
+      ]
+    },
+    {
+      "name": "list_subsets",
+      "description": "List the subsets of a sheet set with their full paths and how many sheets each holds directly. Read-only. Subsets are how a real set is organised by discipline or by phase, and a subset path is what move_sheet_to_subset will take once the write half of this category exists.",
+      "tags": [
+        "list",
+        "subsets"
+      ],
+      "intent": [
+        "lista podzestawow",
+        "jak podzielony jest zestaw arkuszy",
+        "list subsets of a sheet set",
+        "sheet set organisation",
+        "podzestawy branzowe",
+        "sheet set categories"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "sheetsets",
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "AutoCAD MCP Megasystem",
+    "version": "0.1.0",
+    "tool_count_target": 6,
+    "last_regenerated_utc": "2026-08-05T21:54:38.1226061Z"
+  }
+}

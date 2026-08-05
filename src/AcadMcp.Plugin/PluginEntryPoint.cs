@@ -70,6 +70,9 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             LayoutsPluginTools.Register(_toolHost);
             FilesPluginTools.Register(_toolHost);
             XrefsPluginTools.Register(_toolHost);
+
+            // The only COM category in this bank. See docs/engineering-rules/45-sheet-sets-com.md.
+            SheetSetsPluginTools.Register(_toolHost);
             ViewportsPluginTools.Register(_toolHost);
             PublishPluginTools.Register(_toolHost);
             StylesPluginTools.Register(_toolHost);

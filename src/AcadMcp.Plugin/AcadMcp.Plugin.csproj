@@ -51,6 +51,21 @@
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>
     </Reference>
+    <!--
+      Sheet sets, and the ONLY COM interop assembly this plugin references. There is no
+      DatabaseServices API for them: AcSmComponents.Interop exposes IAcSmSheetSetMgr /
+      IAcSmSheetSet / IAcSmSheet / IAcSmSubset / IAcSmCustomPropertyBag as COM interfaces.
+      EmbedInteropTypes is deliberately FALSE, matching every other reference here - the
+      assembly ships with AutoCAD, so embedding would pin one version's type identities into
+      a plugin that has to load in whatever AutoCAD started it.
+      See docs/engineering-rules/45-sheet-sets-com.md for the contract this obeys.
+    -->
+    <Reference Include="AcSmComponents.Interop">
+      <HintPath>$(AcadInstallPath)AcSmComponents.Interop.dll</HintPath>
+      <Private>false</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </Reference>
   </ItemGroup>
 
 </Project>

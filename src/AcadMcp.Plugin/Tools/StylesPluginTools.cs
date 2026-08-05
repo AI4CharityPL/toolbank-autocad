@@ -59,6 +59,15 @@ internal static class StylesPluginTools
         // elements rather than a bag of scalar properties, so none of the catalogue machinery
         // above applies to them.
         StylesMlinePluginTools.Register(host);
+
+        // Layer filters live in a tree on the Database rather than in a symbol table or a
+        // dictionary, and the whole tree has to be assigned back after any change. Separate file
+        // so that write-back discipline stays visible instead of buried among style records.
+        StylesLayerFilterPluginTools.Register(host);
+
+        // Table cell styles, visual styles and point display: three small groups whose shapes
+        // have nothing in common with the style records above.
+        StylesMiscPluginTools.Register(host);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)

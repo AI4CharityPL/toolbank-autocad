@@ -243,7 +243,7 @@ publish_sheets              set_publish_options        set_plot_stamp
 get_plot_area
 ```
 
-### 2.3 `acad-styles` — style authoring (≈30 → **15 remaining**, 18 built)
+### 2.3 `acad-styles` — style authoring (≈30 → **3 remaining**, 29 built + `draw_mline`)
 
 Today: dimension, multileader and table style authoring (18 tools, all live-verified). Text
 styles live in `acad-annotations`, plot styles in `acad-plotstyles`.
@@ -255,9 +255,9 @@ not from memory. Three entries in the original list were wrong.
 | Group | Tools | API |
 |---|---|---|
 | Dimension styles | `apply_dimstyle_override` `list_dimstyle_overrides` `import_dimstyle_from_dwg` | `Dimension.GetDimstyleData()` / `SetDimstyleData()`; `IdMapping` + `DuplicateRecordCloning` |
-| Table styles | `set_table_cell_style` | `TableStyle.CellStyles` + `SetTextStyle` / `SetAlignment` / `SetColor` / `SetBackgroundColor` |
+| Table styles | `set_table_cell_style` — alignment and colours **only** | `TableStyle.SetAlignment` / `SetColor` / `SetBackgroundColor`, per `RowType`. Text height is deliberately excluded: `modify_tablestyle` already owns it as `titleTextHeight` / `headerTextHeight` / `dataTextHeight`, and two tools writing one property is how they drift apart. |
 | Multiline styles | `create_mlinestyle` `modify_mlinestyle` `list_mlinestyles` | `MlineStyle` — `Elements`, `StartAngle`, `EndAngle`, `Filled`, `FillColor`, caps, `ShowMiters` |
-| Layer filters | `create_layer_filter` `create_layer_group_filter` `list_layer_filters` `apply_layer_filter` `delete_layer_filter` | `LayerManager.LayerFilter`, `LayerFilterTree`, `LayerGroup`, `LayerFilterCollection` |
+| Layer filters | `create_layer_filter` `create_layer_group_filter` `list_layer_filters` `delete_layer_filter` — **`apply_layer_filter` withheld** | `LayerManager.LayerFilter`, `LayerFilterTree`, `LayerGroup`. `LayerFilterTree.Current` is get-only and no type sets it: which filter the palette shows is UI state. |
 | Visual styles | `list_visual_styles` `create_visual_style` | `DBVisualStyle` — see the caveat below |
 | Point display | `set_point_display` | PDMODE / PDSIZE system variables |
 

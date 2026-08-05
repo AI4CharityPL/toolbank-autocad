@@ -192,4 +192,75 @@ public static class StylesTools
         RequiresPlugin = true)]
     public static Task<MlineStyleResult> ModifyMlineStyle(IPluginGateway gw, ModifyMlineStyleArgs args, CancellationToken ct)
         => StylesProxy.CallAsync<ModifyMlineStyleArgs, MlineStyleResult>(gw, "acad.styles.modify_mlinestyle", args, T_NORMAL, ct);
+
+    // ─────────── layer filters (roadmap 2.3) ───────────
+    //
+    // apply_layer_filter was planned and is NOT here: LayerFilterTree.Current is get-only and
+    // there is no managed type that sets it. Which filter the Layer Properties Manager displays
+    // is palette state. See StylesLayerFilterPluginTools for the full reasoning; the short
+    // version is that a tool which assigns nothing must not be given a name that promises it.
+
+    [McpTool("list_layer_filters", "List every layer filter in the drawing - both kinds - with the expression or layer list behind it and how many layers it currently selects. Read-only. matchCount is the field to read after creating one: an expression can be perfectly valid, be stored, be listed, and select nothing, which no return code can tell you.", "styles",
+        Intent = new[] { "lista filtrow warstw", "jakie filtry warstw sa w rysunku", "list layer filters",
+                         "show layer filters", "filtry warstw", "what layer filters exist" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<LayerFilterListResult> ListLayerFilters(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, LayerFilterListResult>(gw, "acad.styles.list_layer_filters", args, T_FAST, ct);
+
+    [McpTool("create_layer_filter", "Create a PROPERTY layer filter from an expression, so layers created later that match it join automatically. Expressions look like NAME==\"A-*\" or COLOR==\"1\", combined with AND / OR / NOT. Nest it under an existing filter with parent. The result reports matchCount - check it, because a valid expression that selects nothing is stored and listed exactly like one that works.", "styles",
+        Intent = new[] { "utworz filtr warstw", "filtr warstw po nazwie", "create layer filter",
+                         "filter layers by name pattern", "grupuj warstwy wyrazeniem",
+                         "layer filter for architectural layers" },
+        RequiresPlugin = true)]
+    public static Task<LayerFilterResult> CreateLayerFilter(IPluginGateway gw, CreateLayerFilterArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateLayerFilterArgs, LayerFilterResult>(gw, "acad.styles.create_layer_filter", args, T_NORMAL, ct);
+
+    [McpTool("create_layer_group_filter", "Create a GROUP layer filter holding a fixed list of named layers. Unlike a property filter this never changes on its own - a layer added to the drawing afterwards does not join it. Use this when the set is a decision rather than a pattern. Every named layer must already exist; naming one that does not is an error rather than a silently smaller group.", "styles",
+        Intent = new[] { "utworz grupe warstw", "filtr grupowy warstw", "create layer group filter",
+                         "group specific layers together", "stala lista warstw jako filtr",
+                         "layer group from a list" },
+        RequiresPlugin = true)]
+    public static Task<LayerFilterResult> CreateLayerGroupFilter(IPluginGateway gw, CreateLayerGroupFilterArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateLayerGroupFilterArgs, LayerFilterResult>(gw, "acad.styles.create_layer_group_filter", args, T_NORMAL, ct);
+
+    [McpTool("delete_layer_filter", "Delete a layer filter. Deleting one that has nested filters takes those with it, and the result names them, because a filter count that dropped further than expected is otherwise a mystery. Refuses AutoCAD's built-in filters. Layers themselves are never touched - a filter is a view of them, not a container.", "styles",
+        Intent = new[] { "usun filtr warstw", "skasuj filtr warstw", "delete layer filter",
+                         "remove a layer filter", "usun grupe warstw", "drop layer filter" },
+        RequiresPlugin = true)]
+    public static Task<LayerFilterDeleteResult> DeleteLayerFilter(IPluginGateway gw, LayerFilterNameArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<LayerFilterNameArgs, LayerFilterDeleteResult>(gw, "acad.styles.delete_layer_filter", args, T_NORMAL, ct);
+
+    // ─────────── table cell styles, visual styles, point display (roadmap 2.3) ───────────
+
+    [McpTool("set_table_cell_style", "Set the per-cell properties of a table style - text height, alignment, text colour and background - for one cell class. A table style keeps a separate set of these for each class, typically _TITLE, _HEADER and _DATA, which is why the style-wide create/modify tools cannot reach them. Pass backgroundColorIndex as -1 to clear a background rather than set one. The result reports the cell's full state afterwards, so a caller sees what the other properties still are.", "styles",
+        Intent = new[] { "ustaw styl komorki tabeli", "zmien wysokosc tekstu w naglowku tabeli",
+                         "set table cell style", "table header text height and alignment",
+                         "kolor tla komorki tabeli", "format the title row of a table style" },
+        RequiresPlugin = true)]
+    public static Task<TableCellStyleResult> SetTableCellStyle(IPluginGateway gw, SetTableCellStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<SetTableCellStyleArgs, TableCellStyleResult>(gw, "acad.styles.set_table_cell_style", args, T_NORMAL, ct);
+
+    [McpTool("list_visual_styles", "List every visual style in the drawing with the preset it derives from, plus the full set of preset names available to create_visual_style. Read-only. Styles AutoCAD keeps for its own rendering passes are flagged internalUseOnly rather than hidden, because omitting them would misreport what the drawing contains.", "styles",
+        Intent = new[] { "lista stylow wizualnych", "jakie style wizualizacji sa dostepne",
+                         "list visual styles", "show visual styles", "style wyswietlania 3d",
+                         "what visual styles exist" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<VisualStyleListResult> ListVisualStyles(IPluginGateway gw, EmptyStylesArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<EmptyStylesArgs, VisualStyleListResult>(gw, "acad.styles.list_visual_styles", args, T_FAST, ct);
+
+    [McpTool("create_visual_style", "Create a named visual style derived from one of AutoCAD's presets - Conceptual, Realistic, Shaded, Hidden, Wireframe2D and the rest. Call list_visual_styles first for the full preset list. This deliberately does NOT expose per-trait authoring: DBVisualStyle offers only an untyped trait API with no property catalogue to advertise, so a tool promising arbitrary edits could not tell a caller what it accepts. Apply the result to a viewport with set_viewport_visual_style.", "styles",
+        Intent = new[] { "utworz styl wizualny", "nowy styl wyswietlania", "create visual style",
+                         "make a conceptual visual style", "wlasny styl wizualizacji",
+                         "visual style based on realistic" },
+        RequiresPlugin = true)]
+    public static Task<VisualStyleResult> CreateVisualStyle(IPluginGateway gw, CreateVisualStyleArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<CreateVisualStyleArgs, VisualStyleResult>(gw, "acad.styles.create_visual_style", args, T_NORMAL, ct);
+
+    [McpTool("set_point_display", "Set how POINT entities are drawn, drawing-wide. Give a plain glyph name - dot, none, plus, cross, tick - with an optional surround of circle, square or both, and this works out the PDMODE bit code for you; pass mode instead if you already know it. size sets PDSIZE: positive is absolute drawing units, negative is a percentage of the viewport. This is NOT a style object - AutoCAD has no per-point style, only these two system variables, so the change applies to every point in the drawing.", "styles",
+        Intent = new[] { "zmien wyglad punktow", "jak wyswietlac punkty", "set point display style",
+                         "make points show as crosses", "rozmiar punktow pdsize",
+                         "point display mode pdmode" },
+        RequiresPlugin = true)]
+    public static Task<PointDisplayResult> SetPointDisplay(IPluginGateway gw, SetPointDisplayArgs args, CancellationToken ct)
+        => StylesProxy.CallAsync<SetPointDisplayArgs, PointDisplayResult>(gw, "acad.styles.set_point_display", args, T_NORMAL, ct);
 }

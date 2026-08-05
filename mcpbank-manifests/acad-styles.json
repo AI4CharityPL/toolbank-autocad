@@ -13,24 +13,34 @@
     "authoring",
     "autocad",
     "cad",
+    "cell",
     "copy",
     "create",
     "current",
     "delete",
     "dimstyle",
+    "display",
     "dwg",
+    "filter",
+    "filters",
+    "group",
+    "layer",
     "list",
     "mleaderstyle",
     "mleaderstyles",
     "mlinestyle",
     "mlinestyles",
     "modify",
+    "point",
     "properties",
     "set",
     "standards",
+    "style",
     "styles",
+    "table",
     "tablestyle",
-    "tablestyles"
+    "tablestyles",
+    "visual"
   ],
   "intent_examples": [
     "adjust mline widths",
@@ -48,41 +58,65 @@
     "copy dimension style",
     "create a dimension style with 2.5 mm text",
     "create dimension style",
+    "create layer filter",
+    "create layer group filter",
     "create mleader style",
     "create multiline style",
     "create table style",
+    "create visual style",
     "define dimension style for 1:50",
     "define mline style for a 200mm wall",
     "define multileader style",
     "define schedule table style",
     "delete dimension style",
+    "delete layer filter",
     "delete mleader style",
     "delete table style",
     "dimstyle property names",
+    "drop layer filter",
     "duplicate dimstyle for another scale",
     "duplicate this dimstyle for 1:100",
     "edit existing dimstyle",
     "edit multileader style",
     "edit schedule style",
     "edytuj styl wielolinii",
+    "filter layers by name pattern",
+    "filtr grupowy warstw",
+    "filtr warstw po nazwie",
+    "filtry warstw",
+    "format the title row of a table style",
     "get rid of dimension style",
     "get rid of multileader style",
     "get rid of schedule style",
+    "group specific layers together",
+    "grupuj warstwy wyrazeniem",
+    "jak wyswietlac punkty",
+    "jakie filtry warstw sa w rysunku",
     "jakie parametry stylu moge ustawic",
     "jakie sa style multileader",
     "jakie sa style tabeli",
     "jakie style mline sa w rysunku",
+    "jakie style wizualizacji sa dostepne",
     "jakie wlasciwosci stylu odnosnika moge ustawic",
     "jakie wlasciwosci stylu tabeli moge ustawic",
     "jakie wlasciwosci stylu wymiarowego moge ustawic",
+    "kolor tla komorki tabeli",
+    "layer filter for architectural layers",
+    "layer group from a list",
     "list dimension style properties",
+    "list layer filters",
     "list mleader style properties",
     "list mleader styles",
     "list multiline styles",
     "list table style properties",
     "list table styles",
+    "list visual styles",
+    "lista filtrow warstw",
     "lista parametrow stylu wymiarowania",
     "lista stylow multilinii",
+    "lista stylow wizualnych",
+    "make a conceptual visual style",
+    "make points show as crosses",
     "make this dimstyle active",
     "make this leader style active",
     "make this multileader style current",
@@ -96,8 +130,10 @@
     "new leader style with 2.5 mm text",
     "new table style for schedules",
     "nowy styl wielolinii",
+    "nowy styl wyswietlania",
     "parametry stylu multileader",
     "parametry stylu tabeli",
+    "point display mode pdmode",
     "pokaz style odnosnika",
     "pokaz style tabel",
     "popraw dlugosc poziomki w stylu",
@@ -107,45 +143,65 @@
     "przelacz na styl multileader",
     "przelacz na styl wymiarowania",
     "przelacz na styl zestawienia",
+    "remove a layer filter",
     "remove unused dimstyle",
     "remove unused leader style",
     "remove unused table style",
+    "rozmiar punktow pdsize",
     "set current dimension style",
     "set current mleader style",
     "set current table style",
+    "set point display style",
+    "set table cell style",
+    "show layer filters",
     "show mline styles",
     "show multileader styles",
     "show table styles",
+    "show visual styles",
     "skasuj dimstyle",
+    "skasuj filtr warstw",
     "skasuj styl multileader",
     "skasuj styl zestawienia",
     "skopiuj styl wymiarowy",
+    "stala lista warstw jako filtr",
     "styl wymiarowy dla innej skali",
+    "style wyswietlania 3d",
     "switch dimstyle",
     "switch multileader style",
     "switch table style",
+    "table header text height and alignment",
     "table style property names",
     "ustaw biezacy styl odnosnika",
     "ustaw biezacy styl tabeli",
     "ustaw biezacy styl wymiarowy",
+    "ustaw styl komorki tabeli",
+    "usun filtr warstw",
+    "usun grupe warstw",
     "usun styl odnosnika",
     "usun styl tabeli",
     "usun styl wymiarowy",
+    "utworz filtr warstw",
+    "utworz grupe warstw",
     "utworz styl multilinii",
     "utworz styl odnosnika",
     "utworz styl tabeli",
+    "utworz styl wizualny",
     "utworz styl wymiarowy",
     "utworz styl wymiarowy dla skali 1:50",
+    "visual style based on realistic",
     "wall type as mline style",
     "what can I set on a dimstyle",
     "what can I set on a table style",
     "what can I set on an mleader style",
+    "what layer filters exist",
     "what leader styles exist",
     "what mline styles exist",
     "what schedule styles exist",
+    "what visual styles exist",
     "wielolinie dostepne style",
     "wlasny styl odnosnikow",
     "wlasny styl tabelki",
+    "wlasny styl wizualizacji",
     "wlasny styl wymiarowania",
     "wykasuj styl odnosnikow",
     "wykasuj styl tabelki",
@@ -165,7 +221,9 @@
     "zmien styl multilinii",
     "zmien styl odnosnika",
     "zmien styl tabeli",
-    "zmien styl wymiarowy"
+    "zmien styl wymiarowy",
+    "zmien wyglad punktow",
+    "zmien wysokosc tekstu w naglowku tabeli"
   ],
   "tools_summary": [
     {
@@ -198,6 +256,41 @@
         "new dimstyle with text height",
         "define dimension style for 1:50",
         "wlasny styl wymiarowania"
+      ]
+    },
+    {
+      "name": "create_layer_filter",
+      "description": "Create a PROPERTY layer filter from an expression, so layers created later that match it join automatically. Expressions look like NAME==\u0022A-*\u0022 or COLOR==\u00221\u0022, combined with AND / OR / NOT. Nest it under an existing filter with parent. The result reports matchCount - check it, because a valid expression that selects nothing is stored and listed exactly like one that works.",
+      "tags": [
+        "create",
+        "layer",
+        "filter"
+      ],
+      "intent": [
+        "utworz filtr warstw",
+        "filtr warstw po nazwie",
+        "create layer filter",
+        "filter layers by name pattern",
+        "grupuj warstwy wyrazeniem",
+        "layer filter for architectural layers"
+      ]
+    },
+    {
+      "name": "create_layer_group_filter",
+      "description": "Create a GROUP layer filter holding a fixed list of named layers. Unlike a property filter this never changes on its own - a layer added to the drawing afterwards does not join it. Use this when the set is a decision rather than a pattern. Every named layer must already exist; naming one that does not is an error rather than a silently smaller group.",
+      "tags": [
+        "create",
+        "layer",
+        "group",
+        "filter"
+      ],
+      "intent": [
+        "utworz grupe warstw",
+        "filtr grupowy warstw",
+        "create layer group filter",
+        "group specific layers together",
+        "stala lista warstw jako filtr",
+        "layer group from a list"
       ]
     },
     {
@@ -249,6 +342,23 @@
       ]
     },
     {
+      "name": "create_visual_style",
+      "description": "Create a named visual style derived from one of AutoCAD\u0027s presets - Conceptual, Realistic, Shaded, Hidden, Wireframe2D and the rest. Call list_visual_styles first for the full preset list. This deliberately does NOT expose per-trait authoring: DBVisualStyle offers only an untyped trait API with no property catalogue to advertise, so a tool promising arbitrary edits could not tell a caller what it accepts. Apply the result to a viewport with set_viewport_visual_style.",
+      "tags": [
+        "create",
+        "visual",
+        "style"
+      ],
+      "intent": [
+        "utworz styl wizualny",
+        "nowy styl wyswietlania",
+        "create visual style",
+        "make a conceptual visual style",
+        "wlasny styl wizualizacji",
+        "visual style based on realistic"
+      ]
+    },
+    {
       "name": "delete_dimstyle",
       "description": "Delete a dimension style. Refuses to delete \u0027Standard\u0027, refuses to delete the current style, and refuses a style still in use - with the reason, and a pointer to dimensions.set_entity_dimstyle for moving the dimensions off it first.",
       "tags": [
@@ -262,6 +372,23 @@
         "remove unused dimstyle",
         "get rid of dimension style",
         "wykasuj styl wymiarowania"
+      ]
+    },
+    {
+      "name": "delete_layer_filter",
+      "description": "Delete a layer filter. Deleting one that has nested filters takes those with it, and the result names them, because a filter count that dropped further than expected is otherwise a mystery. Refuses AutoCAD\u0027s built-in filters. Layers themselves are never touched - a filter is a view of them, not a container.",
+      "tags": [
+        "delete",
+        "layer",
+        "filter"
+      ],
+      "intent": [
+        "usun filtr warstw",
+        "skasuj filtr warstw",
+        "delete layer filter",
+        "remove a layer filter",
+        "usun grupe warstw",
+        "drop layer filter"
       ]
     },
     {
@@ -311,6 +438,23 @@
         "what can I set on a dimstyle",
         "dimstyle property names",
         "co da sie zmienic w stylu wymiarowym"
+      ]
+    },
+    {
+      "name": "list_layer_filters",
+      "description": "List every layer filter in the drawing - both kinds - with the expression or layer list behind it and how many layers it currently selects. Read-only. matchCount is the field to read after creating one: an expression can be perfectly valid, be stored, be listed, and select nothing, which no return code can tell you.",
+      "tags": [
+        "list",
+        "layer",
+        "filters"
+      ],
+      "intent": [
+        "lista filtrow warstw",
+        "jakie filtry warstw sa w rysunku",
+        "list layer filters",
+        "show layer filters",
+        "filtry warstw",
+        "what layer filters exist"
       ]
     },
     {
@@ -393,6 +537,23 @@
         "show table styles",
         "what schedule styles exist",
         "pokaz style tabel"
+      ]
+    },
+    {
+      "name": "list_visual_styles",
+      "description": "List every visual style in the drawing with the preset it derives from, plus the full set of preset names available to create_visual_style. Read-only. Styles AutoCAD keeps for its own rendering passes are flagged internalUseOnly rather than hidden, because omitting them would misreport what the drawing contains.",
+      "tags": [
+        "list",
+        "visual",
+        "styles"
+      ],
+      "intent": [
+        "lista stylow wizualnych",
+        "jakie style wizualizacji sa dostepne",
+        "list visual styles",
+        "show visual styles",
+        "style wyswietlania 3d",
+        "what visual styles exist"
       ]
     },
     {
@@ -509,11 +670,46 @@
         "switch table style",
         "aktywny styl tabeli"
       ]
+    },
+    {
+      "name": "set_point_display",
+      "description": "Set how POINT entities are drawn, drawing-wide. Give a plain glyph name - dot, none, plus, cross, tick - with an optional surround of circle, square or both, and this works out the PDMODE bit code for you; pass mode instead if you already know it. size sets PDSIZE: positive is absolute drawing units, negative is a percentage of the viewport. This is NOT a style object - AutoCAD has no per-point style, only these two system variables, so the change applies to every point in the drawing.",
+      "tags": [
+        "set",
+        "point",
+        "display"
+      ],
+      "intent": [
+        "zmien wyglad punktow",
+        "jak wyswietlac punkty",
+        "set point display style",
+        "make points show as crosses",
+        "rozmiar punktow pdsize",
+        "point display mode pdmode"
+      ]
+    },
+    {
+      "name": "set_table_cell_style",
+      "description": "Set the per-cell properties of a table style - text height, alignment, text colour and background - for one cell class. A table style keeps a separate set of these for each class, typically _TITLE, _HEADER and _DATA, which is why the style-wide create/modify tools cannot reach them. Pass backgroundColorIndex as -1 to clear a background rather than set one. The result reports the cell\u0027s full state afterwards, so a caller sees what the other properties still are.",
+      "tags": [
+        "set",
+        "table",
+        "cell",
+        "style"
+      ],
+      "intent": [
+        "ustaw styl komorki tabeli",
+        "zmien wysokosc tekstu w naglowku tabeli",
+        "set table cell style",
+        "table header text height and alignment",
+        "kolor tla komorki tabeli",
+        "format the title row of a table style"
+      ]
     }
   ],
   "metadata": {
     "category": "styles",
-    "tool_count_target": 21,
+    "tool_count_target": 29,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -527,6 +723,6 @@
     "owner": "AutoCAD MCP Megasystem",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T15:38:32.4833938Z"
+    "last_regenerated_utc": "2026-08-05T16:04:07.6795525Z"
   }
 }

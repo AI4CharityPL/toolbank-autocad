@@ -82,3 +82,37 @@ internal sealed record ModifyMlineStyleArgsDto(
 
 internal sealed record MlineStyleNameArgsDto(
     [property: JsonPropertyName("name")] string Name);
+
+internal sealed record CreateLayerFilterArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("expression")]  string? Expression,
+    [property: JsonPropertyName("parent")]      string? Parent,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite);
+
+internal sealed record CreateLayerGroupFilterArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("layers")]      IReadOnlyList<string>? Layers,
+    [property: JsonPropertyName("parent")]      string? Parent,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite);
+
+internal sealed record LayerFilterNameArgsDto(
+    [property: JsonPropertyName("name")] string Name);
+
+internal sealed record SetTableCellStyleArgsDto(
+    [property: JsonPropertyName("name")]                 string Name,
+    [property: JsonPropertyName("row")]                  string? Row,
+    [property: JsonPropertyName("alignment")]            string? Alignment,
+    [property: JsonPropertyName("colorIndex")]           int? ColorIndex,
+    [property: JsonPropertyName("backgroundColorIndex")] int? BackgroundColorIndex);
+
+internal sealed record CreateVisualStyleArgsDto(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("basedOn")]     string? BasedOn,
+    [property: JsonPropertyName("description")] string? Description,
+    [property: JsonPropertyName("overwrite")]   bool Overwrite);
+
+internal sealed record SetPointDisplayArgsDto(
+    [property: JsonPropertyName("glyph")]    string? Glyph,
+    [property: JsonPropertyName("surround")] string? Surround,
+    [property: JsonPropertyName("mode")]     int? Mode,
+    [property: JsonPropertyName("size")]     double? Size);

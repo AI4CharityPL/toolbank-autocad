@@ -187,9 +187,34 @@ internal static class PublishPluginTools
                         _ => throw new ArgumentException($"rotation must be 0, 90, 180 or 270; got {rot}."),
                     });
                 }
-                psv.SetPlotCentered(ps, true);
-                psv.SetUseStandardScale(ps, true);
-                psv.SetStdScaleType(ps, StdScaleType.ScaleToFit);
+                // KNOWN-GAPS A10. These three used to run bare and threw eInvalidInput on every
+                // explicit-configuration call, which is why create_page_setup only ever worked
+                // through fromLayout - and why publish_sheets could never be given a configured
+                // layout to publish. The cause is ordering: the validator cannot centre or scale
+                // a plot whose TYPE has not been set, because there is no area to relate them to.
+                // A fresh PlotSettings does not carry one.
+                //
+                // Each call is also named on failure. A bare "eInvalidInput" from a helper that
+                // makes four validator calls in a row tells a caller nothing about which one
+                // refused, and cost a full diagnostic cycle here.
+                void Step(string what, Action act)
+                {
+                    try { act(); }
+                    catch (Autodesk.AutoCAD.Runtime.Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            "AutoCAD refused '" + what + "' while building page setup '" + a.Name +
+                            "' (" + ex.ErrorStatus + "). Device is '" +
+                            (string.IsNullOrWhiteSpace(ps.PlotConfigurationName) ? "(none)" : ps.PlotConfigurationName) +
+                            "'. A page setup needs a device before paper, and a plot type before " +
+                            "centring or scaling.", ex);
+                    }
+                }
+
+                Step("set plot type to Extents", () => psv.SetPlotType(ps, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents));
+                Step("centre the plot", () => psv.SetPlotCentered(ps, true));
+                Step("use a standard scale", () => psv.SetUseStandardScale(ps, true));
+                Step("scale to fit", () => psv.SetStdScaleType(ps, StdScaleType.ScaleToFit));
             }
 
             ps.PlotSettingsName = a.Name;
@@ -399,6 +424,28 @@ internal static class PublishPluginTools
                 SheetSetName = a.Title ?? System.IO.Path.GetFileNameWithoutExtension(outPath),
                 NoOfCopies = 1,
                 IsHomogeneous = false,
+
+                // Layouts that have never been opened are not ready to plot, and the Publisher
+                // will skip them rather than say so.
+                InitializeLayouts = true,
+
+                // KNOWN-GAPS A10, and the whole reason that entry existed. Left at its default,
+                // PublishExecute opens a MODAL "specify PDF file" dialog and waits for a human —
+                // DestinationName above is ignored, nothing is written, no error is raised, and
+                // the call simply never returns. Every symptom the entry recorded (eNullPtr on
+                // some paths, "no error but no file" on others, "needs a machine with a real plot
+                // device") was this, on a machine that had ten plot devices all along.
+                //
+                // Found by looking at the screen. No amount of reading the return value could
+                // have shown it: there was no return value, because AutoCAD was waiting.
+                PromptForDwfName = false,
+
+                // The Publisher keeps its own diagnostic log and says nothing anywhere else. When
+                // a publish "succeeds" and writes no file, this is the only account of why - so it
+                // is always on, and its tail is quoted back in the failure below rather than left
+                // in a temp file nobody will look for.
+                LogFilePath = System.IO.Path.Combine(
+                    System.IO.Path.GetTempPath(), "acadmcp-publish.log"),
             };
             dsd.SetDsdEntryCollection(entries);
 
@@ -421,7 +468,32 @@ internal static class PublishPluginTools
                         "layouts here have no page setup yet - use publish.apply_page_setup with a named " +
                         "setup, or layouts.configure_plot, and check with publish.get_plot_area that " +
                         "'configured' comes back true.");
-                Application.Publisher.PublishExecute(dsd, cfg);
+                // Round-trip the DSD through disk before publishing. PublishExecute given a
+                // DsdData built purely in memory returns immediately having done nothing - no
+                // file, no error, and no entry in its own log, which is exactly what was
+                // observed here. Writing it out and reading it back is the documented way to get
+                // a DSD the Publisher will act on, and the read-back also normalises the entry
+                // paths it holds.
+                var dsdPath = System.IO.Path.Combine(
+                    System.IO.Path.GetTempPath(),
+                    "acadmcp-" + Guid.NewGuid().ToString("N") + ".dsd");
+                try
+                {
+                    dsd.WriteDsd(dsdPath);
+                    if (!System.IO.File.Exists(dsdPath))
+                        throw new InvalidOperationException(
+                            "AutoCAD would not write the publish description file, so there is " +
+                            "nothing to publish from.");
+
+                    using var onDisk = new DsdData();
+                    onDisk.ReadDsd(dsdPath);
+                    Application.Publisher.PublishExecute(onDisk, cfg);
+                }
+                finally
+                {
+                    try { if (System.IO.File.Exists(dsdPath)) System.IO.File.Delete(dsdPath); }
+                    catch (Exception) { /* a temp file we could not remove is not a publish failure */ }
+                }
             }
             finally
             {
@@ -437,8 +509,24 @@ internal static class PublishPluginTools
             bool exists = System.IO.File.Exists(outPath);
             long bytes = exists ? new System.IO.FileInfo(outPath).Length : 0;
             if (!exists)
+            {
+                var log = "";
+                try
+                {
+                    var lp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "acadmcp-publish.log");
+                    if (System.IO.File.Exists(lp))
+                    {
+                        var lines = System.IO.File.ReadAllLines(lp);
+                        log = " Publisher log: " + string.Join(" | ", lines.Reverse().Take(12).Reverse());
+                    }
+                    else log = " The Publisher wrote no log either.";
+                }
+                catch (Exception ex) { log = " (could not read the Publisher log: " + ex.Message + ")"; }
+
                 throw new InvalidOperationException(
-                    $"The publish reported no error but '{outPath}' does not exist afterwards. Nothing was written.");
+                    $"The publish reported no error but '{outPath}' does not exist afterwards. " +
+                    "Nothing was written." + log);
+            }
 
             return Wrap(new
             {

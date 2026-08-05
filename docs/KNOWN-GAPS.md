@@ -121,7 +121,40 @@ had just been saved. Worked around with an explicit `allowUnsaved` argument and 
 names this entry. Whether `save_document_as` fails to clear the flag, or `DBMOD` means something
 narrower than "has unsaved changes", is unresolved.
 
-### A10. `publish_sheets` happy path is unverified
+### A10. `publish_sheets` — single sheet **now verified**, multi-sheet still failing
+
+**2026-08-05. The original entry was wrong about the cause, and wrong about the machine.**
+It said this needed "a machine with a real plot device" because "the only plot devices here are
+Brak and OneNote". AutoCAD reports **ten**, including `DWG To PDF.pc3` and four `AutoCAD PDF`
+variants. The blocker was never hardware. It was four separate defects in a row:
+
+1. **`create_page_setup` was broken on every explicit call.** It threw a bare `eInvalidInput` and
+   worked only through `fromLayout` — i.e. only by copying a configuration a human had already
+   made by hand, which is why no test ever had a configured layout to publish. Cause was
+   ordering: the validator cannot centre or scale a plot whose **type** is unset, and a fresh
+   `PlotSettings` carries none. One missing `SetPlotType(Extents)` before the other three calls.
+   Each validator call now names itself on failure, because a bare `eInvalidInput` out of a
+   helper making four calls in a row cost a full diagnostic cycle.
+2. **`PublishExecute` opened a modal "specify PDF file" dialog and waited for a human.**
+   `DestinationName` was ignored, nothing was written, no error was raised, and the call never
+   returned. Fixed with `DsdData.PromptForDwfName = false`. **This was found by looking at the
+   screen** — there was no return value to inspect, because AutoCAD was blocked on a dialog.
+3. **No diagnostic channel at all.** The Publisher keeps its own log and says nothing anywhere
+   else. `DsdData.LogFilePath` is now always set and its tail is quoted into the failure message.
+4. **A `DsdData` built purely in memory makes `PublishExecute` return having done nothing** — no
+   file, no error, and no entry in its own log. Writing the DSD to disk and reading it back is
+   what makes the Publisher act on it. `InitializeLayouts = true` was added at the same time.
+
+**Verified working:** one layout to PDF produces a real file — `%PDF-1.7`, 3,092 bytes, valid
+trailer, one page.
+
+**Still open — multi-sheet.** Publishing two layouts into one PDF fails the same silent way
+(no file, no log). Both layouts report `configured: true` on the same device, but their **paper
+sizes differ**: 279.4 × 215.9 against 297 × 210. `DsdData.IsHomogeneous` is currently hardcoded
+`false`; the next thing to test is whether the Publisher refuses a mixed-media set, and whether
+that flag or a shared page setup is the answer. Single-sheet publishing is unaffected.
+
+**Original entry, for the record:**
 **Status:** shipped with its guards verified and its success path not.
 Every refusal is verified live — empty layout list, unknown format, unknown layout, unsaved
 drawing, unconfigured layouts. **A publish that actually produces a file has never succeeded

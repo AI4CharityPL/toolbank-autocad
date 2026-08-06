@@ -185,4 +185,22 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<DefinePropertyResult> DefineCustomProperty(IPluginGateway gw, DefinePropertyArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<DefinePropertyArgs, DefinePropertyResult>(gw, "acad.sheetsets.define_custom_property", args, T_NORMAL, ct);
+
+    // ─────────── order and removal ───────────
+
+    [McpTool("reorder_sheet", "Move a sheet up or down the drawing list, placing it before or after another sheet. Exactly one of before or after is required; both name a sheet by its name or number. Ordering happens WITHIN one subset - if the two sheets sit in different subsets the tool refuses and points at move_sheet_to_subset, so that 'put A-102 after A-101' can never quietly relocate a sheet. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "zmien kolejnosc arkuszy", "przesun arkusz w gore listy",
+                         "reorder sheets in a sheet set", "put this sheet after that one",
+                         "uporzadkuj liste rysunkow", "change drawing list order" },
+        RequiresPlugin = true)]
+    public static Task<ReorderResult> ReorderSheet(IPluginGateway gw, ReorderArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<ReorderArgs, ReorderResult>(gw, "acad.sheetsets.reorder_sheet", args, T_NORMAL, ct);
+
+    [McpTool("remove_sheet", "Remove a sheet from the sheet set. This removes the set's REFERENCE to a layout - the layout itself, and the drawing file holding it, are left exactly as they were, so nothing is destroyed and the sheet can be added back. Identify it by name or number. Answers with how many sheets remain. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "usun arkusz z zestawu", "wyrzuc arkusz z listy rysunkow",
+                         "remove a sheet from the sheet set", "take a sheet out of the set",
+                         "arkusz nie nalezy juz do zestawu", "drop a sheet from the drawing list" },
+        RequiresPlugin = true)]
+    public static Task<RemoveSheetResult> RemoveSheet(IPluginGateway gw, SheetRefArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SheetRefArgs, RemoveSheetResult>(gw, "acad.sheetsets.remove_sheet", args, T_NORMAL, ct);
 }

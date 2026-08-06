@@ -64,6 +64,8 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.move_sheet_to_subset", MoveSheetToSubset);
         host.Register("acad.sheetsets.set_sheet_property", SetSheetProperty);
         host.Register("acad.sheetsets.define_custom_property", DefineCustomProperty);
+        host.Register("acad.sheetsets.reorder_sheet", ReorderSheet);
+        host.Register("acad.sheetsets.remove_sheet", RemoveSheet);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -757,6 +759,150 @@ internal static class SheetSetsPluginTools
                     });
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    // ─────────── sheet order and removal ───────────
+
+    private static Task<ToolDispatchResult> ReorderSheet(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.reorder_sheet", ct, (doc, db, tr) =>
+        {
+            var a = Read<ReorderArgsDto>(args);
+            var haveBefore = !string.IsNullOrWhiteSpace(a.Before);
+            var haveAfter = !string.IsNullOrWhiteSpace(a.After);
+            if (haveBefore == haveAfter)
+                throw new ArgumentException(
+                    "Exactly one of before or after is required: the sheet this one should sit " +
+                    "next to, by name or by number. Giving both, or neither, does not describe a " +
+                    "position.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var anchorName = (haveBefore ? a.Before : a.After)!;
+                    var anchor = RequireSheet(ss, anchorName, full);
+                    try
+                    {
+                        var number = sheet.GetNumber();
+                        if (string.Equals(number, anchor.GetNumber(), StringComparison.OrdinalIgnoreCase))
+                            throw new ArgumentException(
+                                "A sheet cannot be positioned relative to itself.");
+
+                        var owner = sheet.GetOwner() as IAcSmSubset;
+                        var anchorOwner = anchor.GetOwner() as IAcSmSubset;
+                        try
+                        {
+                            // Ordering is WITHIN one parent. Moving between parents is a different
+                            // operation with different consequences, and conflating them would let
+                            // "put A-102 after A-101" quietly relocate a sheet to another subset.
+                            var here = owner?.GetName() ?? "";
+                            var there = anchorOwner?.GetName() ?? "";
+                            if (!string.Equals(here, there, StringComparison.OrdinalIgnoreCase))
+                                throw new ArgumentException(
+                                    "Sheet '" + sheet.GetName() + "' is in '" + here + "' and '" +
+                                    anchor.GetName() + "' is in '" + there + "'. Ordering happens " +
+                                    "within one subset; use move_sheet_to_subset to relocate a sheet.");
+                            if (owner is null)
+                                throw new InvalidOperationException(
+                                    "Sheet '" + sheet.GetName() + "' reports no owning subset.");
+
+                            // Same detach-then-insert as a move: InsertComponent adds rather than
+                            // re-parents, and inserting a component the owner still holds answers
+                            // 0x800288C6 duplicate identifier.
+                            owner.RemoveSheet((AcSmSheet)sheet);
+                            if (haveBefore) owner.InsertComponent((IAcSmComponent)sheet, (IAcSmComponent)anchor);
+                            else owner.InsertComponentAfter((IAcSmComponent)sheet, (IAcSmComponent)anchor);
+
+                            // Checked inside the lock, before the commit. See rule 45 §2.
+                            var found = FindSheet(ss, number)
+                                ?? throw new InvalidOperationException(
+                                    "Sheet '" + number + "' vanished during the reorder, which was " +
+                                    "therefore abandoned; nothing was saved.");
+                            try { Marshal.ReleaseComObject(found); } catch (Exception) { }
+
+                            var order = new List<object>();
+                            WalkSheets(owner, "", order);
+                            return Wrap(new
+                            {
+                                path = full,
+                                sheet = sheet.GetName(),
+                                number,
+                                placed = haveBefore ? "before" : "after",
+                                anchor = anchor.GetName(),
+                                subset = here,
+                                sheetsInSubset = order.Count,
+                            });
+                        }
+                        finally
+                        {
+                            if (owner is not null) { try { Marshal.ReleaseComObject(owner); } catch (Exception) { } }
+                            if (anchorOwner is not null) { try { Marshal.ReleaseComObject(anchorOwner); } catch (Exception) { } }
+                        }
+                    }
+                    finally { try { Marshal.ReleaseComObject(anchor); } catch (Exception) { } }
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    /// <summary>Take a sheet out of the set. The layout in the DWG is not touched.</summary>
+    /// <remarks>
+    /// A sheet is a REFERENCE to a layout in a drawing file. Removing it from the set removes the
+    /// reference; the layout, and the drawing, stay exactly as they were. That distinction is the
+    /// whole reason this is safe to offer at all, and it is stated in the result rather than left
+    /// for the caller to hope about.
+    /// </remarks>
+    private static Task<ToolDispatchResult> RemoveSheet(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.remove_sheet", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetRefArgsDto>(args);
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                string name, number, subset;
+                try
+                {
+                    name = sheet.GetName();
+                    number = sheet.GetNumber();
+                    var owner = sheet.GetOwner() as IAcSmSubset
+                        ?? throw new InvalidOperationException(
+                            "Sheet '" + name + "' reports no owning subset or sheet set.");
+                    try
+                    {
+                        subset = owner.GetName();
+                        owner.RemoveSheet((AcSmSheet)sheet);
+                    }
+                    finally { try { Marshal.ReleaseComObject(owner); } catch (Exception) { } }
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+
+                // Confirmed inside the lock: the sheet must be GONE. If it is somehow still
+                // present the removal did not take, and reporting success would be a lie - the
+                // exception abandons the edit with bCommit:false instead.
+                var still = FindSheet(ss, number);
+                if (still is not null)
+                {
+                    try { Marshal.ReleaseComObject(still); } catch (Exception) { }
+                    throw new InvalidOperationException(
+                        "Sheet '" + number + "' is still in '" + full + "' after RemoveSheet, so " +
+                        "the removal was abandoned and nothing was saved.");
+                }
+
+                var left = new List<object>();
+                WalkSheets(ss, "", left);
+                return Wrap(new
+                {
+                    path = full,
+                    removed = name,
+                    number,
+                    fromSubset = subset,
+                    sheetsRemaining = left.Count,
+                    note = "The sheet's REFERENCE was removed from the set. The layout it pointed " +
+                           "at, and the drawing holding it, are untouched - re-add it with " +
+                           "add_sheet if this was a mistake.",
+                });
             });
         });
 

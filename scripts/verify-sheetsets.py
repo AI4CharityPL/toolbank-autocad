@@ -334,6 +334,90 @@ check("no sheets were lost by any of that", len(reread_fresh()) == sheets_before
 do("delete_subset", {"path": DST, "subset": "no-such-subset"},
    label="unknown subset is refused", expect_fail=True)
 
+# ── reorder ───────────────────────────────────────────────────────────────────
+print("\n== reorder_sheet ==")
+
+
+def order_of(subset_suffix=None):
+    """Sheet numbers in list order, which is the drawing-list order the tool changes."""
+    return [s.get("number") for s in reread_fresh()
+            if subset_suffix is None or (s.get("subset") or "").endswith(subset_suffix)]
+
+
+# Two sheets from the SAME subset. An earlier version took the first two in the list, which
+# happened to straddle the sheet-set root and the Architectural subset — so the cross-subset
+# guard refused, correctly, and the test read as a code failure. Ordering is a within-subset
+# operation, so the fixture has to respect that.
+_by_subset = {}
+for s in reread_fresh():
+    _by_subset.setdefault(s.get("subset") or "", []).append(s.get("number"))
+_siblings = next((v for v in _by_subset.values() if len(v) >= 2), None)
+if not _siblings:
+    raise SystemExit("no subset holds two sheets; cannot test ordering")
+first, second = _siblings[0], _siblings[1]
+_subset_of = next(k for k, v in _by_subset.items() if v is _siblings)
+before_order = order_of(_subset_of)
+print(f"  ordering within {_subset_of!r}: {before_order[:6]}")
+
+r = do("reorder_sheet", {"path": DST, "sheet": first, "after": second})
+if isinstance(r, dict):
+    check("reports where it was placed", r.get("placed") == "after", str(r)[:180])
+    check("names the anchor it was placed against", r.get("anchor"), str(r)[:180])
+after_order = order_of(_subset_of)
+check("PERSISTED: the two swapped places",
+      after_order[:2] == [second, first], f"{before_order[:3]} -> {after_order[:3]}")
+check("no sheet was lost by reordering", len(after_order) == len(before_order),
+      f"{len(before_order)} -> {len(after_order)}")
+
+# Asserting the order CHANGED first, then that it came back. The earlier version only checked
+# the end state, which passed while the reorder was failing outright — the order had never
+# moved, so it still matched what was expected after moving back.
+check("the order really did change", after_order[:2] != before_order[:2],
+      f"{before_order[:3]} vs {after_order[:3]}")
+do("reorder_sheet", {"path": DST, "sheet": first, "before": second},
+   label="reorder_sheet (before)")
+check("PERSISTED: moved back", order_of(_subset_of)[:2] == [first, second],
+      str(order_of(_subset_of)[:3]))
+
+do("reorder_sheet", {"path": DST, "sheet": first, "before": second, "after": second},
+   label="both before and after is refused", expect_fail=True)
+do("reorder_sheet", {"path": DST, "sheet": first},
+   label="neither before nor after is refused", expect_fail=True)
+do("reorder_sheet", {"path": DST, "sheet": first, "after": first},
+   label="positioning a sheet against itself is refused", expect_fail=True)
+
+print("\n== ordering across subsets is refused, not silently a move ==")
+do("create_subset", {"path": DST, "name": "ACADMCP-Order"}, label="a subset to move into")
+do("move_sheet_to_subset", {"path": DST, "sheet": second, "subset": "ACADMCP-Order"},
+   label="park a sheet inside it")
+r = do("reorder_sheet", {"path": DST, "sheet": first, "after": second},
+       label="cross-subset reorder is refused", expect_fail=True)
+check("and the refusal points at move_sheet_to_subset", "move_sheet_to_subset" in str(r),
+      f"got: {str(r)[:180]}")
+check("the parked sheet did NOT get relocated by the refusal",
+      (fresh_find(number=second) or {}).get("subset", "").endswith("ACADMCP-Order"),
+      "a refused reorder moved it anyway")
+do("move_sheet_to_subset", {"path": DST, "sheet": second}, label="put it back")
+do("delete_subset", {"path": DST, "subset": "ACADMCP-Order"}, label="tidy the subset away")
+
+# ── remove_sheet ──────────────────────────────────────────────────────────────
+print("\n== remove_sheet takes the reference, not the layout ==")
+count_before = len(reread_fresh())
+victim = order_of()[-1]
+r = do("remove_sheet", {"path": DST, "sheet": victim})
+if isinstance(r, dict):
+    check("reports the number it removed", r.get("number") == victim, str(r)[:200])
+    check("reports how many remain", r.get("sheetsRemaining") == count_before - 1,
+          f"said {r.get('sheetsRemaining')}, expected {count_before - 1}")
+    check("says the drawing is untouched", "untouched" in (r.get("note") or ""), str(r)[:200])
+check("PERSISTED: the sheet is gone from a fresh-path copy",
+      fresh_find(number=victim) is None, "still listed")
+check("PERSISTED: exactly one sheet fewer", len(reread_fresh()) == count_before - 1,
+      f"{count_before} -> {len(reread_fresh())}")
+
+do("remove_sheet", {"path": DST, "sheet": victim},
+   label="removing it twice is refused", expect_fail=True)
+
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")
 do("set_sheet_number", {"path": DST, "sheet": "no-such-sheet", "value": "X-1"},
@@ -347,8 +431,12 @@ do("rename_sheet", {"path": os.path.join(WORK, "does-not-exist.dst"), "sheet": "
 print("\n== the sheet set is still intact ==")
 final = do("get_sheet_set_info", {"path": DST}, label="get_sheet_set_info (after writes)")
 if isinstance(final, dict) and isinstance(info, dict):
-    check("sheet count unchanged by the edits",
-          final.get("sheetCount") == info.get("sheetCount"),
+    # One fewer than we started with, and exactly one: remove_sheet took a single sheet, and
+    # nothing else in this script was supposed to change the count. Asserting the exact figure
+    # rather than "unchanged" is what makes the earlier move and reorder checks meaningful — a
+    # tool that quietly dropped a sheet would show up right here.
+    check("exactly one sheet fewer than we started with, from the one removal",
+          final.get("sheetCount") == (info.get("sheetCount") or 0) - 1,
           f"{info.get('sheetCount')} -> {final.get('sheetCount')}")
 check("every other sheet untouched",
       len([s for s in reread_fresh() if s.get("number") == "AS-01"]) == 1,

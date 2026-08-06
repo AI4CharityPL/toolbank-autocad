@@ -199,3 +199,32 @@ public sealed record DefinePropertyResult(
     [property: JsonPropertyName("before")]       string Before,
     [property: JsonPropertyName("created")]      bool Created,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── order and removal ───────────
+
+public sealed record ReorderArgs(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("sheet")]  string Sheet,
+    [property: JsonPropertyName("before")] string? Before = null,
+    [property: JsonPropertyName("after")]  string? After = null);
+
+public sealed record SheetRefArgs(
+    [property: JsonPropertyName("path")]  string Path,
+    [property: JsonPropertyName("sheet")] string Sheet);
+
+public sealed record ReorderResult(
+    [property: JsonPropertyName("path")]           string Path,
+    [property: JsonPropertyName("sheet")]          string Sheet,
+    [property: JsonPropertyName("number")]         string Number,
+    [property: JsonPropertyName("placed")]         string Placed,
+    [property: JsonPropertyName("anchor")]         string Anchor,
+    [property: JsonPropertyName("subset")]         string Subset,
+    [property: JsonPropertyName("sheetsInSubset")] int SheetsInSubset);
+
+public sealed record RemoveSheetResult(
+    [property: JsonPropertyName("path")]            string Path,
+    [property: JsonPropertyName("removed")]         string Removed,
+    [property: JsonPropertyName("number")]          string Number,
+    [property: JsonPropertyName("fromSubset")]      string FromSubset,
+    [property: JsonPropertyName("sheetsRemaining")] int SheetsRemaining,
+    [property: JsonPropertyName("note")]            string Note);

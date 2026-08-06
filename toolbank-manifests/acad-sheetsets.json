@@ -28,7 +28,9 @@
     "plot",
     "properties",
     "property",
+    "remove",
     "rename",
+    "reorder",
     "set",
     "sheet",
     "sheets",
@@ -41,7 +43,9 @@
   "intent_examples": [
     "add a custom property",
     "add a discipline folder",
+    "arkusz nie nalezy juz do zestawu",
     "assign sheet to a discipline",
+    "change drawing list order",
     "change drawing number",
     "change sheet name",
     "change the sheet title",
@@ -54,6 +58,7 @@
     "delete a subset",
     "dodaj folder branzowy do zestawu",
     "dodaj numer projektu do zestawu",
+    "drop a sheet from the drawing list",
     "exclude a sheet from publishing",
     "fill a title block field",
     "get a sheet property",
@@ -91,13 +96,17 @@
     "przemianuj arkusz",
     "przenies arkusz do podzestawu",
     "przenumeruj arkusz",
+    "przesun arkusz w gore listy",
     "przypisz arkusz do branzy",
     "przywroc arkusz do drukowania",
+    "put this sheet after that one",
     "read sheet number and title",
+    "remove a sheet from the sheet set",
     "remove a sheet set subset",
     "rename a sheet",
     "rename and renumber a sheet",
     "renumber a sheet",
+    "reorder sheets in a sheet set",
     "reorganise sheets between subsets",
     "resolve sheet set file",
     "set a custom property on a sheet",
@@ -114,9 +123,12 @@
     "skasuj folder w zestawie arkuszy",
     "sprawdz sciezke zestawu arkuszy",
     "summarise a sheet set",
+    "take a sheet out of the set",
+    "uporzadkuj liste rysunkow",
     "ustaw numer arkusza na",
     "ustaw tytul arkusza",
     "ustaw wlasciwosc arkusza",
+    "usun arkusz z zestawu",
     "usun grupe arkuszy",
     "usun podzestaw",
     "utworz podzestaw arkuszy",
@@ -127,7 +139,9 @@
     "wpisz rewizje do arkusza",
     "wyjmij arkusz z podzestawu",
     "wylacz arkusz z drukowania",
+    "wyrzuc arkusz z listy rysunkow",
     "zdefiniuj wlasciwosc zestawu arkuszy",
+    "zmien kolejnosc arkuszy",
     "zmien nazwe arkusza",
     "zmien numer arkusza",
     "zmien numer i tytul arkusza naraz",
@@ -304,6 +318,22 @@
       ]
     },
     {
+      "name": "remove_sheet",
+      "description": "Remove a sheet from the sheet set. This removes the set\u0027s REFERENCE to a layout - the layout itself, and the drawing file holding it, are left exactly as they were, so nothing is destroyed and the sheet can be added back. Identify it by name or number. Answers with how many sheets remain. Writes to the shared .DST under a lock.",
+      "tags": [
+        "remove",
+        "sheet"
+      ],
+      "intent": [
+        "usun arkusz z zestawu",
+        "wyrzuc arkusz z listy rysunkow",
+        "remove a sheet from the sheet set",
+        "take a sheet out of the set",
+        "arkusz nie nalezy juz do zestawu",
+        "drop a sheet from the drawing list"
+      ]
+    },
+    {
       "name": "rename_sheet",
       "description": "Rename and renumber a sheet in one locked write - AutoCAD\u0027s own \u0022Rename \u0026 Renumber Sheet\u0022. Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass \u0022\u0022 as the title to clear it.",
       "tags": [
@@ -319,6 +349,22 @@
         "popraw nazwe arkusza",
         "zmien numer i tytul arkusza naraz",
         "rename and renumber a sheet"
+      ]
+    },
+    {
+      "name": "reorder_sheet",
+      "description": "Move a sheet up or down the drawing list, placing it before or after another sheet. Exactly one of before or after is required; both name a sheet by its name or number. Ordering happens WITHIN one subset - if the two sheets sit in different subsets the tool refuses and points at move_sheet_to_subset, so that \u0027put A-102 after A-101\u0027 can never quietly relocate a sheet. Writes to the shared .DST under a lock.",
+      "tags": [
+        "reorder",
+        "sheet"
+      ],
+      "intent": [
+        "zmien kolejnosc arkuszy",
+        "przesun arkusz w gore listy",
+        "reorder sheets in a sheet set",
+        "put this sheet after that one",
+        "uporzadkuj liste rysunkow",
+        "change drawing list order"
       ]
     },
     {
@@ -407,8 +453,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 15,
-    "last_regenerated_utc": "2026-08-06T10:53:53.9336879Z",
+    "tool_count_target": 17,
+    "last_regenerated_utc": "2026-08-06T11:34:18.9375185Z",
     "phase": "phase2.1_sheetsets"
   }
 }

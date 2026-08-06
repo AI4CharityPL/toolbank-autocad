@@ -60,3 +60,13 @@ internal sealed record DefinePropertyArgsDto(
     [property: JsonPropertyName("name")]         string? Name,
     [property: JsonPropertyName("defaultValue")] string? DefaultValue,
     [property: JsonPropertyName("scope")]        string? Scope);
+
+internal sealed record ReorderArgsDto(
+    [property: JsonPropertyName("path")]   string? Path,
+    [property: JsonPropertyName("sheet")]  string? Sheet,
+    [property: JsonPropertyName("before")] string? Before,
+    [property: JsonPropertyName("after")]  string? After);
+
+internal sealed record SheetRefArgsDto(
+    [property: JsonPropertyName("path")]  string? Path,
+    [property: JsonPropertyName("sheet")] string? Sheet);

@@ -427,3 +427,52 @@ public sealed record WipeoutFrameResult(
     [property: JsonPropertyName("wipeoutframe")] int Wipeoutframe,
     [property: JsonPropertyName("before")]       int Before,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── splines (roadmap 3.1) ───────────
+
+public sealed record SplineCvArgs(
+    [property: JsonPropertyName("controlPoints")] IReadOnlyList<Point2dDto> ControlPoints,
+    [property: JsonPropertyName("degree")]        int? Degree = null,
+    [property: JsonPropertyName("closed")]        bool? Closed = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+public sealed record SplineFitPointArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("index")]  int? Index = null,
+    [property: JsonPropertyName("point")]  Point2dDto? Point = null);
+
+public sealed record SplineConvertArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record SplineCvResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("controlPoints")] int ControlPoints,
+    [property: JsonPropertyName("degree")]        int Degree,
+    [property: JsonPropertyName("closed")]        bool Closed,
+    [property: JsonPropertyName("length")]        double Length,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record SplineFitPointResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("index")]        int Index,
+    [property: JsonPropertyName("before")]       IReadOnlyList<double> Before,
+    [property: JsonPropertyName("point")]        IReadOnlyList<double> Point,
+    [property: JsonPropertyName("fitPoints")]    int FitPoints,
+    [property: JsonPropertyName("lengthBefore")] double LengthBefore,
+    [property: JsonPropertyName("length")]       double Length,
+    [property: JsonPropertyName("note")]         string Note);
+
+// `vertices` and `length` are NULLABLE: ToPolyline may hand back a Polyline2d rather than a
+// lightweight Polyline, and a non-Curve has no length. Declaring them non-nullable would drop a
+// legitimate null, which is KNOWN-GAPS C0.
+public sealed record SplineToPolylineResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("type")]           string Type,
+    [property: JsonPropertyName("vertices")]       int? Vertices,
+    [property: JsonPropertyName("lengthBefore")]   double LengthBefore,
+    [property: JsonPropertyName("length")]         double? Length,
+    [property: JsonPropertyName("originalKept")]   bool OriginalKept,
+    [property: JsonPropertyName("originalHandle")] string? OriginalHandle,
+    [property: JsonPropertyName("note")]           string Note);

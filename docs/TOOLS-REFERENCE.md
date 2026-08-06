@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 512 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 515 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (48 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (51 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -288,9 +288,11 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_rectangle` | Draw an axis-aligned rectangle as a closed polyline by two opposite corners. |
 | `draw_revcloud` | Draw a revision cloud polyline through the given vertices with arc-length min/max. |
 | `draw_spline` | Draw a 2D spline interpolated through the given fit points, optionally closed. |
+| `draw_spline_cv` | Draw a spline from CONTROL VERTICES - the vertices pull the curve without lying on it, except the first and last, which it touches. This is the other half of how AutoCAD models curves: draw_spline interpolates THROUGH given fit points, which is what you want when the curve must hit surveyed positions, while control vertices are what you want when the shape matters more than the points, as on a road centreline or a facade. degree defaults to 3 and must be less than the number of control points. |
 | `draw_text` | Draw single-line text (DTEXT) at a 2D position with given height/rotation/style. |
 | `draw_xline` | Draw an infinite construction line through a base point in a given direction. |
 | `edit_polyline_vertex` | Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is. |
+| `edit_spline_fit_point` | Move one fit point of a spline, by 0-based index. A fit point is a position the curve MUST pass through, so moving one reshapes the curve either side of it rather than only at it. Only works on a spline that has fit data - one made from control vertices carries none, and the tool says so plainly instead of passing through an HRESULT that does not mention which kind of spline it met. Answers with the point as it was and as it now is, plus the curve's length before and after. |
 | `explode_entity` | Explode a polyline/block/hatch into its component primitives. |
 | `extend_curve` | Extend a curve until it reaches one of the boundary entities. |
 | `fillet_corner` | Fillet two curves at their intersection with the given radius; returns the new fillet arc. |
@@ -314,6 +316,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `set_point_style` | Set how POINT entities are drawn, drawing-wide - AutoCAD's DDPTYPE. Give a name such as 'x', 'circleCross' or 'square', or the raw pdmode number. This matters because AutoCAD's default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included. |
 | `set_polyline_width` | Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after. |
 | `set_wipeout_frame` | Show or hide the outline around every wipeout in the drawing - the WIPEOUTFRAME system variable. 'hidden' removes it, 'shown' displays and plots it, and 'displayedNotPlotted' is what a real sheet usually wants: visible while you work, absent from the plot. Drawing-wide, so every wipeout changes together; this is not a per-entity property. |
+| `spline_to_polyline` | Convert a spline into a polyline, for export or for tools that cannot take a true curve. The conversion APPROXIMATES the spline with arc and line segments, so the length changes slightly and both values are reported - do not treat them as equal. The original spline is erased unless keepOriginal is true, in which case two entities end up overlapping and the caller has to decide which to keep. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 
 ## acad-geometry-3d

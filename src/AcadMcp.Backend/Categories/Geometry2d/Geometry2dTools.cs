@@ -371,4 +371,30 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<WipeoutFrameResult> SetWipeoutFrame(IPluginGateway gw, WipeoutFrameArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<WipeoutFrameArgs, WipeoutFrameResult>(gw, "acad.geometry2d.set_wipeout_frame", args, T_FAST, ct);
+
+    // ─────────── splines (roadmap 3.1) ───────────
+
+    [McpTool("draw_spline_cv", "Draw a spline from CONTROL VERTICES - the vertices pull the curve without lying on it, except the first and last, which it touches. This is the other half of how AutoCAD models curves: draw_spline interpolates THROUGH given fit points, which is what you want when the curve must hit surveyed positions, while control vertices are what you want when the shape matters more than the points, as on a road centreline or a facade. degree defaults to 3 and must be less than the number of control points.", "geometry-2d",
+        Intent = new[] { "narysuj splajn na wierzcholkach sterujacych", "krzywa sterowana punktami",
+                         "draw a control vertex spline", "NURBS by control points",
+                         "gladka krzywa nie przechodzaca przez punkty", "CV spline" },
+        RequiresPlugin = true)]
+    public static Task<SplineCvResult> DrawSplineCv(IPluginGateway gw, SplineCvArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<SplineCvArgs, SplineCvResult>(gw, "acad.geometry2d.draw_spline_cv", args, T_NORMAL, ct);
+
+    [McpTool("edit_spline_fit_point", "Move one fit point of a spline, by 0-based index. A fit point is a position the curve MUST pass through, so moving one reshapes the curve either side of it rather than only at it. Only works on a spline that has fit data - one made from control vertices carries none, and the tool says so plainly instead of passing through an HRESULT that does not mention which kind of spline it met. Answers with the point as it was and as it now is, plus the curve's length before and after.", "geometry-2d",
+        Intent = new[] { "przesun punkt splajnu", "zmien ksztalt krzywej przez punkt",
+                         "edit a spline fit point", "move a point the spline passes through",
+                         "popraw przebieg splajnu", "adjust spline shape" },
+        RequiresPlugin = true)]
+    public static Task<SplineFitPointResult> EditSplineFitPoint(IPluginGateway gw, SplineFitPointArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<SplineFitPointArgs, SplineFitPointResult>(gw, "acad.geometry2d.edit_spline_fit_point", args, T_NORMAL, ct);
+
+    [McpTool("spline_to_polyline", "Convert a spline into a polyline, for export or for tools that cannot take a true curve. The conversion APPROXIMATES the spline with arc and line segments, so the length changes slightly and both values are reported - do not treat them as equal. The original spline is erased unless keepOriginal is true, in which case two entities end up overlapping and the caller has to decide which to keep.", "geometry-2d",
+        Intent = new[] { "zamien splajn na polilinie", "konwersja krzywej na polilinie",
+                         "convert a spline to a polyline", "spline to polyline for export",
+                         "polilinia zamiast splajnu", "flatten a spline" },
+        RequiresPlugin = true)]
+    public static Task<SplineToPolylineResult> SplineToPolyline(IPluginGateway gw, SplineConvertArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<SplineConvertArgs, SplineToPolylineResult>(gw, "acad.geometry2d.spline_to_polyline", args, T_NORMAL, ct);
 }

@@ -227,3 +227,21 @@ internal sealed record WipeoutArgsDto(
 
 internal sealed record WipeoutFrameArgsDto(
     [property: JsonPropertyName("mode")] string? Mode);
+
+// ─────────── splines (roadmap 3.1) ───────────
+
+internal sealed record SplineCvArgsDto(
+    [property: JsonPropertyName("controlPoints")] List<Point2dDto>? ControlPoints,
+    [property: JsonPropertyName("degree")]        int? Degree,
+    [property: JsonPropertyName("closed")]        bool? Closed,
+    [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record SplineFitPointArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("index")]  int? Index,
+    [property: JsonPropertyName("point")]  Point2dDto? Point);
+
+internal sealed record SplineConvertArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
+    [property: JsonPropertyName("layer")]        string? Layer);

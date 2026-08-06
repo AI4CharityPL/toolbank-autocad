@@ -47,6 +47,10 @@ public class Geometry2dTests
         // Roadmap 3.1, third tranche: what covers what. A wipeout behind the thing it
         // should hide is invisible, so create_wipeout brings it to the front by default.
         "set_draworder", "set_object_transparency", "create_wipeout", "set_wipeout_frame",
+
+        // Roadmap 3.1, fourth tranche: splines. draw_spline interpolates THROUGH fit
+        // points; draw_spline_cv is pulled by control vertices it does not touch.
+        "draw_spline_cv", "edit_spline_fit_point", "spline_to_polyline",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

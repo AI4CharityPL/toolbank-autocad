@@ -85,6 +85,11 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.set_object_transparency", SetObjectTransparency);
         host.Register("acad.geometry2d.create_wipeout", CreateWipeout);
         host.Register("acad.geometry2d.set_wipeout_frame", SetWipeoutFrame);
+
+        // roadmap 3.1 - splines
+        host.Register("acad.geometry2d.draw_spline_cv", DrawSplineCv);
+        host.Register("acad.geometry2d.edit_spline_fit_point", EditSplineFitPoint);
+        host.Register("acad.geometry2d.spline_to_polyline", SplineToPolyline);
     }
 
     // ─────────── helpers ───────────
@@ -830,6 +835,165 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── splines (roadmap 3.1) ───────────
+    //
+    // `draw_spline` already exists and interpolates THROUGH fit points. A control-vertex spline
+    // is the other half of how AutoCAD models curves: the vertices pull the curve without lying
+    // on it, which is what you want for a road centreline or a smooth façade, and what you get
+    // when you edit a spline's shape rather than the points it must hit.
+
+    /// <summary>A clamped uniform knot vector for the given control point count and degree.</summary>
+    /// <remarks>
+    /// n control points at degree d need n + d + 1 knots. "Clamped" means the first and last
+    /// d+1 are repeated, which is what makes the curve start at the first vertex and end at the
+    /// last — without it a CV spline floats away from both ends and looks like a tool that put
+    /// the geometry somewhere else entirely.
+    /// </remarks>
+    private static DoubleCollection ClampedKnots(int count, int degree)
+    {
+        var knots = new DoubleCollection();
+        var spans = count - degree;
+        for (int i = 0; i <= degree; i++) knots.Add(0.0);
+        for (int i = 1; i < spans; i++) knots.Add(i);
+        for (int i = 0; i <= degree; i++) knots.Add(spans);
+        return knots;
+    }
+
+    private static Task<ToolDispatchResult> DrawSplineCv(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.draw_spline_cv", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SplineCvArgsDto>(args);
+            if (a.ControlPoints is null || a.ControlPoints.Count < 2)
+                throw new ArgumentException(
+                    "controlPoints is required and needs at least 2. These are the vertices that " +
+                    "PULL the curve - unlike draw_spline's fit points, the curve does not pass " +
+                    "through them except at the two ends.");
+
+            var degree = a.Degree ?? 3;
+            if (degree < 1 || degree > 11)
+                throw new ArgumentException("degree must be between 1 and 11; AutoCAD's own limit.");
+            if (a.ControlPoints.Count <= degree)
+                throw new ArgumentException(
+                    "A degree-" + degree + " spline needs more than " + degree + " control points; " +
+                    a.ControlPoints.Count + " were given. Either add points or lower the degree - " +
+                    "degree 1 is a polyline, 2 is a quadratic and 3 is AutoCAD's default.");
+
+            var pts = new Point3dCollection();
+            foreach (var p in a.ControlPoints) pts.Add(AcadEnv.ToPoint3d(p));
+
+            var weights = new DoubleCollection();
+            for (int i = 0; i < pts.Count; i++) weights.Add(1.0);
+
+            var sp = new Spline(degree, false, a.Closed == true, false,
+                                pts, ClampedKnots(pts.Count, degree), weights, 0.0, 0.0);
+
+            var handle = AcadEnv.Persist(db, tr, sp, a.Layer);
+            return Wrap(new
+            {
+                entity = handle,
+                controlPoints = sp.NumControlPoints,
+                degree = sp.Degree,
+                closed = sp.Closed,
+                length = sp.GetDistanceAtParameter(sp.EndParam),
+                note = "Control vertices shape the curve without lying on it, except the first " +
+                       "and last, which it does touch. Use draw_spline when the curve must pass " +
+                       "through given points instead.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> EditSplineFitPoint(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.edit_spline_fit_point", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SplineFitPointArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException("handle is required.");
+            if (a.Point is null) throw new ArgumentException("point is required: where it moves to.");
+
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            if (ent is not Spline sp)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetType().Name + ", not a Spline.");
+
+            // A CV spline has no fit points at all, and asking for one throws an HRESULT that
+            // says nothing about which kind of spline this is. Say it plainly instead.
+            if (!sp.HasFitData || sp.NumFitPoints == 0)
+                throw new ArgumentException(
+                    "This spline carries no fit points - it was defined by control vertices, so " +
+                    "there is nothing here to move. Fit points exist only on a spline made to pass " +
+                    "through given points, such as one from draw_spline.");
+
+            if (a.Index is null || a.Index < 0 || a.Index >= sp.NumFitPoints)
+                throw new ArgumentException(
+                    "index is required and must be 0.." + (sp.NumFitPoints - 1) + "; this spline " +
+                    "has " + sp.NumFitPoints + " fit point(s).");
+
+            var i = a.Index.Value;
+            var before = sp.GetFitPointAt(i);
+            var lengthBefore = sp.GetDistanceAtParameter(sp.EndParam);
+            sp.SetFitPointAt(i, AcadEnv.ToPoint3d(a.Point));
+            var now = sp.GetFitPointAt(i);
+
+            if (now.DistanceTo(AcadEnv.ToPoint3d(a.Point)) > 1e-6)
+                throw new InvalidOperationException(
+                    "The fit point reads back at " + Fmt(now) + " rather than where it was moved " +
+                    "to, so the edit did not take and nothing is being reported as success.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                index = i,
+                before = new[] { before.X, before.Y, before.Z },
+                point = new[] { now.X, now.Y, now.Z },
+                fitPoints = sp.NumFitPoints,
+                lengthBefore,
+                length = sp.GetDistanceAtParameter(sp.EndParam),
+                note = "A fit point is a point the curve must pass through, so moving one changes " +
+                       "the shape either side of it, not just at it.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> SplineToPolyline(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.spline_to_polyline", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SplineConvertArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException("handle is required.");
+
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            if (ent is not Spline sp)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetType().Name + ", not a Spline.");
+
+            var lengthBefore = sp.GetDistanceAtParameter(sp.EndParam);
+            var converted = sp.ToPolyline();
+            if (converted is not Entity pl)
+                throw new InvalidOperationException("AutoCAD returned no polyline for this spline.");
+
+            pl.SetPropertiesFrom(sp);
+            var handle = AcadEnv.Persist(db, tr, pl, a.Layer);
+
+            var keep = a.KeepOriginal == true;
+            if (!keep) sp.Erase();
+
+            double? lengthAfter = pl is Curve c
+                ? c.GetDistanceAtParameter(c.EndParam) - c.GetDistanceAtParameter(c.StartParam)
+                : null;
+
+            return Wrap(new
+            {
+                entity = handle,
+                type = pl.GetType().Name,
+                vertices = pl is Polyline p2 ? p2.NumberOfVertices : (int?)null,
+                lengthBefore,
+                length = lengthAfter,
+                originalKept = keep,
+                originalHandle = keep ? a.Handle : null,
+                note = "The conversion APPROXIMATES the curve with arc and line segments, so the " +
+                       "length changes slightly - both are reported. The original spline is erased " +
+                       "unless keepOriginal is true, in which case two entities now overlap.",
+            });
         });
 
     // ─────────── display order, transparency, wipeouts (roadmap 3.1) ───────────

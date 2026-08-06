@@ -13,6 +13,7 @@
     "add",
     "autocad",
     "cad",
+    "category",
     "create",
     "custom",
     "define",
@@ -39,14 +40,18 @@
     "subset",
     "subsets",
     "title",
-    "to"
+    "to",
+    "view",
+    "views"
   ],
   "intent_examples": [
     "add a custom property",
     "add a discipline folder",
     "add a layout to the sheet set",
+    "add a view category",
     "arkusz nie nalezy juz do zestawu",
     "assign sheet to a discipline",
+    "categorise a sheet view",
     "change drawing list order",
     "change drawing number",
     "change sheet name",
@@ -55,17 +60,21 @@
     "co tabliczka moze pobrac z zestawu",
     "create a new sheet set",
     "create a subset in a sheet set",
+    "create a view category",
     "czy ten plik dst jest poprawny",
     "dane arkusza do tabliczki",
     "define a sheet set custom property",
     "delete a subset",
     "dodaj arkusz do zestawu",
     "dodaj folder branzowy do zestawu",
+    "dodaj kategorie przekrojow",
     "dodaj numer projektu do zestawu",
     "drop a sheet from the drawing list",
     "exclude a sheet from publishing",
+    "file a view under sections",
     "fill a title block field",
     "get a sheet property",
+    "group sheet views by kind",
     "ile arkuszy ma ten zestaw",
     "import layout as sheet",
     "informacje o zestawie arkuszy",
@@ -73,18 +82,23 @@
     "jak podzielony jest zestaw arkuszy",
     "jaki numer ma ten arkusz",
     "jakie arkusze sa w tym zestawie",
+    "jakie widoki sa w zestawie",
+    "kategorie widokow",
     "kto sprawdzil ten arkusz",
     "list sheet set custom properties",
+    "list sheet views",
     "list sheets in a sheet set",
     "list subsets of a sheet set",
     "lista arkuszy w zestawie",
     "lista podzestawow",
+    "lista widokow arkusza",
     "make an empty sheet set",
     "move a sheet into a subset",
     "nadaj arkuszowi numer A-101",
     "nazwa rysunku na arkuszu",
     "nazwa zestawu arkuszy z pliku",
     "nie drukuj tego arkusza",
+    "nowa kategoria widokow w zestawie",
     "nowa wlasciwosc dla wszystkich arkuszy",
     "nowy arkusz z ukladu w rysunku",
     "nowy podzestaw",
@@ -103,9 +117,11 @@
     "project-wide title block data",
     "przemianuj arkusz",
     "przenies arkusz do podzestawu",
+    "przenies widok do innej kategorii",
     "przenumeruj arkusz",
     "przesun arkusz w gore listy",
     "przypisz arkusz do branzy",
+    "przypisz widok do kategorii",
     "przywroc arkusz do drukowania",
     "put this layout in the drawing list",
     "put this sheet after that one",
@@ -119,6 +135,7 @@
     "reorganise sheets between subsets",
     "resolve sheet set file",
     "set a custom property on a sheet",
+    "set a sheet view\u0027s category",
     "set sheet do not plot",
     "set sheet number",
     "set sheet title",
@@ -141,10 +158,13 @@
     "usun arkusz z zestawu",
     "usun grupe arkuszy",
     "usun podzestaw",
+    "utworz kategorie widokow",
     "utworz nowy zestaw arkuszy",
     "utworz podzestaw arkuszy",
     "validate a sheet set path",
+    "view categories in a sheet set",
     "what is in this sheet set",
+    "what views are placed on sheets",
     "wlasciwosci arkusza",
     "wlasne wlasciwosci zestawu arkuszy",
     "wpisz rewizje do arkusza",
@@ -154,6 +174,7 @@
     "zaimportuj uklad jako arkusz",
     "zaloz plik dst dla projektu",
     "zdefiniuj wlasciwosc zestawu arkuszy",
+    "zmien kategorie widoku arkusza",
     "zmien kolejnosc arkuszy",
     "zmien nazwe arkusza",
     "zmien numer arkusza",
@@ -208,6 +229,23 @@
         "add a discipline folder",
         "nowy podzestaw",
         "organise sheets into groups"
+      ]
+    },
+    {
+      "name": "create_view_category",
+      "description": "Create a view category in a sheet set - the grouping sheet views are filed under, such as Sections or Details. Needed before set_sheet_view_category has anywhere to file a view. Refuses a name already in use. Writes to the shared .DST under a lock.",
+      "tags": [
+        "create",
+        "view",
+        "category"
+      ],
+      "intent": [
+        "utworz kategorie widokow",
+        "dodaj kategorie przekrojow",
+        "create a view category",
+        "group sheet views by kind",
+        "nowa kategoria widokow w zestawie",
+        "add a view category"
       ]
     },
     {
@@ -311,6 +349,23 @@
         "project-wide properties",
         "co tabliczka moze pobrac z zestawu",
         "sheet set project data"
+      ]
+    },
+    {
+      "name": "list_sheet_views",
+      "description": "List every sheet view in a sheet set - the named views placed on sheets, with the sheet each sits on, its view number and title, and the category it is filed under. Read-only. Also reports the set\u0027s view categories. Callout and view-label blocks bind to sheet views, which is how a section marker on one sheet knows which sheet to point at. An empty result means no named view has been placed on any sheet yet.",
+      "tags": [
+        "list",
+        "sheet",
+        "views"
+      ],
+      "intent": [
+        "lista widokow arkusza",
+        "jakie widoki sa w zestawie",
+        "list sheet views",
+        "what views are placed on sheets",
+        "kategorie widokow",
+        "view categories in a sheet set"
       ]
     },
     {
@@ -483,6 +538,24 @@
         "change the sheet title",
         "nazwa rysunku na arkuszu"
       ]
+    },
+    {
+      "name": "set_sheet_view_category",
+      "description": "File a sheet view under a view category, moving it out of whatever category it was in. Identify the view by its name or its view number, and the category by name; the category must already exist, and the refusal lists the ones that do. Answers with the previous category so the change is reversible from its own result. Writes to the shared .DST under a lock.",
+      "tags": [
+        "set",
+        "sheet",
+        "view",
+        "category"
+      ],
+      "intent": [
+        "przypisz widok do kategorii",
+        "zmien kategorie widoku arkusza",
+        "set a sheet view\u0027s category",
+        "file a view under sections",
+        "przenies widok do innej kategorii",
+        "categorise a sheet view"
+      ]
     }
   ],
   "metadata": {
@@ -499,8 +572,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 19,
-    "last_regenerated_utc": "2026-08-06T11:55:26.1459907Z",
+    "tool_count_target": 22,
+    "last_regenerated_utc": "2026-08-06T12:07:07.7517138Z",
     "phase": "phase2.1_sheetsets"
   }
 }

@@ -68,6 +68,9 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.remove_sheet", RemoveSheet);
         host.Register("acad.sheetsets.add_sheet", AddSheet);
         host.Register("acad.sheetsets.create_sheet_set", CreateSheetSet);
+        host.Register("acad.sheetsets.list_sheet_views", ListSheetViews);
+        host.Register("acad.sheetsets.create_view_category", CreateViewCategory);
+        host.Register("acad.sheetsets.set_sheet_view_category", SetSheetViewCategory);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -759,6 +762,331 @@ internal static class SheetSetsPluginTools
                     });
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    // ─────────── sheet views ───────────
+    //
+    // A sheet view is a named view from a drawing, placed on a sheet, and filed under a view
+    // category. Callout and view-label blocks bind to them, which is how a section marker knows
+    // which sheet to point at.
+    //
+    // `add_sheet_view` is NOT here and cannot be: IAcSmSheetViews exposes only an enumerator and
+    // `Sync`, and Sync needs AXDBLib. That is not an oversight in the API - a sheet view comes
+    // into existence when a named view is PLACED on a layout, which is a drawing operation, and
+    // the sheet set discovers it by syncing. See KNOWN-GAPS.
+
+    private static void WalkSheetViews(IAcSmSubset subset, List<object> into)
+    {
+        var en = subset.GetSheetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var comp = en.Next();
+                if (comp is null) break;
+                try
+                {
+                    if (comp is IAcSmSheet sheet)
+                    {
+                        IAcSmSheetViews? views = null;
+                        try { views = sheet.GetSheetViews(); } catch (COMException) { views = null; }
+                        if (views is null) continue;
+                        var ven = views.GetEnumerator();
+                        try
+                        {
+                            ven.Reset();
+                            while (true)
+                            {
+                                var v = ven.Next();
+                                if (v is null) break;
+                                try
+                                {
+                                    string category = "";
+                                    try
+                                    {
+                                        var cat = v.GetCategory();
+                                        if (cat is not null)
+                                        {
+                                            category = cat.GetName() ?? "";
+                                            try { Marshal.ReleaseComObject(cat); } catch (Exception) { }
+                                        }
+                                    }
+                                    catch (COMException) { }
+
+                                    into.Add(new
+                                    {
+                                        sheet = sheet.GetName(),
+                                        sheetNumber = sheet.GetNumber(),
+                                        name = v.GetName() ?? "",
+                                        number = v.GetNumber() ?? "",
+                                        title = v.GetTitle() ?? "",
+                                        category,
+                                    });
+                                }
+                                finally { try { Marshal.ReleaseComObject(v); } catch (Exception) { } }
+                            }
+                        }
+                        finally
+                        {
+                            try { Marshal.ReleaseComObject(ven); } catch (Exception) { }
+                            try { Marshal.ReleaseComObject(views); } catch (Exception) { }
+                        }
+                    }
+                    else if (comp is IAcSmSubset nested) WalkSheetViews(nested, into);
+                }
+                finally { try { Marshal.ReleaseComObject(comp); } catch (Exception) { } }
+            }
+        }
+        finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
+    }
+
+    private static List<string> CategoryNames(IAcSmSheetSet ss)
+    {
+        var names = new List<string>();
+        IAcSmViewCategories? cats = null;
+        try { cats = ss.GetViewCategories(); } catch (COMException) { return names; }
+        if (cats is null) return names;
+        var en = cats.GetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var c = en.Next();
+                if (c is null) break;
+                try { names.Add(c.GetName() ?? ""); }
+                finally { try { Marshal.ReleaseComObject(c); } catch (Exception) { } }
+            }
+        }
+        finally
+        {
+            try { Marshal.ReleaseComObject(en); } catch (Exception) { }
+            try { Marshal.ReleaseComObject(cats); } catch (Exception) { }
+        }
+        return names;
+    }
+
+    private static IAcSmViewCategory? FindCategory(IAcSmSheetSet ss, string wanted)
+    {
+        IAcSmViewCategories? cats = null;
+        try { cats = ss.GetViewCategories(); } catch (COMException) { return null; }
+        if (cats is null) return null;
+        var en = cats.GetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var c = en.Next();
+                if (c is null) break;
+                if (string.Equals(c.GetName(), wanted, StringComparison.OrdinalIgnoreCase))
+                    return c;   // caller releases
+                try { Marshal.ReleaseComObject(c); } catch (Exception) { }
+            }
+        }
+        finally
+        {
+            try { Marshal.ReleaseComObject(en); } catch (Exception) { }
+            try { Marshal.ReleaseComObject(cats); } catch (Exception) { }
+        }
+        return null;
+    }
+
+    private static IAcSmSheetView? FindSheetView(IAcSmSubset subset, string wanted)
+    {
+        var en = subset.GetSheetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var comp = en.Next();
+                if (comp is null) break;
+                if (comp is IAcSmSheet sheet)
+                {
+                    IAcSmSheetViews? views = null;
+                    try { views = sheet.GetSheetViews(); } catch (COMException) { views = null; }
+                    if (views is not null)
+                    {
+                        var ven = views.GetEnumerator();
+                        try
+                        {
+                            ven.Reset();
+                            while (true)
+                            {
+                                var v = ven.Next();
+                                if (v is null) break;
+                                if (string.Equals(v.GetName(), wanted, StringComparison.OrdinalIgnoreCase)
+                                    || string.Equals(v.GetNumber(), wanted, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    try { Marshal.ReleaseComObject(comp); } catch (Exception) { }
+                                    return v;   // caller releases
+                                }
+                                try { Marshal.ReleaseComObject(v); } catch (Exception) { }
+                            }
+                        }
+                        finally
+                        {
+                            try { Marshal.ReleaseComObject(ven); } catch (Exception) { }
+                            try { Marshal.ReleaseComObject(views); } catch (Exception) { }
+                        }
+                    }
+                }
+                else if (comp is IAcSmSubset nested)
+                {
+                    var hit = FindSheetView(nested, wanted);
+                    if (hit is not null) { try { Marshal.ReleaseComObject(comp); } catch (Exception) { } return hit; }
+                }
+                try { Marshal.ReleaseComObject(comp); } catch (Exception) { }
+            }
+        }
+        finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
+        return null;
+    }
+
+    private static Task<ToolDispatchResult> ListSheetViews(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunReadAsync("acad.sheetsets.list_sheet_views", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetSetPathArgsDto>(args);
+            return WithSheetSet(a.Path, (ss, full) =>
+            {
+                var views = new List<object>();
+                WalkSheetViews(ss, views);
+                var categories = CategoryNames(ss);
+                return Wrap(new
+                {
+                    path = full,
+                    views,
+                    count = views.Count,
+                    categories,
+                    note = views.Count == 0
+                        ? "This set has no sheet views. A sheet view appears when a NAMED VIEW is " +
+                          "placed on a sheet's layout in AutoCAD; the sheet set then discovers it. " +
+                          "It is not something a sheet set tool can create."
+                        : "Callout and view-label blocks bind to these, which is how a section " +
+                          "marker knows which sheet to point at.",
+                });
+            });
+        });
+
+    private static Task<ToolDispatchResult> CreateViewCategory(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.create_view_category", ct, (doc, db, tr) =>
+        {
+            var a = Read<ViewCategoryArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Category))
+                throw new ArgumentException("category is required: the new category's name.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                if (FindCategory(ss, a.Category!) is { } clash)
+                {
+                    try
+                    {
+                        throw new ArgumentException(
+                            "'" + full + "' already has a view category named '" + a.Category + "'.");
+                    }
+                    finally { try { Marshal.ReleaseComObject(clash); } catch (Exception) { } }
+                }
+
+                var cats = ss.GetViewCategories()
+                    ?? throw new InvalidOperationException(
+                        "'" + full + "' exposes no view categories.");
+                try
+                {
+                    // The third argument is an id. Empty lets AutoCAD assign one; inventing one
+                    // risks colliding with a category this set does not currently hold but will.
+                    var made = cats.CreateViewCategory(a.Category, a.Description ?? "", "")
+                        ?? throw new InvalidOperationException(
+                            "AutoCAD created no view category and raised no error.");
+                    try
+                    {
+                        return Wrap(new
+                        {
+                            path = full,
+                            category = made.GetName(),
+                            description = made.GetDesc(),
+                            categories = CategoryNames(ss),
+                        });
+                    }
+                    finally { try { Marshal.ReleaseComObject(made); } catch (Exception) { } }
+                }
+                finally { try { Marshal.ReleaseComObject(cats); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetSheetViewCategory(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.set_sheet_view_category", ct, (doc, db, tr) =>
+        {
+            var a = Read<SetViewCategoryArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.View))
+                throw new ArgumentException("view is required: the sheet view's name or number.");
+            if (string.IsNullOrWhiteSpace(a.Category))
+                throw new ArgumentException("category is required: the view category to file it under.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var view = FindSheetView(ss, a.View!)
+                    ?? throw new ArgumentException(
+                        "No sheet view named or numbered '" + a.View + "' in '" + full + "'. Use " +
+                        "list_sheet_views - and note a sheet view only exists once a named view " +
+                        "has been placed on a sheet in AutoCAD.");
+                try
+                {
+                    var category = FindCategory(ss, a.Category!)
+                        ?? throw new ArgumentException(
+                            "No view category named '" + a.Category + "' in '" + full + "'. " +
+                            "Present: " + string.Join(", ", CategoryNames(ss)) +
+                            ". Create one with create_view_category.");
+                    try
+                    {
+                        string before = "";
+                        try
+                        {
+                            var was = view.GetCategory();
+                            if (was is not null)
+                            {
+                                before = was.GetName() ?? "";
+                                try { Marshal.ReleaseComObject(was); } catch (Exception) { }
+                            }
+                        }
+                        catch (COMException) { }
+
+                        view.SetCategory((AcSmViewCategory)category);
+
+                        string now = "";
+                        try
+                        {
+                            var isNow = view.GetCategory();
+                            if (isNow is not null)
+                            {
+                                now = isNow.GetName() ?? "";
+                                try { Marshal.ReleaseComObject(isNow); } catch (Exception) { }
+                            }
+                        }
+                        catch (COMException) { }
+
+                        // Checked inside the lock, before the commit: a setter that reports
+                        // nothing and changes nothing is exactly what SetName turned out to be.
+                        if (!string.Equals(now, a.Category, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException(
+                                "The view still reports category '" + now + "' after being moved " +
+                                "to '" + a.Category + "', so the change was abandoned and nothing " +
+                                "was saved.");
+
+                        return Wrap(new
+                        {
+                            path = full,
+                            view = view.GetName(),
+                            number = view.GetNumber(),
+                            before,
+                            category = now,
+                        });
+                    }
+                    finally { try { Marshal.ReleaseComObject(category); } catch (Exception) { } }
+                }
+                finally { try { Marshal.ReleaseComObject(view); } catch (Exception) { } }
             });
         });
 

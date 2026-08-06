@@ -263,3 +263,43 @@ public sealed record CreateSheetSetResult(
     [property: JsonPropertyName("bytes")]       long Bytes,
     [property: JsonPropertyName("sheetCount")]  int SheetCount,
     [property: JsonPropertyName("note")]        string Note);
+
+// ─────────── sheet views ───────────
+
+public sealed record ViewCategoryArgs(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("category")]    string Category,
+    [property: JsonPropertyName("description")] string? Description = null);
+
+public sealed record SetViewCategoryArgs(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("view")]     string View,
+    [property: JsonPropertyName("category")] string Category);
+
+public sealed record SheetViewInfo(
+    [property: JsonPropertyName("sheet")]       string Sheet,
+    [property: JsonPropertyName("sheetNumber")] string SheetNumber,
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("number")]      string Number,
+    [property: JsonPropertyName("title")]       string Title,
+    [property: JsonPropertyName("category")]    string Category);
+
+public sealed record SheetViewListResult(
+    [property: JsonPropertyName("path")]       string Path,
+    [property: JsonPropertyName("views")]      IReadOnlyList<SheetViewInfo> Views,
+    [property: JsonPropertyName("count")]      int Count,
+    [property: JsonPropertyName("categories")] IReadOnlyList<string> Categories,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record ViewCategoryResult(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("category")]    string Category,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("categories")]  IReadOnlyList<string> Categories);
+
+public sealed record SetViewCategoryResult(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("view")]     string View,
+    [property: JsonPropertyName("number")]   string Number,
+    [property: JsonPropertyName("before")]   string Before,
+    [property: JsonPropertyName("category")] string Category);

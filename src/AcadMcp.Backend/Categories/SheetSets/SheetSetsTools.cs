@@ -219,4 +219,35 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<CreateSheetSetResult> CreateSheetSet(IPluginGateway gw, CreateSheetSetArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<CreateSheetSetArgs, CreateSheetSetResult>(gw, "acad.sheetsets.create_sheet_set", args, T_NORMAL, ct);
+
+    // ─────────── sheet views ───────────
+    //
+    // add_sheet_view is deliberately absent and cannot be built here: IAcSmSheetViews exposes
+    // only an enumerator and Sync, and Sync needs AXDBLib. That is not a gap in the API - a
+    // sheet view exists once a NAMED VIEW has been placed on a sheet's layout in AutoCAD, which
+    // is a drawing operation; the sheet set then discovers it. See KNOWN-GAPS.
+
+    [McpTool("list_sheet_views", "List every sheet view in a sheet set - the named views placed on sheets, with the sheet each sits on, its view number and title, and the category it is filed under. Read-only. Also reports the set's view categories. Callout and view-label blocks bind to sheet views, which is how a section marker on one sheet knows which sheet to point at. An empty result means no named view has been placed on any sheet yet.", "sheetsets",
+        Intent = new[] { "lista widokow arkusza", "jakie widoki sa w zestawie",
+                         "list sheet views", "what views are placed on sheets",
+                         "kategorie widokow", "view categories in a sheet set" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<SheetViewListResult> ListSheetViews(IPluginGateway gw, SheetSetPathArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SheetSetPathArgs, SheetViewListResult>(gw, "acad.sheetsets.list_sheet_views", args, T_NORMAL, ct);
+
+    [McpTool("create_view_category", "Create a view category in a sheet set - the grouping sheet views are filed under, such as Sections or Details. Needed before set_sheet_view_category has anywhere to file a view. Refuses a name already in use. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "utworz kategorie widokow", "dodaj kategorie przekrojow",
+                         "create a view category", "group sheet views by kind",
+                         "nowa kategoria widokow w zestawie", "add a view category" },
+        RequiresPlugin = true)]
+    public static Task<ViewCategoryResult> CreateViewCategory(IPluginGateway gw, ViewCategoryArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<ViewCategoryArgs, ViewCategoryResult>(gw, "acad.sheetsets.create_view_category", args, T_NORMAL, ct);
+
+    [McpTool("set_sheet_view_category", "File a sheet view under a view category, moving it out of whatever category it was in. Identify the view by its name or its view number, and the category by name; the category must already exist, and the refusal lists the ones that do. Answers with the previous category so the change is reversible from its own result. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "przypisz widok do kategorii", "zmien kategorie widoku arkusza",
+                         "set a sheet view's category", "file a view under sections",
+                         "przenies widok do innej kategorii", "categorise a sheet view" },
+        RequiresPlugin = true)]
+    public static Task<SetViewCategoryResult> SetSheetViewCategory(IPluginGateway gw, SetViewCategoryArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SetViewCategoryArgs, SetViewCategoryResult>(gw, "acad.sheetsets.set_sheet_view_category", args, T_NORMAL, ct);
 }

@@ -236,6 +236,7 @@ precedent set by the parametric constraint tools.
 
 | Tool(s) | Category | Why |
 |---|---|---|
+| `add_sheet_view` | sheetsets | **Not buildable through this COM surface, and that is not a gap in the API.** `IAcSmSheetViews` exposes only an enumerator and `Sync`, and `Sync` needs AXDBLib, which is not installed. More to the point, a sheet view comes into existence when a NAMED VIEW is placed on a sheet's layout in AutoCAD — a drawing operation — and the sheet set then discovers it. A tool of this name in `acad-sheetsets` would promise something the category does not do. `list_sheet_views`, `create_view_category` and `set_sheet_view_category` all ship and work on the 59 views in AutoCAD's sample set. |
 | `refedit_begin` / `_save` / `_discard` | xrefs | Modal, stateful command sequence on the channel that produced `eInvalidInput` in `zoom_extents` and silent queueing in `undo`. Needs a supervised contract for that channel first. |
 | `set_viewport_layer_override`, `list_viewport_layer_overrides`, `clear_viewport_layer_overrides` | viewports | 2025 SDK exposes `LayerTableRecord.HasOverrides` as a plain bool with no viewport argument, and none of the `Set*InViewport` / `Get*InViewport` accessors. The capability exists in AutoCAD — this is finding the right API, not a limitation. **Per-viewport freeze, the larger half, ships and works.** |
 | `maximize_viewport` | viewports | `MAXACT`/`MSPACE` — command layer. |

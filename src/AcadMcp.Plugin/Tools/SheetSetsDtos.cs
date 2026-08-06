@@ -85,3 +85,13 @@ internal sealed record CreateSheetSetArgsDto(
     [property: JsonPropertyName("description")]  string? Description,
     [property: JsonPropertyName("templatePath")] string? TemplatePath,
     [property: JsonPropertyName("overwrite")]    bool? Overwrite);
+
+internal sealed record ViewCategoryArgsDto(
+    [property: JsonPropertyName("path")]        string? Path,
+    [property: JsonPropertyName("category")]    string? Category,
+    [property: JsonPropertyName("description")] string? Description);
+
+internal sealed record SetViewCategoryArgsDto(
+    [property: JsonPropertyName("path")]     string? Path,
+    [property: JsonPropertyName("view")]     string? View,
+    [property: JsonPropertyName("category")] string? Category);

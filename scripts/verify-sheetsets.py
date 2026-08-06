@@ -550,6 +550,65 @@ r = do("create_sheet_set", {"path": os.path.join(WORK, "tpl.dst"), "templatePath
 check("and the refusal distinguishes it from set_sheet_set_template",
       "set_sheet_set_template" in str(r), str(r)[:220])
 
+# ── sheet views ───────────────────────────────────────────────────────────────
+print("\n== list_sheet_views ==")
+r = do("list_sheet_views", {"path": DST})
+views, cats = [], []
+if isinstance(r, dict):
+    views = r.get("views") or []
+    cats = r.get("categories") or []
+    check("count matches the list it returned", r.get("count") == len(views), str(r)[:200])
+    check("carries a note explaining an empty result", bool(r.get("note")), str(r)[:200])
+print(f"  {len(views)} view(s), categories: {cats}")
+
+print("\n== create_view_category ==")
+r = do("create_view_category", {"path": DST, "category": "ACADMCP-Sections",
+                                "description": "created by verify"})
+if isinstance(r, dict):
+    check("reports the name it created", r.get("category") == "ACADMCP-Sections", str(r)[:200])
+    check("lists it among the set's categories",
+          "ACADMCP-Sections" in (r.get("categories") or []), str(r)[:200])
+
+_fresh[0] += 1
+_c = os.path.join(WORK, f"fresh-{_fresh[0]:02d}.dst")
+shutil.copy2(DST, _c)
+ok, back = S.call("list_sheet_views", {"path": _c})
+check("PERSISTED: a fresh-path copy carries the category",
+      "ACADMCP-Sections" in ((back or {}).get("categories") or []), str(back)[:200])
+
+do("create_view_category", {"path": DST, "category": "ACADMCP-Sections"},
+   label="a duplicate category name is refused", expect_fail=True)
+
+print("\n== set_sheet_view_category ==")
+if views:
+    v = views[0]
+    r = do("set_sheet_view_category", {"path": DST, "view": v.get("name"),
+                                       "category": "ACADMCP-Sections"})
+    if isinstance(r, dict):
+        check("reports the new category", r.get("category") == "ACADMCP-Sections", str(r)[:200])
+        check("reports the category it came from", "before" in r, str(r)[:200])
+    _fresh[0] += 1
+    _c2 = os.path.join(WORK, f"fresh-{_fresh[0]:02d}.dst")
+    shutil.copy2(DST, _c2)
+    ok, back2 = S.call("list_sheet_views", {"path": _c2})
+    moved = next((x for x in ((back2 or {}).get("views") or [])
+                  if x.get("name") == v.get("name")), None)
+    check("PERSISTED: the view is filed under the new category",
+          (moved or {}).get("category") == "ACADMCP-Sections", str(moved)[:200])
+else:
+    # Not a skip disguised as a pass: the set genuinely has no views, and the reason is
+    # recorded rather than the check being quietly dropped.
+    print("  (no sheet views in this set — a sheet view exists only once a NAMED VIEW has been")
+    print("   placed on a sheet in AutoCAD, which no sheet-set tool can do. Not a failure.)")
+    r = do("set_sheet_view_category", {"path": DST, "view": "anything",
+                                       "category": "ACADMCP-Sections"},
+           label="an unknown view is refused", expect_fail=True)
+    check("and the refusal explains how sheet views come to exist",
+          "placed on a sheet" in str(r), str(r)[:220])
+
+r = do("set_sheet_view_category", {"path": DST, "view": "anything", "category": "NO-SUCH-CATEGORY"},
+       label="an unknown category is refused", expect_fail=True)
+
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")
 do("set_sheet_number", {"path": DST, "sheet": "no-such-sheet", "value": "X-1"},

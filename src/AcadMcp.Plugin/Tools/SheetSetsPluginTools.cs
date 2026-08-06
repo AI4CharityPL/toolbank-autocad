@@ -516,6 +516,28 @@ internal static class SheetSetsPluginTools
         }
     }
 
+    /// <summary>What to hand SetTitle so that clearing a title actually works.</summary>
+    /// <remarks>
+    /// Three measurements, and none of them is what the API appears to offer:
+    ///
+    ///   SetTitle("")   -> E_INVALIDARG, "Value does not fall within the expected range", which
+    ///                     names neither the value nor the range.
+    ///   SetTitle(" ")  -> accepted. GetTitle() then returns " ".
+    ///   reload         -> the saved title is "". The whitespace is trimmed on the way to disk.
+    ///
+    /// So a title CAN be cleared; "" is simply not the argument that does it. Rather than make
+    /// every caller know that, "" is translated to " " here and the result is reported as the ""
+    /// that will actually be on disk — otherwise the tool answers " " while the file says "",
+    /// which is the in-memory-versus-persisted split this category exists to close.
+    /// </remarks>
+    private const string BlankTitle = " ";
+
+    private static string TitleToSet(string value) => value.Length == 0 ? BlankTitle : value;
+
+    /// <summary>The title as it will read after a save, not as it reads in memory.</summary>
+    private static string PersistedTitle(string inMemory) =>
+        string.IsNullOrWhiteSpace(inMemory) ? "" : inMemory;
+
     private static IAcSmSheet RequireSheet(IAcSmSheetSet ss, string? wanted, string full)
     {
         if (string.IsNullOrWhiteSpace(wanted))
@@ -544,20 +566,53 @@ internal static class SheetSetsPluginTools
             });
         });
 
+    /// <summary>Rename AND renumber a sheet, which is the only way its name can be changed.</summary>
+    /// <remarks>
+    /// The first version of this called <c>IAcSmSheet.SetName</c> and reported success while
+    /// changing nothing — the failure shape this whole sweep exists to remove, and it passed its
+    /// own read-back because it re-read the same unchanged value.
+    ///
+    /// Measured, one variable at a time, against AutoCAD's own sample set:
+    ///   * changing ONLY the title moved the reported name "T-01 TITLE SHEET" -> "T-01 PROBE TITLE"
+    ///   * SetName("PROBE-NAME") left the name at "T-01 PROBE TITLE"
+    /// So the name is composed from number + title and is not stored. There is nothing to set.
+    ///
+    /// AutoCAD's own command is "Rename &amp; Renumber Sheet" and edits both fields together, so
+    /// that is what this is. Doing both under ONE lock also means a caller cannot leave a sheet
+    /// renumbered but not retitled because the second call failed.
+    /// </remarks>
     private static Task<ToolDispatchResult> RenameSheet(JsonObject args, CancellationToken ct) =>
         PluginToolRunner.RunWriteAsync("acad.sheetsets.rename_sheet", ct, (doc, db, tr) =>
         {
-            var a = Read<SheetWriteArgsDto>(args);
-            if (string.IsNullOrWhiteSpace(a.Value))
-                throw new ArgumentException("value is required: the new sheet name.");
+            var a = Read<SheetRenameArgsDto>(args);
+            if (a.Number is null && a.Title is null)
+                throw new ArgumentException(
+                    "At least one of number or title is required. A sheet has no separately " +
+                    "stored name: what is displayed is its number and title together, so " +
+                    "renaming one means setting one of those.");
+
             return WithSheetSetWrite(a.Path, (ss, full) =>
             {
                 var sheet = RequireSheet(ss, a.Sheet, full);
                 try
                 {
-                    var before = sheet.GetName();
-                    sheet.SetName(a.Value);
-                    return Wrap(new { path = full, before, name = sheet.GetName(), number = sheet.GetNumber() });
+                    var beforeNumber = sheet.GetNumber();
+                    var beforeTitle = PersistedTitle(sheet.GetTitle());
+                    var beforeName = sheet.GetName();
+
+                    if (a.Number is not null) sheet.SetNumber(a.Number);
+                    if (a.Title is not null) sheet.SetTitle(TitleToSet(a.Title));
+
+                    return Wrap(new
+                    {
+                        path = full,
+                        before = new { number = beforeNumber, title = beforeTitle, name = beforeName },
+                        number = sheet.GetNumber(),
+                        title = PersistedTitle(sheet.GetTitle()),
+                        name = sheet.GetName(),
+                        note = "A sheet's name is composed from its number and title, not stored " +
+                               "separately - that is why this tool takes those two rather than a name.",
+                    });
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });
@@ -569,16 +624,21 @@ internal static class SheetSetsPluginTools
             var a = Read<SheetWriteArgsDto>(args);
             if (a.Value is null)
                 throw new ArgumentException(
-                    "value is required: the new title. An empty string clears it, which is a " +
-                    "different thing from omitting the argument.");
+                    "value is required: the new sheet title. Pass \"\" to clear it.");
             return WithSheetSetWrite(a.Path, (ss, full) =>
             {
                 var sheet = RequireSheet(ss, a.Sheet, full);
                 try
                 {
-                    var before = sheet.GetTitle();
-                    sheet.SetTitle(a.Value);
-                    return Wrap(new { path = full, sheet = sheet.GetName(), before, title = sheet.GetTitle() });
+                    var before = PersistedTitle(sheet.GetTitle());
+                    sheet.SetTitle(TitleToSet(a.Value));
+                    return Wrap(new
+                    {
+                        path = full,
+                        sheet = sheet.GetName(),
+                        before,
+                        title = PersistedTitle(sheet.GetTitle()),
+                    });
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });

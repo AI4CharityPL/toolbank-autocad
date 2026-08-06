@@ -1,7 +1,7 @@
 {
   "id": "acad-sheetsets",
   "name": "acad-sheetsets",
-  "description": "Sheet sets: the .DST file holding a project's drawing list, its numbering and the project-wide values a title block binds to. Read a set's sheets, subsets and custom properties, then renumber, rename or retitle a sheet, or mark it do-not-plot so the Publisher skips it without it leaving the set. A .DST is a shared file living apart from any drawing: every tool takes its path per call, holds nothing open between calls, and each write locks, saves and unlocks within the call. Sheets are addressed by name or by number.",
+  "description": "Sheet sets: the .DST file holding a project\u0027s drawing list, its numbering and the project-wide values a title block binds to. Read a set\u0027s sheets, subsets and custom properties, then renumber, rename or retitle a sheet, or mark it do-not-plot so the Publisher skips it without it leaving the set. A .DST is a shared file living apart from any drawing: every tool takes its path per call, holds nothing open between calls, and each write locks, saves and unlocks within the call. Sheets are addressed by name or by number.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sheetsets.cmd",
@@ -70,6 +70,7 @@
     "przywroc arkusz do drukowania",
     "read sheet number and title",
     "rename a sheet",
+    "rename and renumber a sheet",
     "renumber a sheet",
     "resolve sheet set file",
     "set sheet do not plot",
@@ -93,12 +94,13 @@
     "wylacz arkusz z drukowania",
     "zmien nazwe arkusza",
     "zmien numer arkusza",
+    "zmien numer i tytul arkusza naraz",
     "zmien tytul arkusza"
   ],
   "tools_summary": [
     {
       "name": "get_sheet_property",
-      "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
+      "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say \u0027A-101\u0027 at least as often as they say a sheet\u0027s name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
       "tags": [
         "get",
         "sheet",
@@ -200,7 +202,7 @@
     },
     {
       "name": "rename_sheet",
-      "description": "Rename one sheet in a sheet set. The name is what the Sheet Set Manager tree shows; it is separate from the sheet's number and from its title, and changing it does not touch either. Writes to the shared .DST under a lock. Answers with the old name, the new name and the sheet's number, which is the identifier that did not move.",
+      "description": "Rename and renumber a sheet in one locked write - AutoCAD\u0027s own \u0022Rename \u0026 Renumber Sheet\u0022. Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass \u0022\u0022 as the title to clear it.",
       "tags": [
         "rename",
         "sheet"
@@ -211,7 +213,9 @@
         "rename a sheet",
         "change sheet name",
         "inna nazwa arkusza w zestawie",
-        "popraw nazwe arkusza"
+        "popraw nazwe arkusza",
+        "zmien numer i tytul arkusza naraz",
+        "rename and renumber a sheet"
       ]
     },
     {
@@ -235,7 +239,7 @@
     },
     {
       "name": "set_sheet_number",
-      "description": "Renumber one sheet in a sheet set - the 'A-101' that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone.",
+      "description": "Renumber one sheet in a sheet set - the \u0027A-101\u0027 that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone.",
       "tags": [
         "set",
         "sheet",
@@ -253,7 +257,7 @@
     },
     {
       "name": "set_sheet_title",
-      "description": "Set a sheet's title - the descriptive line a title block prints under the number, such as 'Ground Floor Plan'. Distinct from the sheet's name, which is the Sheet Set Manager label. Writes to the shared .DST under a lock. Pass an empty string to clear the title, which is a different request from omitting the argument and is treated as one.",
+      "description": "Set a sheet\u0027s title - the descriptive line a title block prints under the number, such as \u0027Ground Floor Plan\u0027. Writes to the shared .DST under a lock. The sheet\u0027s displayed name is composed from its number and title, so setting the title moves that name too. Pass \u0022\u0022 to clear the title. AutoCAD itself rejects an empty title, so the tool sends a space and the file stores it as empty - the result reports the \u0022\u0022 that will be on disk, not the space that is briefly in memory.",
       "tags": [
         "set",
         "sheet",
@@ -284,7 +288,7 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "tool_count_target": 10,
-    "last_regenerated_utc": "2026-08-06T10:01:12.5057229Z",
+    "last_regenerated_utc": "2026-08-06T10:27:16.1300486Z",
     "phase": "phase2.1_sheetsets"
   }
 }

@@ -91,14 +91,30 @@ public sealed record SheetNumberResult(
     [property: JsonPropertyName("before")] string Before,
     [property: JsonPropertyName("number")] string Number);
 
-// No `sheet` field, unlike its siblings: this tool changes the name, so "the sheet's name" is
-// ambiguous in its own result. `before` and `name` are the old and new names, and `number` is the
-// identifier that did not move.
+public sealed record SheetRenameArgs(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("sheet")]  string Sheet,
+    [property: JsonPropertyName("number")] string? Number = null,
+    [property: JsonPropertyName("title")]  string? Title = null);
+
+/// <summary>The three identifying fields, reported together before and after a rename.</summary>
+/// <remarks>
+/// `name` is included but is NOT settable: it is composed from number + title. Measured by
+/// changing one at a time - setting only the title moved the name, and SetName did nothing.
+/// Reporting it anyway is what lets a caller see that its rename landed where it expected.
+/// </remarks>
+public sealed record SheetIdentity(
+    [property: JsonPropertyName("number")] string Number,
+    [property: JsonPropertyName("title")]  string Title,
+    [property: JsonPropertyName("name")]   string Name);
+
 public sealed record SheetRenameResult(
     [property: JsonPropertyName("path")]   string Path,
-    [property: JsonPropertyName("before")] string Before,
+    [property: JsonPropertyName("before")] SheetIdentity Before,
+    [property: JsonPropertyName("number")] string Number,
+    [property: JsonPropertyName("title")]  string Title,
     [property: JsonPropertyName("name")]   string Name,
-    [property: JsonPropertyName("number")] string Number);
+    [property: JsonPropertyName("note")]   string Note);
 
 public sealed record SheetTitleResult(
     [property: JsonPropertyName("path")]   string Path,

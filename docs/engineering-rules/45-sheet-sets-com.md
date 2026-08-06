@@ -22,16 +22,44 @@ half-finished edit stays half-finished.
 **Consequence:** every write tool must leave the `.DST` in a state it would be willing to be
 interrupted in, and must call `Save()` before returning.
 
-## 2. `Save()` is explicit, and forgetting it is the defect this bank keeps finding
+## 2. The commit is `UnlockDb(db, bCommit: true)`, and `Save()` is a trap
 
-`IAcSmSheetSet.Save()` exists as a separate operation. A tool that renames a sheet and returns
-without saving reports success over a change that will be gone. This is the same shape as
-`db.LayerFilters = tree` in the layer-filter tools and `db.SummaryInfo = builder` in drawing
-properties — both of which were caught only because a verification re-read the state in a
-**separate call**.
+*Rewritten 2026-08-06, after measuring. The original text said "every write path ends in
+`Save()`" and was wrong on both halves.*
 
-**Rule:** every write path ends in `Save()`, and every verification re-reads through a **fresh
-tool call** rather than trusting the reply.
+`IAcSmDatabase.Save` takes an `AcSmDSTFiler`. That is **not** a save button: `IAcSmFiler` is a
+serialisation primitive you `Init(pUnk, pDb, bForWrite)` and then drive by hand with
+`WriteObject` / `WriteString` / `WriteInt`. It is how the DST format writes objects. Calling it
+to persist an edit would mean hand-rolling the file format.
+
+The caller-level commit is the second argument of `UnlockDb`:
+
+```csharp
+db.LockDb(db);
+// … mutate …
+db.UnlockDb(db, true);   // true = commit
+```
+
+**Put the commit on the success path, not in the `finally`.** It was written the other way
+first — `try { db.UnlockDb(db, true); } catch (COMException) { }` inside the `finally` — which
+meant a failed save was swallowed and the tool reported success. That is precisely the shape this
+whole category exists to remove. The `finally` releases only a lock still held, and there it
+passes `bCommit: false`: a half-finished edit is abandoned, not persisted.
+
+**Rule:** every write path commits via `UnlockDb(…, true)` on its success path, where the
+exception can reach the caller.
+
+### Verifying that a write persisted
+
+A fresh tool call is **not** sufficient here, unlike everywhere else in this bank.
+`IAcSmSheetSetMgr` caches the open database, so a read issued against the same path can be served
+from the very object the write mutated and will agree with it whether or not anything reached the
+disk. Grepping the file is useless too — a `.DST` is compressed, and not even the *original*
+strings appear in its bytes in any encoding.
+
+**Copy the file to a path the manager has never seen and read the copy.** There is no cached
+database for a new path, so it must parse from disk. `scripts/verify-sheetsets.py` routes every
+persistence claim through `reread_fresh()`, which does exactly that.
 
 ## 3. Take a PATH, never hold a handle
 
@@ -122,10 +150,23 @@ the type metadata:
 | `OpenDatabase(String, Boolean)` | The flag's meaning is **not in the metadata**, and ObjectARX documents it inconsistently. Both values are attempted and each failure reported separately. Guessing a boolean's polarity has cost this repository twice already — `IdPair.IsCloned` and `CompareLayerStateToDb`, both of which made a tool report the opposite of the truth. |
 | `Close(AcSmDatabase)` | Will not accept `IAcSmDatabase`. The coclass is required even though every other call in the graph is interface-typed. |
 
+Three more, found by measuring the write half. Each is a case where the API's *shape* implies one
+thing and its *behaviour* is another, and none could be read from the metadata:
+
+| What the signature suggests | What it does |
+|---|---|
+| `AcSmLockStatus.acSmLockStatus_UnLocked` | No such member. They are `AcSmLockStatus_UnLocked` / `AcSmLockStatus_Locked_Local` — capital `A`. Read enum members off the assembly; do not spell them from memory. |
+| `IAcSmSheet.SetName` renames a sheet | It does nothing, and reports nothing. A sheet has **no stored name**: what is displayed is composed from its number and title. Measured one variable at a time — setting only the title moved the name from `T-01 TITLE SHEET` to `T-01 PROBE TITLE`, while `SetName("PROBE-NAME")` moved nothing. AutoCAD's own command is *Rename & Renumber Sheet*, which edits both fields; that is what `rename_sheet` does. |
+| `SetTitle("")` clears the title | It fails with `E_INVALIDARG`, whose message — "Value does not fall within the expected range" — names neither the value nor the range. `SetTitle(" ")` **is** accepted, and the whitespace is trimmed on the way to disk, so the saved title becomes `""`. A title can therefore be cleared; `""` is simply not the argument that does it. `set_sheet_title` translates `""` to `" "` and reports the `""` that persists, rather than the `" "` that is briefly in memory. |
+
+That last one is worth generalising: **`GetX()` immediately after `SetX()` can disagree with the
+file.** The tool answered `" "` while the disk held `""`. A read-back inside the same call is
+evidence that the object changed, never that the file did.
+
 **The rule this produces:** in COM, a nullable-looking return may throw, an undocumented flag is a
-coin toss to be tried rather than guessed, and interface types are not interchangeable with their
-coclasses. None of that is true of the managed API, which is why this category needed its own
-contract before its own code.
+coin toss to be tried rather than guessed, interface types are not interchangeable with their
+coclasses, and a setter may be a no-op that says nothing. None of that is true of the managed API,
+which is why this category needed its own contract before its own code.
 
 Verified against `Sample/Sheet Sets/Architectural/IRD Addition.dst`: 11 sheets, 2 subsets
 (Architectural 6, Structural 4), sheets addressable by name and by number.

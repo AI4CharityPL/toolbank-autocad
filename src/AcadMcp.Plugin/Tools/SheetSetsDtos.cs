@@ -22,3 +22,14 @@ internal sealed record SheetFlagArgsDto(
     [property: JsonPropertyName("path")]      string? Path,
     [property: JsonPropertyName("sheet")]     string? Sheet,
     [property: JsonPropertyName("doNotPlot")] bool DoNotPlot);
+
+// rename_sheet takes number and title rather than a single `value`, because a sheet has no
+// separately stored name to set. Measured: changing only the title moved the reported name from
+// "T-01 TITLE SHEET" to "T-01 PROBE TITLE", and IAcSmSheet.SetName left it untouched. The name is
+// composed from number + title. AutoCAD's own UI agrees - its command is "Rename & Renumber
+// Sheet" and it edits both fields together.
+internal sealed record SheetRenameArgsDto(
+    [property: JsonPropertyName("path")]   string? Path,
+    [property: JsonPropertyName("sheet")]  string? Sheet,
+    [property: JsonPropertyName("number")] string? Number,
+    [property: JsonPropertyName("title")]  string? Title);

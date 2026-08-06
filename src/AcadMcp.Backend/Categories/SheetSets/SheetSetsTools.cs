@@ -1,9 +1,13 @@
-// MCP tools for acad-sheetsets — roadmap 2.1, first tranche: read-only.
+// MCP tools for acad-sheetsets — roadmap 2.1. Six reads, then four writes.
 //
-// Read-only on purpose, and first on purpose. `fields.insert_field_sheet_set_property` shipped
-// long ago and has been dead ever since, because nothing could read a sheet-set property for it
-// to bind to. Six read tools need none of the Save() discipline the write half will and they turn
-// that field live.
+// The reads came first on purpose. `fields.insert_field_sheet_set_property` shipped long ago and
+// was dead ever since, because nothing could read a sheet-set property for it to bind to. Six
+// read tools needed none of the save discipline the writes do, and they turned that field live.
+//
+// The writes then had to establish what "saved" even means here, which took measuring rather
+// than reading: the commit is UnlockDb(db, bCommit: true), a sheet's name is composed from its
+// number and title rather than stored, and a title cannot be set to "" although it can be
+// cleared. None of the three is what the API's shape suggests.
 //
 // The contract this obeys is docs/engineering-rules/45-sheet-sets-com.md, written before any of
 // this code. Two of its decisions are visible in the signatures below:
@@ -96,15 +100,23 @@ public static class SheetSetsTools
     public static Task<SheetNumberResult> SetSheetNumber(IPluginGateway gw, SheetWriteArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<SheetWriteArgs, SheetNumberResult>(gw, "acad.sheetsets.set_sheet_number", args, T_NORMAL, ct);
 
-    [McpTool("rename_sheet", "Rename one sheet in a sheet set. The name is what the Sheet Set Manager tree shows; it is separate from the sheet's number and from its title, and changing it does not touch either. Writes to the shared .DST under a lock. Answers with the old name, the new name and the sheet's number, which is the identifier that did not move.", "sheetsets",
+    // Renaming a sheet means setting its number, its title, or both - AutoCAD's own command is
+    // "Rename & Renumber Sheet". A sheet has no separately stored name: what the Sheet Set
+    // Manager shows is number and title composed together. Measured one variable at a time -
+    // changing only the title moved the displayed name, and SetName moved nothing.
+    //
+    // Both fields go under ONE lock, so a caller cannot end up renumbered but not retitled
+    // because a second call failed.
+    [McpTool("rename_sheet", "Rename and renumber a sheet in one locked write - AutoCAD's own \"Rename & Renumber Sheet\". Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass \"\" as the title to clear it.", "sheetsets",
         Intent = new[] { "zmien nazwe arkusza", "przemianuj arkusz", "rename a sheet",
                          "change sheet name", "inna nazwa arkusza w zestawie",
-                         "popraw nazwe arkusza" },
+                         "popraw nazwe arkusza", "zmien numer i tytul arkusza naraz",
+                         "rename and renumber a sheet" },
         RequiresPlugin = true)]
-    public static Task<SheetRenameResult> RenameSheet(IPluginGateway gw, SheetWriteArgs args, CancellationToken ct)
-        => SheetSetsProxy.CallAsync<SheetWriteArgs, SheetRenameResult>(gw, "acad.sheetsets.rename_sheet", args, T_NORMAL, ct);
+    public static Task<SheetRenameResult> RenameSheet(IPluginGateway gw, SheetRenameArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SheetRenameArgs, SheetRenameResult>(gw, "acad.sheetsets.rename_sheet", args, T_NORMAL, ct);
 
-    [McpTool("set_sheet_title", "Set a sheet's title - the descriptive line a title block prints under the number, such as 'Ground Floor Plan'. Distinct from the sheet's name, which is the Sheet Set Manager label. Writes to the shared .DST under a lock. Pass an empty string to clear the title, which is a different request from omitting the argument and is treated as one.", "sheetsets",
+    [McpTool("set_sheet_title", "Set a sheet's title - the descriptive line a title block prints under the number, such as 'Ground Floor Plan'. Writes to the shared .DST under a lock. The sheet's displayed name is composed from its number and title, so setting the title moves that name too. Pass \"\" to clear the title. AutoCAD itself rejects an empty title, so the tool sends a space and the file stores it as empty - the result reports the \"\" that will be on disk, not the space that is briefly in memory.", "sheetsets",
         Intent = new[] { "ustaw tytul arkusza", "zmien tytul arkusza", "opis arkusza w tabliczce",
                          "set sheet title", "change the sheet title", "nazwa rysunku na arkuszu" },
         RequiresPlugin = true)]

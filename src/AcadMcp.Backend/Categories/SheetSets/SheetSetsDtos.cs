@@ -68,3 +68,47 @@ public sealed record CustomPropertiesResult(
     [property: JsonPropertyName("sheetSetProperties")] IReadOnlyDictionary<string, string> SheetSetProperties,
     [property: JsonPropertyName("count")]              int Count,
     [property: JsonPropertyName("note")]               string Note);
+
+// ─────────── writes ───────────
+//
+// Every write result carries `before`. A caller that changed the wrong sheet can put it back
+// without a prior read, and a caller reading the result can tell "set it to A-102" from "it was
+// already A-102" - which the new value alone cannot distinguish.
+
+public sealed record SheetWriteArgs(
+    [property: JsonPropertyName("path")]  string Path,
+    [property: JsonPropertyName("sheet")] string Sheet,
+    [property: JsonPropertyName("value")] string Value);
+
+public sealed record SheetFlagArgs(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("sheet")]     string Sheet,
+    [property: JsonPropertyName("doNotPlot")] bool DoNotPlot);
+
+public sealed record SheetNumberResult(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("sheet")]  string Sheet,
+    [property: JsonPropertyName("before")] string Before,
+    [property: JsonPropertyName("number")] string Number);
+
+// No `sheet` field, unlike its siblings: this tool changes the name, so "the sheet's name" is
+// ambiguous in its own result. `before` and `name` are the old and new names, and `number` is the
+// identifier that did not move.
+public sealed record SheetRenameResult(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("before")] string Before,
+    [property: JsonPropertyName("name")]   string Name,
+    [property: JsonPropertyName("number")] string Number);
+
+public sealed record SheetTitleResult(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("sheet")]  string Sheet,
+    [property: JsonPropertyName("before")] string Before,
+    [property: JsonPropertyName("title")]  string Title);
+
+public sealed record SheetDoNotPlotResult(
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("sheet")]     string Sheet,
+    [property: JsonPropertyName("before")]    bool Before,
+    [property: JsonPropertyName("doNotPlot")] bool DoNotPlot,
+    [property: JsonPropertyName("note")]      string Note);

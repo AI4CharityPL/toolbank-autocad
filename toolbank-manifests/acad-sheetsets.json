@@ -1,7 +1,7 @@
 {
   "id": "acad-sheetsets",
   "name": "acad-sheetsets",
-  "description": "AutoCAD MCP - category \u0027sheetsets\u0027. (Auto-generated stub - replace with a real description per rule 31-toolbank-discovery-hygiene.md.)",
+  "description": "Sheet sets: the .DST file holding a project's drawing list, its numbering and the project-wide values a title block binds to. Read a set's sheets, subsets and custom properties, then renumber, rename or retitle a sheet, or mark it do-not-plot so the Publisher skips it without it leaving the set. A .DST is a shared file living apart from any drawing: every tool takes its path per call, holds nothing open between calls, and each write locks, saves and unlocks within the call. Sheets are addressed by name or by number.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sheetsets.cmd",
@@ -13,27 +13,38 @@
     "autocad",
     "cad",
     "custom",
+    "do",
     "dwg",
     "get",
     "info",
     "list",
+    "not",
+    "number",
     "path",
+    "plot",
     "properties",
     "property",
+    "rename",
     "set",
     "sheet",
     "sheets",
     "sheetsets",
-    "subsets"
+    "subsets",
+    "title"
   ],
   "intent_examples": [
+    "change drawing number",
+    "change sheet name",
+    "change the sheet title",
     "check dst file",
     "co tabliczka moze pobrac z zestawu",
     "czy ten plik dst jest poprawny",
     "dane arkusza do tabliczki",
+    "exclude a sheet from publishing",
     "get a sheet property",
     "ile arkuszy ma ten zestaw",
     "informacje o zestawie arkuszy",
+    "inna nazwa arkusza w zestawie",
     "jak podzielony jest zestaw arkuszy",
     "jaki numer ma ten arkusz",
     "jakie arkusze sa w tym zestawie",
@@ -42,14 +53,28 @@
     "list subsets of a sheet set",
     "lista arkuszy w zestawie",
     "lista podzestawow",
+    "nadaj arkuszowi numer A-101",
+    "nazwa rysunku na arkuszu",
     "nazwa zestawu arkuszy z pliku",
+    "nie drukuj tego arkusza",
     "numer projektu w zestawie",
     "numery arkuszy",
+    "opis arkusza w tabliczce",
     "otworz zestaw arkuszy dst",
+    "oznacz arkusz jako niedrukowalny",
     "podzestawy branzowe",
+    "popraw nazwe arkusza",
     "project-wide properties",
+    "przemianuj arkusz",
+    "przenumeruj arkusz",
+    "przywroc arkusz do drukowania",
     "read sheet number and title",
+    "rename a sheet",
+    "renumber a sheet",
     "resolve sheet set file",
+    "set sheet do not plot",
+    "set sheet number",
+    "set sheet title",
     "sheet custom property value",
     "sheet numbers and titles",
     "sheet set categories",
@@ -59,15 +84,21 @@
     "show all sheets",
     "sprawdz sciezke zestawu arkuszy",
     "summarise a sheet set",
+    "ustaw numer arkusza na",
+    "ustaw tytul arkusza",
     "validate a sheet set path",
     "what is in this sheet set",
     "wlasciwosci arkusza",
-    "wlasne wlasciwosci zestawu arkuszy"
+    "wlasne wlasciwosci zestawu arkuszy",
+    "wylacz arkusz z drukowania",
+    "zmien nazwe arkusza",
+    "zmien numer arkusza",
+    "zmien tytul arkusza"
   ],
   "tools_summary": [
     {
       "name": "get_sheet_property",
-      "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say \u0027A-101\u0027 at least as often as they say a sheet\u0027s name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
+      "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
       "tags": [
         "get",
         "sheet",
@@ -166,6 +197,76 @@
         "podzestawy branzowe",
         "sheet set categories"
       ]
+    },
+    {
+      "name": "rename_sheet",
+      "description": "Rename one sheet in a sheet set. The name is what the Sheet Set Manager tree shows; it is separate from the sheet's number and from its title, and changing it does not touch either. Writes to the shared .DST under a lock. Answers with the old name, the new name and the sheet's number, which is the identifier that did not move.",
+      "tags": [
+        "rename",
+        "sheet"
+      ],
+      "intent": [
+        "zmien nazwe arkusza",
+        "przemianuj arkusz",
+        "rename a sheet",
+        "change sheet name",
+        "inna nazwa arkusza w zestawie",
+        "popraw nazwe arkusza"
+      ]
+    },
+    {
+      "name": "set_sheet_do_not_plot",
+      "description": "Mark one sheet do-not-plot, or clear that mark. The Publisher skips a do-not-plot sheet rather than failing the job, so this is how a sheet is held back from an issue without being removed from the set. Writes to the shared .DST under a lock. Pass doNotPlot=false to put the sheet back into the next publish.",
+      "tags": [
+        "set",
+        "sheet",
+        "do",
+        "not",
+        "plot"
+      ],
+      "intent": [
+        "wylacz arkusz z drukowania",
+        "nie drukuj tego arkusza",
+        "oznacz arkusz jako niedrukowalny",
+        "set sheet do not plot",
+        "exclude a sheet from publishing",
+        "przywroc arkusz do drukowania"
+      ]
+    },
+    {
+      "name": "set_sheet_number",
+      "description": "Renumber one sheet in a sheet set - the 'A-101' that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone.",
+      "tags": [
+        "set",
+        "sheet",
+        "number"
+      ],
+      "intent": [
+        "zmien numer arkusza",
+        "przenumeruj arkusz",
+        "ustaw numer arkusza na",
+        "set sheet number",
+        "renumber a sheet",
+        "change drawing number",
+        "nadaj arkuszowi numer A-101"
+      ]
+    },
+    {
+      "name": "set_sheet_title",
+      "description": "Set a sheet's title - the descriptive line a title block prints under the number, such as 'Ground Floor Plan'. Distinct from the sheet's name, which is the Sheet Set Manager label. Writes to the shared .DST under a lock. Pass an empty string to clear the title, which is a different request from omitting the argument and is treated as one.",
+      "tags": [
+        "set",
+        "sheet",
+        "title"
+      ],
+      "intent": [
+        "ustaw tytul arkusza",
+        "zmien tytul arkusza",
+        "opis arkusza w tabliczce",
+        "set sheet title",
+        "change the sheet title",
+        "nazwa rysunku na arkuszu"
+      ]
     }
   ],
   "metadata": {
@@ -182,7 +283,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 6,
-    "last_regenerated_utc": "2026-08-05T21:54:38.1226061Z"
+    "tool_count_target": 10,
+    "last_regenerated_utc": "2026-08-06T10:01:12.5057229Z",
+    "phase": "phase2.1_sheetsets"
   }
 }

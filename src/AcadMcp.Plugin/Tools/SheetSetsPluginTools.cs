@@ -50,6 +50,10 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.list_subsets", ListSubsets);
         host.Register("acad.sheetsets.get_sheet_property", GetSheetProperty);
         host.Register("acad.sheetsets.list_custom_properties", ListCustomProperties);
+        host.Register("acad.sheetsets.set_sheet_number", SetSheetNumber);
+        host.Register("acad.sheetsets.rename_sheet", RenameSheet);
+        host.Register("acad.sheetsets.set_sheet_title", SetSheetTitle);
+        host.Register("acad.sheetsets.set_sheet_do_not_plot", SetSheetDoNotPlot);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -404,6 +408,201 @@ internal static class SheetSetsPluginTools
                     note = "These are the sheet-set-level custom properties. Per-sheet ones are " +
                            "reported by get_sheet_property, because a sheet can override the set.",
                 });
+            });
+        });
+
+    // ─────────── writes: lock, mutate, save, unlock ───────────
+
+    /// <summary>
+    /// The write counterpart of <see cref="WithSheetSet"/>: locks the .DST, mutates, saves, and
+    /// unlocks — in that order, with the unlock in a finally.
+    /// </summary>
+    /// <remarks>
+    /// Rule 45 §1 and §2. There is no transaction here and nothing to abort, so a half-finished
+    /// edit stays half-finished; the lock is what stops a second writer joining it midway, and
+    /// Save() is what stops the whole thing evaporating.
+    ///
+    /// GetLockStatus is checked FIRST and the owner reported, because "someone else has this open"
+    /// is an answer a caller can act on and a raw E_FAIL is not.
+    /// </remarks>
+    private static JsonObject WithSheetSetWrite(string? path, Func<IAcSmSheetSet, string, JsonObject> work)
+    {
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("path is required.");
+        var full = Path.GetFullPath(path!);
+        if (!File.Exists(full)) throw new ArgumentException("No such sheet set file: " + full);
+
+        IAcSmSheetSetMgr? mgr = null;
+        IAcSmDatabase? db = null;
+        var weOpenedIt = false;
+        var locked = false;
+
+        try
+        {
+            mgr = new AcSmSheetSetMgr();
+            try { db = mgr.FindOpenDatabase(full); } catch (COMException) { db = null; }
+            if (db is null)
+            {
+                foreach (var flag in new[] { true, false })
+                {
+                    try { db = mgr.OpenDatabase(full, flag); if (db is not null) { weOpenedIt = true; break; } }
+                    catch (COMException) { }
+                }
+            }
+            if (db is null)
+                throw new InvalidOperationException("AutoCAD would not open the sheet set '" + full + "'.");
+
+            var status = db.GetLockStatus();
+            if (status != AcSmLockStatus.AcSmLockStatus_UnLocked
+                && status != AcSmLockStatus.AcSmLockStatus_Locked_Local)
+            {
+                string owner = "", info = "";
+                try { db.GetLockOwnerInfo(out owner, out info); } catch (COMException) { }
+                throw new InvalidOperationException(
+                    "'" + full + "' is locked by someone else (" + status + ")" +
+                    (string.IsNullOrWhiteSpace(owner) ? "" : " - owner: " + owner + " " + info) +
+                    ". A sheet set is a shared file; nothing was changed.");
+            }
+
+            db.LockDb(db);
+            locked = true;
+
+            var ss = db.GetSheetSet()
+                ?? throw new InvalidOperationException("'" + full + "' carries no sheet set.");
+
+            var result = work(ss, full);
+
+            // Rule 45 §2, and the commit is UnlockDb(db, bCommit: true) - NOT Save().
+            //
+            // IAcSmDatabase.Save takes an AcSmDSTFiler, and the filer is a serialisation
+            // primitive: you Init(pUnk, pDb, bForWrite) it yourself and then drive WriteObject /
+            // WriteString / WriteInt by hand. It is how the DST format writes objects, not a
+            // "save my changes" button, so calling it here would mean hand-rolling the file
+            // format. UnlockDb's second argument is the commit flag and is the caller-level
+            // path.
+            //
+            // Committing HERE rather than in the finally is deliberate. If the commit throws,
+            // that exception has to reach the caller: a write tool whose save failed must not
+            // report success. The finally below now only releases a lock we still hold, which
+            // is the failure path, and there it abandons rather than commits.
+            db.UnlockDb(db, true);
+            locked = false;
+
+            return result;
+        }
+        catch (COMException ex)
+        {
+            throw new InvalidOperationException(
+                "The sheet set subsystem refused to write to '" + full + "' (HRESULT 0x" +
+                ex.ErrorCode.ToString("X8") + "): " + ex.Message +
+                ". Nothing was saved. If the file is open elsewhere or read-only, that is the " +
+                "usual cause.", ex);
+        }
+        finally
+        {
+            if (locked && db is not null)
+            {
+                // Reached only when the work or the commit threw, so `locked` is still true.
+                // bCommit: false - abandon rather than persist a half-finished edit. The unlock
+                // itself must still happen, or the .DST stays locked for the rest of the AutoCAD
+                // session and every later call reports it as owned by someone else.
+                try { db.UnlockDb(db, false); } catch (COMException) { }
+            }
+            if (weOpenedIt && mgr is not null && db is not null)
+            {
+                try { mgr.Close((AcSmDatabase)db); } catch (COMException) { }
+            }
+            if (db is not null) { try { Marshal.ReleaseComObject(db); } catch (Exception) { } }
+            if (mgr is not null) { try { Marshal.ReleaseComObject(mgr); } catch (Exception) { } }
+        }
+    }
+
+    private static IAcSmSheet RequireSheet(IAcSmSheetSet ss, string? wanted, string full)
+    {
+        if (string.IsNullOrWhiteSpace(wanted))
+            throw new ArgumentException("sheet is required: the sheet's name or its number.");
+        return FindSheet(ss, wanted!)
+            ?? throw new ArgumentException(
+                "No sheet named or numbered '" + wanted + "' in '" + full + "'. Use list_sheets.");
+    }
+
+    private static Task<ToolDispatchResult> SetSheetNumber(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.set_sheet_number", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetWriteArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Value))
+                throw new ArgumentException("value is required: the new sheet number, e.g. 'A-102'.");
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var before = sheet.GetNumber();
+                    sheet.SetNumber(a.Value);
+                    return Wrap(new { path = full, sheet = sheet.GetName(), before, number = sheet.GetNumber() });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> RenameSheet(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.rename_sheet", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetWriteArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Value))
+                throw new ArgumentException("value is required: the new sheet name.");
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var before = sheet.GetName();
+                    sheet.SetName(a.Value);
+                    return Wrap(new { path = full, before, name = sheet.GetName(), number = sheet.GetNumber() });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetSheetTitle(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.set_sheet_title", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetWriteArgsDto>(args);
+            if (a.Value is null)
+                throw new ArgumentException(
+                    "value is required: the new title. An empty string clears it, which is a " +
+                    "different thing from omitting the argument.");
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var before = sheet.GetTitle();
+                    sheet.SetTitle(a.Value);
+                    return Wrap(new { path = full, sheet = sheet.GetName(), before, title = sheet.GetTitle() });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetSheetDoNotPlot(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.set_sheet_do_not_plot", ct, (doc, db, tr) =>
+        {
+            var a = Read<SheetFlagArgsDto>(args);
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var before = sheet.GetDoNotPlot();
+                    sheet.SetDoNotPlot(a.DoNotPlot);
+                    return Wrap(new
+                    {
+                        path = full, sheet = sheet.GetName(), before, doNotPlot = sheet.GetDoNotPlot(),
+                        note = "The Publisher honours this: a do-not-plot sheet is skipped rather " +
+                               "than cancelling the job, which is what an unplottable sheet does.",
+                    });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });
         });
 }

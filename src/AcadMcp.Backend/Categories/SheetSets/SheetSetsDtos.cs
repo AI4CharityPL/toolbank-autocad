@@ -128,3 +128,43 @@ public sealed record SheetDoNotPlotResult(
     [property: JsonPropertyName("before")]    bool Before,
     [property: JsonPropertyName("doNotPlot")] bool DoNotPlot,
     [property: JsonPropertyName("note")]      string Note);
+
+// ─────────── subsets ───────────
+
+public sealed record SubsetCreateArgs(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("parent")]      string? Parent = null);
+
+public sealed record SubsetArgs(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("subset")] string Subset);
+
+public sealed record MoveSheetArgs(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("sheet")]  string Sheet,
+    [property: JsonPropertyName("subset")] string? Subset = null);
+
+public sealed record SubsetCreateResult(
+    [property: JsonPropertyName("path")]             string Path,
+    [property: JsonPropertyName("name")]             string Name,
+    [property: JsonPropertyName("description")]      string Description,
+    [property: JsonPropertyName("parent")]           string Parent,
+    [property: JsonPropertyName("parentIsSheetSet")] bool ParentIsSheetSet,
+    [property: JsonPropertyName("sheetCount")]       int SheetCount);
+
+public sealed record SubsetDeleteResult(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("deleted")]     string Deleted,
+    [property: JsonPropertyName("removedFrom")] string RemovedFrom,
+    [property: JsonPropertyName("note")]        string Note);
+
+public sealed record MoveSheetResult(
+    [property: JsonPropertyName("path")]                 string Path,
+    [property: JsonPropertyName("sheet")]                string Sheet,
+    [property: JsonPropertyName("number")]               string Number,
+    [property: JsonPropertyName("from")]                 string From,
+    [property: JsonPropertyName("to")]                   string To,
+    [property: JsonPropertyName("movedToSheetSetRoot")]  bool MovedToSheetSetRoot,
+    [property: JsonPropertyName("note")]                 string Note);

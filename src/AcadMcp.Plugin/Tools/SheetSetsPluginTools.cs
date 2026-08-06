@@ -15,9 +15,14 @@
 //     the same problem as the bare eInvalidInput that made create_page_setup undiagnosable for a
 //     full diagnostic cycle.
 //
-// This tranche is read-only on purpose. It needs none of the Save() discipline, and it unblocks
-// fields.insert_field_sheet_set_property, which shipped already and has been dead ever since
+// The reads came first on purpose: they needed no save discipline and they unblocked
+// fields.insert_field_sheet_set_property, which shipped already and had been dead ever since
 // because get_sheet_property did not exist.
+//
+// The writes then had to establish what "saved" means here, and none of the three answers is what
+// the API's shape suggests — the commit is UnlockDb(db, bCommit: true) rather than Save(), a
+// sheet's name is composed from number + title rather than stored, and SetTitle("") fails where
+// SetTitle(" ") saves as "". All three are recorded in rule 45 §2 and §10, with the measurements.
 
 using System;
 using System.Collections.Generic;
@@ -54,6 +59,9 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.rename_sheet", RenameSheet);
         host.Register("acad.sheetsets.set_sheet_title", SetSheetTitle);
         host.Register("acad.sheetsets.set_sheet_do_not_plot", SetSheetDoNotPlot);
+        host.Register("acad.sheetsets.create_subset", CreateSubset);
+        host.Register("acad.sheetsets.delete_subset", DeleteSubset);
+        host.Register("acad.sheetsets.move_sheet_to_subset", MoveSheetToSubset);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -363,6 +371,63 @@ internal static class SheetSetsPluginTools
         });
 
     /// <summary>Find a sheet by name OR number — a caller thinks in whichever they have to hand.</summary>
+    /// <summary>Find a subset by its bare name or by its full "Parent / Child" path.</summary>
+    /// <remarks>
+    /// Both forms are accepted because <c>list_subsets</c> reports both, and a caller that read
+    /// that output should be able to paste either back. Bare names are matched anywhere in the
+    /// tree; a path is matched exactly, which is how two subsets sharing a name are told apart.
+    /// The caller releases what comes back.
+    /// </remarks>
+    private static IAcSmSubset? FindSubset(IAcSmSubset root, string wanted, string prefix = "")
+    {
+        var en = root.GetSheetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var comp = en.Next();
+                if (comp is null) break;
+                if (comp is IAcSmSubset nested)
+                {
+                    var name = nested.GetName();
+                    var full = prefix.Length == 0 ? name : prefix + " / " + name;
+                    if (string.Equals(name, wanted, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(full, wanted, StringComparison.OrdinalIgnoreCase))
+                        return nested;   // caller releases
+
+                    var hit = FindSubset(nested, wanted, full);
+                    if (hit is not null) { try { Marshal.ReleaseComObject(comp); } catch (Exception) { } return hit; }
+                }
+                try { Marshal.ReleaseComObject(comp); } catch (Exception) { }
+            }
+        }
+        finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
+        return null;
+    }
+
+    /// <summary>The subset a caller named, or the sheet set itself when nothing was named.</summary>
+    /// <remarks>
+    /// The sheet set IS a subset — <c>IAcSmSheetSet</c> carries every member <c>IAcSmSubset</c>
+    /// does, including CreateSubset — so "no parent given" resolves to the root rather than being
+    /// a separate code path.
+    /// </remarks>
+    private static IAcSmSubset RequireSubsetOrRoot(IAcSmSheetSet ss, string? wanted, string full)
+    {
+        if (string.IsNullOrWhiteSpace(wanted)) return ss;
+        return FindSubset(ss, wanted!)
+            ?? throw new ArgumentException(
+                "No subset named '" + wanted + "' in '" + full + "'. Use list_subsets, which " +
+                "reports both the bare name and the full 'Parent / Child' path; either is accepted.");
+    }
+
+    private static int CountSheets(IAcSmSubset subset)
+    {
+        var into = new List<object>();
+        WalkSheets(subset, "", into);
+        return into.Count;
+    }
+
     private static IAcSmSheet? FindSheet(IAcSmSubset subset, string wanted)
     {
         var en = subset.GetSheetEnumerator();
@@ -661,6 +726,179 @@ internal static class SheetSetsPluginTools
                         note = "The Publisher honours this: a do-not-plot sheet is skipped rather " +
                                "than cancelling the job, which is what an unplottable sheet does.",
                     });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    // ─────────── subsets ───────────
+
+    private static Task<ToolDispatchResult> CreateSubset(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.create_subset", ct, (doc, db, tr) =>
+        {
+            var a = Read<SubsetCreateArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Name))
+                throw new ArgumentException("name is required: the new subset's name.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                // A subset nests inside the sheet set OR inside another subset, and both expose
+                // CreateSubset because IAcSmSheetSet carries the whole IAcSmSubset surface.
+                var parent = RequireSubsetOrRoot(ss, a.Parent, full);
+                var parentIsRoot = ReferenceEquals(parent, ss);
+                try
+                {
+                    if (FindSubset(ss, a.Name!) is { } clash)
+                    {
+                        try
+                        {
+                            throw new ArgumentException(
+                                "'" + full + "' already has a subset named '" + a.Name + "'. " +
+                                "Subset names are how move_sheet_to_subset addresses them, so a " +
+                                "duplicate would make that ambiguous.");
+                        }
+                        finally { try { Marshal.ReleaseComObject(clash); } catch (Exception) { } }
+                    }
+
+                    var created = parent.CreateSubset(a.Name, a.Description ?? "");
+                    try
+                    {
+                        var parentName = parentIsRoot ? ss.GetName() : parent.GetName();
+                        return Wrap(new
+                        {
+                            path = full,
+                            name = created.GetName(),
+                            description = created.GetDesc(),
+                            parent = parentName,
+                            parentIsSheetSet = parentIsRoot,
+                            sheetCount = 0,
+                        });
+                    }
+                    finally { try { Marshal.ReleaseComObject(created); } catch (Exception) { } }
+                }
+                finally { if (!parentIsRoot) { try { Marshal.ReleaseComObject(parent); } catch (Exception) { } } }
+            });
+        });
+
+    /// <summary>Delete an EMPTY subset. Non-empty is refused rather than guessed at.</summary>
+    /// <remarks>
+    /// `RemoveSubset` is not documented as to what becomes of the sheets inside — orphaned,
+    /// deleted, or moved to the parent — and this bank has been burned twice by guessing at
+    /// undocumented behaviour (`IdPair.IsCloned`, `CompareLayerStateToDb`), both times producing a
+    /// tool that reported the opposite of the truth. Guessing wrong here would destroy a user's
+    /// sheets. So: refuse, say how many sheets are in the way, and name the tool that moves them.
+    /// </remarks>
+    private static Task<ToolDispatchResult> DeleteSubset(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.delete_subset", ct, (doc, db, tr) =>
+        {
+            var a = Read<SubsetArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Subset))
+                throw new ArgumentException("subset is required: its name or its full path.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var target = FindSubset(ss, a.Subset!)
+                    ?? throw new ArgumentException(
+                        "No subset named '" + a.Subset + "' in '" + full + "'. Use list_subsets.");
+                try
+                {
+                    var name = target.GetName();
+                    var held = CountSheets(target);
+                    if (held > 0)
+                        throw new ArgumentException(
+                            "Subset '" + name + "' still holds " + held + " sheet(s) and was not " +
+                            "deleted. What RemoveSubset does with the sheets inside is not " +
+                            "documented and has not been measured, and the possibilities include " +
+                            "deleting them. Move them out with move_sheet_to_subset first.");
+
+                    // RemoveSubset lives on the OWNER, and it wants the coclass rather than the
+                    // interface - the same trap as Close(AcSmDatabase) in rule 45 §10.
+                    var owner = target.GetOwner() as IAcSmSubset
+                        ?? throw new InvalidOperationException(
+                            "Subset '" + name + "' reports no owning subset or sheet set, so " +
+                            "there is nothing to remove it from.");
+                    try
+                    {
+                        owner.RemoveSubset((AcSmSubset)target);
+                        return Wrap(new
+                        {
+                            path = full,
+                            deleted = name,
+                            removedFrom = owner.GetName(),
+                            note = "Only empty subsets are deleted. Sheets are never removed by " +
+                                   "this tool.",
+                        });
+                    }
+                    finally { try { Marshal.ReleaseComObject(owner); } catch (Exception) { } }
+                }
+                finally { try { Marshal.ReleaseComObject(target); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> MoveSheetToSubset(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.move_sheet_to_subset", ct, (doc, db, tr) =>
+        {
+            var a = Read<MoveSheetArgsDto>(args);
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var target = RequireSubsetOrRoot(ss, a.Subset, full);
+                    var toRoot = ReferenceEquals(target, ss);
+                    try
+                    {
+                        var owner = sheet.GetOwner() as IAcSmSubset;
+                        var from = owner?.GetName() ?? "";
+                        var to = toRoot ? ss.GetName() : target.GetName();
+                        var number = sheet.GetNumber();
+
+                        // Compared by NAME, not by reference: `sheet.GetOwner()` and `target` are
+                        // separate runtime-callable wrappers even when they wrap the same COM
+                        // object, so ReferenceEquals answers false for a sheet already in place.
+                        if (string.Equals(from, to, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (owner is not null) { try { Marshal.ReleaseComObject(owner); } catch (Exception) { } }
+                            throw new ArgumentException(
+                                "Sheet '" + sheet.GetName() + "' is already in '" + to + "'. " +
+                                "Moving it there again would ask AutoCAD to insert a component it " +
+                                "already owns, which fails as a duplicate identifier.");
+                        }
+
+                        // InsertComponent ADDS; it does not re-parent. On its own it fails
+                        // E_INVALIDARG, and for a sheet already under the target it answers
+                        // 0x800288C6 "duplicate identifier" — which is what identified the cause.
+                        // A move is therefore: detach from the current owner, then insert.
+                        try { owner?.RemoveSheet((AcSmSheet)sheet); }
+                        finally { if (owner is not null) { try { Marshal.ReleaseComObject(owner); } catch (Exception) { } } }
+
+                        target.InsertComponent((IAcSmComponent)sheet, null);
+
+                        // Checked INSIDE the lock and BEFORE the commit, because RemoveSheet is not
+                        // documented as to whether it detaches a sheet or destroys it. If it
+                        // destroyed it, this throws, the finally unlocks with bCommit:false, and the
+                        // .DST on disk is untouched. That safety net exists only because the commit
+                        // sits on the success path rather than in the finally.
+                        var found = FindSheet(ss, number);
+                        if (found is null)
+                            throw new InvalidOperationException(
+                                "Sheet '" + number + "' could not be found after the move, so the " +
+                                "move was abandoned and nothing was saved. RemoveSheet appears to " +
+                                "destroy a sheet rather than detach it on this AutoCAD build.");
+                        try { Marshal.ReleaseComObject(found); } catch (Exception) { }
+                        return Wrap(new
+                        {
+                            path = full,
+                            sheet = sheet.GetName(),
+                            number = sheet.GetNumber(),
+                            from,
+                            to,
+                            movedToSheetSetRoot = toRoot,
+                            note = "The sheet is re-parented, not copied - the set's total sheet " +
+                                   "count is unchanged. Omit subset to move it back to the top level.",
+                        });
+                    }
+                    finally { if (!toRoot) { try { Marshal.ReleaseComObject(target); } catch (Exception) { } } }
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 482 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 485 tools total.
 
 ## Categories
 
@@ -34,7 +34,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
-- [acad-sheetsets](#acad-sheetsets) (10 tools)
+- [acad-sheetsets](#acad-sheetsets) (13 tools)
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
@@ -548,12 +548,15 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `create_subset` | Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous. |
+| `delete_subset` | Delete an EMPTY subset from a sheet set. Refuses while it still holds sheets and reports how many, because what AutoCAD does with the sheets inside a removed subset is not documented and could include deleting them - move them out with move_sheet_to_subset first. Sheets are never removed by this tool. Writes to the shared .DST under a lock. |
 | `get_sheet_property` | Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for. |
 | `get_sheet_set_info` | Summarise a sheet set file: its name, description, how many sheets it holds and how many subsets. Read-only. Takes the .DST path - every tool in this category does, because none of them hold a sheet set open between calls. Start here to confirm a path is a readable sheet set before asking it anything else. |
 | `get_sheet_set_path` | Confirm a .DST path resolves to a readable sheet set and report its name and description. Read-only. Cheaper than get_sheet_set_info because it does not walk the sheet tree, so it is the call to make when all you need is to validate a path before passing it to the other tools. |
 | `list_custom_properties` | List the custom properties defined at SHEET SET level - the project-wide values a title block binds to, such as client or project number. Read-only. Per-sheet custom properties are reported by get_sheet_property instead, because a sheet can override the set and reporting both here would hide which value actually applies. |
 | `list_sheets` | List every sheet in a sheet set - number, name, title, description, the subset it sits under, and whether it is marked do-not-plot. Read-only. Subsets are walked recursively and each sheet reports its full subset path, so a nested set reads as a flat list an agent can act on rather than a tree it has to traverse. |
 | `list_subsets` | List the subsets of a sheet set with their full paths and how many sheets each holds directly. Read-only. Subsets are how a real set is organised by discipline or by phase, and a subset path is what move_sheet_to_subset will take once the write half of this category exists. |
+| `move_sheet_to_subset` | Move one sheet into a subset, or back to the top level of the sheet set when subset is omitted. The sheet is re-parented rather than copied, so the set's total sheet count does not change. Identify the sheet by its name or its number, and the subset by its bare name or its full 'Parent / Child' path. Writes to the shared .DST under a lock. |
 | `rename_sheet` | Rename and renumber a sheet in one locked write - AutoCAD's own "Rename & Renumber Sheet". Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass "" as the title to clear it. |
 | `set_sheet_do_not_plot` | Mark one sheet do-not-plot, or clear that mark. The Publisher skips a do-not-plot sheet rather than failing the job, so this is how a sheet is held back from an issue without being removed from the set. Writes to the shared .DST under a lock. Pass doNotPlot=false to put the sheet back into the next publish. |
 | `set_sheet_number` | Renumber one sheet in a sheet set - the 'A-101' that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone. |

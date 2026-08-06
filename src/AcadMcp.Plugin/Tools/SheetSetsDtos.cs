@@ -33,3 +33,18 @@ internal sealed record SheetRenameArgsDto(
     [property: JsonPropertyName("sheet")]  string? Sheet,
     [property: JsonPropertyName("number")] string? Number,
     [property: JsonPropertyName("title")]  string? Title);
+
+internal sealed record SubsetCreateArgsDto(
+    [property: JsonPropertyName("path")]        string? Path,
+    [property: JsonPropertyName("name")]        string? Name,
+    [property: JsonPropertyName("description")] string? Description,
+    [property: JsonPropertyName("parent")]      string? Parent);
+
+internal sealed record SubsetArgsDto(
+    [property: JsonPropertyName("path")]   string? Path,
+    [property: JsonPropertyName("subset")] string? Subset);
+
+internal sealed record MoveSheetArgsDto(
+    [property: JsonPropertyName("path")]   string? Path,
+    [property: JsonPropertyName("sheet")]  string? Sheet,
+    [property: JsonPropertyName("subset")] string? Subset);

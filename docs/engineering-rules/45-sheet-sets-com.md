@@ -163,6 +163,26 @@ That last one is worth generalising: **`GetX()` immediately after `SetX()` can d
 file.** The tool answered `" "` while the disk held `""`. A read-back inside the same call is
 evidence that the object changed, never that the file did.
 
+And one more, from the subsets:
+
+| What the signature suggests | What it does |
+|---|---|
+| `InsertComponent(comp, before)` moves a component into a subset | It **adds**; it does not re-parent. Called on a sheet that still belongs to another subset it fails `E_INVALIDARG`; called on one already under the target it answers `0x800288C6` *duplicate identifier*. The second message is what explained the first. A move is `owner.RemoveSheet(sheet)` followed by `target.InsertComponent(sheet, null)`. |
+
+`RemoveSheet` **detaches rather than destroys** — measured, by counting the set's sheets before
+and after a full move-out-and-back cycle and finding them equal. That was worth establishing
+rather than assuming, and the way to establish it safely is the next rule.
+
+### Verify inside the lock, before the commit
+
+When a step's behaviour is unknown and the downside is destroying user data, check the outcome
+**while still holding the lock and before committing**. `move_sheet_to_subset` re-finds the sheet
+after the remove-and-insert; if it were gone, it throws, the `finally` unlocks with
+`bCommit: false`, and the `.DST` on disk is untouched.
+
+That safety net exists only because the commit sits on the success path (§2). With the commit in
+the `finally`, a destroyed sheet would have been saved.
+
 **The rule this produces:** in COM, a nullable-looking return may throw, an undocumented flag is a
 coin toss to be tried rather than guessed, interface types are not interchangeable with their
 coclasses, and a setter may be a no-op that says nothing. None of that is true of the managed API,

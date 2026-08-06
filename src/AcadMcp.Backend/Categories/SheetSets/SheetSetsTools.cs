@@ -130,4 +130,37 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<SheetDoNotPlotResult> SetSheetDoNotPlot(IPluginGateway gw, SheetFlagArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<SheetFlagArgs, SheetDoNotPlotResult>(gw, "acad.sheetsets.set_sheet_do_not_plot", args, T_NORMAL, ct);
+
+    // ─────────── subsets: how a real set is organised ───────────
+    //
+    // A subset is addressed by its bare name or by its full "Parent / Child" path, because
+    // list_subsets reports both and a caller should be able to paste either back.
+
+    [McpTool("create_subset", "Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous.", "sheetsets",
+        Intent = new[] { "utworz podzestaw arkuszy", "dodaj folder branzowy do zestawu",
+                         "create a subset in a sheet set", "add a discipline folder",
+                         "nowy podzestaw", "organise sheets into groups" },
+        RequiresPlugin = true)]
+    public static Task<SubsetCreateResult> CreateSubset(IPluginGateway gw, SubsetCreateArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SubsetCreateArgs, SubsetCreateResult>(gw, "acad.sheetsets.create_subset", args, T_NORMAL, ct);
+
+    // Empty-only, deliberately. What RemoveSubset does with the sheets inside is undocumented and
+    // unmeasured, and the possibilities include deleting them. This bank has twice shipped a tool
+    // that reported the opposite of the truth by guessing at undocumented behaviour; the cost of
+    // guessing wrong HERE would be somebody's sheets.
+    [McpTool("delete_subset", "Delete an EMPTY subset from a sheet set. Refuses while it still holds sheets and reports how many, because what AutoCAD does with the sheets inside a removed subset is not documented and could include deleting them - move them out with move_sheet_to_subset first. Sheets are never removed by this tool. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "usun podzestaw", "skasuj folder w zestawie arkuszy",
+                         "delete a subset", "remove a sheet set subset",
+                         "pozbadz sie pustego podzestawu", "usun grupe arkuszy" },
+        RequiresPlugin = true)]
+    public static Task<SubsetDeleteResult> DeleteSubset(IPluginGateway gw, SubsetArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SubsetArgs, SubsetDeleteResult>(gw, "acad.sheetsets.delete_subset", args, T_NORMAL, ct);
+
+    [McpTool("move_sheet_to_subset", "Move one sheet into a subset, or back to the top level of the sheet set when subset is omitted. The sheet is re-parented rather than copied, so the set's total sheet count does not change. Identify the sheet by its name or its number, and the subset by its bare name or its full 'Parent / Child' path. Writes to the shared .DST under a lock.", "sheetsets",
+        Intent = new[] { "przenies arkusz do podzestawu", "przypisz arkusz do branzy",
+                         "move a sheet into a subset", "reorganise sheets between subsets",
+                         "wyjmij arkusz z podzestawu", "assign sheet to a discipline" },
+        RequiresPlugin = true)]
+    public static Task<MoveSheetResult> MoveSheetToSubset(IPluginGateway gw, MoveSheetArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<MoveSheetArgs, MoveSheetResult>(gw, "acad.sheetsets.move_sheet_to_subset", args, T_NORMAL, ct);
 }

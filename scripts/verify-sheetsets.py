@@ -192,6 +192,77 @@ do("set_sheet_do_not_plot", {"path": DST, "sheet": "A-102", "doNotPlot": False},
 check("PERSISTED: fresh-path copy has it cleared",
       (fresh_find(number="A-102") or {}).get("doNotPlot") is False, "fresh copy disagrees")
 
+# ── subsets ───────────────────────────────────────────────────────────────────
+print("\n== create_subset ==")
+sheets_before = len(reread_fresh())
+
+r = do("create_subset", {"path": DST, "name": "ACADMCP-Discipline",
+                         "description": "created by verify-sheetsets"})
+if isinstance(r, dict):
+    check("created at the top level of the set", r.get("parentIsSheetSet") is True, str(r)[:160])
+    check("starts empty", r.get("sheetCount") == 0, str(r)[:160])
+
+def fresh_subsets():
+    _fresh[0] += 1
+    copy = os.path.join(WORK, f"fresh-{_fresh[0]:02d}.dst")
+    shutil.copy2(DST, copy)
+    ok, r = S.call("list_subsets", {"path": copy})
+    return (r or {}).get("subsets") or [] if ok else []
+
+names = [s.get("name") for s in fresh_subsets()]
+check("PERSISTED: the new subset survives a reload", "ACADMCP-Discipline" in names, str(names)[:160])
+
+print("\n== a nested subset, and a duplicate name refused ==")
+r = do("create_subset", {"path": DST, "name": "ACADMCP-Nested", "parent": "ACADMCP-Discipline"})
+if isinstance(r, dict):
+    check("nested under the named parent", r.get("parent") == "ACADMCP-Discipline", str(r)[:160])
+    check("knows it is not at the root", r.get("parentIsSheetSet") is False, str(r)[:160])
+paths = [s.get("path") for s in fresh_subsets()]
+check("PERSISTED: nested path reads 'Parent / Child'",
+      "ACADMCP-Discipline / ACADMCP-Nested" in paths, str(paths)[:200])
+
+do("create_subset", {"path": DST, "name": "ACADMCP-Discipline"},
+   label="duplicate subset name is refused", expect_fail=True)
+
+print("\n== move_sheet_to_subset re-parents rather than copies ==")
+r = do("move_sheet_to_subset", {"path": DST, "sheet": "A-102", "subset": "ACADMCP-Nested"})
+if isinstance(r, dict):
+    check("reports the destination", r.get("to") == "ACADMCP-Nested", str(r)[:180])
+    check("reports where it came from", "from" in r, str(r)[:180])
+after = reread_fresh()
+check("PERSISTED: the sheet now sits under the nested subset",
+      (next((s for s in after if s.get("number") == "A-102"), {}) or {}).get("subset", "")
+      .endswith("ACADMCP-Nested"),
+      str(next((s for s in after if s.get("number") == "A-102"), {}))[:180])
+check("MOVED, not copied: total sheet count is unchanged",
+      len(after) == sheets_before, f"{sheets_before} -> {len(after)}")
+
+print("\n== delete_subset refuses a subset that still holds sheets ==")
+r = do("delete_subset", {"path": DST, "subset": "ACADMCP-Nested"},
+       label="non-empty subset is refused", expect_fail=True)
+check("the refusal says how many sheets are in the way", "1 sheet" in str(r),
+      f"unhelpful message: {str(r)[:200]}")
+check("and the subset still exists", "ACADMCP-Nested" in [s.get("name") for s in fresh_subsets()],
+      "a refused delete removed it anyway")
+
+print("\n== move the sheet back out, then the subset deletes ==")
+do("move_sheet_to_subset", {"path": DST, "sheet": "A-102"}, label="move back to the top level")
+r = fresh_find(number="A-102")
+check("PERSISTED: the sheet is out of the subset",
+      not (r or {}).get("subset", "").endswith("ACADMCP-Nested"), str(r)[:160])
+
+do("delete_subset", {"path": DST, "subset": "ACADMCP-Nested"}, label="empty subset deletes")
+check("PERSISTED: nested subset is gone",
+      "ACADMCP-Nested" not in [s.get("name") for s in fresh_subsets()], "still listed")
+do("delete_subset", {"path": DST, "subset": "ACADMCP-Discipline"}, label="parent deletes too")
+check("PERSISTED: parent subset is gone",
+      "ACADMCP-Discipline" not in [s.get("name") for s in fresh_subsets()], "still listed")
+check("no sheets were lost by any of that", len(reread_fresh()) == sheets_before,
+      f"{sheets_before} -> {len(reread_fresh())}")
+
+do("delete_subset", {"path": DST, "subset": "no-such-subset"},
+   label="unknown subset is refused", expect_fail=True)
+
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")
 do("set_sheet_number", {"path": DST, "sheet": "no-such-sheet", "value": "X-1"},

@@ -378,12 +378,36 @@ if ($null -eq $testsDll) {
     # once failed on a schedules test that had been fixed long before, because the DLL predated
     # the fix. A stale PASS is the dangerous direction. Same class of bug as deploy-plugin.ps1
     # defaulting to Debug and shipping an April build.
-    $newestSource = Get-ChildItem -Path (Join-Path $RepoRoot 'src'), (Join-Path $RepoRoot 'tests') `
+    # Scoped to what the test assembly actually compiles: AcadMcp.Tests references Backend and
+    # Shared only, plus SourceGen because Backend runs it as an analyzer. Scanning all of src/
+    # was over-broad and produced a gate that could not be cleared by obeying its own message -
+    # touching an AcadMcp.Plugin file marked the tests stale, and rebuilding them changed
+    # nothing, because nothing the test project compiles had changed and MSBuild rightly skipped
+    # the write. A check that says "run this" and stays red after you run it teaches people to
+    # pass --no-verify, which rule 40 exists to discourage.
+    $watched = @(
+        (Join-Path $RepoRoot 'src\AcadMcp.Backend'),
+        (Join-Path $RepoRoot 'src\AcadMcp.Shared'),
+        (Join-Path $RepoRoot 'src\AcadMcp.SourceGen'),
+        (Join-Path $RepoRoot 'tests')
+    ) | Where-Object { Test-Path $_ }
+    $newestSource = Get-ChildItem -Path $watched `
                         -Recurse -File -Include *.cs, *.csproj -ErrorAction SilentlyContinue |
                     Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' } |
                     Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-    if ($newestSource -and $newestSource.LastWriteTimeUtc -gt (Get-Item $testsDll).LastWriteTimeUtc) {
-        Add-Err ("test assembly is STALE - {0} is newer than AcadMcp.Tests.dll. " -f $newestSource.Name +
+    # Compared against the newest assembly in the test OUTPUT FOLDER, not against
+    # AcadMcp.Tests.dll alone. These tests reflect over AcadMcp.Backend.dll, so what matters is
+    # whether the assemblies sitting next to the test DLL are current — and Roslyn will
+    # legitimately leave AcadMcp.Tests.dll untouched when only a dependency changed, because its
+    # own compile inputs did not. Measured: after editing a Backend source and rebuilding, the
+    # copied AcadMcp.Backend.dll was 9 minutes newer than AcadMcp.Tests.dll, and the old check
+    # called that stale forever.
+    $newestBinary = Get-ChildItem -Path (Split-Path $testsDll -Parent) -Filter *.dll `
+                        -ErrorAction SilentlyContinue |
+                    Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    if ($newestSource -and $newestBinary -and
+        $newestSource.LastWriteTimeUtc -gt $newestBinary.LastWriteTimeUtc) {
+        Add-Err ("test assembly is STALE - {0} is newer than everything in the test output. " -f $newestSource.Name +
                  "Run: dotnet build tests/AcadMcp.Tests/AcadMcp.Tests.csproj")
     }
 

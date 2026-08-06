@@ -12,12 +12,15 @@
   "tags": [
     "autocad",
     "cad",
+    "create",
     "custom",
+    "delete",
     "do",
     "dwg",
     "get",
     "info",
     "list",
+    "move",
     "not",
     "number",
     "path",
@@ -29,17 +32,24 @@
     "sheet",
     "sheets",
     "sheetsets",
+    "subset",
     "subsets",
-    "title"
+    "title",
+    "to"
   ],
   "intent_examples": [
+    "add a discipline folder",
+    "assign sheet to a discipline",
     "change drawing number",
     "change sheet name",
     "change the sheet title",
     "check dst file",
     "co tabliczka moze pobrac z zestawu",
+    "create a subset in a sheet set",
     "czy ten plik dst jest poprawny",
     "dane arkusza do tabliczki",
+    "delete a subset",
+    "dodaj folder branzowy do zestawu",
     "exclude a sheet from publishing",
     "get a sheet property",
     "ile arkuszy ma ten zestaw",
@@ -53,25 +63,33 @@
     "list subsets of a sheet set",
     "lista arkuszy w zestawie",
     "lista podzestawow",
+    "move a sheet into a subset",
     "nadaj arkuszowi numer A-101",
     "nazwa rysunku na arkuszu",
     "nazwa zestawu arkuszy z pliku",
     "nie drukuj tego arkusza",
+    "nowy podzestaw",
     "numer projektu w zestawie",
     "numery arkuszy",
     "opis arkusza w tabliczce",
+    "organise sheets into groups",
     "otworz zestaw arkuszy dst",
     "oznacz arkusz jako niedrukowalny",
     "podzestawy branzowe",
     "popraw nazwe arkusza",
+    "pozbadz sie pustego podzestawu",
     "project-wide properties",
     "przemianuj arkusz",
+    "przenies arkusz do podzestawu",
     "przenumeruj arkusz",
+    "przypisz arkusz do branzy",
     "przywroc arkusz do drukowania",
     "read sheet number and title",
+    "remove a sheet set subset",
     "rename a sheet",
     "rename and renumber a sheet",
     "renumber a sheet",
+    "reorganise sheets between subsets",
     "resolve sheet set file",
     "set sheet do not plot",
     "set sheet number",
@@ -83,14 +101,19 @@
     "sheet set organisation",
     "sheet set project data",
     "show all sheets",
+    "skasuj folder w zestawie arkuszy",
     "sprawdz sciezke zestawu arkuszy",
     "summarise a sheet set",
     "ustaw numer arkusza na",
     "ustaw tytul arkusza",
+    "usun grupe arkuszy",
+    "usun podzestaw",
+    "utworz podzestaw arkuszy",
     "validate a sheet set path",
     "what is in this sheet set",
     "wlasciwosci arkusza",
     "wlasne wlasciwosci zestawu arkuszy",
+    "wyjmij arkusz z podzestawu",
     "wylacz arkusz z drukowania",
     "zmien nazwe arkusza",
     "zmien numer arkusza",
@@ -98,6 +121,38 @@
     "zmien tytul arkusza"
   ],
   "tools_summary": [
+    {
+      "name": "create_subset",
+      "description": "Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous.",
+      "tags": [
+        "create",
+        "subset"
+      ],
+      "intent": [
+        "utworz podzestaw arkuszy",
+        "dodaj folder branzowy do zestawu",
+        "create a subset in a sheet set",
+        "add a discipline folder",
+        "nowy podzestaw",
+        "organise sheets into groups"
+      ]
+    },
+    {
+      "name": "delete_subset",
+      "description": "Delete an EMPTY subset from a sheet set. Refuses while it still holds sheets and reports how many, because what AutoCAD does with the sheets inside a removed subset is not documented and could include deleting them - move them out with move_sheet_to_subset first. Sheets are never removed by this tool. Writes to the shared .DST under a lock.",
+      "tags": [
+        "delete",
+        "subset"
+      ],
+      "intent": [
+        "usun podzestaw",
+        "skasuj folder w zestawie arkuszy",
+        "delete a subset",
+        "remove a sheet set subset",
+        "pozbadz sie pustego podzestawu",
+        "usun grupe arkuszy"
+      ]
+    },
     {
       "name": "get_sheet_property",
       "description": "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say \u0027A-101\u0027 at least as often as they say a sheet\u0027s name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.",
@@ -201,6 +256,24 @@
       ]
     },
     {
+      "name": "move_sheet_to_subset",
+      "description": "Move one sheet into a subset, or back to the top level of the sheet set when subset is omitted. The sheet is re-parented rather than copied, so the set\u0027s total sheet count does not change. Identify the sheet by its name or its number, and the subset by its bare name or its full \u0027Parent / Child\u0027 path. Writes to the shared .DST under a lock.",
+      "tags": [
+        "move",
+        "sheet",
+        "to",
+        "subset"
+      ],
+      "intent": [
+        "przenies arkusz do podzestawu",
+        "przypisz arkusz do branzy",
+        "move a sheet into a subset",
+        "reorganise sheets between subsets",
+        "wyjmij arkusz z podzestawu",
+        "assign sheet to a discipline"
+      ]
+    },
+    {
       "name": "rename_sheet",
       "description": "Rename and renumber a sheet in one locked write - AutoCAD\u0027s own \u0022Rename \u0026 Renumber Sheet\u0022. Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass \u0022\u0022 as the title to clear it.",
       "tags": [
@@ -287,8 +360,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 10,
-    "last_regenerated_utc": "2026-08-06T10:27:16.1300486Z",
+    "tool_count_target": 13,
+    "last_regenerated_utc": "2026-08-06T10:36:55.8913273Z",
     "phase": "phase2.1_sheetsets"
   }
 }

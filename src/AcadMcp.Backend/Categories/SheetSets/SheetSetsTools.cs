@@ -211,4 +211,12 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<AddSheetResult> AddSheet(IPluginGateway gw, AddSheetArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<AddSheetArgs, AddSheetResult>(gw, "acad.sheetsets.add_sheet", args, T_NORMAL, ct);
+
+    [McpTool("create_sheet_set", "Create a new, empty sheet set (.DST) - the file that will hold a project's drawing list, its numbering and the project-wide values title blocks bind to. REFUSES to overwrite an existing file unless overwrite=true, because a .DST holds an entire drawing list and 'create' is a word an agent reaches for casually. templatePath, if given, is an existing .DST to copy structure from, NOT the .DWT that new sheets are drawn from - that is set_sheet_set_template. Add layouts to the new set with add_sheet.", "sheetsets",
+        Intent = new[] { "utworz nowy zestaw arkuszy", "zaloz plik dst dla projektu",
+                         "create a new sheet set", "start a drawing list for this project",
+                         "nowy zestaw arkuszy od zera", "make an empty sheet set" },
+        RequiresPlugin = true)]
+    public static Task<CreateSheetSetResult> CreateSheetSet(IPluginGateway gw, CreateSheetSetArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<CreateSheetSetArgs, CreateSheetSetResult>(gw, "acad.sheetsets.create_sheet_set", args, T_NORMAL, ct);
 }

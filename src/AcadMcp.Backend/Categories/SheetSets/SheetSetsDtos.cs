@@ -247,3 +247,19 @@ public sealed record AddSheetResult(
     [property: JsonPropertyName("subset")]      string Subset,
     [property: JsonPropertyName("sheetCount")]  int SheetCount,
     [property: JsonPropertyName("note")]        string Note);
+
+public sealed record CreateSheetSetArgs(
+    [property: JsonPropertyName("path")]         string Path,
+    [property: JsonPropertyName("name")]         string? Name = null,
+    [property: JsonPropertyName("description")]  string? Description = null,
+    [property: JsonPropertyName("templatePath")] string? TemplatePath = null,
+    [property: JsonPropertyName("overwrite")]    bool? Overwrite = null);
+
+public sealed record CreateSheetSetResult(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("description")] string Description,
+    [property: JsonPropertyName("template")]    string? Template,
+    [property: JsonPropertyName("bytes")]       long Bytes,
+    [property: JsonPropertyName("sheetCount")]  int SheetCount,
+    [property: JsonPropertyName("note")]        string Note);

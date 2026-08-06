@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Live verification for roadmap 2.1 sheet sets — the write tranche.
+"""Live verification for roadmap 2.1 sheet sets.
 
-Four write tools are under test: set_sheet_number, rename_sheet, set_sheet_title and
-set_sheet_do_not_plot, plus the reads they depend on to be checkable at all.
+Nineteen tools: six reads, and thirteen writes covering sheet identity (number, title,
+do-not-plot), organisation (subsets, ordering, moving), custom properties, membership
+(add and remove) and creating a set from nothing.
+
+Two things this script does that are worth copying elsewhere:
+
+* **The refusal is the documentation.** `discover_layout_in` asks add_sheet for a layout
+  that cannot exist and reads the real names out of the error, so the message is under test
+  on every run instead of being eyeballed once.
+* **The final count is exact arithmetic**, not "unchanged" — start, minus what was removed,
+  plus what was added. A tool that quietly dropped or duplicated a sheet during a move, a
+  reorder or an import shows up there and nowhere else.
 
 **Proving persistence is the whole difficulty.** Each of these tools re-reads its value
 before returning, so one that mutated the in-memory COM object and never wrote the file
@@ -423,14 +433,14 @@ print("\n== add_sheet: the error message has to be the documentation ==")
 SRC_DWG = os.path.join(os.path.dirname(SAMPLE), "A-01.dwg")
 check("a sample drawing to add from exists", os.path.exists(SRC_DWG), SRC_DWG)
 
-def discover_layout(dwg):
+def discover_layout_in(dst, dwg):
     """Ask for a layout that cannot exist and read the real ones out of the refusal.
 
     The refusal is supposed to be the documentation: a tool whose failure teaches you the right
     argument is worth more than one that only says no. This uses it that way, which also means
     the message is under test on every run rather than eyeballed once.
     """
-    ok, res = S.call("add_sheet", {"path": DST, "drawingPath": dwg, "layout": "NO-SUCH-LAYOUT"})
+    ok, res = S.call("add_sheet", {"path": dst, "drawingPath": dwg, "layout": "NO-SUCH-LAYOUT"})
     text = str(res)
     if "It has: " not in text:
         return None, text
@@ -439,7 +449,7 @@ def discover_layout(dwg):
     return (None if first == "(none)" else first), text
 
 
-layout_name, msg = discover_layout(SRC_DWG)
+layout_name, msg = discover_layout_in(DST, SRC_DWG)
 results.append(("an unknown layout is refused", "It has:" in msg))
 print(f"  {'OK  ' if 'It has:' in msg else 'FAIL'} an unknown layout is refused")
 check("and the refusal lists the layouts that DO exist", "It has:" in msg, msg[:220])
@@ -474,7 +484,7 @@ if layout_name and layout_name != "(none)":
     # same layout name as A-01, and assuming it did was what made the first run of this section
     # look like a tool failure.
     other_dwg = os.path.join(os.path.dirname(SAMPLE), "A-02.dwg")
-    other_layout, _ = discover_layout(other_dwg)
+    other_layout, _ = discover_layout_in(DST, other_dwg)
     print(f"  discovered layout in A-02.dwg: {other_layout!r}")
     do("create_subset", {"path": DST, "name": "ACADMCP-Added"}, label="a subset to add into")
     r = do("add_sheet", {"path": DST, "drawingPath": other_dwg, "layout": other_layout,
@@ -490,6 +500,55 @@ do("add_sheet", {"path": DST, "drawingPath": os.path.join(WORK, "nope.dwg"), "la
    label="a missing drawing is refused", expect_fail=True)
 do("add_sheet", {"path": DST, "drawingPath": SRC_DWG},
    label="a missing layout argument is refused", expect_fail=True)
+
+# ── create_sheet_set ──────────────────────────────────────────────────────────
+print("\n== create_sheet_set: the one tool here that makes a file ==")
+NEW_DST = os.path.join(WORK, "created.dst")
+if os.path.exists(NEW_DST):
+    os.remove(NEW_DST)
+
+r = do("create_sheet_set", {"path": NEW_DST, "name": "ACADMCP Verify Set",
+                            "description": "created by verify-sheetsets"})
+if isinstance(r, dict):
+    check("reports the name it was given", r.get("name") == "ACADMCP Verify Set", str(r)[:220])
+    check("starts with no sheets", r.get("sheetCount") == 0, str(r)[:220])
+    check("reports a non-zero file size", (r.get("bytes") or 0) > 0, str(r)[:220])
+check("the file actually exists on disk", os.path.exists(NEW_DST), NEW_DST)
+
+ok, info2 = S.call("get_sheet_set_info", {"path": NEW_DST})
+check("the new set reads back through the normal tools", ok, str(info2)[:200])
+check("and reports the name it was created with",
+      (info2 or {}).get("name") == "ACADMCP Verify Set", str(info2)[:200])
+check("and reports zero sheets", (info2 or {}).get("sheetCount") == 0, str(info2)[:200])
+
+print("\n== a new set is usable, not just present ==")
+lay, _ = discover_layout_in(NEW_DST, SRC_DWG)
+r = do("add_sheet", {"path": NEW_DST, "drawingPath": SRC_DWG, "layout": lay,
+                     "number": "N-001", "title": "First sheet"},
+       label="add_sheet into the brand-new set")
+ok, listed = S.call("list_sheets", {"path": NEW_DST})
+check("the new set now holds exactly one sheet",
+      len((listed or {}).get("sheets") or []) == 1, str(listed)[:200])
+
+print("\n== overwriting an existing .DST is refused by default ==")
+size_before = os.path.getsize(NEW_DST)
+r = do("create_sheet_set", {"path": NEW_DST, "name": "Should Not Happen"},
+       label="overwrite without the flag is refused", expect_fail=True)
+check("the refusal explains why and names the flag", "overwrite=true" in str(r), str(r)[:220])
+check("the existing file was NOT touched", os.path.getsize(NEW_DST) == size_before,
+      f"{size_before} -> {os.path.getsize(NEW_DST)}")
+ok, still = S.call("list_sheets", {"path": NEW_DST})
+check("and it still holds its sheet", len((still or {}).get("sheets") or []) == 1,
+      str(still)[:200])
+
+do("create_sheet_set", {"path": os.path.join(WORK, "not-a-sheet-set.txt")},
+   label="a non-.DST path is refused", expect_fail=True)
+do("create_sheet_set", {"path": os.path.join(WORK, "no", "such", "folder", "x.dst")},
+   label="a missing folder is refused", expect_fail=True)
+r = do("create_sheet_set", {"path": os.path.join(WORK, "tpl.dst"), "templatePath": SRC_DWG},
+       label="a .dwg as templatePath is refused", expect_fail=True)
+check("and the refusal distinguishes it from set_sheet_set_template",
+      "set_sheet_set_template" in str(r), str(r)[:220])
 
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")

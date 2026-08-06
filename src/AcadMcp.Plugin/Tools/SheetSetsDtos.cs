@@ -78,3 +78,10 @@ internal sealed record AddSheetArgsDto(
     [property: JsonPropertyName("number")]      string? Number,
     [property: JsonPropertyName("title")]       string? Title,
     [property: JsonPropertyName("subset")]      string? Subset);
+
+internal sealed record CreateSheetSetArgsDto(
+    [property: JsonPropertyName("path")]         string? Path,
+    [property: JsonPropertyName("name")]         string? Name,
+    [property: JsonPropertyName("description")]  string? Description,
+    [property: JsonPropertyName("templatePath")] string? TemplatePath,
+    [property: JsonPropertyName("overwrite")]    bool? Overwrite);

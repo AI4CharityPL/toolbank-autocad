@@ -67,6 +67,7 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.reorder_sheet", ReorderSheet);
         host.Register("acad.sheetsets.remove_sheet", RemoveSheet);
         host.Register("acad.sheetsets.add_sheet", AddSheet);
+        host.Register("acad.sheetsets.create_sheet_set", CreateSheetSet);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -120,21 +121,21 @@ internal static class SheetSetsPluginTools
 
             if (db is null)
             {
-                // OpenDatabase(String, Boolean) - and the metadata does not say what the flag
-                // means. ObjectARX documents it as bFailIfNotFound in one place and differently
-                // in another, so both are attempted rather than guessed at, and the failure
-                // below reports what each attempt said. Guessing a boolean's polarity has cost
-                // this session twice already: IdPair.IsCloned and CompareLayerStateToDb.
+                // The flag is `bFailIfAlreadyOpen`, and the metadata says so - the parameter is
+                // named in the interop assembly. An earlier version of this comment claimed it
+                // did not and tried both values in turn, which was a workaround for a question
+                // that had already been answered by reading the signature.
+                //
+                // `false`, because being already open is not an error here: FindOpenDatabase
+                // above handles that case, and a race between the two should resolve to the open
+                // database rather than to a failure.
                 var attempts = new List<string>();
-                foreach (var flag in new[] { true, false })
-                {
-                    try { db = mgr.OpenDatabase(full, flag); if (db is not null) { weOpenedIt = true; break; } }
-                    catch (COMException ex) { attempts.Add($"OpenDatabase(flag={flag}) -> 0x{ex.ErrorCode:X8} {ex.Message}"); }
-                }
+                try { db = mgr.OpenDatabase(full, false); if (db is not null) weOpenedIt = true; }
+                catch (COMException ex) { attempts.Add($"OpenDatabase -> 0x{ex.ErrorCode:X8} {ex.Message}"); }
                 if (db is null && attempts.Count > 0)
                     throw new InvalidOperationException(
-                        "AutoCAD would not open the sheet set '" + full + "'. Both forms of the " +
-                        "OpenDatabase flag were tried: " + string.Join(" | ", attempts) +
+                        "AutoCAD would not open the sheet set '" + full + "': " +
+                        string.Join(" | ", attempts) +
                         ". The sheet set subsystem usually needs the Sheet Set Manager palette to " +
                         "have been opened once in this AutoCAD session before it will serve COM " +
                         "callers - try SHEETSET (Ctrl+4) and call again.");
@@ -539,11 +540,9 @@ internal static class SheetSetsPluginTools
             try { db = mgr.FindOpenDatabase(full); } catch (COMException) { db = null; }
             if (db is null)
             {
-                foreach (var flag in new[] { true, false })
-                {
-                    try { db = mgr.OpenDatabase(full, flag); if (db is not null) { weOpenedIt = true; break; } }
-                    catch (COMException) { }
-                }
+                // bFailIfAlreadyOpen: false. See the read path above.
+                try { db = mgr.OpenDatabase(full, false); if (db is not null) weOpenedIt = true; }
+                catch (COMException) { }
             }
             if (db is null)
                 throw new InvalidOperationException("AutoCAD would not open the sheet set '" + full + "'.");
@@ -761,6 +760,119 @@ internal static class SheetSetsPluginTools
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });
+        });
+
+    // ─────────── creating a set ───────────
+
+    /// <summary>Create a new .DST. The only tool here that makes a file rather than editing one.</summary>
+    /// <remarks>
+    /// Overwriting is refused by default. Every other tool in this category edits a file the
+    /// caller named and can therefore be trusted with it; this one can destroy a project's whole
+    /// drawing list by being pointed at an existing path, and "create" is a word an agent reaches
+    /// for casually. `overwrite: true` is the deliberate form.
+    ///
+    /// `CreateDatabase(filename, templatefilename, bAlwaysCreate)` — the template is a .DST to
+    /// copy structure from, NOT the .DWT that new sheets are drawn from; that one is
+    /// set_sheet_set_template's job. Passing a .dwt here produces a file AutoCAD cannot read,
+    /// so the extension is checked rather than trusted.
+    /// </remarks>
+    private static Task<ToolDispatchResult> CreateSheetSet(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.create_sheet_set", ct, (doc, db, tr) =>
+        {
+            var a = Read<CreateSheetSetArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Path))
+                throw new ArgumentException("path is required: where the new .DST should be written.");
+
+            var full = Path.GetFullPath(a.Path!);
+            if (!string.Equals(Path.GetExtension(full), ".dst", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "'" + full + "' is not a .DST path. A sheet set lives in its own file.");
+            if (File.Exists(full) && a.Overwrite != true)
+                throw new ArgumentException(
+                    "'" + full + "' already exists and was NOT replaced. A sheet set file holds a " +
+                    "project's entire drawing list, so overwriting one is deliberate: pass " +
+                    "overwrite=true if that is really the intent.");
+
+            var dir = Path.GetDirectoryName(full);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                throw new ArgumentException(
+                    "The folder '" + dir + "' does not exist. This tool writes a sheet set, not a " +
+                    "directory tree.");
+
+            var template = "";
+            if (!string.IsNullOrWhiteSpace(a.TemplatePath))
+            {
+                template = Path.GetFullPath(a.TemplatePath!);
+                if (!File.Exists(template))
+                    throw new ArgumentException("No such sheet set template: " + template);
+                if (!string.Equals(Path.GetExtension(template), ".dst", StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException(
+                        "'" + template + "' is not a .DST. templatePath is an existing SHEET SET to " +
+                        "copy structure from, not the .DWT new sheets are drawn from - that is " +
+                        "set_sheet_set_template.");
+            }
+
+            IAcSmSheetSetMgr? mgr = null;
+            IAcSmDatabase? created = null;
+            try
+            {
+                mgr = new AcSmSheetSetMgr();
+                created = mgr.CreateDatabase(full, template, true)
+                    ?? throw new InvalidOperationException(
+                        "AutoCAD created no sheet set database for '" + full + "' and raised no error.");
+
+                var ss = created.GetSheetSet()
+                    ?? throw new InvalidOperationException(
+                        "'" + full + "' was created but carries no sheet set.");
+
+                created.LockDb(created);
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(a.Name)) ss.SetName(a.Name);
+                    if (a.Description is not null) ss.SetDesc(a.Description);
+                    created.UnlockDb(created, true);
+                }
+                catch
+                {
+                    try { created.UnlockDb(created, false); } catch (COMException) { }
+                    throw;
+                }
+
+                // The file has to be on disk, not merely in memory. Everything else in this
+                // category proves persistence by re-reading; here the first question is simply
+                // whether a file appeared.
+                if (!File.Exists(full))
+                    throw new InvalidOperationException(
+                        "AutoCAD reported a new sheet set but no file exists at '" + full + "'.");
+
+                return Wrap(new
+                {
+                    path = full,
+                    name = ss.GetName(),
+                    description = ss.GetDesc(),
+                    template = template.Length == 0 ? null : template,
+                    bytes = new FileInfo(full).Length,
+                    sheetCount = 0,
+                    note = "Empty by design: add layouts to it with add_sheet, and organise them " +
+                           "with create_subset.",
+                });
+            }
+            catch (COMException ex)
+            {
+                throw new InvalidOperationException(
+                    "The sheet set subsystem refused to create '" + full + "' (HRESULT 0x" +
+                    ex.ErrorCode.ToString("X8") + "): " + ex.Message, ex);
+            }
+            finally
+            {
+                // Closed by path, never CloseAll - this one we definitely opened.
+                if (mgr is not null && created is not null)
+                {
+                    try { mgr.Close((AcSmDatabase)created); } catch (COMException) { }
+                }
+                if (created is not null) { try { Marshal.ReleaseComObject(created); } catch (Exception) { } }
+                if (mgr is not null) { try { Marshal.ReleaseComObject(mgr); } catch (Exception) { } }
+            }
         });
 
     // ─────────── adding a sheet ───────────

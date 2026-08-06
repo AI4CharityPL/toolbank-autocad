@@ -53,6 +53,7 @@
     "change the sheet title",
     "check dst file",
     "co tabliczka moze pobrac z zestawu",
+    "create a new sheet set",
     "create a subset in a sheet set",
     "czy ten plik dst jest poprawny",
     "dane arkusza do tabliczki",
@@ -78,6 +79,7 @@
     "list subsets of a sheet set",
     "lista arkuszy w zestawie",
     "lista podzestawow",
+    "make an empty sheet set",
     "move a sheet into a subset",
     "nadaj arkuszowi numer A-101",
     "nazwa rysunku na arkuszu",
@@ -86,6 +88,7 @@
     "nowa wlasciwosc dla wszystkich arkuszy",
     "nowy arkusz z ukladu w rysunku",
     "nowy podzestaw",
+    "nowy zestaw arkuszy od zera",
     "numer projektu w zestawie",
     "numery arkuszy",
     "opis arkusza w tabliczce",
@@ -128,6 +131,7 @@
     "show all sheets",
     "skasuj folder w zestawie arkuszy",
     "sprawdz sciezke zestawu arkuszy",
+    "start a drawing list for this project",
     "summarise a sheet set",
     "take a sheet out of the set",
     "uporzadkuj liste rysunkow",
@@ -137,6 +141,7 @@
     "usun arkusz z zestawu",
     "usun grupe arkuszy",
     "usun podzestaw",
+    "utworz nowy zestaw arkuszy",
     "utworz podzestaw arkuszy",
     "validate a sheet set path",
     "what is in this sheet set",
@@ -147,6 +152,7 @@
     "wylacz arkusz z drukowania",
     "wyrzuc arkusz z listy rysunkow",
     "zaimportuj uklad jako arkusz",
+    "zaloz plik dst dla projektu",
     "zdefiniuj wlasciwosc zestawu arkuszy",
     "zmien kolejnosc arkuszy",
     "zmien nazwe arkusza",
@@ -169,6 +175,23 @@
         "import layout as sheet",
         "nowy arkusz z ukladu w rysunku",
         "put this layout in the drawing list"
+      ]
+    },
+    {
+      "name": "create_sheet_set",
+      "description": "Create a new, empty sheet set (.DST) - the file that will hold a project\u0027s drawing list, its numbering and the project-wide values title blocks bind to. REFUSES to overwrite an existing file unless overwrite=true, because a .DST holds an entire drawing list and \u0027create\u0027 is a word an agent reaches for casually. templatePath, if given, is an existing .DST to copy structure from, NOT the .DWT that new sheets are drawn from - that is set_sheet_set_template. Add layouts to the new set with add_sheet.",
+      "tags": [
+        "create",
+        "sheet",
+        "set"
+      ],
+      "intent": [
+        "utworz nowy zestaw arkuszy",
+        "zaloz plik dst dla projektu",
+        "create a new sheet set",
+        "start a drawing list for this project",
+        "nowy zestaw arkuszy od zera",
+        "make an empty sheet set"
       ]
     },
     {
@@ -476,8 +499,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 18,
-    "last_regenerated_utc": "2026-08-06T11:43:02.4572374Z",
+    "tool_count_target": 19,
+    "last_regenerated_utc": "2026-08-06T11:55:26.1459907Z",
     "phase": "phase2.1_sheetsets"
   }
 }

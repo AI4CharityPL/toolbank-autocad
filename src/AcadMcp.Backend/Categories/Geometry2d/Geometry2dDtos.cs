@@ -205,3 +205,91 @@ public sealed record DrawMlineArgs(
     [property: JsonPropertyName("justification")] string Justification = "zero",
     [property: JsonPropertyName("closed")]        bool Closed = false,
     [property: JsonPropertyName("layer")]         string? Layer = null);
+
+// ─────────── polyline vertex editing (roadmap 3.1) ───────────
+//
+// Every result carries `before`, and the edit tools carry the whole vertex as it was. A drawn
+// polyline is a first draft; the alternative to editing one is deleting and redrawing it, which
+// loses its handle, its layer and anything referencing it.
+
+public sealed record PolylineRefArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("index")]  int? Index = null);
+
+public sealed record PolylineVertexArgs(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("index")]      int? Index = null,
+    [property: JsonPropertyName("point")]      Point2dDto? Point = null,
+    [property: JsonPropertyName("bulge")]      double? Bulge = null,
+    [property: JsonPropertyName("startWidth")] double? StartWidth = null,
+    [property: JsonPropertyName("endWidth")]   double? EndWidth = null);
+
+public sealed record PolylineWidthArgs(
+    [property: JsonPropertyName("handle")]  string Handle,
+    [property: JsonPropertyName("width")]   double? Width = null,
+    [property: JsonPropertyName("segment")] int? Segment = null);
+
+public sealed record EntityRefArgs(
+    [property: JsonPropertyName("handle")] string Handle);
+
+public sealed record PolylineVertexInfo(
+    [property: JsonPropertyName("index")]      int Index,
+    [property: JsonPropertyName("point")]      IReadOnlyList<double> Point,
+    [property: JsonPropertyName("bulge")]      double Bulge,
+    [property: JsonPropertyName("startWidth")] double StartWidth,
+    [property: JsonPropertyName("endWidth")]   double EndWidth);
+
+public sealed record PolylineVertexListResult(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("vertices")]      IReadOnlyList<PolylineVertexInfo> Vertices,
+    [property: JsonPropertyName("count")]         int Count,
+    [property: JsonPropertyName("closed")]        bool Closed,
+    [property: JsonPropertyName("length")]        double Length,
+    // Nullable for the same reason as in PolylineWidthResult: the ConstantWidth getter
+    // throws when segments differ, so "no single answer" is a real state a caller must see.
+    [property: JsonPropertyName("constantWidth")] double? ConstantWidth,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record PolylineAddVertexResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("added")]  PolylineVertexInfo Added,
+    [property: JsonPropertyName("count")]  int Count,
+    [property: JsonPropertyName("before")] int Before,
+    [property: JsonPropertyName("length")] double Length);
+
+public sealed record PolylineRemoveVertexResult(
+    [property: JsonPropertyName("handle")]  string Handle,
+    [property: JsonPropertyName("removed")] PolylineVertexInfo Removed,
+    [property: JsonPropertyName("count")]   int Count,
+    [property: JsonPropertyName("before")]  int Before,
+    [property: JsonPropertyName("length")]  double Length);
+
+public sealed record PolylineEditVertexResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("before")] PolylineVertexInfo Before,
+    [property: JsonPropertyName("vertex")] PolylineVertexInfo Vertex,
+    [property: JsonPropertyName("count")]  int Count,
+    [property: JsonPropertyName("length")] double Length);
+
+// constantWidth is NULLABLE, and that is not laziness. AutoCAD's ConstantWidth getter THROWS
+// eInvalidInput when a polyline's segments have different widths - it is unanswerable rather
+// than unset. Declaring it non-nullable would have this DTO drop a legitimate null, which is
+// KNOWN-GAPS C0 all over again.
+public sealed record PolylineWidthResult(
+    [property: JsonPropertyName("handle")]              string Handle,
+    [property: JsonPropertyName("width")]               double Width,
+    [property: JsonPropertyName("segment")]             int? Segment,
+    [property: JsonPropertyName("scope")]               string Scope,
+    [property: JsonPropertyName("beforeConstantWidth")] double? BeforeConstantWidth,
+    [property: JsonPropertyName("before")]              IReadOnlyList<PolylineVertexInfo> Before,
+    [property: JsonPropertyName("vertices")]            IReadOnlyList<PolylineVertexInfo> Vertices,
+    [property: JsonPropertyName("constantWidth")]       double? ConstantWidth,
+    [property: JsonPropertyName("note")]                string? Note = null);
+
+public sealed record ReverseCurveResult(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("startBefore")] IReadOnlyList<double> StartBefore,
+    [property: JsonPropertyName("start")]       IReadOnlyList<double> Start,
+    [property: JsonPropertyName("end")]         IReadOnlyList<double> End,
+    [property: JsonPropertyName("note")]        string Note);

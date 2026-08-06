@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 495 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 501 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (33 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (39 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -286,6 +286,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_spline` | Draw a 2D spline interpolated through the given fit points, optionally closed. |
 | `draw_text` | Draw single-line text (DTEXT) at a 2D position with given height/rotation/style. |
 | `draw_xline` | Draw an infinite construction line through a base point in a given direction. |
+| `edit_polyline_vertex` | Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is. |
 | `explode_entity` | Explode a polyline/block/hatch into its component primitives. |
 | `extend_curve` | Extend a curve until it reaches one of the boundary entities. |
 | `fillet_corner` | Fillet two curves at their intersection with the given radius; returns the new fillet arc. |
@@ -298,7 +299,12 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_intersections` | Return XY intersection points between two curves identified by handle. |
 | `join_curves` | Join multiple coincident curves into a single polyline if topology allows. |
 | `list_entities_in_window` | List handles of all entities whose bounding box intersects the rectangular window. |
+| `list_polyline_vertices` | List a polyline's vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc's included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction. |
 | `offset_curve` | Offset a curve by a signed distance, returning the new curve handle. |
+| `polyline_add_vertex` | Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call. |
+| `polyline_remove_vertex` | Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result. |
+| `reverse_curve` | Reverse a curve's direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped. |
+| `set_polyline_width` | Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 
 ## acad-geometry-3d

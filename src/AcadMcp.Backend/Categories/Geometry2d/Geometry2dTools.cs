@@ -228,4 +228,60 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<OkResult> DeleteEntities(IPluginGateway gw, HandlesArg args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<HandlesArg, OkResult>(gw, "acad.geometry2d.delete_entities", args, T_NORMAL, ct);
+
+    // ─────────── polyline vertex editing (roadmap 3.1) ───────────
+    //
+    // A drawn polyline is a first draft. Without these the only way to change one is to delete
+    // it and draw it again, which throws away its handle, its layer and anything referencing it.
+    //
+    // All of them work on the lightweight Polyline. A Polyline2d or Polyline3d stores its
+    // vertices as separate objects and is refused by name rather than silently mishandled.
+
+    [McpTool("list_polyline_vertices", "List a polyline's vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc's included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction.", "geometry-2d",
+        Intent = new[] { "wierzcholki polilinii", "jakie punkty ma ta polilinia",
+                         "list polyline vertices", "read polyline points and bulges",
+                         "ile wierzcholkow ma polilinia", "polyline vertex coordinates" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<PolylineVertexListResult> ListPolylineVertices(IPluginGateway gw, PolylineRefArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PolylineRefArgs, PolylineVertexListResult>(gw, "acad.geometry2d.list_polyline_vertices", args, T_FAST, ct);
+
+    [McpTool("polyline_add_vertex", "Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call.", "geometry-2d",
+        Intent = new[] { "dodaj wierzcholek do polilinii", "wstaw punkt w polilinii",
+                         "add a vertex to a polyline", "insert a point into a polyline",
+                         "przedluz polilinie o punkt", "add polyline point" },
+        RequiresPlugin = true)]
+    public static Task<PolylineAddVertexResult> PolylineAddVertex(IPluginGateway gw, PolylineVertexArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PolylineVertexArgs, PolylineAddVertexResult>(gw, "acad.geometry2d.polyline_add_vertex", args, T_NORMAL, ct);
+
+    [McpTool("polyline_remove_vertex", "Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result.", "geometry-2d",
+        Intent = new[] { "usun wierzcholek polilinii", "skasuj punkt z polilinii",
+                         "remove a polyline vertex", "delete a point from a polyline",
+                         "skroc polilinie o wierzcholek", "drop polyline point" },
+        RequiresPlugin = true)]
+    public static Task<PolylineRemoveVertexResult> PolylineRemoveVertex(IPluginGateway gw, PolylineRefArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PolylineRefArgs, PolylineRemoveVertexResult>(gw, "acad.geometry2d.polyline_remove_vertex", args, T_NORMAL, ct);
+
+    [McpTool("edit_polyline_vertex", "Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is.", "geometry-2d",
+        Intent = new[] { "przesun wierzcholek polilinii", "zmien punkt polilinii",
+                         "edit a polyline vertex", "move a polyline point",
+                         "zrob luk z odcinka polilinii", "set a bulge on a polyline segment" },
+        RequiresPlugin = true)]
+    public static Task<PolylineEditVertexResult> EditPolylineVertex(IPluginGateway gw, PolylineVertexArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PolylineVertexArgs, PolylineEditVertexResult>(gw, "acad.geometry2d.edit_polyline_vertex", args, T_NORMAL, ct);
+
+    [McpTool("set_polyline_width", "Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after.", "geometry-2d",
+        Intent = new[] { "ustaw szerokosc polilinii", "pogrub polilinie",
+                         "set polyline width", "make a polyline thicker",
+                         "szerokosc jednego segmentu polilinii", "polyline lineweight by width" },
+        RequiresPlugin = true)]
+    public static Task<PolylineWidthResult> SetPolylineWidth(IPluginGateway gw, PolylineWidthArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PolylineWidthArgs, PolylineWidthResult>(gw, "acad.geometry2d.set_polyline_width", args, T_NORMAL, ct);
+
+    [McpTool("reverse_curve", "Reverse a curve's direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped.", "geometry-2d",
+        Intent = new[] { "odwroc kierunek krzywej", "zmien kierunek polilinii",
+                         "reverse a curve", "flip curve direction",
+                         "zamien poczatek z koncem", "reverse polyline direction" },
+        RequiresPlugin = true)]
+    public static Task<ReverseCurveResult> ReverseCurve(IPluginGateway gw, EntityRefArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<EntityRefArgs, ReverseCurveResult>(gw, "acad.geometry2d.reverse_curve", args, T_NORMAL, ct);
 }

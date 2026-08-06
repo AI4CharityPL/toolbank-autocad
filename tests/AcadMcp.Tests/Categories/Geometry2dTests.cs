@@ -31,6 +31,11 @@ public class Geometry2dTests
         "get_bounding_box", "get_intersections", "get_distance_points", "get_distance_to_entity",
         "offset_curve", "trim_curve", "extend_curve", "join_curves", "explode_entity",
         "fillet_corner", "chamfer_corner", "delete_entities",
+
+        // Roadmap 3.1, first tranche. A drawn polyline is a first draft; without these the only
+        // way to change one is to delete it and draw it again, losing its handle and its layer.
+        "list_polyline_vertices", "polyline_add_vertex", "polyline_remove_vertex",
+        "edit_polyline_vertex", "set_polyline_width", "reverse_curve",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

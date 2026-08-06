@@ -10,6 +10,7 @@
   },
   "lazy_mode": true,
   "tags": [
+    "add",
     "arc",
     "area",
     "autocad",
@@ -26,6 +27,7 @@
     "donut",
     "draw",
     "dwg",
+    "edit",
     "ellipse",
     "entities",
     "entity",
@@ -50,16 +52,24 @@
     "polyline",
     "ray",
     "rectangle",
+    "remove",
     "revcloud",
+    "reverse",
+    "set",
     "spline",
     "text",
     "to",
     "trim",
+    "vertex",
+    "vertices",
+    "width",
     "window",
     "xline"
   ],
   "intent_examples": [
+    "add a vertex to a polyline",
     "add dtext",
+    "add polyline point",
     "add wrapped text",
     "arc by center radius and angle",
     "area of closed polyline",
@@ -95,10 +105,12 @@
     "create spline",
     "create xline",
     "decompose into segments",
+    "delete a point from a polyline",
     "delete entities by handle",
     "describe entity by handle",
     "dodaj mtext",
     "dodaj tekst jednolinijkowy",
+    "dodaj wierzcholek do polilinii",
     "draw a circle",
     "draw a line",
     "draw a point",
@@ -118,6 +130,8 @@
     "draw revision cloud",
     "draw single line text",
     "draw spline curve",
+    "drop polyline point",
+    "edit a polyline vertex",
     "ellipse by axes",
     "erase multiple entities",
     "explode entity into primitives",
@@ -132,6 +146,7 @@
     "fillet corner with radius",
     "fillet polilinii",
     "find entities in rectangle",
+    "flip curve direction",
     "get bounding box",
     "get curve intersections",
     "get curve length",
@@ -140,7 +155,10 @@
     "get enclosed area",
     "get entity details",
     "half infinite line",
+    "ile wierzcholkow ma polilinia",
     "infinite line through point",
+    "insert a point into a polyline",
+    "jakie punkty ma ta polilinia",
     "join multiple curves",
     "label at point",
     "length between coordinates",
@@ -148,8 +166,11 @@
     "lengthen curve to entity",
     "linia od punktu do punktu",
     "list entities in window",
+    "list polyline vertices",
     "lista obiektow w prostokacie",
+    "make a polyline thicker",
     "merge curves into polyline",
+    "move a polyline point",
     "mtext at point",
     "najkrotsza odleglosc do encji",
     "narysuj chmure rewizji",
@@ -172,6 +193,7 @@
     "obwod polilinii",
     "odleglosc miedzy punktami",
     "odleglosc punktu od krzywej",
+    "odwroc kierunek krzywej",
     "offset a curve by distance",
     "offset polilinii",
     "opisz encje",
@@ -182,24 +204,37 @@
     "podaj dystans dwoch punktow",
     "podaj pole powierzchni",
     "podaj prostokat ograniczajacy",
+    "pogrub polilinie",
     "point at coordinate",
     "polacz krzywe",
     "polygon with N sides",
+    "polyline lineweight by width",
     "polyline through points",
+    "polyline vertex coordinates",
+    "przedluz polilinie o punkt",
     "przesun krzywa rownolegle",
+    "przesun wierzcholek polilinii",
     "przytnij krzywa",
     "punkty przeciecia krzywych",
+    "read polyline points and bulges",
     "rectangle by two corners",
+    "remove a polyline vertex",
     "remove from drawing",
     "remove segment between intersections",
+    "reverse a curve",
+    "reverse polyline direction",
     "round corner between curves",
     "rozbij obiekt",
     "rysuj revcloud",
     "scal segmenty",
     "scinaj naroznik",
     "select inside box",
+    "set a bulge on a polyline segment",
+    "set polyline width",
     "shorten curve at boundary",
     "skasuj encje",
+    "skasuj punkt z polilinii",
+    "skroc polilinie o wierzcholek",
     "spline through points",
     "stworz elipse",
     "stworz kolo",
@@ -212,19 +247,28 @@
     "stworz spline",
     "stworz wielokat foremny",
     "stworz xline",
+    "szerokosc jednego segmentu polilinii",
     "trim a curve to boundaries",
     "trim do granic",
+    "ustaw szerokosc polilinii",
     "usun obiekty",
+    "usun wierzcholek polilinii",
     "where do curves cross",
     "wielolinia po punktach",
+    "wierzcholki polilinii",
     "wstaw napis",
     "wstaw punkt",
+    "wstaw punkt w polilinii",
     "wstaw tekst wieloliniowy",
     "wydluz krzywa",
     "wypelnij obszar wzorem",
+    "zamien poczatek z koncem",
     "zaokraglij naroznik",
+    "zmien kierunek polilinii",
+    "zmien punkt polilinii",
     "znajdz obiekty w oknie",
-    "znajdz przeciecia"
+    "znajdz przeciecia",
+    "zrob luk z odcinka polilinii"
   ],
   "tools_summary": [
     {
@@ -514,6 +558,23 @@
       ]
     },
     {
+      "name": "edit_polyline_vertex",
+      "description": "Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is.",
+      "tags": [
+        "edit",
+        "polyline",
+        "vertex"
+      ],
+      "intent": [
+        "przesun wierzcholek polilinii",
+        "zmien punkt polilinii",
+        "edit a polyline vertex",
+        "move a polyline point",
+        "zrob luk z odcinka polilinii",
+        "set a bulge on a polyline segment"
+      ]
+    },
+    {
       "name": "explode_entity",
       "description": "Explode a polyline/block/hatch into its component primitives.",
       "tags": [
@@ -701,6 +762,23 @@
       ]
     },
     {
+      "name": "list_polyline_vertices",
+      "description": "List a polyline\u0027s vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc\u0027s included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction.",
+      "tags": [
+        "list",
+        "polyline",
+        "vertices"
+      ],
+      "intent": [
+        "wierzcholki polilinii",
+        "jakie punkty ma ta polilinia",
+        "list polyline vertices",
+        "read polyline points and bulges",
+        "ile wierzcholkow ma polilinia",
+        "polyline vertex coordinates"
+      ]
+    },
+    {
       "name": "offset_curve",
       "description": "Offset a curve by a signed distance, returning the new curve handle.",
       "tags": [
@@ -713,6 +791,73 @@
         "offset a curve by distance",
         "parallel copy curve",
         "create offset entity"
+      ]
+    },
+    {
+      "name": "polyline_add_vertex",
+      "description": "Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call.",
+      "tags": [
+        "polyline",
+        "add",
+        "vertex"
+      ],
+      "intent": [
+        "dodaj wierzcholek do polilinii",
+        "wstaw punkt w polilinii",
+        "add a vertex to a polyline",
+        "insert a point into a polyline",
+        "przedluz polilinie o punkt",
+        "add polyline point"
+      ]
+    },
+    {
+      "name": "polyline_remove_vertex",
+      "description": "Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result.",
+      "tags": [
+        "polyline",
+        "remove",
+        "vertex"
+      ],
+      "intent": [
+        "usun wierzcholek polilinii",
+        "skasuj punkt z polilinii",
+        "remove a polyline vertex",
+        "delete a point from a polyline",
+        "skroc polilinie o wierzcholek",
+        "drop polyline point"
+      ]
+    },
+    {
+      "name": "reverse_curve",
+      "description": "Reverse a curve\u0027s direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped.",
+      "tags": [
+        "reverse",
+        "curve"
+      ],
+      "intent": [
+        "odwroc kierunek krzywej",
+        "zmien kierunek polilinii",
+        "reverse a curve",
+        "flip curve direction",
+        "zamien poczatek z koncem",
+        "reverse polyline direction"
+      ]
+    },
+    {
+      "name": "set_polyline_width",
+      "description": "Set a polyline\u0027s width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex\u0027s widths before and after.",
+      "tags": [
+        "set",
+        "polyline",
+        "width"
+      ],
+      "intent": [
+        "ustaw szerokosc polilinii",
+        "pogrub polilinie",
+        "set polyline width",
+        "make a polyline thicker",
+        "szerokosc jednego segmentu polilinii",
+        "polyline lineweight by width"
       ]
     },
     {
@@ -733,7 +878,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 33,
+    "tool_count_target": 39,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -747,6 +892,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-05T15:38:32.7872052Z"
+    "last_regenerated_utc": "2026-08-06T12:30:27.0802836Z"
   }
 }

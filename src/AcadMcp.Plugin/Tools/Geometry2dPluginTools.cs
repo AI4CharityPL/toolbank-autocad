@@ -64,6 +64,14 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.fillet_corner", FilletCorner);
         host.Register("acad.geometry2d.chamfer_corner", ChamferCorner);
         host.Register("acad.geometry2d.delete_entities", DeleteEntities);
+
+        // roadmap 3.1 - polyline vertex editing
+        host.Register("acad.geometry2d.list_polyline_vertices", ListPolylineVertices);
+        host.Register("acad.geometry2d.polyline_add_vertex", PolylineAddVertex);
+        host.Register("acad.geometry2d.polyline_remove_vertex", PolylineRemoveVertex);
+        host.Register("acad.geometry2d.edit_polyline_vertex", EditPolylineVertex);
+        host.Register("acad.geometry2d.set_polyline_width", SetPolylineWidth);
+        host.Register("acad.geometry2d.reverse_curve", ReverseCurve);
     }
 
     // ─────────── helpers ───────────
@@ -809,5 +817,313 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── polyline vertex editing (roadmap 3.1) ───────────
+    //
+    // A drawn polyline is a first draft. Everything below exists because the alternative to
+    // editing one is deleting it and drawing it again, which loses its handle, its layer
+    // overrides and anything referencing it.
+    //
+    // All of it is AcDbPolyline (the lightweight one). A Polyline2d/3d is a different class with
+    // a different vertex model, so those are refused by name rather than silently mishandled.
+
+    /// <summary>ConstantWidth, or null when the polyline has varying widths.</summary>
+    /// <remarks>
+    /// The GETTER throws eInvalidInput when the segments differ - it is not merely unset, it is
+    /// unanswerable, because there is no single constant width to report. Reading it into a
+    /// result AFTER setting one segment to its own width is what made set_polyline_width fail
+    /// with a bare eInvalidInput that appeared to come from the edit. The edit was fine; building
+    /// the answer was not.
+    /// </remarks>
+    private static double? SafeConstantWidth(Polyline pl)
+    {
+        try { return pl.ConstantWidth; }
+        catch (AcadRt.Exception) { return null; }
+    }
+
+    private static Polyline RequirePolyline(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException("handle is required: the polyline to edit.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), mode);
+        if (ent is Polyline pl) return pl;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetType().Name + ", not a lightweight Polyline. " +
+            "Polyline2d and Polyline3d store vertices as separate objects and are not handled by " +
+            "these tools; convert with the PEDIT command first, or use the 3D tools.");
+    }
+
+    /// <summary>Validate a vertex index against the polyline, and say what the range actually is.</summary>
+    private static int RequireVertexIndex(Polyline pl, int? index, bool allowAppend = false)
+    {
+        var limit = allowAppend ? pl.NumberOfVertices : pl.NumberOfVertices - 1;
+        if (index is null)
+            throw new ArgumentException(
+                "index is required: which vertex, 0-based. This polyline has " +
+                pl.NumberOfVertices + ", so valid values are 0.." + limit + ".");
+        if (index < 0 || index > limit)
+            throw new ArgumentException(
+                "index " + index + " is out of range: this polyline has " + pl.NumberOfVertices +
+                " vertices, so valid values are 0.." + limit + ".");
+        return index.Value;
+    }
+
+    private static object VertexInfo(Polyline pl, int i)
+    {
+        var p = pl.GetPoint2dAt(i);
+        return new
+        {
+            index = i,
+            point = new[] { p.X, p.Y },
+            bulge = pl.GetBulgeAt(i),
+            startWidth = pl.GetStartWidthAt(i),
+            endWidth = pl.GetEndWidthAt(i),
+        };
+    }
+
+    private static List<object> AllVertices(Polyline pl)
+    {
+        var v = new List<object>();
+        for (int i = 0; i < pl.NumberOfVertices; i++) v.Add(VertexInfo(pl, i));
+        return v;
+    }
+
+    private static Task<ToolDispatchResult> ListPolylineVertices(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunReadAsync("acad.geometry2d.list_polyline_vertices", ct, (doc, db, tr) =>
+        {
+            var a = Read<PolylineRefArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForRead);
+            return Wrap(new
+            {
+                handle = a.Handle,
+                vertices = AllVertices(pl),
+                count = pl.NumberOfVertices,
+                closed = pl.Closed,
+                length = pl.Length,
+                constantWidth = SafeConstantWidth(pl),
+                note = "Indices are 0-based and shift when a vertex is added or removed. A bulge " +
+                       "is tan(quarter of the arc's included angle): 0 is a straight segment, 1 is " +
+                       "a half circle, and the sign gives the direction.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> PolylineAddVertex(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.polyline_add_vertex", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PolylineVertexArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForWrite);
+            // allowAppend: index == NumberOfVertices means "put it on the end", which is the
+            // common case and would otherwise need the caller to know the count first.
+            var i = RequireVertexIndex(pl, a.Index, allowAppend: true);
+            if (a.Point is null)
+                throw new ArgumentException("point is required: where the new vertex goes.");
+
+            var before = pl.NumberOfVertices;
+            pl.AddVertexAt(i, AcadEnv.ToPoint2d(a.Point), a.Bulge ?? 0,
+                           a.StartWidth ?? 0, a.EndWidth ?? 0);
+            if (pl.NumberOfVertices != before + 1)
+                throw new InvalidOperationException(
+                    "The polyline still has " + pl.NumberOfVertices + " vertices after adding one.");
+
+            return Wrap(new
+            {
+                handle = a.Handle, added = VertexInfo(pl, i),
+                count = pl.NumberOfVertices, before, length = pl.Length,
+            });
+        });
+
+    private static Task<ToolDispatchResult> PolylineRemoveVertex(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.polyline_remove_vertex", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PolylineRefArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForWrite);
+            var i = RequireVertexIndex(pl, a.Index);
+
+            // A polyline needs two vertices to be a polyline. Removing the second-to-last leaves
+            // a one-point entity AutoCAD draws as nothing - a tool reporting success over an
+            // invisible result.
+            if (pl.NumberOfVertices <= 2)
+                throw new ArgumentException(
+                    "This polyline has only " + pl.NumberOfVertices + " vertices; removing one " +
+                    "would leave something that cannot be drawn. Delete the polyline instead.");
+
+            var removed = VertexInfo(pl, i);
+            var before = pl.NumberOfVertices;
+            pl.RemoveVertexAt(i);
+            if (pl.NumberOfVertices != before - 1)
+                throw new InvalidOperationException(
+                    "The polyline still has " + pl.NumberOfVertices + " vertices after removing one.");
+
+            return Wrap(new
+            {
+                handle = a.Handle, removed, count = pl.NumberOfVertices, before, length = pl.Length,
+            });
+        });
+
+    private static Task<ToolDispatchResult> EditPolylineVertex(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.edit_polyline_vertex", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PolylineVertexArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForWrite);
+            var i = RequireVertexIndex(pl, a.Index);
+
+            if (a.Point is null && a.Bulge is null && a.StartWidth is null && a.EndWidth is null)
+                throw new ArgumentException(
+                    "Nothing to change. Give at least one of point, bulge, startWidth or endWidth. " +
+                    "Omitted fields are left alone rather than reset, so a caller can move a vertex " +
+                    "without flattening the arc it carries.");
+
+            var before = VertexInfo(pl, i);
+            if (a.Point is not null) pl.SetPointAt(i, AcadEnv.ToPoint2d(a.Point));
+            if (a.Bulge is not null) pl.SetBulgeAt(i, a.Bulge.Value);
+            if (a.StartWidth is not null) pl.SetStartWidthAt(i, a.StartWidth.Value);
+            if (a.EndWidth is not null) pl.SetEndWidthAt(i, a.EndWidth.Value);
+
+            return Wrap(new
+            {
+                handle = a.Handle, before, vertex = VertexInfo(pl, i),
+                count = pl.NumberOfVertices, length = pl.Length,
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetPolylineWidth(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.set_polyline_width", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PolylineWidthArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForWrite);
+            if (a.Width is null)
+                throw new ArgumentException("width is required.");
+            if (a.Width < 0)
+                throw new ArgumentException("width cannot be negative.");
+
+            var beforeConstant = SafeConstantWidth(pl);
+            var beforeWidths = AllVertices(pl);
+
+            if (a.Segment is null)
+            {
+                // ConstantWidth is the whole-polyline setting AutoCAD's Properties palette shows.
+                // Setting it does NOT clear per-segment widths that were set earlier, so those are
+                // cleared explicitly - otherwise "set the width to 5" leaves segments at their old
+                // values and the tool looks like it half-worked.
+                pl.ConstantWidth = a.Width.Value;
+                for (int i = 0; i < pl.NumberOfVertices; i++)
+                {
+                    pl.SetStartWidthAt(i, a.Width.Value);
+                    pl.SetEndWidthAt(i, a.Width.Value);
+                }
+            }
+            else
+            {
+                var seg = a.Segment.Value;
+                var last = pl.NumberOfVertices - (pl.Closed ? 1 : 2);
+                if (seg < 0 || seg > last)
+                    throw new ArgumentException(
+                        "segment " + seg + " is out of range: this polyline has " +
+                        (last + 1) + " segment(s), so valid values are 0.." + last + ".");
+
+                // ConstantWidth and per-segment widths are MUTUALLY EXCLUSIVE. While
+                // ConstantWidth is non-zero, SetStartWidthAt throws a bare eInvalidInput that
+                // names neither the property nor the conflict. Clearing it would make the whole
+                // polyline hairline, so the width it implied is written back to every vertex
+                // first - the appearance is unchanged, and only the named segment then moves.
+                var current = SafeConstantWidth(pl);
+                if (current is not null && current != 0.0)
+                {
+                    var implied = current.Value;
+                    pl.ConstantWidth = 0.0;
+                    for (int i = 0; i < pl.NumberOfVertices; i++)
+                    {
+                        pl.SetStartWidthAt(i, implied);
+                        pl.SetEndWidthAt(i, implied);
+                    }
+                }
+
+                pl.SetStartWidthAt(seg, a.Width.Value);
+                pl.SetEndWidthAt(seg, a.Width.Value);
+            }
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                width = a.Width,
+                segment = a.Segment,
+                scope = a.Segment is null ? "wholePolyline" : "oneSegment",
+                beforeConstantWidth = beforeConstant,
+                before = beforeWidths,
+                vertices = AllVertices(pl),
+                constantWidth = SafeConstantWidth(pl),
+                note = SafeConstantWidth(pl) is null
+                    ? "This polyline no longer has a single constant width, so constantWidth is " +
+                      "null. AutoCAD's ConstantWidth property cannot answer for varying segments."
+                    : null,
+            });
+        });
+
+    private static Task<ToolDispatchResult> ReverseCurve(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.reverse_curve", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<EntityRefArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException("handle is required.");
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            if (ent is not Curve c)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetType().Name + ", not a Curve. " +
+                    "Direction only means something for curves.");
+
+            var startBefore = c.StartPoint;
+            var endBefore = c.EndPoint;
+
+            // ReverseCurve returns void, so the only evidence it did anything is geometric - and
+            // WHICH evidence depends on whether the curve is closed. A circle's start and end are
+            // the same point, so the swap test proves nothing about one and fails every time; a
+            // quarter-way sample does prove it, because reversing sends that point to the
+            // three-quarter position.
+            var isClosed = c.Closed;
+            Point3d quarterBefore = default;
+            var haveQuarter = false;
+            if (isClosed)
+            {
+                try
+                {
+                    var len = c.GetDistanceAtParameter(c.EndParam);
+                    quarterBefore = c.GetPointAtDist(len * 0.25);
+                    haveQuarter = true;
+                }
+                catch (AcadRt.Exception) { }
+            }
+
+            c.ReverseCurve();
+
+            if (!isClosed)
+            {
+                if (c.StartPoint.DistanceTo(endBefore) > 1e-9
+                    || c.EndPoint.DistanceTo(startBefore) > 1e-9)
+                    throw new InvalidOperationException(
+                        "The curve's ends did not swap, so its direction was not reversed.");
+            }
+            else if (haveQuarter)
+            {
+                var len = c.GetDistanceAtParameter(c.EndParam);
+                if (c.GetPointAtDist(len * 0.25).DistanceTo(quarterBefore) < 1e-9)
+                    throw new ArgumentException(
+                        "Reversing a " + ent.GetType().Name + " has no observable effect: the " +
+                        "point a quarter of the way along it does not move. For a closed curve " +
+                        "of this type AutoCAD does not change the direction geometry is " +
+                        "generated in, so nothing was changed and success is not being " +
+                        "reported. Reverse an open curve, or a Polyline, instead.");
+            }
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                type = ent.GetType().Name,
+                startBefore = new[] { startBefore.X, startBefore.Y, startBefore.Z },
+                start = new[] { c.StartPoint.X, c.StartPoint.Y, c.StartPoint.Z },
+                end = new[] { c.EndPoint.X, c.EndPoint.Y, c.EndPoint.Z },
+                note = "Direction decides where an offset goes, which way a hatch boundary runs " +
+                       "and where text along the curve reads from.",
+            });
         });
 }

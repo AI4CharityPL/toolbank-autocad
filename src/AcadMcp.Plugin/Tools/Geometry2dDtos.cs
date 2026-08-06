@@ -155,3 +155,25 @@ internal sealed record DrawMlineArgsDto(
     [property: JsonPropertyName("justification")] string? Justification,
     [property: JsonPropertyName("closed")]        bool Closed,
     [property: JsonPropertyName("layer")]         string? Layer);
+
+// ─────────── polyline vertex editing (roadmap 3.1) ───────────
+
+internal sealed record PolylineRefArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("index")]  int? Index);
+
+internal sealed record PolylineVertexArgsDto(
+    [property: JsonPropertyName("handle")]     string? Handle,
+    [property: JsonPropertyName("index")]      int? Index,
+    [property: JsonPropertyName("point")]      Point2dDto? Point,
+    [property: JsonPropertyName("bulge")]      double? Bulge,
+    [property: JsonPropertyName("startWidth")] double? StartWidth,
+    [property: JsonPropertyName("endWidth")]   double? EndWidth);
+
+internal sealed record PolylineWidthArgsDto(
+    [property: JsonPropertyName("handle")]  string? Handle,
+    [property: JsonPropertyName("width")]   double? Width,
+    [property: JsonPropertyName("segment")] int? Segment);
+
+internal sealed record EntityRefArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle);

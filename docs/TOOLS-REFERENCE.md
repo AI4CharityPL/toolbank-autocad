@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 508 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 512 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (44 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (48 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -270,6 +270,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `break_at_point` | Split an open curve into two at a point, the way AutoCAD's BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing. |
 | `break_between_points` | Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD's BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies 'between' the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half. |
 | `chamfer_corner` | Chamfer two curves at their intersection with two distances; returns the new chamfer line. |
+| `create_wipeout` | Create a wipeout: a filled area that HIDES whatever is behind it, used to clear space for a label or a detail bubble over busy geometry. Takes at least 3 boundary points and closes the loop itself. Moved to the FRONT by default, because a wipeout behind what it should hide is invisible and looks exactly like a tool that did nothing - pass bringToFront=false to leave it where drawn. Its frame is controlled drawing-wide by set_wipeout_frame. |
 | `delete_entities` | Erase entities by handle. Pass multiple in one batch for atomicity. |
 | `divide_object` | Mark a curve into a number of EQUAL parts, placing a point at each division - AutoCAD's DIVIDE. The curve itself is not cut; it is marked. n segments produce n-1 markers, at the divisions rather than at the ends, so nothing lands on top of whatever already sits at each end. Name a block to place that instead of points, and it is rotated to follow the curve unless alignToCurve is false. |
 | `draw_arc` | Draw an arc by center, radius, and start/end angle in degrees (CCW). |
@@ -308,8 +309,11 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `polyline_add_vertex` | Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call. |
 | `polyline_remove_vertex` | Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result. |
 | `reverse_curve` | Reverse a curve's direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped. |
+| `set_draworder` | Change which entities are drawn on top where they overlap - AutoCAD's DRAWORDER. position is 'front', 'back', 'above' or 'below'; the last two need relativeTo, the handle to sit above or below. Draw order belongs to a SPACE rather than to the drawing, so every entity in one call must be in the same model space or layout, and the tool refuses a mix rather than silently reordering only some. |
+| `set_object_transparency` | Set per-object transparency as a PERCENTAGE, the way AutoCAD's Properties palette shows it: 0 is opaque, 90 is as see-through as AutoCAD allows. AutoCAD stores alpha internally, which is the INVERSE of that percentage, and the result reports both so a caller comparing against raw DXF data is not surprised. Transparency shows on screen but is IGNORED in plotted or exported output unless PLOTTRANSPARENCYOVERRIDE is 1, so a PNG that looks opaque does not mean this failed. byLayer and byBlock are NOT available: the managed API compiles them but throws eInvalidKey on assignment, measured across four entity types - the tool says so rather than quietly making the object opaque. |
 | `set_point_style` | Set how POINT entities are drawn, drawing-wide - AutoCAD's DDPTYPE. Give a name such as 'x', 'circleCross' or 'square', or the raw pdmode number. This matters because AutoCAD's default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included. |
 | `set_polyline_width` | Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after. |
+| `set_wipeout_frame` | Show or hide the outline around every wipeout in the drawing - the WIPEOUTFRAME system variable. 'hidden' removes it, 'shown' displays and plots it, and 'displayedNotPlotted' is what a real sheet usually wants: visible while you work, absent from the plot. Drawing-wide, so every wipeout changes together; this is not a per-entity property. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 
 ## acad-geometry-3d

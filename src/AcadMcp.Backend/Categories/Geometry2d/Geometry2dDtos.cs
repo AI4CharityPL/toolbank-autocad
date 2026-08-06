@@ -378,3 +378,52 @@ public sealed record PointStyleResult(
     [property: JsonPropertyName("pdsize")]       double Pdsize,
     [property: JsonPropertyName("beforePdsize")] double BeforePdsize,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── display order, transparency, wipeouts (roadmap 3.1) ───────────
+
+public sealed record DrawOrderArgs(
+    [property: JsonPropertyName("handles")]    IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("position")]   string Position,
+    [property: JsonPropertyName("relativeTo")] string? RelativeTo = null);
+
+public sealed record TransparencyArgs(
+    [property: JsonPropertyName("handles")] IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("percent")] double? Percent = null,
+    [property: JsonPropertyName("mode")]    string? Mode = null);
+
+public sealed record WipeoutArgs(
+    [property: JsonPropertyName("vertices")]     IReadOnlyList<Point2dDto> Vertices,
+    [property: JsonPropertyName("layer")]        string? Layer = null,
+    [property: JsonPropertyName("bringToFront")] bool? BringToFront = null);
+
+public sealed record WipeoutFrameArgs(
+    [property: JsonPropertyName("mode")] string Mode);
+
+public sealed record DrawOrderResult(
+    [property: JsonPropertyName("affected")]   int Affected,
+    [property: JsonPropertyName("position")]   string Position,
+    [property: JsonPropertyName("relativeTo")] string? RelativeTo,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record TransparencyEntity(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("alpha")]  int Alpha);
+
+public sealed record TransparencyResult(
+    [property: JsonPropertyName("affected")] int Affected,
+    [property: JsonPropertyName("mode")]     string Mode,
+    [property: JsonPropertyName("percent")]  double? Percent,
+    [property: JsonPropertyName("entities")] IReadOnlyList<TransparencyEntity> Entities,
+    [property: JsonPropertyName("note")]     string Note);
+
+public sealed record WipeoutResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("vertices")]       int Vertices,
+    [property: JsonPropertyName("broughtToFront")] bool BroughtToFront,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record WipeoutFrameResult(
+    [property: JsonPropertyName("mode")]         string Mode,
+    [property: JsonPropertyName("wipeoutframe")] int Wipeoutframe,
+    [property: JsonPropertyName("before")]       int Before,
+    [property: JsonPropertyName("note")]         string Note);

@@ -334,4 +334,41 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<PointStyleResult> SetPointStyle(IPluginGateway gw, PointStyleArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<PointStyleArgs, PointStyleResult>(gw, "acad.geometry2d.set_point_style", args, T_FAST, ct);
+
+    // ─────────── display order, transparency, wipeouts (roadmap 3.1) ───────────
+    //
+    // These belong together on a real sheet: a wipeout is only useful in FRONT of what it
+    // hides, and transparency is the alternative when you want to see through rather than blank.
+
+    [McpTool("set_draworder", "Change which entities are drawn on top where they overlap - AutoCAD's DRAWORDER. position is 'front', 'back', 'above' or 'below'; the last two need relativeTo, the handle to sit above or below. Draw order belongs to a SPACE rather than to the drawing, so every entity in one call must be in the same model space or layout, and the tool refuses a mix rather than silently reordering only some.", "geometry-2d",
+        Intent = new[] { "zmien kolejnosc rysowania", "przenies obiekt na wierzch",
+                         "set draw order", "bring to front", "send to back",
+                         "co ma byc na wierzchu", "put this behind that" },
+        RequiresPlugin = true)]
+    public static Task<DrawOrderResult> SetDrawOrder(IPluginGateway gw, DrawOrderArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<DrawOrderArgs, DrawOrderResult>(gw, "acad.geometry2d.set_draworder", args, T_NORMAL, ct);
+
+    [McpTool("set_object_transparency", "Set per-object transparency as a PERCENTAGE, the way AutoCAD's Properties palette shows it: 0 is opaque, 90 is as see-through as AutoCAD allows. AutoCAD stores alpha internally, which is the INVERSE of that percentage, and the result reports both so a caller comparing against raw DXF data is not surprised. Transparency shows on screen but is IGNORED in plotted or exported output unless PLOTTRANSPARENCYOVERRIDE is 1, so a PNG that looks opaque does not mean this failed. byLayer and byBlock are NOT available: the managed API compiles them but throws eInvalidKey on assignment, measured across four entity types - the tool says so rather than quietly making the object opaque.", "geometry-2d",
+        Intent = new[] { "ustaw przezroczystosc obiektu", "zrob obiekt polprzezroczysty",
+                         "set object transparency", "make this 50% transparent",
+                         "przezroczystosc wedlug warstwy", "see-through entity" },
+        RequiresPlugin = true)]
+    public static Task<TransparencyResult> SetObjectTransparency(IPluginGateway gw, TransparencyArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<TransparencyArgs, TransparencyResult>(gw, "acad.geometry2d.set_object_transparency", args, T_NORMAL, ct);
+
+    [McpTool("create_wipeout", "Create a wipeout: a filled area that HIDES whatever is behind it, used to clear space for a label or a detail bubble over busy geometry. Takes at least 3 boundary points and closes the loop itself. Moved to the FRONT by default, because a wipeout behind what it should hide is invisible and looks exactly like a tool that did nothing - pass bringToFront=false to leave it where drawn. Its frame is controlled drawing-wide by set_wipeout_frame.", "geometry-2d",
+        Intent = new[] { "zaslon fragment rysunku", "utworz wipeout",
+                         "create a wipeout", "mask geometry behind a label",
+                         "wyczysc miejsce pod opis", "hide what is underneath" },
+        RequiresPlugin = true)]
+    public static Task<WipeoutResult> CreateWipeout(IPluginGateway gw, WipeoutArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<WipeoutArgs, WipeoutResult>(gw, "acad.geometry2d.create_wipeout", args, T_NORMAL, ct);
+
+    [McpTool("set_wipeout_frame", "Show or hide the outline around every wipeout in the drawing - the WIPEOUTFRAME system variable. 'hidden' removes it, 'shown' displays and plots it, and 'displayedNotPlotted' is what a real sheet usually wants: visible while you work, absent from the plot. Drawing-wide, so every wipeout changes together; this is not a per-entity property.", "geometry-2d",
+        Intent = new[] { "ukryj ramke wipeout", "pokaz obramowanie zaslony",
+                         "set wipeout frame", "hide wipeout borders",
+                         "ramka wipeout nie ma sie drukowac", "wipeout outline visibility" },
+        RequiresPlugin = true)]
+    public static Task<WipeoutFrameResult> SetWipeoutFrame(IPluginGateway gw, WipeoutFrameArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<WipeoutFrameArgs, WipeoutFrameResult>(gw, "acad.geometry2d.set_wipeout_frame", args, T_FAST, ct);
 }

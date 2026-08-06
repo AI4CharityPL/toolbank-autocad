@@ -79,6 +79,12 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.divide_object", DivideObject);
         host.Register("acad.geometry2d.measure_object", MeasureObject);
         host.Register("acad.geometry2d.set_point_style", SetPointStyle);
+
+        // roadmap 3.1 - display order, transparency, wipeouts
+        host.Register("acad.geometry2d.set_draworder", SetDrawOrder);
+        host.Register("acad.geometry2d.set_object_transparency", SetObjectTransparency);
+        host.Register("acad.geometry2d.create_wipeout", CreateWipeout);
+        host.Register("acad.geometry2d.set_wipeout_frame", SetWipeoutFrame);
     }
 
     // ─────────── helpers ───────────
@@ -824,6 +830,217 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── display order, transparency, wipeouts (roadmap 3.1) ───────────
+    //
+    // These three go together on a real sheet: a wipeout is only useful if it sits in FRONT of
+    // what it hides, and transparency is the alternative when you want to see through rather
+    // than blank out.
+
+    private static Task<ToolDispatchResult> SetDrawOrder(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.set_draworder", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DrawOrderArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: the entities to reorder.");
+
+            var position = (a.Position ?? "").Trim().ToLowerInvariant();
+            var needsRef = position is "above" or "below";
+            if (position is not ("front" or "back" or "above" or "below"))
+                throw new ArgumentException(
+                    "position must be 'front', 'back', 'above' or 'below'; got '" + a.Position + "'.");
+            if (needsRef && string.IsNullOrWhiteSpace(a.RelativeTo))
+                throw new ArgumentException(
+                    "position '" + position + "' needs relativeTo: the handle this should sit " +
+                    position + ". Use 'front' or 'back' to move to the extreme instead.");
+
+            var ids = new ObjectIdCollection();
+            foreach (var h in a.Handles) ids.Add(AcadEnv.ResolveHandle(db, h));
+
+            // Draw order is a property of the SPACE, not of the entity, and every entity in the
+            // call has to live in the same one - the table belongs to a single block record.
+            var first = (Entity)tr.GetObject(ids[0], OpenMode.ForRead);
+            var owner = (BlockTableRecord)tr.GetObject(first.OwnerId, OpenMode.ForRead);
+            for (int i = 1; i < ids.Count; i++)
+            {
+                var e = (Entity)tr.GetObject(ids[i], OpenMode.ForRead);
+                if (e.OwnerId != first.OwnerId)
+                    throw new ArgumentException(
+                        "All entities must be in the same space: draw order is a property of a " +
+                        "block record, not of the drawing, so model space and a layout cannot be " +
+                        "reordered together.");
+            }
+
+            var table = (DrawOrderTable)tr.GetObject(owner.DrawOrderTableId, OpenMode.ForWrite);
+            switch (position)
+            {
+                case "front": table.MoveToTop(ids); break;
+                case "back": table.MoveToBottom(ids); break;
+                case "above":
+                    table.MoveAbove(ids, AcadEnv.ResolveHandle(db, a.RelativeTo!)); break;
+                case "below":
+                    table.MoveBelow(ids, AcadEnv.ResolveHandle(db, a.RelativeTo!)); break;
+            }
+
+            return Wrap(new
+            {
+                affected = ids.Count,
+                position,
+                relativeTo = a.RelativeTo,
+                note = "Draw order decides what covers what where entities overlap. It is per " +
+                       "space, so this affects the model space or the layout the entities are in, " +
+                       "not the whole drawing.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetObjectTransparency(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.set_object_transparency", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<TransparencyArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required.");
+
+            var mode = (a.Mode ?? "value").Trim().ToLowerInvariant();
+            Autodesk.AutoCAD.Colors.Transparency t;
+            double? pct = null;
+
+            switch (mode)
+            {
+                case "bylayer":
+                case "byblock":
+                    // WITHDRAWN, and measured rather than assumed. `new Transparency(
+                    // TransparencyMethod.ByLayer)` compiles - the enum member exists and so does
+                    // that constructor - but assigning the result to Entity.Transparency throws
+                    // eInvalidKey on every entity type tried: Line, Circle, Polyline and Hatch.
+                    // The percentage form succeeds on all four in the same run, so this is the
+                    // constructor, not the entity or the transaction.
+                    //
+                    // There is no other way in: probing found no constructor taking a raw DXF
+                    // value (0x01000000 is the ByLayer sentinel) and no static Transparency.ByLayer.
+                    //
+                    // Refused with the measurement rather than silently mapped to opaque, which
+                    // would look like it worked and quietly break inheritance.
+                    throw new ArgumentException(
+                        "mode '" + a.Mode + "' is not available. AutoCAD's managed API accepts " +
+                        "new Transparency(TransparencyMethod." + (mode == "bylayer" ? "ByLayer" : "ByBlock") +
+                        ") at compile time but throws eInvalidKey when the result is assigned - " +
+                        "measured on Line, Circle, Polyline and Hatch, while the percentage form " +
+                        "succeeded on all four. Give percent instead; 0 is opaque. See KNOWN-GAPS B.");
+                case "value":
+                    if (a.Percent is null)
+                        throw new ArgumentException(
+                            "percent is required when mode is 'value' (the default): 0 is opaque " +
+                            "and 90 is as see-through as AutoCAD allows.");
+                    if (a.Percent < 0 || a.Percent > 90)
+                        throw new ArgumentException(
+                            "percent must be between 0 and 90. AutoCAD's own limit is 90; above " +
+                            "that an object would be invisible and indistinguishable from deleted.");
+                    pct = a.Percent.Value;
+                    // AutoCAD stores ALPHA, where 255 is fully opaque - the inverse of the
+                    // percentage its UI shows. Setting alpha to the percentage directly would
+                    // make "10% transparent" nearly invisible.
+                    var alpha = (byte)Math.Round(255.0 * (1.0 - pct.Value / 100.0));
+                    t = new Autodesk.AutoCAD.Colors.Transparency(alpha);
+                    break;
+                default:
+                    throw new ArgumentException(
+                        "mode must be 'value'; got '" + a.Mode + "'. byLayer and byBlock are recognised but unavailable - see the message they give.");
+            }
+
+            var done = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var e = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+                e.Transparency = t;
+                done.Add(new { handle = h, alpha = (int)e.Transparency.Alpha });
+            }
+
+            return Wrap(new
+            {
+                affected = done.Count, mode, percent = pct, entities = done,
+                note = "AutoCAD stores transparency as ALPHA (255 = opaque), the inverse of the " +
+                       "percentage its UI shows. On SCREEN it renders whenever TRANSPARENCYDISPLAY " +
+                       "is on, which is the default. In PLOTTED or EXPORTED output it is ignored " +
+                       "unless PLOTTRANSPARENCYOVERRIDE is 1 - measured: a 40% object exported to " +
+                       "PNG through the plot engine came out fully opaque. A PNG is therefore not " +
+                       "evidence that this tool did nothing.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> CreateWipeout(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.create_wipeout", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<WipeoutArgsDto>(args);
+            if (a.Vertices is null || a.Vertices.Count < 3)
+                throw new ArgumentException(
+                    "vertices is required and needs at least 3 points: a wipeout is an area, and " +
+                    "two points enclose nothing.");
+
+            var pts = new Point2dCollection();
+            foreach (var v in a.Vertices) pts.Add(AcadEnv.ToPoint2d(v));
+            // A wipeout's boundary must close. AutoCAD closes it itself if the last point does
+            // not repeat the first, and duplicating it here would leave a zero-length edge.
+            if (pts[0].GetDistanceTo(pts[pts.Count - 1]) > 1e-9) pts.Add(pts[0]);
+
+            var wipe = new Wipeout();
+            wipe.SetDatabaseDefaults();
+            wipe.SetFrom(pts, Vector3d.ZAxis);
+
+            var handle = AcadEnv.Persist(db, tr, wipe, a.Layer);
+
+            // In FRONT by default. A wipeout behind what it is meant to hide is invisible and
+            // looks exactly like a tool that did nothing - which is the whole failure shape this
+            // bank keeps finding, so the default is the useful one rather than AutoCAD's.
+            if (a.BringToFront != false)
+            {
+                var owner = (BlockTableRecord)tr.GetObject(wipe.OwnerId, OpenMode.ForRead);
+                var table = (DrawOrderTable)tr.GetObject(owner.DrawOrderTableId, OpenMode.ForWrite);
+                var ids = new ObjectIdCollection { wipe.ObjectId };
+                table.MoveToTop(ids);
+            }
+
+            return Wrap(new
+            {
+                entity = handle,
+                vertices = pts.Count,
+                broughtToFront = a.BringToFront != false,
+                note = "A wipeout hides what is BEHIND it, so it was moved to the front - pass " +
+                       "bringToFront=false to leave it where it was drawn. Its frame is controlled " +
+                       "drawing-wide by set_wipeout_frame.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetWipeoutFrame(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.set_wipeout_frame", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<WipeoutFrameArgsDto>(args);
+            var mode = (a.Mode ?? "").Trim().ToLowerInvariant();
+            short value = mode switch
+            {
+                "hidden" or "off" => 0,
+                "shown" or "on" => 1,
+                "displayednotplotted" or "displaynotplot" => 2,
+                _ => throw new ArgumentException(
+                    "mode must be 'hidden', 'shown' or 'displayedNotPlotted'; got '" + a.Mode + "'."),
+            };
+
+            var before = (short)Autodesk.AutoCAD.ApplicationServices.Application
+                .GetSystemVariable("WIPEOUTFRAME");
+            Autodesk.AutoCAD.ApplicationServices.Application.SetSystemVariable("WIPEOUTFRAME", value);
+            var now = (short)Autodesk.AutoCAD.ApplicationServices.Application
+                .GetSystemVariable("WIPEOUTFRAME");
+            if (now != value)
+                throw new InvalidOperationException(
+                    "WIPEOUTFRAME still reads " + now + " after being set to " + value + ".");
+
+            return Wrap(new
+            {
+                mode, wipeoutframe = (int)now, before = (int)before,
+                note = "Drawing-wide, and every wipeout changes with it. 'displayedNotPlotted' is " +
+                       "the setting a real sheet usually wants: the frame is visible while you work " +
+                       "and absent from the plot.",
+            });
         });
 
     // ─────────── breaking and dividing curves (roadmap 3.1) ───────────

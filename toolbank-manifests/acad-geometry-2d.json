@@ -23,6 +23,7 @@
     "chamfer",
     "circle",
     "corner",
+    "create",
     "curve",
     "curves",
     "delete",
@@ -30,6 +31,7 @@
     "divide",
     "donut",
     "draw",
+    "draworder",
     "dwg",
     "edit",
     "ellipse",
@@ -38,6 +40,7 @@
     "explode",
     "extend",
     "fillet",
+    "frame",
     "geometry-2d",
     "get",
     "hatch",
@@ -66,11 +69,13 @@
     "style",
     "text",
     "to",
+    "transparency",
     "trim",
     "vertex",
     "vertices",
     "width",
     "window",
+    "wipeout",
     "xline"
   ],
   "intent_examples": [
@@ -86,18 +91,21 @@
     "break a curve at a point",
     "break a curve between two points",
     "break apart entity",
+    "bring to front",
     "chamfer corner with two distances",
     "chamfer polilinii",
     "change how points are drawn",
     "circle by center and radius",
     "closest distance from point to curve",
     "cloud over polyline",
+    "co ma byc na wierzchu",
     "compute aabb of entity",
     "compute area of shape",
     "compute distance points",
     "compute intersections of two curves",
     "compute perimeter",
     "connect collinear segments",
+    "create a wipeout",
     "create annulus",
     "create arc",
     "create chamfer segment",
@@ -170,6 +178,8 @@
     "get enclosed area",
     "get entity details",
     "half infinite line",
+    "hide what is underneath",
+    "hide wipeout borders",
     "ile wierzcholkow ma polilinia",
     "infinite line through point",
     "insert a point into a polyline",
@@ -185,6 +195,8 @@
     "lista obiektow w prostokacie",
     "make a polyline thicker",
     "make points visible",
+    "make this 50% transparent",
+    "mask geometry behind a label",
     "measure a curve at intervals",
     "merge curves into polyline",
     "move a polyline point",
@@ -228,6 +240,7 @@
     "podziel obiekt na rowne czesci",
     "pogrub polilinie",
     "point at coordinate",
+    "pokaz obramowanie zaslony",
     "pokaz punkty na rysunku",
     "polacz krzywe",
     "polygon with N sides",
@@ -235,13 +248,17 @@
     "polyline through points",
     "polyline vertex coordinates",
     "przedluz polilinie o punkt",
+    "przenies obiekt na wierzch",
     "przerwa w linii pod przeci\u0119ciem",
     "przerwij linie w punkcie",
     "przesun krzywa rownolegle",
     "przesun wierzcholek polilinii",
+    "przezroczystosc wedlug warstwy",
     "przytnij krzywa",
     "punkty przeciecia krzywych",
     "punkty sa niewidoczne",
+    "put this behind that",
+    "ramka wipeout nie ma sie drukowac",
     "read polyline points and bulges",
     "rectangle by two corners",
     "remove a piece of a line",
@@ -259,10 +276,15 @@
     "rysuj revcloud",
     "scal segmenty",
     "scinaj naroznik",
+    "see-through entity",
     "select inside box",
+    "send to back",
     "set a bulge on a polyline segment",
+    "set draw order",
+    "set object transparency",
     "set polyline width",
     "set the point style",
+    "set wipeout frame",
     "shorten curve at boundary",
     "skasuj encje",
     "skasuj punkt z polilinii",
@@ -283,28 +305,36 @@
     "szerokosc jednego segmentu polilinii",
     "trim a curve to boundaries",
     "trim do granic",
+    "ukryj ramke wipeout",
+    "ustaw przezroczystosc obiektu",
     "ustaw styl punktu",
     "ustaw szerokosc polilinii",
     "usun obiekty",
     "usun wierzcholek polilinii",
+    "utworz wipeout",
     "where do curves cross",
     "wielolinia po punktach",
     "wierzcholki polilinii",
+    "wipeout outline visibility",
     "wstaw napis",
     "wstaw punkt",
     "wstaw punkt w polilinii",
     "wstaw tekst wieloliniowy",
+    "wyczysc miejsce pod opis",
     "wydluz krzywa",
     "wypelnij obszar wzorem",
     "wytnij fragment linii",
     "zamien poczatek z koncem",
     "zaokraglij naroznik",
+    "zaslon fragment rysunku",
     "zmien kierunek polilinii",
+    "zmien kolejnosc rysowania",
     "zmien punkt polilinii",
     "zmierz linie co odcinek",
     "znajdz obiekty w oknie",
     "znajdz przeciecia",
     "zrob luk z odcinka polilinii",
+    "zrob obiekt polprzezroczysty",
     "zrob przerwe w linii"
   ],
   "tools_summary": [
@@ -355,6 +385,22 @@
         "chamfer corner with two distances",
         "bevel corner between curves",
         "create chamfer segment"
+      ]
+    },
+    {
+      "name": "create_wipeout",
+      "description": "Create a wipeout: a filled area that HIDES whatever is behind it, used to clear space for a label or a detail bubble over busy geometry. Takes at least 3 boundary points and closes the loop itself. Moved to the FRONT by default, because a wipeout behind what it should hide is invisible and looks exactly like a tool that did nothing - pass bringToFront=false to leave it where drawn. Its frame is controlled drawing-wide by set_wipeout_frame.",
+      "tags": [
+        "create",
+        "wipeout"
+      ],
+      "intent": [
+        "zaslon fragment rysunku",
+        "utworz wipeout",
+        "create a wipeout",
+        "mask geometry behind a label",
+        "wyczysc miejsce pod opis",
+        "hide what is underneath"
       ]
     },
     {
@@ -947,6 +993,40 @@
       ]
     },
     {
+      "name": "set_draworder",
+      "description": "Change which entities are drawn on top where they overlap - AutoCAD\u0027s DRAWORDER. position is \u0027front\u0027, \u0027back\u0027, \u0027above\u0027 or \u0027below\u0027; the last two need relativeTo, the handle to sit above or below. Draw order belongs to a SPACE rather than to the drawing, so every entity in one call must be in the same model space or layout, and the tool refuses a mix rather than silently reordering only some.",
+      "tags": [
+        "set",
+        "draworder"
+      ],
+      "intent": [
+        "zmien kolejnosc rysowania",
+        "przenies obiekt na wierzch",
+        "set draw order",
+        "bring to front",
+        "send to back",
+        "co ma byc na wierzchu",
+        "put this behind that"
+      ]
+    },
+    {
+      "name": "set_object_transparency",
+      "description": "Set per-object transparency as a PERCENTAGE, the way AutoCAD\u0027s Properties palette shows it: 0 is opaque, 90 is as see-through as AutoCAD allows. AutoCAD stores alpha internally, which is the INVERSE of that percentage, and the result reports both so a caller comparing against raw DXF data is not surprised. Transparency shows on screen but is IGNORED in plotted or exported output unless PLOTTRANSPARENCYOVERRIDE is 1, so a PNG that looks opaque does not mean this failed. byLayer and byBlock are NOT available: the managed API compiles them but throws eInvalidKey on assignment, measured across four entity types - the tool says so rather than quietly making the object opaque.",
+      "tags": [
+        "set",
+        "object",
+        "transparency"
+      ],
+      "intent": [
+        "ustaw przezroczystosc obiektu",
+        "zrob obiekt polprzezroczysty",
+        "set object transparency",
+        "make this 50% transparent",
+        "przezroczystosc wedlug warstwy",
+        "see-through entity"
+      ]
+    },
+    {
       "name": "set_point_style",
       "description": "Set how POINT entities are drawn, drawing-wide - AutoCAD\u0027s DDPTYPE. Give a name such as \u0027x\u0027, \u0027circleCross\u0027 or \u0027square\u0027, or the raw pdmode number. This matters because AutoCAD\u0027s default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included.",
       "tags": [
@@ -981,6 +1061,23 @@
       ]
     },
     {
+      "name": "set_wipeout_frame",
+      "description": "Show or hide the outline around every wipeout in the drawing - the WIPEOUTFRAME system variable. \u0027hidden\u0027 removes it, \u0027shown\u0027 displays and plots it, and \u0027displayedNotPlotted\u0027 is what a real sheet usually wants: visible while you work, absent from the plot. Drawing-wide, so every wipeout changes together; this is not a per-entity property.",
+      "tags": [
+        "set",
+        "wipeout",
+        "frame"
+      ],
+      "intent": [
+        "ukryj ramke wipeout",
+        "pokaz obramowanie zaslony",
+        "set wipeout frame",
+        "hide wipeout borders",
+        "ramka wipeout nie ma sie drukowac",
+        "wipeout outline visibility"
+      ]
+    },
+    {
       "name": "trim_curve",
       "description": "Trim a curve at intersections with the boundary list, keeping the side opposite the pick point.",
       "tags": [
@@ -998,7 +1095,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 44,
+    "tool_count_target": 48,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -1012,6 +1109,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T18:48:20.0991504Z"
+    "last_regenerated_utc": "2026-08-06T19:26:06.4582370Z"
   }
 }

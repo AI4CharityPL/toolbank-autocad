@@ -43,6 +43,10 @@ public class Geometry2dTests
         // Added after the visual check: DBPoints at the default PDMODE draw as a single
         // pixel, so divide/measure markers were invisible and looked like nothing happened.
         "set_point_style",
+
+        // Roadmap 3.1, third tranche: what covers what. A wipeout behind the thing it
+        // should hide is invisible, so create_wipeout brings it to the front by default.
+        "set_draworder", "set_object_transparency", "create_wipeout", "set_wipeout_frame",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

@@ -207,3 +207,23 @@ internal sealed record PointStyleArgsDto(
     [property: JsonPropertyName("mode")]   string? Mode,
     [property: JsonPropertyName("pdmode")] int? Pdmode,
     [property: JsonPropertyName("size")]   double? Size);
+
+// ─────────── display order, transparency, wipeouts (roadmap 3.1) ───────────
+
+internal sealed record DrawOrderArgsDto(
+    [property: JsonPropertyName("handles")]    List<string>? Handles,
+    [property: JsonPropertyName("position")]   string? Position,
+    [property: JsonPropertyName("relativeTo")] string? RelativeTo);
+
+internal sealed record TransparencyArgsDto(
+    [property: JsonPropertyName("handles")] List<string>? Handles,
+    [property: JsonPropertyName("percent")] double? Percent,
+    [property: JsonPropertyName("mode")]    string? Mode);
+
+internal sealed record WipeoutArgsDto(
+    [property: JsonPropertyName("vertices")]      List<Point2dDto>? Vertices,
+    [property: JsonPropertyName("layer")]         string? Layer,
+    [property: JsonPropertyName("bringToFront")]  bool? BringToFront);
+
+internal sealed record WipeoutFrameArgsDto(
+    [property: JsonPropertyName("mode")] string? Mode);

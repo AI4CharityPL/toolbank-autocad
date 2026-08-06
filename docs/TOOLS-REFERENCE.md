@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 501 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 506 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (39 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (44 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -267,8 +267,11 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `break_at_point` | Split an open curve into two at a point, the way AutoCAD's BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing. |
+| `break_between_points` | Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD's BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies 'between' the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half. |
 | `chamfer_corner` | Chamfer two curves at their intersection with two distances; returns the new chamfer line. |
 | `delete_entities` | Erase entities by handle. Pass multiple in one batch for atomicity. |
+| `divide_object` | Mark a curve into a number of EQUAL parts, placing a point at each division - AutoCAD's DIVIDE. The curve itself is not cut; it is marked. n segments produce n-1 markers, at the divisions rather than at the ends, so nothing lands on top of whatever already sits at each end. Name a block to place that instead of points, and it is rotated to follow the curve unless alignToCurve is false. |
 | `draw_arc` | Draw an arc by center, radius, and start/end angle in degrees (CCW). |
 | `draw_circle` | Draw a circle by center point and radius. |
 | `draw_donut` | Draw a donut (filled annulus) at a center, with inner and outer diameters. |
@@ -300,10 +303,12 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `join_curves` | Join multiple coincident curves into a single polyline if topology allows. |
 | `list_entities_in_window` | List handles of all entities whose bounding box intersects the rectangular window. |
 | `list_polyline_vertices` | List a polyline's vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc's included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction. |
+| `measure_object` | Mark a curve at a FIXED interval, placing a marker every given distance from the start - AutoCAD's MEASURE. Unlike divide_object the spacing is what you asked for and the leftover sits at the far end, which the result reports; that is the whole difference between the two. The curve is not cut. Name a block to place that instead of points, rotated to follow the curve unless alignToCurve is false. |
 | `offset_curve` | Offset a curve by a signed distance, returning the new curve handle. |
 | `polyline_add_vertex` | Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call. |
 | `polyline_remove_vertex` | Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result. |
 | `reverse_curve` | Reverse a curve's direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped. |
+| `set_point_style` | Set how POINT entities are drawn, drawing-wide - AutoCAD's DDPTYPE. Give a name such as 'x', 'circleCross' or 'square', or the raw pdmode number. This matters because AutoCAD's default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included. |
 | `set_polyline_width` | Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 

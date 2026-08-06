@@ -72,6 +72,13 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.edit_polyline_vertex", EditPolylineVertex);
         host.Register("acad.geometry2d.set_polyline_width", SetPolylineWidth);
         host.Register("acad.geometry2d.reverse_curve", ReverseCurve);
+
+        // roadmap 3.1 - breaking and dividing
+        host.Register("acad.geometry2d.break_at_point", BreakAtPoint);
+        host.Register("acad.geometry2d.break_between_points", BreakBetweenPoints);
+        host.Register("acad.geometry2d.divide_object", DivideObject);
+        host.Register("acad.geometry2d.measure_object", MeasureObject);
+        host.Register("acad.geometry2d.set_point_style", SetPointStyle);
     }
 
     // ─────────── helpers ───────────
@@ -817,6 +824,355 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── breaking and dividing curves (roadmap 3.1) ───────────
+
+    private static Curve RequireCurve(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException("handle is required: the curve to work on.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), mode);
+        if (ent is Curve c) return c;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetType().Name + ", not a Curve.");
+    }
+
+    /// <summary>The point ON the curve nearest the one given, and how far off it was.</summary>
+    /// <remarks>
+    /// AutoCAD's own BREAK takes a picked point and snaps it to the curve. `GetSplitCurves`
+    /// does NOT: hand it a point that is not exactly on the curve and it throws, or splits
+    /// somewhere unintended. Projecting first is what makes "break it near here" work the way a
+    /// person means it, and the distance is reported so a caller can tell a 0.001 rounding error
+    /// from having named the wrong curve entirely.
+    /// </remarks>
+    private static (Point3d OnCurve, double Offset) SnapToCurve(Curve c, Point3d wanted)
+    {
+        var p = c.GetClosestPointTo(wanted, extend: false);
+        return (p, p.DistanceTo(wanted));
+    }
+
+    private static double LengthOf(Curve c) => c.GetDistanceAtParameter(c.EndParam)
+                                             - c.GetDistanceAtParameter(c.StartParam);
+
+
+    /// <summary>How DBPoint entities are drawn, drawing-wide. AutoCAD's DDPTYPE.</summary>
+    /// <remarks>
+    /// divide_object and measure_object place DBPoints, and a DBPoint at the default PDMODE of 0
+    /// draws as a SINGLE PIXEL. Measured: after dividing a line into five, the exported PNG showed
+    /// the line and no markers at all. The markers were there and the numbers were right; nothing
+    /// was visible. A tool whose output cannot be seen looks like a tool that did nothing, so the
+    /// bank needs a way to make them visible.
+    ///
+    /// PDMODE is drawing-wide and PDSIZE with it - this is not a per-entity property, which is why
+    /// it is one tool rather than an argument on the other two.
+    /// </remarks>
+    private static Task<ToolDispatchResult> SetPointStyle(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.set_point_style", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PointStyleArgsDto>(args);
+            var named = new Dictionary<string, short>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["dot"] = 0, ["none"] = 1, ["cross"] = 2, ["x"] = 3, ["tick"] = 4,
+                ["circle"] = 32, ["circleDot"] = 33, ["circleCross"] = 34, ["circleX"] = 35,
+                ["square"] = 64, ["squareDot"] = 65, ["squareCross"] = 66, ["squareX"] = 67,
+            };
+
+            short mode;
+            if (a.Mode is not null)
+            {
+                if (!named.TryGetValue(a.Mode, out mode))
+                    throw new ArgumentException(
+                        "Unknown point style '" + a.Mode + "'. Use one of: " +
+                        string.Join(", ", named.Keys) + ", or give pdmode as a number.");
+            }
+            else if (a.Pdmode is not null)
+            {
+                mode = (short)a.Pdmode.Value;
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Give either mode (a name such as 'x' or 'circleCross') or pdmode (the raw " +
+                    "number). 'dot' is AutoCAD's default and draws as a single pixel, which is why " +
+                    "points placed by divide_object often look as though they were never created.");
+            }
+
+            var beforeMode = (short)Autodesk.AutoCAD.ApplicationServices.Application
+                .GetSystemVariable("PDMODE");
+            var beforeSize = System.Convert.ToDouble(Autodesk.AutoCAD.ApplicationServices.Application
+                .GetSystemVariable("PDSIZE"));
+
+            // Sysvars are Int16 here; passing an int throws eInvalidInput (rule 26).
+            Autodesk.AutoCAD.ApplicationServices.Application.SetSystemVariable("PDMODE", mode);
+            if (a.Size is not null)
+                Autodesk.AutoCAD.ApplicationServices.Application.SetSystemVariable("PDSIZE", a.Size.Value);
+
+            var nowMode = (short)Autodesk.AutoCAD.ApplicationServices.Application
+                .GetSystemVariable("PDMODE");
+            if (nowMode != mode)
+                throw new InvalidOperationException(
+                    "PDMODE still reads " + nowMode + " after being set to " + mode + ".");
+
+            return Wrap(new
+            {
+                mode = a.Mode, pdmode = nowMode, beforePdmode = beforeMode,
+                pdsize = System.Convert.ToDouble(Autodesk.AutoCAD.ApplicationServices.Application
+                    .GetSystemVariable("PDSIZE")),
+                beforePdsize = beforeSize,
+                note = "PDMODE and PDSIZE are DRAWING-WIDE: every point in the drawing changes, " +
+                       "existing ones included. A negative size is a percentage of the viewport; " +
+                       "a positive one is absolute drawing units.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> BreakAtPoint(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.break_at_point", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BreakAtPointArgsDto>(args);
+            if (a.Point is null) throw new ArgumentException("point is required: where to break.");
+            var c = RequireCurve(db, tr, a.Handle, OpenMode.ForWrite);
+            if (c.Closed)
+                throw new ArgumentException(
+                    "This curve is closed, so breaking it at ONE point would leave it closed with " +
+                    "nothing removed. Use break_between_points, which opens it by taking a piece out.");
+
+            var (at, offset) = SnapToCurve(c, AcadEnv.ToPoint3d(a.Point));
+            var lengthBefore = LengthOf(c);
+
+            var pts = new Point3dCollection { at };
+            DBObjectCollection pieces;
+            try { pieces = c.GetSplitCurves(pts); }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD would not split this curve at that point (" + ex.Message + "). The " +
+                    "point resolved to " + Fmt(at) + ", which is " + offset.ToString("0.###") +
+                    " from the one given. Breaking exactly at an endpoint is not a break.");
+            }
+
+            if (pieces.Count < 2)
+                throw new ArgumentException(
+                    "Splitting produced " + pieces.Count + " piece(s), not two. That happens when " +
+                    "the point falls on an endpoint - it resolved to " + Fmt(at) + ".");
+
+            var made = new List<object>();
+            foreach (DBObject o in pieces)
+            {
+                if (o is not Entity ne) continue;
+                ne.SetPropertiesFrom(c);
+                made.Add(new { handle = AcadEnv.Persist(db, tr, ne, null).Handle,
+                               length = ne is Curve nc ? LengthOf(nc) : 0.0 });
+            }
+            c.Erase();
+
+            return Wrap(new
+            {
+                brokenAt = new[] { at.X, at.Y, at.Z },
+                offsetFromRequested = offset,
+                lengthBefore,
+                pieces = made,
+                count = made.Count,
+                note = "The original entity is gone and its handle with it; the pieces are new " +
+                       "entities that inherit its layer, colour and linetype.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> BreakBetweenPoints(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.break_between_points", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BreakBetweenArgsDto>(args);
+            if (a.Point1 is null || a.Point2 is null)
+                throw new ArgumentException("point1 and point2 are both required.");
+            var c = RequireCurve(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var (p1, off1) = SnapToCurve(c, AcadEnv.ToPoint3d(a.Point1));
+            var (p2, off2) = SnapToCurve(c, AcadEnv.ToPoint3d(a.Point2));
+            if (p1.DistanceTo(p2) < 1e-9)
+                throw new ArgumentException(
+                    "Both points resolved to " + Fmt(p1) + ", so there is no piece between them. " +
+                    "Use break_at_point to split without removing anything.");
+
+            var lengthBefore = LengthOf(c);
+            var pts = new Point3dCollection { p1, p2 };
+            DBObjectCollection pieces;
+            try { pieces = c.GetSplitCurves(pts); }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD would not split this curve between those points (" + ex.Message +
+                    "). They resolved to " + Fmt(p1) + " and " + Fmt(p2) + ".");
+            }
+
+            // Split points come back ordered ALONG the curve regardless of which order they were
+            // given in, so on an OPEN curve the piece to discard is the middle one - not "the
+            // second argument's".
+            //
+            // Any other count is not handled, and that is deliberate rather than an oversight. A
+            // closed curve splits into two arcs and which one lies "between" the points depends
+            // on the direction the curve runs, which is not visible to the caller and which this
+            // has not measured. Guessing it would remove the wrong half of a circle and report
+            // success - the failure shape this whole bank exists to remove.
+            if (pieces.Count != 3)
+            {
+                foreach (DBObject o in pieces) o.Dispose();
+                throw new ArgumentException(
+                    "Splitting produced " + pieces.Count + " piece(s) rather than three, which " +
+                    "means this is not the open-curve case this tool handles. On a closed curve " +
+                    "two points make two arcs and which one lies 'between' them depends on the " +
+                    "direction the curve runs - removing the wrong half would look like success. " +
+                    "Break a closed curve at one point first with break_at_point, then break the " +
+                    "result.");
+            }
+            var keptIndices = new List<int> { 0, 2 };
+
+            var kept = new List<object>();
+            double removedLength = 0;
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                if (pieces[i] is not Entity ne) continue;
+                if (keptIndices.Contains(i))
+                {
+                    ne.SetPropertiesFrom(c);
+                    kept.Add(new { handle = AcadEnv.Persist(db, tr, ne, null).Handle,
+                                   length = ne is Curve nc ? LengthOf(nc) : 0.0 });
+                }
+                else
+                {
+                    if (ne is Curve rc) removedLength += LengthOf(rc);
+                    ne.Dispose();
+                }
+            }
+            c.Erase();
+
+            return Wrap(new
+            {
+                from = new[] { p1.X, p1.Y, p1.Z },
+                to = new[] { p2.X, p2.Y, p2.Z },
+                offsetFromRequested = new[] { off1, off2 },
+                lengthBefore,
+                removedLength,
+                pieces = kept,
+                count = kept.Count,
+                note = "The original entity is gone and its handle with it. The piece between the " +
+                       "two points was discarded; what remains inherits the original's properties.",
+            });
+        });
+
+    private static string Fmt(Point3d p) =>
+        "(" + p.X.ToString("0.###") + ", " + p.Y.ToString("0.###") + ", " + p.Z.ToString("0.###") + ")";
+
+    /// <summary>Place a marker at each of the given points: a DBPoint, or a block if named.</summary>
+    private static List<object> PlaceMarkers(
+        Database db, Transaction tr, Curve c, List<double> distances, string? block,
+        bool alignToCurve, string? layer)
+    {
+        ObjectId btrId = ObjectId.Null;
+        if (!string.IsNullOrWhiteSpace(block))
+        {
+            var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+            if (!bt.Has(block))
+                throw new ArgumentException(
+                    "No block named '" + block + "' in this drawing. Omit `block` to place plain " +
+                    "points instead, or define it first.");
+            btrId = bt[block];
+        }
+
+        var made = new List<object>();
+        foreach (var d in distances)
+        {
+            var p = c.GetPointAtDist(d);
+            Entity ent;
+            if (btrId.IsNull)
+            {
+                ent = new DBPoint(p);
+            }
+            else
+            {
+                var br = new BlockReference(p, btrId);
+                if (alignToCurve)
+                {
+                    // The tangent, taken as the first derivative at that point. AutoCAD's DIVIDE
+                    // aligns blocks this way, and without it a door or a tree marker sits square
+                    // to the world while the curve runs at an angle.
+                    var v = c.GetFirstDerivative(p);
+                    if (!v.IsZeroLength()) br.Rotation = Math.Atan2(v.Y, v.X);
+                }
+                ent = br;
+            }
+            made.Add(new
+            {
+                handle = AcadEnv.Persist(db, tr, ent, layer).Handle,
+                point = new[] { p.X, p.Y, p.Z },
+                distance = d,
+            });
+        }
+        return made;
+    }
+
+    private static Task<ToolDispatchResult> DivideObject(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.divide_object", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DivideArgsDto>(args);
+            if (a.Segments is null || a.Segments < 2)
+                throw new ArgumentException(
+                    "segments is required and must be at least 2: how many equal parts to divide " +
+                    "into. Dividing into 1 would place no markers at all.");
+            if (a.Segments > 32767)
+                throw new ArgumentException("segments must be 32767 or fewer, as in AutoCAD's DIVIDE.");
+
+            var c = RequireCurve(db, tr, a.Handle, OpenMode.ForRead);
+            var len = LengthOf(c);
+            var step = len / a.Segments.Value;
+
+            // Interior points only: n segments have n-1 divisions. Marking the ends too would
+            // put a marker on top of whatever already sits at each end of the curve.
+            var ds = new List<double>();
+            for (int i = 1; i < a.Segments.Value; i++) ds.Add(step * i);
+
+            var made = PlaceMarkers(db, tr, c, ds, a.Block, a.AlignToCurve ?? true, a.Layer);
+            return Wrap(new
+            {
+                handle = a.Handle, segments = a.Segments, segmentLength = step,
+                curveLength = len, markers = made, count = made.Count,
+                placed = string.IsNullOrWhiteSpace(a.Block) ? "points" : "blocks",
+                note = "The curve itself is untouched - dividing marks it, it does not cut it. " +
+                       (a.Segments - 1) + " marker(s) for " + a.Segments + " segments, at the " +
+                       "divisions rather than the ends.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> MeasureObject(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.measure_object", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MeasureArgsDto>(args);
+            if (a.Distance is null || a.Distance <= 0)
+                throw new ArgumentException("distance is required and must be greater than zero.");
+
+            var c = RequireCurve(db, tr, a.Handle, OpenMode.ForRead);
+            var len = LengthOf(c);
+            if (a.Distance > len)
+                throw new ArgumentException(
+                    "distance " + a.Distance + " is longer than the curve (" +
+                    len.ToString("0.###") + "), so no marker would be placed.");
+
+            // Measured FROM THE START, and the remainder is left at the far end - which is what
+            // AutoCAD's MEASURE does and why it differs from DIVIDE. The leftover is reported
+            // because a caller spacing bolts along a beam needs to know about it.
+            var ds = new List<double>();
+            for (double d = a.Distance.Value; d < len - 1e-9; d += a.Distance.Value) ds.Add(d);
+
+            var made = PlaceMarkers(db, tr, c, ds, a.Block, a.AlignToCurve ?? true, a.Layer);
+            var remainder = len - (ds.Count == 0 ? 0 : ds[ds.Count - 1]);
+            return Wrap(new
+            {
+                handle = a.Handle, distance = a.Distance, curveLength = len,
+                markers = made, count = made.Count, remainder,
+                placed = string.IsNullOrWhiteSpace(a.Block) ? "points" : "blocks",
+                note = "Measured from the curve's start; the leftover " + remainder.ToString("0.###") +
+                       " sits at the far end. That is what makes this different from divide_object, " +
+                       "which spaces markers evenly and leaves no remainder.",
+            });
         });
 
     // ─────────── polyline vertex editing (roadmap 3.1) ───────────

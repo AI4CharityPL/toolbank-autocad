@@ -293,3 +293,88 @@ public sealed record ReverseCurveResult(
     [property: JsonPropertyName("start")]       IReadOnlyList<double> Start,
     [property: JsonPropertyName("end")]         IReadOnlyList<double> End,
     [property: JsonPropertyName("note")]        string Note);
+
+// ─────────── breaking and dividing (roadmap 3.1) ───────────
+
+public sealed record BreakAtPointArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("point")]  Point2dDto Point);
+
+public sealed record BreakBetweenArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("point1")] Point2dDto Point1,
+    [property: JsonPropertyName("point2")] Point2dDto Point2);
+
+public sealed record DivideArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("segments")]     int? Segments = null,
+    [property: JsonPropertyName("block")]        string? Block = null,
+    [property: JsonPropertyName("alignToCurve")] bool? AlignToCurve = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record MeasureArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("distance")]     double? Distance = null,
+    [property: JsonPropertyName("block")]        string? Block = null,
+    [property: JsonPropertyName("alignToCurve")] bool? AlignToCurve = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record CurvePiece(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("length")] double Length);
+
+public sealed record BreakAtPointResult(
+    [property: JsonPropertyName("brokenAt")]            IReadOnlyList<double> BrokenAt,
+    [property: JsonPropertyName("offsetFromRequested")] double OffsetFromRequested,
+    [property: JsonPropertyName("lengthBefore")]        double LengthBefore,
+    [property: JsonPropertyName("pieces")]              IReadOnlyList<CurvePiece> Pieces,
+    [property: JsonPropertyName("count")]               int Count,
+    [property: JsonPropertyName("note")]                string Note);
+
+public sealed record BreakBetweenResult(
+    [property: JsonPropertyName("from")]                IReadOnlyList<double> From,
+    [property: JsonPropertyName("to")]                  IReadOnlyList<double> To,
+    [property: JsonPropertyName("offsetFromRequested")] IReadOnlyList<double> OffsetFromRequested,
+    [property: JsonPropertyName("lengthBefore")]        double LengthBefore,
+    [property: JsonPropertyName("removedLength")]       double RemovedLength,
+    [property: JsonPropertyName("pieces")]              IReadOnlyList<CurvePiece> Pieces,
+    [property: JsonPropertyName("count")]               int Count,
+    [property: JsonPropertyName("note")]                string Note);
+
+public sealed record CurveMarker(
+    [property: JsonPropertyName("handle")]   string Handle,
+    [property: JsonPropertyName("point")]    IReadOnlyList<double> Point,
+    [property: JsonPropertyName("distance")] double Distance);
+
+public sealed record DivideResult(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("segments")]      int Segments,
+    [property: JsonPropertyName("segmentLength")] double SegmentLength,
+    [property: JsonPropertyName("curveLength")]   double CurveLength,
+    [property: JsonPropertyName("markers")]       IReadOnlyList<CurveMarker> Markers,
+    [property: JsonPropertyName("count")]         int Count,
+    [property: JsonPropertyName("placed")]        string Placed,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record MeasureResult(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("distance")]    double Distance,
+    [property: JsonPropertyName("curveLength")] double CurveLength,
+    [property: JsonPropertyName("markers")]     IReadOnlyList<CurveMarker> Markers,
+    [property: JsonPropertyName("count")]       int Count,
+    [property: JsonPropertyName("remainder")]   double Remainder,
+    [property: JsonPropertyName("placed")]      string Placed,
+    [property: JsonPropertyName("note")]        string Note);
+
+public sealed record PointStyleArgs(
+    [property: JsonPropertyName("mode")]   string? Mode = null,
+    [property: JsonPropertyName("pdmode")] int? Pdmode = null,
+    [property: JsonPropertyName("size")]   double? Size = null);
+
+public sealed record PointStyleResult(
+    [property: JsonPropertyName("mode")]         string? Mode,
+    [property: JsonPropertyName("pdmode")]       int Pdmode,
+    [property: JsonPropertyName("beforePdmode")] int BeforePdmode,
+    [property: JsonPropertyName("pdsize")]       double Pdsize,
+    [property: JsonPropertyName("beforePdsize")] double BeforePdsize,
+    [property: JsonPropertyName("note")]         string Note);

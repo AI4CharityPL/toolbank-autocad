@@ -284,4 +284,54 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<ReverseCurveResult> ReverseCurve(IPluginGateway gw, EntityRefArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<EntityRefArgs, ReverseCurveResult>(gw, "acad.geometry2d.reverse_curve", args, T_NORMAL, ct);
+
+    // ─────────── breaking and dividing curves (roadmap 3.1) ───────────
+    //
+    // Both break tools take a point NEAR the curve and snap it on, the way AutoCAD's own BREAK
+    // does with a picked point. GetSplitCurves does not: an inexact point makes it throw or
+    // split somewhere unintended. The distance the point moved is reported, so a rounding error
+    // and "you named the wrong curve" look different.
+
+    [McpTool("break_at_point", "Split an open curve into two at a point, the way AutoCAD's BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing.", "geometry-2d",
+        Intent = new[] { "przerwij linie w punkcie", "podziel krzywa na dwie",
+                         "break a curve at a point", "split a line in two",
+                         "rozetnij polilinie w punkcie", "cut a curve at a point" },
+        RequiresPlugin = true)]
+    public static Task<BreakAtPointResult> BreakAtPoint(IPluginGateway gw, BreakAtPointArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<BreakAtPointArgs, BreakAtPointResult>(gw, "acad.geometry2d.break_at_point", args, T_NORMAL, ct);
+
+    [McpTool("break_between_points", "Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD's BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies 'between' the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half.", "geometry-2d",
+        Intent = new[] { "wytnij fragment linii", "zrob przerwe w linii",
+                         "break a curve between two points", "remove a piece of a line",
+                         "przerwa w linii pod przecięciem", "gap a line" },
+        RequiresPlugin = true)]
+    public static Task<BreakBetweenResult> BreakBetweenPoints(IPluginGateway gw, BreakBetweenArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<BreakBetweenArgs, BreakBetweenResult>(gw, "acad.geometry2d.break_between_points", args, T_NORMAL, ct);
+
+    [McpTool("divide_object", "Mark a curve into a number of EQUAL parts, placing a point at each division - AutoCAD's DIVIDE. The curve itself is not cut; it is marked. n segments produce n-1 markers, at the divisions rather than at the ends, so nothing lands on top of whatever already sits at each end. Name a block to place that instead of points, and it is rotated to follow the curve unless alignToCurve is false.", "geometry-2d",
+        Intent = new[] { "podziel obiekt na rowne czesci", "rozstaw punkty co rowno wzdluz linii",
+                         "divide a curve into equal parts", "place markers evenly along a curve",
+                         "podziel linie na 5 czesci", "equally spaced points on a curve" },
+        RequiresPlugin = true)]
+    public static Task<DivideResult> DivideObject(IPluginGateway gw, DivideArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<DivideArgs, DivideResult>(gw, "acad.geometry2d.divide_object", args, T_NORMAL, ct);
+
+    [McpTool("measure_object", "Mark a curve at a FIXED interval, placing a marker every given distance from the start - AutoCAD's MEASURE. Unlike divide_object the spacing is what you asked for and the leftover sits at the far end, which the result reports; that is the whole difference between the two. The curve is not cut. Name a block to place that instead of points, rotated to follow the curve unless alignToCurve is false.", "geometry-2d",
+        Intent = new[] { "rozstaw punkty co 500 wzdluz linii", "zmierz linie co odcinek",
+                         "place markers every N units along a curve", "measure a curve at intervals",
+                         "rozmiesc bloki co metr", "fixed spacing along a curve" },
+        RequiresPlugin = true)]
+    public static Task<MeasureResult> MeasureObject(IPluginGateway gw, MeasureArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<MeasureArgs, MeasureResult>(gw, "acad.geometry2d.measure_object", args, T_NORMAL, ct);
+
+    // Added after the visual check on divide_object showed nothing on screen. The markers were
+    // there and the numbers were right; DBPoints at AutoCAD's default PDMODE of 0 draw as a
+    // single pixel. A tool whose output cannot be seen looks like one that did nothing.
+    [McpTool("set_point_style", "Set how POINT entities are drawn, drawing-wide - AutoCAD's DDPTYPE. Give a name such as 'x', 'circleCross' or 'square', or the raw pdmode number. This matters because AutoCAD's default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included.", "geometry-2d",
+        Intent = new[] { "ustaw styl punktu", "pokaz punkty na rysunku",
+                         "set the point style", "make points visible",
+                         "punkty sa niewidoczne", "change how points are drawn" },
+        RequiresPlugin = true)]
+    public static Task<PointStyleResult> SetPointStyle(IPluginGateway gw, PointStyleArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<PointStyleArgs, PointStyleResult>(gw, "acad.geometry2d.set_point_style", args, T_FAST, ct);
 }

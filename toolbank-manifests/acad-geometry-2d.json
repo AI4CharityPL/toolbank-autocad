@@ -13,9 +13,12 @@
     "add",
     "arc",
     "area",
+    "at",
     "autocad",
+    "between",
     "bounding",
     "box",
+    "break",
     "cad",
     "chamfer",
     "circle",
@@ -24,6 +27,7 @@
     "curves",
     "delete",
     "distance",
+    "divide",
     "donut",
     "draw",
     "dwg",
@@ -43,8 +47,10 @@
     "length",
     "line",
     "list",
+    "measure",
     "mline",
     "mtext",
+    "object",
     "offset",
     "point",
     "points",
@@ -57,6 +63,7 @@
     "reverse",
     "set",
     "spline",
+    "style",
     "text",
     "to",
     "trim",
@@ -76,9 +83,12 @@
     "associative hatch over boundary",
     "bbox encji",
     "bevel corner between curves",
+    "break a curve at a point",
+    "break a curve between two points",
     "break apart entity",
     "chamfer corner with two distances",
     "chamfer polilinii",
+    "change how points are drawn",
     "circle by center and radius",
     "closest distance from point to curve",
     "cloud over polyline",
@@ -104,10 +114,12 @@
     "create revcloud markup",
     "create spline",
     "create xline",
+    "cut a curve at a point",
     "decompose into segments",
     "delete a point from a polyline",
     "delete entities by handle",
     "describe entity by handle",
+    "divide a curve into equal parts",
     "dodaj mtext",
     "dodaj tekst jednolinijkowy",
     "dodaj wierzcholek do polilinii",
@@ -133,6 +145,7 @@
     "drop polyline point",
     "edit a polyline vertex",
     "ellipse by axes",
+    "equally spaced points on a curve",
     "erase multiple entities",
     "explode entity into primitives",
     "explode polilinie",
@@ -146,7 +159,9 @@
     "fillet corner with radius",
     "fillet polilinii",
     "find entities in rectangle",
+    "fixed spacing along a curve",
     "flip curve direction",
+    "gap a line",
     "get bounding box",
     "get curve intersections",
     "get curve length",
@@ -169,6 +184,8 @@
     "list polyline vertices",
     "lista obiektow w prostokacie",
     "make a polyline thicker",
+    "make points visible",
+    "measure a curve at intervals",
     "merge curves into polyline",
     "move a polyline point",
     "mtext at point",
@@ -199,25 +216,35 @@
     "opisz encje",
     "parallel copy curve",
     "perpendicular distance",
+    "place markers evenly along a curve",
+    "place markers every N units along a curve",
     "pobierz info o obiekcie",
     "podaj dlugosc krzywej",
     "podaj dystans dwoch punktow",
     "podaj pole powierzchni",
     "podaj prostokat ograniczajacy",
+    "podziel krzywa na dwie",
+    "podziel linie na 5 czesci",
+    "podziel obiekt na rowne czesci",
     "pogrub polilinie",
     "point at coordinate",
+    "pokaz punkty na rysunku",
     "polacz krzywe",
     "polygon with N sides",
     "polyline lineweight by width",
     "polyline through points",
     "polyline vertex coordinates",
     "przedluz polilinie o punkt",
+    "przerwa w linii pod przeci\u0119ciem",
+    "przerwij linie w punkcie",
     "przesun krzywa rownolegle",
     "przesun wierzcholek polilinii",
     "przytnij krzywa",
     "punkty przeciecia krzywych",
+    "punkty sa niewidoczne",
     "read polyline points and bulges",
     "rectangle by two corners",
+    "remove a piece of a line",
     "remove a polyline vertex",
     "remove from drawing",
     "remove segment between intersections",
@@ -225,17 +252,23 @@
     "reverse polyline direction",
     "round corner between curves",
     "rozbij obiekt",
+    "rozetnij polilinie w punkcie",
+    "rozmiesc bloki co metr",
+    "rozstaw punkty co 500 wzdluz linii",
+    "rozstaw punkty co rowno wzdluz linii",
     "rysuj revcloud",
     "scal segmenty",
     "scinaj naroznik",
     "select inside box",
     "set a bulge on a polyline segment",
     "set polyline width",
+    "set the point style",
     "shorten curve at boundary",
     "skasuj encje",
     "skasuj punkt z polilinii",
     "skroc polilinie o wierzcholek",
     "spline through points",
+    "split a line in two",
     "stworz elipse",
     "stworz kolo",
     "stworz luk okregu",
@@ -250,6 +283,7 @@
     "szerokosc jednego segmentu polilinii",
     "trim a curve to boundaries",
     "trim do granic",
+    "ustaw styl punktu",
     "ustaw szerokosc polilinii",
     "usun obiekty",
     "usun wierzcholek polilinii",
@@ -262,15 +296,52 @@
     "wstaw tekst wieloliniowy",
     "wydluz krzywa",
     "wypelnij obszar wzorem",
+    "wytnij fragment linii",
     "zamien poczatek z koncem",
     "zaokraglij naroznik",
     "zmien kierunek polilinii",
     "zmien punkt polilinii",
+    "zmierz linie co odcinek",
     "znajdz obiekty w oknie",
     "znajdz przeciecia",
-    "zrob luk z odcinka polilinii"
+    "zrob luk z odcinka polilinii",
+    "zrob przerwe w linii"
   ],
   "tools_summary": [
+    {
+      "name": "break_at_point",
+      "description": "Split an open curve into two at a point, the way AutoCAD\u0027s BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing.",
+      "tags": [
+        "break",
+        "at",
+        "point"
+      ],
+      "intent": [
+        "przerwij linie w punkcie",
+        "podziel krzywa na dwie",
+        "break a curve at a point",
+        "split a line in two",
+        "rozetnij polilinie w punkcie",
+        "cut a curve at a point"
+      ]
+    },
+    {
+      "name": "break_between_points",
+      "description": "Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD\u0027s BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies \u0027between\u0027 the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half.",
+      "tags": [
+        "break",
+        "between",
+        "points"
+      ],
+      "intent": [
+        "wytnij fragment linii",
+        "zrob przerwe w linii",
+        "break a curve between two points",
+        "remove a piece of a line",
+        "przerwa w linii pod przeci\u0119ciem",
+        "gap a line"
+      ]
+    },
     {
       "name": "chamfer_corner",
       "description": "Chamfer two curves at their intersection with two distances; returns the new chamfer line.",
@@ -299,6 +370,22 @@
         "delete entities by handle",
         "erase multiple entities",
         "remove from drawing"
+      ]
+    },
+    {
+      "name": "divide_object",
+      "description": "Mark a curve into a number of EQUAL parts, placing a point at each division - AutoCAD\u0027s DIVIDE. The curve itself is not cut; it is marked. n segments produce n-1 markers, at the divisions rather than at the ends, so nothing lands on top of whatever already sits at each end. Name a block to place that instead of points, and it is rotated to follow the curve unless alignToCurve is false.",
+      "tags": [
+        "divide",
+        "object"
+      ],
+      "intent": [
+        "podziel obiekt na rowne czesci",
+        "rozstaw punkty co rowno wzdluz linii",
+        "divide a curve into equal parts",
+        "place markers evenly along a curve",
+        "podziel linie na 5 czesci",
+        "equally spaced points on a curve"
       ]
     },
     {
@@ -779,6 +866,22 @@
       ]
     },
     {
+      "name": "measure_object",
+      "description": "Mark a curve at a FIXED interval, placing a marker every given distance from the start - AutoCAD\u0027s MEASURE. Unlike divide_object the spacing is what you asked for and the leftover sits at the far end, which the result reports; that is the whole difference between the two. The curve is not cut. Name a block to place that instead of points, rotated to follow the curve unless alignToCurve is false.",
+      "tags": [
+        "measure",
+        "object"
+      ],
+      "intent": [
+        "rozstaw punkty co 500 wzdluz linii",
+        "zmierz linie co odcinek",
+        "place markers every N units along a curve",
+        "measure a curve at intervals",
+        "rozmiesc bloki co metr",
+        "fixed spacing along a curve"
+      ]
+    },
+    {
       "name": "offset_curve",
       "description": "Offset a curve by a signed distance, returning the new curve handle.",
       "tags": [
@@ -844,6 +947,23 @@
       ]
     },
     {
+      "name": "set_point_style",
+      "description": "Set how POINT entities are drawn, drawing-wide - AutoCAD\u0027s DDPTYPE. Give a name such as \u0027x\u0027, \u0027circleCross\u0027 or \u0027square\u0027, or the raw pdmode number. This matters because AutoCAD\u0027s default draws a point as a single pixel, so markers placed by divide_object and measure_object are effectively invisible until this is changed. size is PDSIZE: negative is a percentage of the viewport, positive is absolute drawing units. Affects every point in the drawing, existing ones included.",
+      "tags": [
+        "set",
+        "point",
+        "style"
+      ],
+      "intent": [
+        "ustaw styl punktu",
+        "pokaz punkty na rysunku",
+        "set the point style",
+        "make points visible",
+        "punkty sa niewidoczne",
+        "change how points are drawn"
+      ]
+    },
+    {
       "name": "set_polyline_width",
       "description": "Set a polyline\u0027s width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex\u0027s widths before and after.",
       "tags": [
@@ -878,7 +998,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 39,
+    "tool_count_target": 44,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -892,6 +1012,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T12:30:27.0802836Z"
+    "last_regenerated_utc": "2026-08-06T18:48:20.0991504Z"
   }
 }

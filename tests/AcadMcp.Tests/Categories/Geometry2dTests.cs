@@ -36,6 +36,13 @@ public class Geometry2dTests
         // way to change one is to delete it and draw it again, losing its handle and its layer.
         "list_polyline_vertices", "polyline_add_vertex", "polyline_remove_vertex",
         "edit_polyline_vertex", "set_polyline_width", "reverse_curve",
+
+        // Roadmap 3.1, second tranche: breaking and dividing. The break tools ERASE the original
+        // and replace it with pieces; divide and measure only mark a curve, they never cut it.
+        "break_at_point", "break_between_points", "divide_object", "measure_object",
+        // Added after the visual check: DBPoints at the default PDMODE draw as a single
+        // pixel, so divide/measure markers were invisible and looked like nothing happened.
+        "set_point_style",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

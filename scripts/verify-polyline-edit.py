@@ -30,10 +30,20 @@ results = []
 def do(cat, tool, args, label=None, expect_fail=False):
     ok, r = S[cat].call(tool, args)
     label = label or tool
-    good = (not ok) if expect_fail else ok
+    # An expected failure must be the failure that was expected. Without this, every
+    # `expect_fail` check passes when the tool is not registered at all — which is exactly what
+    # happened on the first run of this script: four tools were missing from the plugin and the
+    # refusal tests reported OK, because "UnknownTool" is a failure too.
+    missing = "UnknownTool" in str(r) or "no tool registered" in str(r)
+    if missing:
+        good = False
+    else:
+        good = (not ok) if expect_fail else ok
     results.append((label, good))
     detail = "" if good else f"  -> {str(r)[:190]}"
-    if expect_fail and not ok:
+    if missing:
+        detail = f"  -> TOOL NOT REGISTERED: {str(r)[:150]}"
+    elif expect_fail and not ok:
         detail = f"  (refused as intended: {str(r)[:110]})"
     print(f"  {'OK  ' if good else 'FAIL'} {label}{detail}")
     return r

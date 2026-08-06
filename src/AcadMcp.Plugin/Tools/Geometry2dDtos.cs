@@ -177,3 +177,33 @@ internal sealed record PolylineWidthArgsDto(
 
 internal sealed record EntityRefArgsDto(
     [property: JsonPropertyName("handle")] string? Handle);
+
+// ─────────── breaking and dividing (roadmap 3.1) ───────────
+
+internal sealed record BreakAtPointArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("point")]  Point2dDto? Point);
+
+internal sealed record BreakBetweenArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("point1")] Point2dDto? Point1,
+    [property: JsonPropertyName("point2")] Point2dDto? Point2);
+
+internal sealed record DivideArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("segments")]     int? Segments,
+    [property: JsonPropertyName("block")]        string? Block,
+    [property: JsonPropertyName("alignToCurve")] bool? AlignToCurve,
+    [property: JsonPropertyName("layer")]        string? Layer);
+
+internal sealed record MeasureArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("distance")]     double? Distance,
+    [property: JsonPropertyName("block")]        string? Block,
+    [property: JsonPropertyName("alignToCurve")] bool? AlignToCurve,
+    [property: JsonPropertyName("layer")]        string? Layer);
+
+internal sealed record PointStyleArgsDto(
+    [property: JsonPropertyName("mode")]   string? Mode,
+    [property: JsonPropertyName("pdmode")] int? Pdmode,
+    [property: JsonPropertyName("size")]   double? Size);

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 520 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 522 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (56 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (58 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -294,6 +294,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_spline_cv` | Draw a spline from CONTROL VERTICES - the vertices pull the curve without lying on it, except the first and last, which it touches. This is the other half of how AutoCAD models curves: draw_spline interpolates THROUGH given fit points, which is what you want when the curve must hit surveyed positions, while control vertices are what you want when the shape matters more than the points, as on a road centreline or a facade. degree defaults to 3 and must be less than the number of control points. |
 | `draw_text` | Draw single-line text (DTEXT) at a 2D position with given height/rotation/style. |
 | `draw_xline` | Draw an infinite construction line through a base point in a given direction. |
+| `edit_mline_vertex` | Move one vertex of a multiline by 0-based index - the corner of a wall, without redrawing the wall. A multiline recomputes every element from its style when a vertex moves, so both segments meeting at that corner change rather than just one. The new position is read back and a mismatch is reported as a failure instead of being assumed. |
 | `edit_polyline_vertex` | Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is. |
 | `edit_spline_fit_point` | Move one fit point of a spline, by 0-based index. A fit point is a position the curve MUST pass through, so moving one reshapes the curve either side of it rather than only at it. Only works on a spline that has fit data - one made from control vertices carries none, and the tool says so plainly instead of passing through an HRESULT that does not mention which kind of spline it met. Answers with the point as it was and as it now is, plus the curve's length before and after. |
 | `explode_entity` | Explode a polyline/block/hatch into its component primitives. |
@@ -311,6 +312,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_entities_in_window` | List handles of all entities whose bounding box intersects the rectangular window. |
 | `list_polyline_vertices` | List a polyline's vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc's included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction. |
 | `measure_object` | Mark a curve at a FIXED interval, placing a marker every given distance from the start - AutoCAD's MEASURE. Unlike divide_object the spacing is what you asked for and the leftover sits at the far end, which the result reports; that is the whole difference between the two. The curve is not cut. Name a block to place that instead of points, rotated to follow the curve unless alignToCurve is false. |
+| `mline_join` | Join two multilines that meet end to end into one. REFUSES a mismatch in style, scale or justification, because each of those decides where the elements sit relative to the vertices - joining across one would produce a single wall that changes thickness or steps sideways at an invisible seam. Works whichever way round the second one runs and says which it used. The second multiline is ERASED and its handle stops being valid; the shared vertex is not duplicated, so indices past the seam shift. |
 | `offset_curve` | Offset a curve by a signed distance, returning the new curve handle. |
 | `polyline_add_vertex` | Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call. |
 | `polyline_remove_vertex` | Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result. |

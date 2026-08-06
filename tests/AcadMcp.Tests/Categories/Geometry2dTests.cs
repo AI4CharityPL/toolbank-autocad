@@ -64,6 +64,10 @@ public class Geometry2dTests
         // uses the nearest pair of free ends and reports which - a blend across the wrong
         // two still looks like a perfectly good spline.
         "blend_curves",
+
+        // Roadmap 3.1, eighth tranche. draw_mline could draw a wall and acad-styles could
+        // author its style, but nothing could change one afterwards.
+        "edit_mline_vertex", "mline_join",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

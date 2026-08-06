@@ -272,3 +272,15 @@ internal sealed record BlendArgsDto(
     [property: JsonPropertyName("handle2")]    string? Handle2,
     [property: JsonPropertyName("continuity")] string? Continuity,
     [property: JsonPropertyName("layer")]      string? Layer);
+
+// ─────────── multiline editing (roadmap 3.1) ───────────
+
+internal sealed record MlineVertexArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("index")]  int? Index,
+    [property: JsonPropertyName("point")]  Point2dDto? Point);
+
+internal sealed record MlineJoinArgsDto(
+    [property: JsonPropertyName("handle1")]   string? Handle1,
+    [property: JsonPropertyName("handle2")]   string? Handle2,
+    [property: JsonPropertyName("tolerance")] double? Tolerance);

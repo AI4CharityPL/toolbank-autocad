@@ -99,6 +99,10 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.boundary_from_point", BoundaryFromPoint);
         host.Register("acad.geometry2d.region_from_boundary", RegionFromBoundary);
         host.Register("acad.geometry2d.blend_curves", BlendCurves);
+
+        // roadmap 3.1 - multiline editing
+        host.Register("acad.geometry2d.edit_mline_vertex", EditMlineVertex);
+        host.Register("acad.geometry2d.mline_join", MlineJoin);
     }
 
     // ─────────── helpers ───────────
@@ -844,6 +848,154 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── multiline editing (roadmap 3.1) ───────────
+    //
+    // draw_mline exists and acad-styles authors MLINE styles, so a wall can be drawn. Neither
+    // could change one afterwards, which meant the only way to move a wall's corner was to
+    // delete the wall and draw it again.
+
+    private static Mline RequireMline(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException("handle is required: the multiline to edit.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), mode);
+        if (ent is Mline ml) return ml;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetType().Name + ", not an Mline. Multilines are " +
+            "drawn by draw_mline; a polyline is edited with edit_polyline_vertex instead.");
+    }
+
+    private static List<object> MlineVertices(Mline ml)
+    {
+        var v = new List<object>();
+        for (int i = 0; i < ml.NumberOfVertices; i++)
+        {
+            var p = ml.VertexAt(i);
+            v.Add(new { index = i, point = new[] { p.X, p.Y, p.Z } });
+        }
+        return v;
+    }
+
+    private static Task<ToolDispatchResult> EditMlineVertex(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.edit_mline_vertex", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MlineVertexArgsDto>(args);
+            var ml = RequireMline(db, tr, a.Handle, OpenMode.ForWrite);
+
+            if (a.Index is null || a.Index < 0 || a.Index >= ml.NumberOfVertices)
+                throw new ArgumentException(
+                    "index is required and must be 0.." + (ml.NumberOfVertices - 1) +
+                    "; this multiline has " + ml.NumberOfVertices + " vertices.");
+            if (a.Point is null)
+                throw new ArgumentException("point is required: where the vertex moves to.");
+
+            var i = a.Index.Value;
+            var before = ml.VertexAt(i);
+            var to = AcadEnv.ToPoint3d(a.Point);
+            ml.MoveVertexAt(i, to);
+
+            // Checked rather than assumed. MoveVertexAt returns void, and a multiline recomputes
+            // its element offsets from the style when a vertex moves - if that failed the entity
+            // would still be there, still report a vertex count, and be drawn wrong.
+            var now = ml.VertexAt(i);
+            if (now.DistanceTo(to) > 1e-6)
+                throw new InvalidOperationException(
+                    "Vertex " + i + " reads back at " + Fmt(now) + " rather than " + Fmt(to) +
+                    ", so the move did not take.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                index = i,
+                before = new[] { before.X, before.Y, before.Z },
+                point = new[] { now.X, now.Y, now.Z },
+                vertices = ml.NumberOfVertices,
+                note = "A multiline redraws every element from its style when a vertex moves, so " +
+                       "both segments meeting at this corner change, not just one.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> MlineJoin(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.mline_join", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MlineJoinArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle1) || string.IsNullOrWhiteSpace(a.Handle2))
+                throw new ArgumentException("handle1 and handle2 are both required.");
+            if (string.Equals(a.Handle1, a.Handle2, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("handle1 and handle2 are the same multiline.");
+
+            var m1 = RequireMline(db, tr, a.Handle1, OpenMode.ForWrite);
+            var m2 = RequireMline(db, tr, a.Handle2, OpenMode.ForWrite);
+
+            // Style, scale and justification all decide where the elements sit relative to the
+            // vertices. Joining across a mismatch would produce one entity whose halves are
+            // drawn to different rules - a wall that changes thickness at an invisible seam.
+            if (m1.Style != m2.Style)
+                throw new ArgumentException(
+                    "The two multilines use different styles, so joining them would give one " +
+                    "entity drawn to two different sets of element offsets. Change one with " +
+                    "styles.modify_mlinestyle, or redraw it, before joining.");
+            if (Math.Abs(m1.Scale - m2.Scale) > 1e-9)
+                throw new ArgumentException(
+                    "The two multilines have different scales (" + m1.Scale + " and " + m2.Scale +
+                    "), so the joined entity would change width at the seam.");
+            if (m1.Justification != m2.Justification)
+                throw new ArgumentException(
+                    "The two multilines are justified differently (" + m1.Justification + " and " +
+                    m2.Justification + "), so their elements sit on different sides of the " +
+                    "vertices and the join would step sideways.");
+            if (m1.IsClosed || m2.IsClosed)
+                throw new ArgumentException("A closed multiline has no free end to join.");
+
+            var end1 = m1.VertexAt(m1.NumberOfVertices - 1);
+            var start2 = m2.VertexAt(0);
+            var end2 = m2.VertexAt(m2.NumberOfVertices - 1);
+
+            // Append in whichever direction actually meets. Appending blind would leave a
+            // multiline that doubles back on itself and still reports a sensible vertex count.
+            var tol = a.Tolerance ?? 1e-6;
+            var forward = end1.DistanceTo(start2) <= tol;
+            var reversed = end1.DistanceTo(end2) <= tol;
+            if (!forward && !reversed)
+                throw new ArgumentException(
+                    "The end of the first multiline at " + Fmt(end1) + " does not meet either end " +
+                    "of the second (" + Fmt(start2) + " or " + Fmt(end2) + ") within " + tol +
+                    ". Move one of them first, or raise tolerance if they are meant to be " +
+                    "coincident and are not quite.");
+
+            var before1 = m1.NumberOfVertices;
+            var before2 = m2.NumberOfVertices;
+
+            // Skip the shared vertex: appending it would leave a zero-length segment, which
+            // draws as nothing and makes every later index off by one.
+            if (forward)
+                for (int i = 1; i < m2.NumberOfVertices; i++) m1.AppendSegment(m2.VertexAt(i));
+            else
+                for (int i = m2.NumberOfVertices - 2; i >= 0; i--) m1.AppendSegment(m2.VertexAt(i));
+
+            var expected = before1 + before2 - 1;
+            if (m1.NumberOfVertices != expected)
+                throw new InvalidOperationException(
+                    "The joined multiline has " + m1.NumberOfVertices + " vertices where " +
+                    expected + " were expected, so the append did not go as intended and nothing " +
+                    "is being reported as success.");
+
+            m2.Erase();
+
+            return Wrap(new
+            {
+                handle = a.Handle1,
+                erased = a.Handle2,
+                direction = forward ? "forward" : "reversed",
+                verticesBefore = new[] { before1, before2 },
+                vertices = m1.NumberOfVertices,
+                joinedAt = new[] { end1.X, end1.Y, end1.Z },
+                note = "The second multiline is GONE and its handle with it; everything is now on " +
+                       "the first. The shared vertex is not duplicated, so indices past the seam " +
+                       "shift by " + (before1 - 1) + ".",
+            });
         });
 
     // ─────────── blending two curves (roadmap 3.1) ───────────

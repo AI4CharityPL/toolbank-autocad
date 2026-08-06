@@ -569,3 +569,32 @@ public sealed record BlendResult(
     [property: JsonPropertyName("length")]     double Length,
     [property: JsonPropertyName("joinedAt")]   BlendJoin JoinedAt,
     [property: JsonPropertyName("note")]       string Note);
+
+// ─────────── multiline editing (roadmap 3.1) ───────────
+
+public sealed record MlineVertexArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("index")]  int? Index = null,
+    [property: JsonPropertyName("point")]  Point2dDto? Point = null);
+
+public sealed record MlineJoinArgs(
+    [property: JsonPropertyName("handle1")]   string Handle1,
+    [property: JsonPropertyName("handle2")]   string Handle2,
+    [property: JsonPropertyName("tolerance")] double? Tolerance = null);
+
+public sealed record MlineVertexResult(
+    [property: JsonPropertyName("handle")]   string Handle,
+    [property: JsonPropertyName("index")]    int Index,
+    [property: JsonPropertyName("before")]   IReadOnlyList<double> Before,
+    [property: JsonPropertyName("point")]    IReadOnlyList<double> Point,
+    [property: JsonPropertyName("vertices")] int Vertices,
+    [property: JsonPropertyName("note")]     string Note);
+
+public sealed record MlineJoinResult(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("erased")]         string Erased,
+    [property: JsonPropertyName("direction")]      string Direction,
+    [property: JsonPropertyName("verticesBefore")] IReadOnlyList<int> VerticesBefore,
+    [property: JsonPropertyName("vertices")]       int Vertices,
+    [property: JsonPropertyName("joinedAt")]       IReadOnlyList<double> JoinedAt,
+    [property: JsonPropertyName("note")]           string Note);

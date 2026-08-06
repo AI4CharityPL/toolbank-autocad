@@ -37,6 +37,37 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.1 — 2D geometry editing: 27 tools over nine tranches.** Bank 495 → 522;
+  `acad-geometry-2d` 33 → 58, `acad-modify` 16 → 18. Every tranche was verified live against a
+  running AutoCAD and confirmed on an exported PNG, never on a return code:
+  polyline vertex editing (51/51), break/divide/measure (55/55), scale and rotate by reference
+  (37/37), draw order, transparency and wipeouts (43/43), splines (42/42), `lengthen_curve` and
+  `draw_ellipse_arc` (52/52), `boundary_from_point` and `region_from_boundary` (27/27),
+  `blend_curves` (26/26), and multiline editing (41/41).
+
+  Three things this phase established, each of which had first produced a green tally that
+  meant nothing:
+
+  - **A check that passes when the tool is absent is not a check.** The runner counted
+    `UnknownTool` as a refusal, so four unregistered tools read as three passing `expect_fail`
+    assertions. The runner now fails a missing tool loudly, and a separate idempotence guard
+    that was matching a tool's name inside a *handler body* — and therefore skipping its
+    registration — was removed.
+  - **A comparison without a control still produces a number.** `draw_ellipse_arc` was
+    "proven" by comparing a 200-major ellipse against a 100-radius circle: true, and irrelevant.
+    Both arcs now share a major axis, so the length difference is the ratio and nothing else.
+  - **A tally cannot see the drawing.** `blend_curves` passed every numeric assertion while
+    detouring to y = −9.7 outside its own joins; only the PNG showed it. `draw_hatch` silently
+    ignored a `colorIndex` that is really `color: {r,g,b}`, so a draw-order run scored 41/41 on
+    an all-black image proving nothing about draw order. Both verifications now assert that the
+    thing they intend to look at is actually distinguishable before counting anything.
+
+  Three tools were **withdrawn rather than shipped approximate**, each with the measurement
+  behind it recorded in [KNOWN-GAPS](docs/KNOWN-GAPS.md) §B: `blend_curves` `continuity=smooth`
+  (two implementations, one detoured outside its joins and the other was a silent no-op because
+  `Spline` normalises tangent vectors — both came out at 74.374), `set_object_transparency`
+  `byLayer`/`byBlock` (the constructor compiles and throws `eInvalidKey`), and `add_sheet_view`.
+
 - **`viewports.set_viewport_ucs` and `viewports.set_viewport_annotation_scale`** — the two
   tools withheld when `acad-viewports` shipped, waiting on `acad-ucs` and `acad-annotative`
   respectively. Both of those exist and are verified, so a UCS or a scale is now something the

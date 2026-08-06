@@ -90,6 +90,7 @@
     "add dtext",
     "add polyline point",
     "add wrapped text",
+    "adjust a multiline vertex",
     "adjust spline shape",
     "arc by center radius and angle",
     "area of closed polyline",
@@ -110,6 +111,7 @@
     "closest distance from point to curve",
     "cloud over polyline",
     "co ma byc na wierzchu",
+    "combine multilines",
     "compute aabb of entity",
     "compute area of shape",
     "compute distance points",
@@ -168,6 +170,7 @@
     "drop polyline point",
     "edit a polyline vertex",
     "edit a spline fit point",
+    "edit an mline vertex",
     "elipsa od kata do kata",
     "ellipse arc between angles",
     "ellipse by axes",
@@ -207,6 +210,7 @@
     "insert a point into a polyline",
     "jakie punkty ma ta polilinia",
     "join multiple curves",
+    "join two multilines",
     "konwersja krzywej na polilinie",
     "krzywa sterowana punktami",
     "label at point",
@@ -226,8 +230,10 @@
     "mask geometry behind a label",
     "measure a curve at intervals",
     "merge curves into polyline",
+    "merge two walls end to end",
     "move a point the spline passes through",
     "move a polyline point",
+    "move a wall corner",
     "mtext at point",
     "najkrotsza odleglosc do encji",
     "narysuj chmure rewizji",
@@ -276,7 +282,9 @@
     "pokaz obramowanie zaslony",
     "pokaz punkty na rysunku",
     "polacz dwie krzywe gladka krzywa",
+    "polacz dwie sciany w jedna",
     "polacz krzywe",
+    "polacz mline",
     "pole powierzchni obszaru jako region",
     "polilinia z zamknietego obszaru",
     "polilinia zamiast splajnu",
@@ -284,6 +292,7 @@
     "polyline lineweight by width",
     "polyline through points",
     "polyline vertex coordinates",
+    "popraw przebieg sciany",
     "popraw przebieg splajnu",
     "przedluz odcinek bez granicy",
     "przedluz polilinie o punkt",
@@ -291,6 +300,7 @@
     "przerwa w linii pod przeci\u0119ciem",
     "przerwij linie w punkcie",
     "przesun krzywa rownolegle",
+    "przesun naroznik sciany",
     "przesun punkt splajnu",
     "przesun wierzcholek polilinii",
     "przezroczystosc wedlug warstwy",
@@ -316,6 +326,7 @@
     "rozstaw punkty co 500 wzdluz linii",
     "rozstaw punkty co rowno wzdluz linii",
     "rysuj revcloud",
+    "scal multilinie",
     "scal segmenty",
     "scinaj naroznik",
     "see-through entity",
@@ -385,6 +396,7 @@
     "zmien kolejnosc rysowania",
     "zmien ksztalt krzywej przez punkt",
     "zmien punkt polilinii",
+    "zmien wierzcholek multilinii",
     "zmierz linie co odcinek",
     "znajdz obiekty w oknie",
     "znajdz przeciecia",
@@ -813,6 +825,23 @@
       ]
     },
     {
+      "name": "edit_mline_vertex",
+      "description": "Move one vertex of a multiline by 0-based index - the corner of a wall, without redrawing the wall. A multiline recomputes every element from its style when a vertex moves, so both segments meeting at that corner change rather than just one. The new position is read back and a mismatch is reported as a failure instead of being assumed.",
+      "tags": [
+        "edit",
+        "mline",
+        "vertex"
+      ],
+      "intent": [
+        "przesun naroznik sciany",
+        "zmien wierzcholek multilinii",
+        "edit an mline vertex",
+        "move a wall corner",
+        "popraw przebieg sciany",
+        "adjust a multiline vertex"
+      ]
+    },
+    {
       "name": "edit_polyline_vertex",
       "description": "Change one vertex of a polyline: move it, bend the segment leaving it by setting a bulge, or set its start and end widths. At least one of those is required. OMITTED FIELDS ARE LEFT ALONE rather than reset, so a vertex can be moved without flattening the arc it carries. Answers with the vertex as it was and as it now is.",
       "tags": [
@@ -1084,6 +1113,22 @@
       ]
     },
     {
+      "name": "mline_join",
+      "description": "Join two multilines that meet end to end into one. REFUSES a mismatch in style, scale or justification, because each of those decides where the elements sit relative to the vertices - joining across one would produce a single wall that changes thickness or steps sideways at an invisible seam. Works whichever way round the second one runs and says which it used. The second multiline is ERASED and its handle stops being valid; the shared vertex is not duplicated, so indices past the seam shift.",
+      "tags": [
+        "mline",
+        "join"
+      ],
+      "intent": [
+        "polacz dwie sciany w jedna",
+        "scal multilinie",
+        "join two multilines",
+        "merge two walls end to end",
+        "polacz mline",
+        "combine multilines"
+      ]
+    },
+    {
       "name": "offset_curve",
       "description": "Offset a curve by a signed distance, returning the new curve handle.",
       "tags": [
@@ -1285,7 +1330,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 56,
+    "tool_count_target": 58,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -1299,6 +1344,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T20:19:56.1983734Z"
+    "last_regenerated_utc": "2026-08-06T20:27:20.0888910Z"
   }
 }

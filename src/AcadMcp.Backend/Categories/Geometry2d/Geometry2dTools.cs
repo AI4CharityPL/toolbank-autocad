@@ -446,4 +446,25 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<BlendResult> BlendCurves(IPluginGateway gw, BlendArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<BlendArgs, BlendResult>(gw, "acad.geometry2d.blend_curves", args, T_NORMAL, ct);
+
+    // ─────────── multiline editing (roadmap 3.1) ───────────
+    //
+    // draw_mline could draw a wall and acad-styles could author the style it used, but nothing
+    // could change one afterwards - so moving a wall's corner meant deleting the wall.
+
+    [McpTool("edit_mline_vertex", "Move one vertex of a multiline by 0-based index - the corner of a wall, without redrawing the wall. A multiline recomputes every element from its style when a vertex moves, so both segments meeting at that corner change rather than just one. The new position is read back and a mismatch is reported as a failure instead of being assumed.", "geometry-2d",
+        Intent = new[] { "przesun naroznik sciany", "zmien wierzcholek multilinii",
+                         "edit an mline vertex", "move a wall corner",
+                         "popraw przebieg sciany", "adjust a multiline vertex" },
+        RequiresPlugin = true)]
+    public static Task<MlineVertexResult> EditMlineVertex(IPluginGateway gw, MlineVertexArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<MlineVertexArgs, MlineVertexResult>(gw, "acad.geometry2d.edit_mline_vertex", args, T_NORMAL, ct);
+
+    [McpTool("mline_join", "Join two multilines that meet end to end into one. REFUSES a mismatch in style, scale or justification, because each of those decides where the elements sit relative to the vertices - joining across one would produce a single wall that changes thickness or steps sideways at an invisible seam. Works whichever way round the second one runs and says which it used. The second multiline is ERASED and its handle stops being valid; the shared vertex is not duplicated, so indices past the seam shift.", "geometry-2d",
+        Intent = new[] { "polacz dwie sciany w jedna", "scal multilinie",
+                         "join two multilines", "merge two walls end to end",
+                         "polacz mline", "combine multilines" },
+        RequiresPlugin = true)]
+    public static Task<MlineJoinResult> MlineJoin(IPluginGateway gw, MlineJoinArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<MlineJoinArgs, MlineJoinResult>(gw, "acad.geometry2d.mline_join", args, T_NORMAL, ct);
 }

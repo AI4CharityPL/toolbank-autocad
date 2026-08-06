@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 519 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 520 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (55 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (56 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -267,6 +267,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `blend_curves` | Draw a smooth spline bridging the gap between two open curves - AutoCAD's BLEND. The blend is G1: each join runs in the same direction as the curve it meets, and the curve stays within its own two joins. continuity='smooth' is recognised and REFUSED with the measurements behind that - two implementations were tried and one detoured outside the joins while the other silently did nothing, since Spline normalises the tangent vectors. AutoCAD blends the ends you pick; there is no pick here, so the NEAREST pair of free ends is used and exactly which ones is reported, since a blend across the wrong ends still looks like a valid spline. Both original curves are left untouched. |
 | `boundary_from_point` | Point at an enclosed area and get its OUTLINE as a real polyline - AutoCAD's BOUNDARY. The point is a WCS position inside the area; the geometry that encloses it is left untouched, so the new outline sits on top of it. With detectIslands on (the default) an enclosed hole produces its own boundary too. Fails with the seed reported in both WCS and the current UCS when no closed region is found, since a UCS that is not world is the usual reason a point that looks inside is not. |
 | `break_at_point` | Split an open curve into two at a point, the way AutoCAD's BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing. |
 | `break_between_points` | Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD's BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies 'between' the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half. |

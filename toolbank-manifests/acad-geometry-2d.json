@@ -16,6 +16,7 @@
     "at",
     "autocad",
     "between",
+    "blend",
     "boundary",
     "bounding",
     "box",
@@ -95,10 +96,12 @@
     "associative hatch over boundary",
     "bbox encji",
     "bevel corner between curves",
+    "blend two curves",
     "boundary from a point",
     "break a curve at a point",
     "break a curve between two points",
     "break apart entity",
+    "bridge a gap with a spline",
     "bring to front",
     "chamfer corner with two distances",
     "chamfer polilinii",
@@ -195,6 +198,7 @@
     "get entity details",
     "get the outline around this point",
     "gladka krzywa nie przechodzaca przez punkty",
+    "gladkie przejscie miedzy lukami",
     "half infinite line",
     "hide what is underneath",
     "hide wipeout borders",
@@ -271,6 +275,7 @@
     "point at coordinate",
     "pokaz obramowanie zaslony",
     "pokaz punkty na rysunku",
+    "polacz dwie krzywe gladka krzywa",
     "polacz krzywe",
     "pole powierzchni obszaru jako region",
     "polilinia z zamknietego obszaru",
@@ -328,6 +333,7 @@
     "skasuj punkt z polilinii",
     "skroc krzywa",
     "skroc polilinie o wierzcholek",
+    "smooth transition between two curves",
     "spline through points",
     "spline to polyline for export",
     "split a line in two",
@@ -368,6 +374,7 @@
     "wydluz krzywa",
     "wydluz linie o",
     "wypelnij obszar wzorem",
+    "wypelnij przerwe miedzy liniami",
     "wytnij fragment linii",
     "zamien poczatek z koncem",
     "zamien splajn na polilinie",
@@ -386,6 +393,22 @@
     "zrob przerwe w linii"
   ],
   "tools_summary": [
+    {
+      "name": "blend_curves",
+      "description": "Draw a smooth spline bridging the gap between two open curves - AutoCAD\u0027s BLEND. The blend is G1: each join runs in the same direction as the curve it meets, and the curve stays within its own two joins. continuity=\u0027smooth\u0027 is recognised and REFUSED with the measurements behind that - two implementations were tried and one detoured outside the joins while the other silently did nothing, since Spline normalises the tangent vectors. AutoCAD blends the ends you pick; there is no pick here, so the NEAREST pair of free ends is used and exactly which ones is reported, since a blend across the wrong ends still looks like a valid spline. Both original curves are left untouched.",
+      "tags": [
+        "blend",
+        "curves"
+      ],
+      "intent": [
+        "polacz dwie krzywe gladka krzywa",
+        "wypelnij przerwe miedzy liniami",
+        "blend two curves",
+        "smooth transition between two curves",
+        "gladkie przejscie miedzy lukami",
+        "bridge a gap with a spline"
+      ]
+    },
     {
       "name": "boundary_from_point",
       "description": "Point at an enclosed area and get its OUTLINE as a real polyline - AutoCAD\u0027s BOUNDARY. The point is a WCS position inside the area; the geometry that encloses it is left untouched, so the new outline sits on top of it. With detectIslands on (the default) an enclosed hole produces its own boundary too. Fails with the seed reported in both WCS and the current UCS when no closed region is found, since a UCS that is not world is the usual reason a point that looks inside is not.",
@@ -1262,7 +1285,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 55,
+    "tool_count_target": 56,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -1276,6 +1299,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T19:59:00.4071656Z"
+    "last_regenerated_utc": "2026-08-06T20:19:56.1983734Z"
   }
 }

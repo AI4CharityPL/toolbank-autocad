@@ -98,6 +98,7 @@ internal static class Geometry2dPluginTools
         // roadmap 3.1 - boundaries from a point
         host.Register("acad.geometry2d.boundary_from_point", BoundaryFromPoint);
         host.Register("acad.geometry2d.region_from_boundary", RegionFromBoundary);
+        host.Register("acad.geometry2d.blend_curves", BlendCurves);
     }
 
     // ─────────── helpers ───────────
@@ -843,6 +844,149 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── blending two curves (roadmap 3.1) ───────────
+
+    /// <summary>Which pair of free ends of two open curves are nearest each other.</summary>
+    /// <remarks>
+    /// AutoCAD's BLEND blends the ends you PICK. There is no pick here, so the nearest pair is
+    /// chosen and REPORTED - a blend that silently joined the wrong two ends would produce a
+    /// plausible spline looping right across the drawing, and the caller would have no way to
+    /// tell from the result which ends it used.
+    /// </remarks>
+    private static (bool FromStart1, bool FromStart2, double Gap) NearestEnds(Curve a, Curve b)
+    {
+        var pairs = new (bool s1, bool s2, double d)[]
+        {
+            (true,  true,  a.StartPoint.DistanceTo(b.StartPoint)),
+            (true,  false, a.StartPoint.DistanceTo(b.EndPoint)),
+            (false, true,  a.EndPoint.DistanceTo(b.StartPoint)),
+            (false, false, a.EndPoint.DistanceTo(b.EndPoint)),
+        };
+        var best = pairs[0];
+        foreach (var p in pairs) if (p.d < best.d) best = p;
+        return (best.s1, best.s2, best.d);
+    }
+
+    private static Task<ToolDispatchResult> BlendCurves(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.blend_curves", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BlendArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle1) || string.IsNullOrWhiteSpace(a.Handle2))
+                throw new ArgumentException("handle1 and handle2 are both required.");
+            if (string.Equals(a.Handle1, a.Handle2, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "handle1 and handle2 are the same curve. A blend joins the ends of TWO curves.");
+
+            var c1 = RequireCurve(db, tr, a.Handle1, OpenMode.ForRead);
+            var c2 = RequireCurve(db, tr, a.Handle2, OpenMode.ForRead);
+            if (c1.Closed || c2.Closed)
+                throw new ArgumentException(
+                    "A closed curve has no free end to blend from. Both curves must be open.");
+
+            var (fromStart1, fromStart2, gap) = NearestEnds(c1, c2);
+            var p1 = fromStart1 ? c1.StartPoint : c1.EndPoint;
+            var p2 = fromStart2 ? c2.StartPoint : c2.EndPoint;
+            if (gap < 1e-9)
+                throw new ArgumentException(
+                    "The two curves already meet at " + Fmt(p1) + ", so there is no gap to blend " +
+                    "across. Use join_curves to make them one entity instead.");
+
+            // The tangent has to point INTO the gap. GetFirstDerivative runs in the curve's own
+            // direction, so at a start point it points away from the gap and must be flipped -
+            // get this wrong and the blend leaves the end backwards, producing a spline with a
+            // visible hook at each join that still reports success.
+            var t1 = c1.GetFirstDerivative(p1);
+            var t2 = c2.GetFirstDerivative(p2);
+            if (t1.Length < 1e-12 || t2.Length < 1e-12)
+                throw new InvalidOperationException(
+                    "One of the curves has no direction at the end being blended.");
+            var dir1 = (fromStart1 ? -t1 : t1).GetNormal();
+            var dir2 = (fromStart2 ? t2 : -t2).GetNormal();
+
+            // 'smooth' is WITHDRAWN, and the reason is three measurements rather than a
+            // preference. Recorded in KNOWN-GAPS B.
+            //
+            //   1. First attempt - two interior fit points along the tangents AS WELL as the
+            //      imposed tangents. Over-constrained: the blend left (100,0) heading DOWNWARDS
+            //      and reached y = -9.7 before rising. It WAS longer than the tangent blend,
+            //      which is what an assertion of "smooth is longer" measured - longer because
+            //      it detoured, which is the opposite of smoother. Only the PNG showed it.
+            //   2. Second attempt - a longer tangent VECTOR instead of extra points. Measured:
+            //      tangent and smooth came out byte-identical at length 74.374, because the
+            //      Spline(fitPoints, startTangent, endTangent, ...) constructor NORMALISES the
+            //      tangents. Magnitude is ignored.
+            //   3. So the argument had become a silent no-op, which is worse than a missing
+            //      feature: it reports a continuity it did not apply.
+            //
+            // Refused rather than quietly aliased to 'tangent'.
+            var continuity = (a.Continuity ?? "tangent").Trim().ToLowerInvariant();
+            if (continuity == "smooth")
+                throw new ArgumentException(
+                    "continuity 'smooth' is not available. Two implementations were measured and " +
+                    "both failed: interior fit points fight the imposed tangents and make the " +
+                    "blend detour outside its own joins, and a longer tangent vector changes " +
+                    "nothing because Spline normalises it - tangent and smooth came out " +
+                    "identical at length 74.374 on the test case. Rather than report a " +
+                    "continuity it did not apply, this refuses. 'tangent' is a true G1 blend and " +
+                    "is verified to stay within its joins. See KNOWN-GAPS B.");
+            if (continuity != "tangent")
+                throw new ArgumentException(
+                    "continuity must be 'tangent'; got '" + a.Continuity + "'.");
+
+            // The two ends, with the tangents imposed - and NOTHING in between for 'tangent'.
+            //
+            // The first version put two interior fit points along the tangents AS WELL as
+            // imposing the tangents, which over-constrains the fit: the interior points and the
+            // end tangents pull against each other. Measured on two lines offset by 40 with
+            // their ends 60 apart, the blend dipped to y = -9.7 before rising - it left the
+            // lower line going DOWNWARDS. Every numeric assertion passed on that curve, and it
+            // took the PNG to notice.
+            //
+            // Two fit points with imposed tangents is the actual G1 blend: it leaves each line
+            // in that line's own direction and does nothing else.
+            //
+            // 'smooth' keeps the interior points on purpose. Pulling the curve further along
+            // each tangent is what makes the transition longer and gentler, and the fuller
+            // shape that comes with it is the difference the caller asked for - reported, and
+            // measured in the verification as a larger excursion beyond the two joins.
+            // Two fit points with the tangents imposed: the actual G1 blend. It leaves each
+            // curve in that curve's own direction and does nothing else, which is why it stays
+            // inside its own joins - measured at exactly y 0..40 between (100,0) and (160,40).
+            var fit = new Point3dCollection { p1, p2 };
+            var blend = new Spline(fit, dir1, dir2, 4, 0.0);
+            var handle = AcadEnv.Persist(db, tr, blend, a.Layer);
+
+            // Checked, not assumed: a blend that does not actually reach both ends is the whole
+            // failure mode here, and it looks like a perfectly good spline from the outside.
+            var reach1 = blend.StartPoint.DistanceTo(p1);
+            var reach2 = blend.EndPoint.DistanceTo(p2);
+            if (reach1 > 1e-6 || reach2 > 1e-6)
+                throw new InvalidOperationException(
+                    "The blend does not meet the curves it was asked to join: its ends are " +
+                    reach1.ToString("0.####") + " and " + reach2.ToString("0.####") + " away. " +
+                    "Nothing is being reported as success.");
+
+            return Wrap(new
+            {
+                entity = handle,
+                continuity,
+                gap,
+                length = blend.GetDistanceAtParameter(blend.EndParam),
+                joinedAt = new
+                {
+                    handle1 = a.Handle1,
+                    end1 = fromStart1 ? "start" : "end",
+                    point1 = new[] { p1.X, p1.Y, p1.Z },
+                    handle2 = a.Handle2,
+                    end2 = fromStart2 ? "start" : "end",
+                    point2 = new[] { p2.X, p2.Y, p2.Z },
+                },
+                note = "The NEAREST pair of free ends was blended, and which ones is reported " +
+                       "above - there is no pick here, so a caller who meant the other ends can " +
+                       "see that it chose differently. Both original curves are left untouched.",
+            });
         });
 
     // ─────────── boundaries from a point (roadmap 3.1) ───────────

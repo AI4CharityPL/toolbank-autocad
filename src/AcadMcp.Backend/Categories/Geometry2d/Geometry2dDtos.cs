@@ -544,3 +544,28 @@ public sealed record RegionFromBoundaryResult(
     [property: JsonPropertyName("regions")] IReadOnlyList<RegionEntity> Regions,
     [property: JsonPropertyName("count")]   int Count,
     [property: JsonPropertyName("note")]    string Note);
+
+// ─────────── blending two curves (roadmap 3.1) ───────────
+
+public sealed record BlendArgs(
+    [property: JsonPropertyName("handle1")]    string Handle1,
+    [property: JsonPropertyName("handle2")]    string Handle2,
+    [property: JsonPropertyName("continuity")] string? Continuity = null,
+    [property: JsonPropertyName("layer")]      string? Layer = null);
+
+/// <summary>Which ends were joined. Reported because nothing was picked.</summary>
+public sealed record BlendJoin(
+    [property: JsonPropertyName("handle1")] string Handle1,
+    [property: JsonPropertyName("end1")]    string End1,
+    [property: JsonPropertyName("point1")]  IReadOnlyList<double> Point1,
+    [property: JsonPropertyName("handle2")] string Handle2,
+    [property: JsonPropertyName("end2")]    string End2,
+    [property: JsonPropertyName("point2")]  IReadOnlyList<double> Point2);
+
+public sealed record BlendResult(
+    [property: JsonPropertyName("entity")]     EntityHandle Entity,
+    [property: JsonPropertyName("continuity")] string Continuity,
+    [property: JsonPropertyName("gap")]        double Gap,
+    [property: JsonPropertyName("length")]     double Length,
+    [property: JsonPropertyName("joinedAt")]   BlendJoin JoinedAt,
+    [property: JsonPropertyName("note")]       string Note);

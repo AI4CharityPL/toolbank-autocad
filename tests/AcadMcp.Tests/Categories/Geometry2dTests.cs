@@ -59,6 +59,11 @@ public class Geometry2dTests
         // Roadmap 3.1, sixth tranche. Both share the hatches category's TraceBoundary
         // handling, where the UCS-seed and view-framing traps of A1 were already solved.
         "boundary_from_point", "region_from_boundary",
+
+        // Roadmap 3.1, seventh tranche. There is no pick in an MCP call, so blend_curves
+        // uses the nearest pair of free ends and reports which - a blend across the wrong
+        // two still looks like a perfectly good spline.
+        "blend_curves",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

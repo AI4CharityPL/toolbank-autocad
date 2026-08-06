@@ -266,3 +266,9 @@ internal sealed record BoundaryArgsDto(
     [property: JsonPropertyName("point")]         Point2dDto? Point,
     [property: JsonPropertyName("detectIslands")] bool? DetectIslands,
     [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record BlendArgsDto(
+    [property: JsonPropertyName("handle1")]    string? Handle1,
+    [property: JsonPropertyName("handle2")]    string? Handle2,
+    [property: JsonPropertyName("continuity")] string? Continuity,
+    [property: JsonPropertyName("layer")]      string? Layer);

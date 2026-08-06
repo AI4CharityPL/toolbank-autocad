@@ -438,4 +438,12 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<RegionFromBoundaryResult> RegionFromBoundary(IPluginGateway gw, BoundaryArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<BoundaryArgs, RegionFromBoundaryResult>(gw, "acad.geometry2d.region_from_boundary", args, T_SLOW, ct);
+
+    [McpTool("blend_curves", "Draw a smooth spline bridging the gap between two open curves - AutoCAD's BLEND. The blend is G1: each join runs in the same direction as the curve it meets, and the curve stays within its own two joins. continuity='smooth' is recognised and REFUSED with the measurements behind that - two implementations were tried and one detoured outside the joins while the other silently did nothing, since Spline normalises the tangent vectors. AutoCAD blends the ends you pick; there is no pick here, so the NEAREST pair of free ends is used and exactly which ones is reported, since a blend across the wrong ends still looks like a valid spline. Both original curves are left untouched.", "geometry-2d",
+        Intent = new[] { "polacz dwie krzywe gladka krzywa", "wypelnij przerwe miedzy liniami",
+                         "blend two curves", "smooth transition between two curves",
+                         "gladkie przejscie miedzy lukami", "bridge a gap with a spline" },
+        RequiresPlugin = true)]
+    public static Task<BlendResult> BlendCurves(IPluginGateway gw, BlendArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<BlendArgs, BlendResult>(gw, "acad.geometry2d.blend_curves", args, T_NORMAL, ct);
 }

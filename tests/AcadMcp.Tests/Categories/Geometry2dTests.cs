@@ -55,6 +55,10 @@ public class Geometry2dTests
         // Roadmap 3.1, fifth tranche. lengthen_curve is NOT extend_curve: it takes a
         // distance, where extend_curve runs until it meets a boundary entity.
         "lengthen_curve", "draw_ellipse_arc",
+
+        // Roadmap 3.1, sixth tranche. Both share the hatches category's TraceBoundary
+        // handling, where the UCS-seed and view-framing traps of A1 were already solved.
+        "boundary_from_point", "region_from_boundary",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

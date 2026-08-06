@@ -16,6 +16,7 @@
     "at",
     "autocad",
     "between",
+    "boundary",
     "bounding",
     "box",
     "break",
@@ -43,6 +44,7 @@
     "fillet",
     "fit",
     "frame",
+    "from",
     "geometry-2d",
     "get",
     "hatch",
@@ -64,6 +66,7 @@
     "polyline",
     "ray",
     "rectangle",
+    "region",
     "remove",
     "revcloud",
     "reverse",
@@ -92,6 +95,7 @@
     "associative hatch over boundary",
     "bbox encji",
     "bevel corner between curves",
+    "boundary from a point",
     "break a curve at a point",
     "break a curve between two points",
     "break apart entity",
@@ -189,6 +193,7 @@
     "get distance to entity",
     "get enclosed area",
     "get entity details",
+    "get the outline around this point",
     "gladka krzywa nie przechodzaca przez punkty",
     "half infinite line",
     "hide what is underneath",
@@ -210,6 +215,7 @@
     "list polyline vertices",
     "lista obiektow w prostokacie",
     "make a polyline thicker",
+    "make a region from this area",
     "make points visible",
     "make this 50% transparent",
     "make this line 200 long",
@@ -240,6 +246,7 @@
     "narysuj wielokat",
     "NURBS by control points",
     "oblicz pole zamknietego ksztaltu",
+    "obwiednia wskazanego obszaru",
     "obwod polilinii",
     "odleglosc miedzy punktami",
     "odleglosc punktu od krzywej",
@@ -265,6 +272,8 @@
     "pokaz obramowanie zaslony",
     "pokaz punkty na rysunku",
     "polacz krzywe",
+    "pole powierzchni obszaru jako region",
+    "polilinia z zamknietego obszaru",
     "polilinia zamiast splajnu",
     "polygon with N sides",
     "polyline lineweight by width",
@@ -287,6 +296,8 @@
     "ramka wipeout nie ma sie drukowac",
     "read polyline points and bulges",
     "rectangle by two corners",
+    "region for boolean operations",
+    "region from a boundary",
     "remove a piece of a line",
     "remove a polyline vertex",
     "remove from drawing",
@@ -332,6 +343,7 @@
     "stworz wielokat foremny",
     "stworz xline",
     "szerokosc jednego segmentu polilinii",
+    "trace the outline of an area",
     "trim a curve to boundaries",
     "trim do granic",
     "ukryj ramke wipeout",
@@ -340,6 +352,8 @@
     "ustaw szerokosc polilinii",
     "usun obiekty",
     "usun wierzcholek polilinii",
+    "utworz obrys obszaru",
+    "utworz region z obszaru",
     "utworz wipeout",
     "where do curves cross",
     "wielolinia po punktach",
@@ -357,6 +371,7 @@
     "wytnij fragment linii",
     "zamien poczatek z koncem",
     "zamien splajn na polilinie",
+    "zamien zamkniety obszar na region",
     "zaokraglij naroznik",
     "zaslon fragment rysunku",
     "zmien kierunek polilinii",
@@ -371,6 +386,23 @@
     "zrob przerwe w linii"
   ],
   "tools_summary": [
+    {
+      "name": "boundary_from_point",
+      "description": "Point at an enclosed area and get its OUTLINE as a real polyline - AutoCAD\u0027s BOUNDARY. The point is a WCS position inside the area; the geometry that encloses it is left untouched, so the new outline sits on top of it. With detectIslands on (the default) an enclosed hole produces its own boundary too. Fails with the seed reported in both WCS and the current UCS when no closed region is found, since a UCS that is not world is the usual reason a point that looks inside is not.",
+      "tags": [
+        "boundary",
+        "from",
+        "point"
+      ],
+      "intent": [
+        "utworz obrys obszaru",
+        "polilinia z zamknietego obszaru",
+        "boundary from a point",
+        "trace the outline of an area",
+        "obwiednia wskazanego obszaru",
+        "get the outline around this point"
+      ]
+    },
     {
       "name": "break_at_point",
       "description": "Split an open curve into two at a point, the way AutoCAD\u0027s BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing.",
@@ -1078,6 +1110,23 @@
       ]
     },
     {
+      "name": "region_from_boundary",
+      "description": "Point at an enclosed area and get a REGION - a filled 2D area with a real area value, not just an outline. Reports area and perimeter, and the result can be combined with union_regions, subtract_regions and intersect_regions in acad-boolean-ops. The traced curves are not left behind. Use boundary_from_point when a polyline outline is what you actually want.",
+      "tags": [
+        "region",
+        "from",
+        "boundary"
+      ],
+      "intent": [
+        "utworz region z obszaru",
+        "zamien zamkniety obszar na region",
+        "region from a boundary",
+        "make a region from this area",
+        "pole powierzchni obszaru jako region",
+        "region for boolean operations"
+      ]
+    },
+    {
       "name": "reverse_curve",
       "description": "Reverse a curve\u0027s direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped.",
       "tags": [
@@ -1213,7 +1262,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 53,
+    "tool_count_target": 55,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -1227,6 +1276,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T19:39:04.1377582Z"
+    "last_regenerated_utc": "2026-08-06T19:59:00.4071656Z"
   }
 }

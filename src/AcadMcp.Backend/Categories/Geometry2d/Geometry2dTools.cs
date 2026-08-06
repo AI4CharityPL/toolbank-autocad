@@ -415,4 +415,27 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<EllipseArcResult> DrawEllipseArc(IPluginGateway gw, EllipseArcArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<EllipseArcArgs, EllipseArcResult>(gw, "acad.geometry2d.draw_ellipse_arc", args, T_NORMAL, ct);
+
+    // ─────────── boundaries from a point (roadmap 3.1) ───────────
+    //
+    // The tracing lives in the hatches category, where KNOWN-GAPS A1 was solved: the seed is
+    // taken to the current UCS and the drawing is framed so the region is on screen, because
+    // TraceBoundary silently finds nothing otherwise. These two share that code rather than
+    // rediscovering both traps.
+
+    [McpTool("boundary_from_point", "Point at an enclosed area and get its OUTLINE as a real polyline - AutoCAD's BOUNDARY. The point is a WCS position inside the area; the geometry that encloses it is left untouched, so the new outline sits on top of it. With detectIslands on (the default) an enclosed hole produces its own boundary too. Fails with the seed reported in both WCS and the current UCS when no closed region is found, since a UCS that is not world is the usual reason a point that looks inside is not.", "geometry-2d",
+        Intent = new[] { "utworz obrys obszaru", "polilinia z zamknietego obszaru",
+                         "boundary from a point", "trace the outline of an area",
+                         "obwiednia wskazanego obszaru", "get the outline around this point" },
+        RequiresPlugin = true)]
+    public static Task<BoundaryResult> BoundaryFromPoint(IPluginGateway gw, BoundaryArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<BoundaryArgs, BoundaryResult>(gw, "acad.geometry2d.boundary_from_point", args, T_SLOW, ct);
+
+    [McpTool("region_from_boundary", "Point at an enclosed area and get a REGION - a filled 2D area with a real area value, not just an outline. Reports area and perimeter, and the result can be combined with union_regions, subtract_regions and intersect_regions in acad-boolean-ops. The traced curves are not left behind. Use boundary_from_point when a polyline outline is what you actually want.", "geometry-2d",
+        Intent = new[] { "utworz region z obszaru", "zamien zamkniety obszar na region",
+                         "region from a boundary", "make a region from this area",
+                         "pole powierzchni obszaru jako region", "region for boolean operations" },
+        RequiresPlugin = true)]
+    public static Task<RegionFromBoundaryResult> RegionFromBoundary(IPluginGateway gw, BoundaryArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<BoundaryArgs, RegionFromBoundaryResult>(gw, "acad.geometry2d.region_from_boundary", args, T_SLOW, ct);
 }

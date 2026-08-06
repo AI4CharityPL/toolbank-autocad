@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 517 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 519 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (53 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (55 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -267,6 +267,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `boundary_from_point` | Point at an enclosed area and get its OUTLINE as a real polyline - AutoCAD's BOUNDARY. The point is a WCS position inside the area; the geometry that encloses it is left untouched, so the new outline sits on top of it. With detectIslands on (the default) an enclosed hole produces its own boundary too. Fails with the seed reported in both WCS and the current UCS when no closed region is found, since a UCS that is not world is the usual reason a point that looks inside is not. |
 | `break_at_point` | Split an open curve into two at a point, the way AutoCAD's BREAK does with a single pick. The point does not have to be exactly on the curve - it is projected onto the nearest position and the result says how far it moved. The ORIGINAL ENTITY IS ERASED and two new ones take its place, inheriting its layer, colour and linetype, so its handle is no longer valid afterwards. Refuses closed curves, where breaking at one point would leave the curve closed and remove nothing. |
 | `break_between_points` | Remove the piece of a curve between two points, leaving the two outer parts - AutoCAD's BREAK with two picks, used to gap a line where something crosses it. Both points are projected onto the curve. The ORIGINAL ENTITY IS ERASED and replaced by the two remaining pieces; the result reports how much length was removed. Handles open curves: on a closed one, which of the two arcs lies 'between' the points depends on the direction the curve runs, so it refuses rather than risk removing the wrong half. |
 | `chamfer_corner` | Chamfer two curves at their intersection with two distances; returns the new chamfer line. |
@@ -312,6 +313,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `offset_curve` | Offset a curve by a signed distance, returning the new curve handle. |
 | `polyline_add_vertex` | Insert a vertex into an existing polyline at a 0-based index, shifting the later ones along. Pass index equal to the current vertex count to append to the end. Optionally give the new vertex a bulge (to make the segment an arc) and start/end widths. Answers with the vertex as stored and the new count, so an insert can be checked without a second call. |
 | `polyline_remove_vertex` | Remove one vertex from a polyline by 0-based index, closing the gap. Refuses when only two vertices are left, because removing one would leave an entity AutoCAD draws as nothing - delete the polyline instead. Answers with the vertex that was removed, so the change can be undone from its own result. |
+| `region_from_boundary` | Point at an enclosed area and get a REGION - a filled 2D area with a real area value, not just an outline. Reports area and perimeter, and the result can be combined with union_regions, subtract_regions and intersect_regions in acad-boolean-ops. The traced curves are not left behind. Use boundary_from_point when a polyline outline is what you actually want. |
 | `reverse_curve` | Reverse a curve's direction, swapping its start and end. Works on any curve - line, arc, polyline, spline, ellipse. Direction is not cosmetic: it decides which side an offset goes, which way a hatch boundary runs, and where text along the curve reads from. Answers with the endpoints before and after, since the only evidence the reversal happened is that they swapped. |
 | `set_draworder` | Change which entities are drawn on top where they overlap - AutoCAD's DRAWORDER. position is 'front', 'back', 'above' or 'below'; the last two need relativeTo, the handle to sit above or below. Draw order belongs to a SPACE rather than to the drawing, so every entity in one call must be in the same model space or layout, and the tool refuses a mix rather than silently reordering only some. |
 | `set_object_transparency` | Set per-object transparency as a PERCENTAGE, the way AutoCAD's Properties palette shows it: 0 is opaque, 90 is as see-through as AutoCAD allows. AutoCAD stores alpha internally, which is the INVERSE of that percentage, and the result reports both so a caller comparing against raw DXF data is not surprised. Transparency shows on screen but is IGNORED in plotted or exported output unless PLOTTRANSPARENCYOVERRIDE is 1, so a PNG that looks opaque does not mean this failed. byLayer and byBlock are NOT available: the managed API compiles them but throws eInvalidKey on assignment, measured across four entity types - the tool says so rather than quietly making the object opaque. |

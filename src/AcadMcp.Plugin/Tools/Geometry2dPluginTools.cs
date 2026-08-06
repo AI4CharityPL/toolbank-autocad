@@ -94,6 +94,10 @@ internal static class Geometry2dPluginTools
         // roadmap 3.1 - lengthening and elliptical arcs
         host.Register("acad.geometry2d.lengthen_curve", LengthenCurve);
         host.Register("acad.geometry2d.draw_ellipse_arc", DrawEllipseArc);
+
+        // roadmap 3.1 - boundaries from a point
+        host.Register("acad.geometry2d.boundary_from_point", BoundaryFromPoint);
+        host.Register("acad.geometry2d.region_from_boundary", RegionFromBoundary);
     }
 
     // ─────────── helpers ───────────
@@ -839,6 +843,113 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── boundaries from a point (roadmap 3.1) ───────────
+    //
+    // AutoCAD's BOUNDARY: point at an enclosed area and get its outline as a real object.
+    //
+    // The tracing itself is HatchesPluginTools.TraceBoundaryObjects, which is where everything
+    // KNOWN-GAPS A1 cost already lives - the seed taken to the current UCS, the drawing framed
+    // so the region is on screen, and the caller's view restored. Reimplementing that here
+    // would mean rediscovering both traps; what differs is only what happens to the result,
+    // which for these two is the caller's object on the caller's layer rather than scaffolding
+    // on a non-plotting temp layer.
+
+    private static Task<ToolDispatchResult> BoundaryFromPoint(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.boundary_from_point", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BoundaryArgsDto>(args);
+            if (a.Point is null)
+                throw new ArgumentException(
+                    "point is required: a WCS point INSIDE the enclosed area to trace.");
+
+            var seed = AcadEnv.ToPoint3d(a.Point);
+            var found = HatchesPluginTools.TraceBoundaryObjects(doc, db, seed, a.DetectIslands ?? true);
+
+            var made = new List<object>();
+            foreach (DBObject obj in found)
+            {
+                if (obj is not Entity ent) { obj.Dispose(); continue; }
+                var handle = AcadEnv.Persist(db, tr, ent, a.Layer);
+                made.Add(new
+                {
+                    handle = handle.Handle,
+                    type = ent.GetType().Name,
+                    length = ent is Curve c ? LengthOf(c) : (double?)null,
+                    closed = ent is Curve c2 ? c2.Closed : (bool?)null,
+                });
+            }
+
+            if (made.Count == 0)
+                throw new InvalidOperationException(
+                    "The trace produced no usable entity around " + Fmt(seed) + ".");
+
+            return Wrap(new
+            {
+                seed = new[] { seed.X, seed.Y, seed.Z },
+                boundaries = made,
+                count = made.Count,
+                detectIslands = a.DetectIslands ?? true,
+                note = "These are NEW entities tracing the outline; the geometry that enclosed " +
+                       "the area is untouched, so the outline now sits on top of it. With " +
+                       "detectIslands on, an enclosed hole produces its own boundary as well.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> RegionFromBoundary(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.region_from_boundary", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BoundaryArgsDto>(args);
+            if (a.Point is null)
+                throw new ArgumentException(
+                    "point is required: a WCS point INSIDE the enclosed area to trace.");
+
+            var seed = AcadEnv.ToPoint3d(a.Point);
+            var found = HatchesPluginTools.TraceBoundaryObjects(doc, db, seed, a.DetectIslands ?? true);
+
+            // Region.CreateFromCurves wants the curves themselves, not database residents, and
+            // it hands back regions that still have to be persisted. Anything it will not take
+            // is disposed rather than leaked.
+            DBObjectCollection regions;
+            try { regions = Region.CreateFromCurves(found); }
+            catch (AcadRt.Exception ex)
+            {
+                foreach (DBObject o in found) o.Dispose();
+                throw new InvalidOperationException(
+                    "AutoCAD traced a boundary around " + Fmt(seed) + " but would not turn it " +
+                    "into a region (" + ex.Message + "). That usually means the outline is not " +
+                    "a single closed loop.");
+            }
+            finally
+            {
+                // The traced curves were scaffolding for the region and are not wanted in the
+                // drawing - CreateFromCurves copies what it needs.
+                foreach (DBObject o in found) { if (!o.IsDisposed) o.Dispose(); }
+            }
+
+            var made = new List<object>();
+            foreach (DBObject obj in regions)
+            {
+                if (obj is not Region rg) { obj.Dispose(); continue; }
+                var handle = AcadEnv.Persist(db, tr, rg, a.Layer);
+                made.Add(new { handle = handle.Handle, area = rg.Area, perimeter = rg.Perimeter });
+            }
+
+            if (made.Count == 0)
+                throw new InvalidOperationException(
+                    "No region came out of the boundary traced around " + Fmt(seed) + ".");
+
+            return Wrap(new
+            {
+                seed = new[] { seed.X, seed.Y, seed.Z },
+                regions = made,
+                count = made.Count,
+                note = "A Region is a filled 2D area, not an outline - it has an area and can be " +
+                       "combined with union_regions, subtract_regions and intersect_regions in " +
+                       "acad-boolean-ops. Use boundary_from_point if a polyline outline is what " +
+                       "you wanted. The traced curves are not left behind.",
+            });
         });
 
     // ─────────── lengthening and elliptical arcs (roadmap 3.1) ───────────

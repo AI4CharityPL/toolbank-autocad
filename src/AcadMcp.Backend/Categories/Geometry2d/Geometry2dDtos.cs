@@ -512,3 +512,35 @@ public sealed record EllipseArcResult(
     [property: JsonPropertyName("length")]        double Length,
     [property: JsonPropertyName("closed")]        bool Closed,
     [property: JsonPropertyName("note")]          string Note);
+
+// ─────────── boundaries from a point (roadmap 3.1) ───────────
+
+public sealed record BoundaryArgs(
+    [property: JsonPropertyName("point")]         Point2dDto Point,
+    [property: JsonPropertyName("detectIslands")] bool? DetectIslands = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+// `length` and `closed` are nullable because a trace can return something that is not a Curve.
+public sealed record BoundaryEntity(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("type")]   string Type,
+    [property: JsonPropertyName("length")] double? Length,
+    [property: JsonPropertyName("closed")] bool? Closed);
+
+public sealed record BoundaryResult(
+    [property: JsonPropertyName("seed")]          IReadOnlyList<double> Seed,
+    [property: JsonPropertyName("boundaries")]    IReadOnlyList<BoundaryEntity> Boundaries,
+    [property: JsonPropertyName("count")]         int Count,
+    [property: JsonPropertyName("detectIslands")] bool DetectIslands,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record RegionEntity(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("area")]      double Area,
+    [property: JsonPropertyName("perimeter")] double Perimeter);
+
+public sealed record RegionFromBoundaryResult(
+    [property: JsonPropertyName("seed")]    IReadOnlyList<double> Seed,
+    [property: JsonPropertyName("regions")] IReadOnlyList<RegionEntity> Regions,
+    [property: JsonPropertyName("count")]   int Count,
+    [property: JsonPropertyName("note")]    string Note);

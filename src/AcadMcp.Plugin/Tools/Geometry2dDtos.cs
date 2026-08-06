@@ -261,3 +261,8 @@ internal sealed record EllipseArcArgsDto(
     [property: JsonPropertyName("startAngleDeg")] double? StartAngleDeg,
     [property: JsonPropertyName("endAngleDeg")]   double? EndAngleDeg,
     [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record BoundaryArgsDto(
+    [property: JsonPropertyName("point")]         Point2dDto? Point,
+    [property: JsonPropertyName("detectIslands")] bool? DetectIslands,
+    [property: JsonPropertyName("layer")]         string? Layer);

@@ -378,6 +378,53 @@ internal static class HatchesPluginTools
         Document doc, Database db, Transaction tr,
         Point3d seed, bool detectIslands)
     {
+        var found = TraceBoundaryObjects(doc, db, seed, detectIslands);
+
+        // Hatch boundaries are scaffolding: a non-plotting temp layer, left on because the
+        // hatch needs them evaluable. A caller who wants the outline as a real object goes
+        // through geometry-2d's boundary_from_point instead, which is why the tracing itself
+        // now lives in TraceBoundaryObjects and only this layer policy is local.
+        const string BLayer = "A-BNDRY-TEMP";
+        var layerId = AcadEnv.EnsureLayer(db, tr, BLayer);
+        var ltr = (LayerTableRecord)tr.GetObject(layerId, OpenMode.ForWrite);
+        ltr.IsPlottable = false;
+        ltr.IsOff = false;
+
+        var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+        var ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+
+        var handles = new List<string>();
+        foreach (DBObject obj in found)
+        {
+            if (obj is Entity ent)
+            {
+                ent.LayerId = layerId;
+                ms.AppendEntity(ent);
+                tr.AddNewlyCreatedDBObject(ent, true);
+                handles.Add(ent.Handle.ToString());
+            }
+            else
+            {
+                obj.Dispose();
+            }
+        }
+        return handles;
+    }
+
+    /// <summary>Trace the closed area around a WCS seed. The caller owns what comes back.</summary>
+    /// <remarks>
+    /// Everything KNOWN-GAPS A1 cost is in here, so it exists once: the seed is taken to the
+    /// current UCS, the drawing is framed so the region is on screen, the caller's view is put
+    /// back, and an empty result is reported with both points rather than as advice about the
+    /// user's geometry.
+    ///
+    /// The traced entities are NOT added to the database - which layer they belong on, and
+    /// whether they should plot, differs between a hatch boundary and an outline the caller
+    /// asked for. That is policy and stays with each caller.
+    /// </remarks>
+    internal static DBObjectCollection TraceBoundaryObjects(
+        Document doc, Database db, Point3d seed, bool detectIslands)
+    {
         // Editor.TraceBoundary reads its seed point in the CURRENT UCS, not in WCS.
         //
         // Every argument in this codebase is WCS unless a `ucs` argument says otherwise
@@ -462,32 +509,7 @@ internal static class HatchesPluginTools
                 $"Check that the surrounding geometry forms a fully closed area. {ucsNote}");
         }
 
-        // Ensure hidden layer for trace boundaries (non-plotting, thawed-for-hatch-creation).
-        const string BLayer = "A-BNDRY-TEMP";
-        var layerId = AcadEnv.EnsureLayer(db, tr, BLayer);
-        var ltr = (LayerTableRecord)tr.GetObject(layerId, OpenMode.ForWrite);
-        ltr.IsPlottable = false;  // do not plot temp boundaries
-        ltr.IsOff = false;        // must remain on for hatch evaluation
-
-        var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
-        var ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
-
-        var handles = new List<string>();
-        foreach (DBObject obj in found)
-        {
-            if (obj is Entity ent)
-            {
-                ent.LayerId = layerId;
-                ms.AppendEntity(ent);
-                tr.AddNewlyCreatedDBObject(ent, true);
-                handles.Add(ent.Handle.ToString());
-            }
-            else
-            {
-                obj.Dispose();
-            }
-        }
-        return handles;
+        return found;
     }
 
     // ─────────── internal: resolve material preset ───────────

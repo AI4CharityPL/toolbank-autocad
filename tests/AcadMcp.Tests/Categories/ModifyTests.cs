@@ -16,6 +16,9 @@ public class ModifyTests
         "set_layer", "set_color", "set_linetype", "set_lineweight", "match_properties",
         "erase",
         "create_group", "ungroup",
+        // Roadmap 3.1: transform by a MEASUREMENT rather than a factor. `scale` and `rotate`
+        // stay, because knowing the factor is the other half of the job.
+        "scale_by_reference", "rotate_by_reference",
         // "undo" and "redo" were withdrawn 2026-08-04 and must NOT come back here without the
         // underlying problem being fixed first. Measured: after calling undo, the entity was
         // still present at 0.0 s, 0.5 s, 1.5 s and 3.0 s - the queued UNDO never runs in this

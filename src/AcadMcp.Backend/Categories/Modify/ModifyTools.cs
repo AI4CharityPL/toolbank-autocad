@@ -153,4 +153,26 @@ public static class ModifyTools
         RequiresPlugin = true)]
     public static Task<AffectedCount> Ungroup(IPluginGateway gw, GroupNameArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<GroupNameArgs, AffectedCount>(gw, "acad.modify.ungroup", args, T_NORMAL, ct);
+
+    // ─────────── transforming by reference (roadmap 3.1) ───────────
+    //
+    // `scale` and `rotate` take a factor and an angle. These take a MEASUREMENT, which is how
+    // the operation is actually reached: nobody knows a scanned plan is out by 1.0473, they know
+    // a door that should be 900 measures 859.
+
+    [McpTool("scale_by_reference", "Scale entities so that a REFERENCE LENGTH becomes a new length, computing the factor rather than being given it - AutoCAD's SCALE Reference. Give the reference either as referenceLength or as two points (referenceStart, referenceEnd) to measure between, which is usually what you have: a scanned plan whose 900 mm door measures 859 is scaled by giving those two numbers, not by working out 1.0477. The base point does not move. Use modify.scale when the factor is already known.", "modify",
+        Intent = new[] { "przeskaluj wedlug wymiaru", "dopasuj skale rysunku do wymiaru",
+                         "scale by reference", "scale so this measures that",
+                         "skalowanie referencyjne", "fix the scale of a scanned drawing" },
+        RequiresPlugin = true)]
+    public static Task<ReferenceScaleResult> ScaleByReference(IPluginGateway gw, ReferenceScaleArgs args, CancellationToken ct)
+        => ModifyProxy.CallAsync<ReferenceScaleArgs, ReferenceScaleResult>(gw, "acad.modify.scale_by_reference", args, T_NORMAL, ct);
+
+    [McpTool("rotate_by_reference", "Rotate entities so that a REFERENCE DIRECTION ends up pointing at a new angle, computing the turn rather than being given it - AutoCAD's ROTATE Reference. Give the reference either as referenceAngleDeg or as two points whose direction is the reference, which is what you have when straightening something drawn at an unknown skew. Angles are degrees CCW from the X axis and the base point does not move. Use modify.rotate when the turn is already known.", "modify",
+        Intent = new[] { "obroc wedlug referencji", "wyprostuj obiekt narysowany krzywo",
+                         "rotate by reference", "rotate so this edge becomes horizontal",
+                         "obrot referencyjny", "straighten a skewed drawing" },
+        RequiresPlugin = true)]
+    public static Task<ReferenceRotateResult> RotateByReference(IPluginGateway gw, ReferenceRotateArgs args, CancellationToken ct)
+        => ModifyProxy.CallAsync<ReferenceRotateArgs, ReferenceRotateResult>(gw, "acad.modify.rotate_by_reference", args, T_NORMAL, ct);
 }

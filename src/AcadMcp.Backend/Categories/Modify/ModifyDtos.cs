@@ -113,3 +113,41 @@ public sealed record QueuedCommandResult(
 public sealed record GroupNameResult(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("memberCount")] int MemberCount);
+
+// ─────────── transform by reference (roadmap 3.1) ───────────
+//
+// The reference may be given as a number OR as two points to measure between. That is not
+// convenience: on a real drawing the number is something you would have to measure first, and
+// a tool that can measure it should not make the caller do it.
+
+public sealed record ReferenceScaleArgs(
+    [property: JsonPropertyName("handles")]         IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("basePoint")]       Point3dDto BasePoint,
+    [property: JsonPropertyName("newLength")]       double? NewLength = null,
+    [property: JsonPropertyName("referenceLength")] double? ReferenceLength = null,
+    [property: JsonPropertyName("referenceStart")]  Point3dDto? ReferenceStart = null,
+    [property: JsonPropertyName("referenceEnd")]    Point3dDto? ReferenceEnd = null);
+
+public sealed record ReferenceRotateArgs(
+    [property: JsonPropertyName("handles")]           IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("basePoint")]         Point3dDto BasePoint,
+    [property: JsonPropertyName("newAngleDeg")]       double? NewAngleDeg = null,
+    [property: JsonPropertyName("referenceAngleDeg")] double? ReferenceAngleDeg = null,
+    [property: JsonPropertyName("referenceStart")]    Point3dDto? ReferenceStart = null,
+    [property: JsonPropertyName("referenceEnd")]      Point3dDto? ReferenceEnd = null);
+
+public sealed record ReferenceScaleResult(
+    [property: JsonPropertyName("affected")]        int Affected,
+    [property: JsonPropertyName("referenceLength")] double ReferenceLength,
+    [property: JsonPropertyName("newLength")]       double NewLength,
+    [property: JsonPropertyName("factor")]          double Factor,
+    [property: JsonPropertyName("basePoint")]       IReadOnlyList<double> BasePoint,
+    [property: JsonPropertyName("note")]            string Note);
+
+public sealed record ReferenceRotateResult(
+    [property: JsonPropertyName("affected")]          int Affected,
+    [property: JsonPropertyName("referenceAngleDeg")] double ReferenceAngleDeg,
+    [property: JsonPropertyName("newAngleDeg")]       double NewAngleDeg,
+    [property: JsonPropertyName("rotatedByDeg")]      double RotatedByDeg,
+    [property: JsonPropertyName("basePoint")]         IReadOnlyList<double> BasePoint,
+    [property: JsonPropertyName("note")]              string Note);

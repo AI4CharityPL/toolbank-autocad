@@ -13,6 +13,7 @@
     "align",
     "array",
     "autocad",
+    "by",
     "cad",
     "color",
     "copy",
@@ -31,6 +32,7 @@
     "properties",
     "rectangular",
     "redo",
+    "reference",
     "rotate",
     "scale",
     "set",
@@ -57,9 +59,11 @@
     "displace selected",
     "distribute around point",
     "dopasuj obiekty",
+    "dopasuj skale rysunku do wymiaru",
     "duplicate selection",
     "erase entities",
     "fit entities to two points",
+    "fix the scale of a scanned drawing",
     "group selection",
     "kopia z przesunieciem",
     "kopiuj obiekty",
@@ -80,10 +84,13 @@
     "move to layer",
     "named group",
     "obroc obiekty",
+    "obroc wedlug referencji",
+    "obrot referencyjny",
     "polar array",
     "ponow akcje",
     "ponow operacje",
     "przenies na warstwe",
+    "przeskaluj wedlug wymiaru",
     "przesun obiekty",
     "rectangular array",
     "redo last",
@@ -95,10 +102,14 @@
     "resize selection",
     "rollback last edit",
     "rotate around point",
+    "rotate by reference",
     "rotate entities",
     "rotate selection",
+    "rotate so this edge becomes horizontal",
     "rozgrupuj",
+    "scale by reference",
     "scale entities",
+    "scale so this measures that",
     "set entity color",
     "set entity lineweight",
     "set layer of entities",
@@ -106,9 +117,11 @@
     "set ltscale on entities",
     "shift entities by vector",
     "siatka kopii",
+    "skalowanie referencyjne",
     "skaluj obiekty",
     "skasuj zaznaczone",
     "spin selection by degrees",
+    "straighten a skewed drawing",
     "stworz grupe",
     "translate selection",
     "two point alignment",
@@ -122,6 +135,7 @@
     "usun grupe",
     "usun obiekty",
     "wycofaj ostatnia akcje",
+    "wyprostuj obiekt narysowany krzywo",
     "wyrownanie do dwoch punktow",
     "zmien grubosc linii",
     "zmien kolor obiektow",
@@ -275,6 +289,23 @@
       ]
     },
     {
+      "name": "rotate_by_reference",
+      "description": "Rotate entities so that a REFERENCE DIRECTION ends up pointing at a new angle, computing the turn rather than being given it - AutoCAD\u0027s ROTATE Reference. Give the reference either as referenceAngleDeg or as two points whose direction is the reference, which is what you have when straightening something drawn at an unknown skew. Angles are degrees CCW from the X axis and the base point does not move. Use modify.rotate when the turn is already known.",
+      "tags": [
+        "rotate",
+        "by",
+        "reference"
+      ],
+      "intent": [
+        "obroc wedlug referencji",
+        "wyprostuj obiekt narysowany krzywo",
+        "rotate by reference",
+        "rotate so this edge becomes horizontal",
+        "obrot referencyjny",
+        "straighten a skewed drawing"
+      ]
+    },
+    {
       "name": "scale",
       "description": "Uniformly scale entities about a center point by a positive factor.",
       "tags": [
@@ -286,6 +317,23 @@
         "scale entities",
         "uniform scale selection",
         "resize selection"
+      ]
+    },
+    {
+      "name": "scale_by_reference",
+      "description": "Scale entities so that a REFERENCE LENGTH becomes a new length, computing the factor rather than being given it - AutoCAD\u0027s SCALE Reference. Give the reference either as referenceLength or as two points (referenceStart, referenceEnd) to measure between, which is usually what you have: a scanned plan whose 900 mm door measures 859 is scaled by giving those two numbers, not by working out 1.0477. The base point does not move. Use modify.scale when the factor is already known.",
+      "tags": [
+        "scale",
+        "by",
+        "reference"
+      ],
+      "intent": [
+        "przeskaluj wedlug wymiaru",
+        "dopasuj skale rysunku do wymiaru",
+        "scale by reference",
+        "scale so this measures that",
+        "skalowanie referencyjne",
+        "fix the scale of a scanned drawing"
       ]
     },
     {
@@ -365,7 +413,7 @@
   ],
   "metadata": {
     "category": "modify",
-    "tool_count_target": 16,
+    "tool_count_target": 18,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -379,6 +427,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-05T13:09:30.5919712Z"
+    "last_regenerated_utc": "2026-08-06T19:00:07.2805131Z"
   }
 }

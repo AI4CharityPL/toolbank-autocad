@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 506 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 508 tools total.
 
 ## Categories
 
@@ -24,7 +24,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-layouts](#acad-layouts) (8 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
-- [acad-modify](#acad-modify) (16 tools)
+- [acad-modify](#acad-modify) (18 tools)
 - [acad-openings](#acad-openings) (10 tools)
 - [acad-parametric](#acad-parametric) (5 tools)
 - [acad-plotstyles](#acad-plotstyles) (3 tools)
@@ -435,7 +435,9 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `mirror` | Mirror entities through a plane defined by point + normal (3D); optionally erase the source entities. |
 | `move` | Translate one or more entities by the vector from→to (WCS). |
 | `rotate` | Rotate entities around a center by angle (degrees, CCW). Optional axis vector for 3D rotations (default Z). |
+| `rotate_by_reference` | Rotate entities so that a REFERENCE DIRECTION ends up pointing at a new angle, computing the turn rather than being given it - AutoCAD's ROTATE Reference. Give the reference either as referenceAngleDeg or as two points whose direction is the reference, which is what you have when straightening something drawn at an unknown skew. Angles are degrees CCW from the X axis and the base point does not move. Use modify.rotate when the turn is already known. |
 | `scale` | Uniformly scale entities about a center point by a positive factor. |
+| `scale_by_reference` | Scale entities so that a REFERENCE LENGTH becomes a new length, computing the factor rather than being given it - AutoCAD's SCALE Reference. Give the reference either as referenceLength or as two points (referenceStart, referenceEnd) to measure between, which is usually what you have: a scanned plan whose 900 mm door measures 859 is scaled by giving those two numbers, not by working out 1.0477. The base point does not move. Use modify.scale when the factor is already known. |
 | `set_color` | Set the entity color to a true RGB color or an ACI index (1..255). |
 | `set_layer` | Move entities to the given layer (creates the layer if missing). |
 | `set_linetype` | Set the linetype (by name) and optional linetype scale on entities. The linetype must already be loaded. |

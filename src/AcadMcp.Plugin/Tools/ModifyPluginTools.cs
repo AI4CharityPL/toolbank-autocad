@@ -47,6 +47,10 @@ internal static class ModifyPluginTools
         host.Register("acad.modify.redo",                Redo);
         host.Register("acad.modify.create_group",        CreateGroup);
         host.Register("acad.modify.ungroup",             Ungroup);
+
+        // roadmap 3.1 - transform by a measurement rather than a factor
+        host.Register("acad.modify.scale_by_reference",  ScaleByReference);
+        host.Register("acad.modify.rotate_by_reference", RotateByReference);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -457,5 +461,129 @@ internal static class ModifyPluginTools
             var grp = (AcadGroup)tr.GetObject(grpId, OpenMode.ForWrite);
             grp.Erase(true);
             return Wrap(new { affected = 1 });
+        });
+
+    // ─────────── transforming by reference (roadmap 3.1) ───────────
+    //
+    // `scale` and `rotate` already take a factor and an angle. These take a MEASUREMENT instead,
+    // which is how the operation is actually reached on a real drawing: nobody knows that the
+    // scanned plan is out by 1.0473, they know a door that should be 900 wide measures 859.
+    //
+    // Both accept the reference either as a number or as two points, because the number is
+    // usually something you would have to measure first - and if the tool can measure it, the
+    // caller should not have to.
+
+    private static IReadOnlyList<string> RequireHandles(List<string>? handles)
+        => handles is { Count: > 0 } ? handles
+           : throw new ArgumentException("handles is required: at least one entity to transform.");
+
+    private static Point3dDto RequireBasePoint(Point3dDto? p)
+        => p ?? throw new ArgumentException(
+            "basePoint is required: the point that stays put while everything else moves.");
+
+    private static double ReferenceLength(ReferenceScaleArgsDto a)
+    {
+        var haveNumber = a.ReferenceLength is not null;
+        var havePoints = a.ReferenceStart is not null && a.ReferenceEnd is not null;
+        if (haveNumber == havePoints)
+            throw new ArgumentException(
+                "Give the reference EITHER as referenceLength (a number) OR as referenceStart and " +
+                "referenceEnd (two points to measure between) - not both, and not neither.");
+
+        if (haveNumber)
+        {
+            if (a.ReferenceLength <= 0)
+                throw new ArgumentException("referenceLength must be greater than zero.");
+            return a.ReferenceLength!.Value;
+        }
+
+        var d = AcadEnv.ToPoint3d(a.ReferenceStart!).DistanceTo(AcadEnv.ToPoint3d(a.ReferenceEnd!));
+        if (d <= 1e-12)
+            throw new ArgumentException(
+                "referenceStart and referenceEnd are the same point, so the reference distance is " +
+                "zero and no scale factor exists.");
+        return d;
+    }
+
+    private static Task<ToolDispatchResult> ScaleByReference(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.scale_by_reference", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ReferenceScaleArgsDto>(args);
+            if (a.NewLength is null || a.NewLength <= 0)
+                throw new ArgumentException("newLength is required and must be greater than zero.");
+
+            var reference = ReferenceLength(a);
+            var factor = a.NewLength.Value / reference;
+
+            var ents = ResolveAll(db, tr, RequireHandles(a.Handles), OpenMode.ForWrite);
+            var basePt = AcadEnv.ToPoint3d(RequireBasePoint(a.BasePoint));
+            foreach (var e in ents) e.TransformBy(Matrix3d.Scaling(factor, basePt));
+
+            return Wrap(new
+            {
+                affected = ents.Count,
+                referenceLength = reference,
+                newLength = a.NewLength,
+                factor,
+                basePoint = new[] { basePt.X, basePt.Y, basePt.Z },
+                note = "The base point does not move; everything else scales about it. A factor " +
+                       "of " + factor.ToString("0.######") + " was computed, not supplied - use " +
+                       "modify.scale if you already know the factor.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> RotateByReference(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.rotate_by_reference", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ReferenceRotateArgsDto>(args);
+
+            // Same either/or as the scale: an angle you would have to measure first is an angle
+            // this can measure for you.
+            var haveNumber = a.ReferenceAngleDeg is not null;
+            var havePoints = a.ReferenceStart is not null && a.ReferenceEnd is not null;
+            if (haveNumber == havePoints)
+                throw new ArgumentException(
+                    "Give the reference EITHER as referenceAngleDeg OR as referenceStart and " +
+                    "referenceEnd (two points whose direction is the reference) - not both, and " +
+                    "not neither.");
+            if (a.NewAngleDeg is null)
+                throw new ArgumentException(
+                    "newAngleDeg is required: the direction the reference should end up pointing, " +
+                    "in degrees CCW from the X axis.");
+
+            double referenceDeg;
+            if (haveNumber)
+            {
+                referenceDeg = a.ReferenceAngleDeg!.Value;
+            }
+            else
+            {
+                var s = AcadEnv.ToPoint3d(a.ReferenceStart!);
+                var e2 = AcadEnv.ToPoint3d(a.ReferenceEnd!);
+                var v = e2 - s;
+                if (v.Length <= 1e-12)
+                    throw new ArgumentException(
+                        "referenceStart and referenceEnd are the same point, so they define no " +
+                        "direction.");
+                referenceDeg = Math.Atan2(v.Y, v.X) * 180.0 / Math.PI;
+            }
+
+            var deltaDeg = a.NewAngleDeg.Value - referenceDeg;
+            var ents = ResolveAll(db, tr, RequireHandles(a.Handles), OpenMode.ForWrite);
+            var basePt = AcadEnv.ToPoint3d(RequireBasePoint(a.BasePoint));
+            var m = Matrix3d.Rotation(deltaDeg * Math.PI / 180.0, Vector3d.ZAxis, basePt);
+            foreach (var e in ents) e.TransformBy(m);
+
+            return Wrap(new
+            {
+                affected = ents.Count,
+                referenceAngleDeg = referenceDeg,
+                newAngleDeg = a.NewAngleDeg,
+                rotatedByDeg = deltaDeg,
+                basePoint = new[] { basePt.X, basePt.Y, basePt.Z },
+                note = "Rotated by " + deltaDeg.ToString("0.######") + " degrees, which is the " +
+                       "difference between the two - not the angle given. Use modify.rotate if " +
+                       "you already know how far to turn.",
+            });
         });
 }

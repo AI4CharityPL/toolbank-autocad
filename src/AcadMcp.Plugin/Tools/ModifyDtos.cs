@@ -89,3 +89,21 @@ internal sealed record GroupCreateArgsDto(
 
 internal sealed record GroupNameArgsDto(
     [property: JsonPropertyName("name")] string Name);
+
+// ─────────── transform by reference (roadmap 3.1) ───────────
+
+internal sealed record ReferenceScaleArgsDto(
+    [property: JsonPropertyName("handles")]         List<string>? Handles,
+    [property: JsonPropertyName("basePoint")]       Point3dDto? BasePoint,
+    [property: JsonPropertyName("referenceLength")] double? ReferenceLength,
+    [property: JsonPropertyName("referenceStart")]  Point3dDto? ReferenceStart,
+    [property: JsonPropertyName("referenceEnd")]    Point3dDto? ReferenceEnd,
+    [property: JsonPropertyName("newLength")]       double? NewLength);
+
+internal sealed record ReferenceRotateArgsDto(
+    [property: JsonPropertyName("handles")]           List<string>? Handles,
+    [property: JsonPropertyName("basePoint")]         Point3dDto? BasePoint,
+    [property: JsonPropertyName("referenceAngleDeg")] double? ReferenceAngleDeg,
+    [property: JsonPropertyName("referenceStart")]    Point3dDto? ReferenceStart,
+    [property: JsonPropertyName("referenceEnd")]      Point3dDto? ReferenceEnd,
+    [property: JsonPropertyName("newAngleDeg")]       double? NewAngleDeg);

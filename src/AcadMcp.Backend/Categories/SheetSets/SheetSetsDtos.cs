@@ -303,3 +303,31 @@ public sealed record SetViewCategoryResult(
     [property: JsonPropertyName("number")]   string Number,
     [property: JsonPropertyName("before")]   string Before,
     [property: JsonPropertyName("category")] string Category);
+
+// ─────────── resave ───────────
+
+public sealed record ResaveArgs(
+    [property: JsonPropertyName("path")]                string Path,
+    [property: JsonPropertyName("apply")]               bool? Apply = null,
+    [property: JsonPropertyName("includeOpenDrawings")] bool? IncludeOpenDrawings = null);
+
+/// <summary>One drawing's line in the plan or the report. Every field the plugin can emit.</summary>
+public sealed record ResaveEntry(
+    [property: JsonPropertyName("drawing")]       string Drawing,
+    [property: JsonPropertyName("action")]        string Action,
+    [property: JsonPropertyName("reason")]        string? Reason = null,
+    [property: JsonPropertyName("detail")]        string? Detail = null,
+    [property: JsonPropertyName("openInSession")] bool? OpenInSession = null,
+    [property: JsonPropertyName("bytesBefore")]   long? BytesBefore = null,
+    [property: JsonPropertyName("bytes")]         long? Bytes = null,
+    [property: JsonPropertyName("modifiedUtc")]   string? ModifiedUtc = null,
+    [property: JsonPropertyName("layouts")]       int? Layouts = null);
+
+public sealed record ResaveResult(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("applied")]  bool Applied,
+    [property: JsonPropertyName("drawings")] IReadOnlyList<ResaveEntry> Drawings,
+    [property: JsonPropertyName("total")]    int Total,
+    [property: JsonPropertyName("written")]  int Written,
+    [property: JsonPropertyName("skipped")]  int Skipped,
+    [property: JsonPropertyName("note")]     string Note);

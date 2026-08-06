@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**494 tools across 39 categories** (updated 2026-08-06; this document was written at 337 across
+**495 tools across 39 categories** (updated 2026-08-06; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -146,7 +146,7 @@ set_paperspace_scale_link       list_objects_by_annotation_scale
 
 Turning a finished model into deliverables.
 
-### 2.1 `acad-sheetsets` — sheet set manager (≈24 → **23 planned**, **22 built and verified**) — COMPLETE
+### 2.1 `acad-sheetsets` — sheet set manager (≈24 → **23 planned**, **23 built and verified**) — COMPLETE
 
 **Revised 2026-08-04 after checking the API rather than assuming it.** The original list was
 written from the AutoCAD feature set, not from what is reachable, and three things about it were
@@ -743,7 +743,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
-| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 22 tools, 170 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B), `open_sheet_set`/`close_sheet_set` were dropped by rule 45, and `resave_all_sheets` is held pending a decision — it would write the user's DWGs, which nothing else in this category does |
+| 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | 1 | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | 0 | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |

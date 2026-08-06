@@ -95,3 +95,8 @@ internal sealed record SetViewCategoryArgsDto(
     [property: JsonPropertyName("path")]     string? Path,
     [property: JsonPropertyName("view")]     string? View,
     [property: JsonPropertyName("category")] string? Category);
+
+internal sealed record ResaveArgsDto(
+    [property: JsonPropertyName("path")]                string? Path,
+    [property: JsonPropertyName("apply")]               bool? Apply,
+    [property: JsonPropertyName("includeOpenDrawings")] bool? IncludeOpenDrawings);

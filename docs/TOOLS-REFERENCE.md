@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 494 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 495 tools total.
 
 ## Categories
 
@@ -34,7 +34,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
-- [acad-sheetsets](#acad-sheetsets) (22 tools)
+- [acad-sheetsets](#acad-sheetsets) (23 tools)
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
@@ -565,6 +565,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `remove_sheet` | Remove a sheet from the sheet set. This removes the set's REFERENCE to a layout - the layout itself, and the drawing file holding it, are left exactly as they were, so nothing is destroyed and the sheet can be added back. Identify it by name or number. Answers with how many sheets remain. Writes to the shared .DST under a lock. |
 | `rename_sheet` | Rename and renumber a sheet in one locked write - AutoCAD's own "Rename & Renumber Sheet". Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass "" as the title to clear it. |
 | `reorder_sheet` | Move a sheet up or down the drawing list, placing it before or after another sheet. Exactly one of before or after is required; both name a sheet by its name or number. Ordering happens WITHIN one subset - if the two sheets sit in different subsets the tool refuses and points at move_sheet_to_subset, so that 'put A-102 after A-101' can never quietly relocate a sheet. Writes to the shared .DST under a lock. |
+| `resave_all_sheets` | Re-save every drawing this sheet set references, so each one is current on disk. THE ONLY TOOL IN THIS CATEGORY THAT WRITES .DWG FILES - everything else edits the .DST alone. Reports a PLAN by default and writes nothing; pass apply=true to carry it out. Drawings open in the session are skipped unless includeOpenDrawings=true, because for a non-active document there is no reliable way to tell whether it has unsaved edits and saving it would commit them. Each written file is re-read afterwards and its layout count compared, so the report says whether the drawings survived - it does NOT claim AutoCAD refreshed its per-drawing cache of sheet-set data, which this tool cannot verify. |
 | `set_sheet_do_not_plot` | Mark one sheet do-not-plot, or clear that mark. The Publisher skips a do-not-plot sheet rather than failing the job, so this is how a sheet is held back from an issue without being removed from the set. Writes to the shared .DST under a lock. Pass doNotPlot=false to put the sheet back into the next publish. |
 | `set_sheet_number` | Renumber one sheet in a sheet set - the 'A-101' that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone. |
 | `set_sheet_property` | Set a custom property on ONE sheet - the per-sheet value a title block prints, such as its revision or who checked it. Writes to the shared .DST under a lock and creates the property on that sheet if it does not exist yet. Refuses the built-in fields name, number, title and description, naming the tool that sets each, because writing one here would create a second property sharing the name and only one of them would mean anything. Answers with the previous value and whether it was created. |

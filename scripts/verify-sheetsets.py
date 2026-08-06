@@ -609,6 +609,94 @@ else:
 r = do("set_sheet_view_category", {"path": DST, "view": "anything", "category": "NO-SUCH-CATEGORY"},
        label="an unknown category is refused", expect_fail=True)
 
+# ── resave_all_sheets ─────────────────────────────────────────────────────────
+print("\n== resave_all_sheets: plans by default, writes only when told ==")
+
+# Its own sandbox: COPIES of the sample drawings, and a set built from them. Nothing here may
+# point at Program Files, because this is the one tool in the category that writes .DWG files
+# and a verification that can damage the machine's AutoCAD install is not a verification.
+RESAVE_DIR = os.path.join(WORK, "resave")
+if os.path.isdir(RESAVE_DIR):
+    shutil.rmtree(RESAVE_DIR, ignore_errors=True)
+os.makedirs(RESAVE_DIR, exist_ok=True)
+
+dwg_a = os.path.join(RESAVE_DIR, "copy-a.dwg")
+dwg_b = os.path.join(RESAVE_DIR, "copy-b.dwg")
+shutil.copy2(SRC_DWG, dwg_a)
+shutil.copy2(os.path.join(os.path.dirname(SAMPLE), "A-02.dwg"), dwg_b)
+RESAVE_DST = os.path.join(RESAVE_DIR, "resave.dst")
+
+do("create_sheet_set", {"path": RESAVE_DST, "name": "ACADMCP Resave Set"},
+   label="a sandboxed set to resave")
+la, _ = discover_layout_in(RESAVE_DST, dwg_a)
+lb, _ = discover_layout_in(RESAVE_DST, dwg_b)
+do("add_sheet", {"path": RESAVE_DST, "drawingPath": dwg_a, "layout": la, "number": "R-001"},
+   label="sheet from copy-a.dwg")
+do("add_sheet", {"path": RESAVE_DST, "drawingPath": dwg_b, "layout": lb, "number": "R-002"},
+   label="sheet from copy-b.dwg")
+
+
+def stamps():
+    return {p: (os.path.getsize(p), os.path.getmtime(p)) for p in (dwg_a, dwg_b)}
+
+
+before = stamps()
+
+print("\n-- the plan writes nothing --")
+r = do("resave_all_sheets", {"path": RESAVE_DST})
+if isinstance(r, dict):
+    check("says it was not applied", r.get("applied") is False, str(r)[:220])
+    check("lists both referenced drawings", r.get("total") == 2, str(r)[:220])
+    check("every entry is a plan entry, not a result",
+          all(d.get("action") == "wouldResave" for d in (r.get("drawings") or [])),
+          str(r.get("drawings"))[:250])
+    check("wrote nothing", r.get("written") == 0, str(r)[:220])
+check("PROVEN: neither drawing was touched on disk", stamps() == before,
+      f"{before} -> {stamps()}")
+
+print("\n-- read-only drawings are skipped, not failed --")
+os.chmod(dwg_b, 0o444)
+try:
+    r = do("resave_all_sheets", {"path": RESAVE_DST, "apply": True},
+           label="resave with one file read-only")
+    entries = {d.get("drawing", "").lower(): d for d in (r.get("drawings") or [])} \
+        if isinstance(r, dict) else {}
+    eb = entries.get(dwg_b.lower(), {})
+    check("the read-only one is skipped", eb.get("action") == "skip", str(eb)[:220])
+    check("and the reason says read-only", "read-only" in (eb.get("reason") or ""), str(eb)[:220])
+    ea = entries.get(dwg_a.lower(), {})
+    check("the writable one WAS resaved", ea.get("action") == "resaved", str(ea)[:220])
+    check("and kept its layouts", (ea.get("layouts") or 0) > 0, str(ea)[:220])
+finally:
+    os.chmod(dwg_b, 0o666)
+
+after_a = os.path.getmtime(dwg_a)
+check("PROVEN: the writable drawing's file changed", after_a != before[dwg_a][1],
+      f"mtime {before[dwg_a][1]} -> {after_a}")
+check("PROVEN: the read-only drawing did NOT change",
+      os.path.getmtime(dwg_b) == before[dwg_b][1], "a skipped file was written anyway")
+
+print("\n-- the resaved drawing is still a drawing --")
+ok, back = S.call("list_sheets", {"path": RESAVE_DST})
+check("the set still resolves both its sheets",
+      len((back or {}).get("sheets") or []) == 2, str(back)[:220])
+r = do("add_sheet", {"path": RESAVE_DST, "drawingPath": dwg_a, "layout": la},
+       label="the resaved file's layout is still there (re-add refused as duplicate)",
+       expect_fail=True)
+check("and refused because the layout is already in the set", "already in this set" in str(r),
+      str(r)[:220])
+
+print("\n-- both writable: everything gets written --")
+before2 = stamps()
+r = do("resave_all_sheets", {"path": RESAVE_DST, "apply": True}, label="resave both")
+if isinstance(r, dict):
+    check("reports two written", r.get("written") == 2, str(r)[:220])
+    check("nothing skipped", r.get("skipped") == 0, str(r)[:220])
+    check("the note does NOT claim the field cache was refreshed",
+          "NOT verified" in (r.get("note") or ""), str(r.get("note"))[:220])
+check("PROVEN: both files changed", all(stamps()[p] != before2[p] for p in (dwg_a, dwg_b)),
+      f"{before2} -> {stamps()}")
+
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")
 do("set_sheet_number", {"path": DST, "sheet": "no-such-sheet", "value": "X-1"},

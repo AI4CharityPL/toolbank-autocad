@@ -11,6 +11,7 @@
   "lazy_mode": true,
   "tags": [
     "add",
+    "all",
     "autocad",
     "cad",
     "category",
@@ -33,6 +34,7 @@
     "remove",
     "rename",
     "reorder",
+    "resave",
     "set",
     "sheet",
     "sheets",
@@ -105,6 +107,7 @@
     "nowy zestaw arkuszy od zera",
     "numer projektu w zestawie",
     "numery arkuszy",
+    "odswiez rysunki zestawu",
     "opis arkusza w tabliczce",
     "organise sheets into groups",
     "otworz zestaw arkuszy dst",
@@ -125,7 +128,9 @@
     "przywroc arkusz do drukowania",
     "put this layout in the drawing list",
     "put this sheet after that one",
+    "re-save every drawing in the sheet set",
     "read sheet number and title",
+    "refresh sheet set drawings",
     "remove a sheet from the sheet set",
     "remove a sheet set subset",
     "rename a sheet",
@@ -133,6 +138,7 @@
     "renumber a sheet",
     "reorder sheets in a sheet set",
     "reorganise sheets between subsets",
+    "resave all sheets",
     "resolve sheet set file",
     "set a custom property on a sheet",
     "set a sheet view\u0027s category",
@@ -172,7 +178,9 @@
     "wylacz arkusz z drukowania",
     "wyrzuc arkusz z listy rysunkow",
     "zaimportuj uklad jako arkusz",
+    "zaktualizuj pliki dwg z zestawu",
     "zaloz plik dst dla projektu",
+    "zapisz ponownie wszystkie arkusze",
     "zdefiniuj wlasciwosc zestawu arkuszy",
     "zmien kategorie widoku arkusza",
     "zmien kolejnosc arkuszy",
@@ -469,6 +477,23 @@
       ]
     },
     {
+      "name": "resave_all_sheets",
+      "description": "Re-save every drawing this sheet set references, so each one is current on disk. THE ONLY TOOL IN THIS CATEGORY THAT WRITES .DWG FILES - everything else edits the .DST alone. Reports a PLAN by default and writes nothing; pass apply=true to carry it out. Drawings open in the session are skipped unless includeOpenDrawings=true, because for a non-active document there is no reliable way to tell whether it has unsaved edits and saving it would commit them. Each written file is re-read afterwards and its layout count compared, so the report says whether the drawings survived - it does NOT claim AutoCAD refreshed its per-drawing cache of sheet-set data, which this tool cannot verify.",
+      "tags": [
+        "resave",
+        "all",
+        "sheets"
+      ],
+      "intent": [
+        "zapisz ponownie wszystkie arkusze",
+        "odswiez rysunki zestawu",
+        "resave all sheets",
+        "re-save every drawing in the sheet set",
+        "zaktualizuj pliki dwg z zestawu",
+        "refresh sheet set drawings"
+      ]
+    },
+    {
       "name": "set_sheet_do_not_plot",
       "description": "Mark one sheet do-not-plot, or clear that mark. The Publisher skips a do-not-plot sheet rather than failing the job, so this is how a sheet is held back from an issue without being removed from the set. Writes to the shared .DST under a lock. Pass doNotPlot=false to put the sheet back into the next publish.",
       "tags": [
@@ -572,8 +597,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 22,
-    "last_regenerated_utc": "2026-08-06T12:07:07.7517138Z",
+    "tool_count_target": 23,
+    "last_regenerated_utc": "2026-08-06T12:20:22.1774087Z",
     "phase": "phase2.1_sheetsets"
   }
 }

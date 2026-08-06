@@ -250,4 +250,14 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<SetViewCategoryResult> SetSheetViewCategory(IPluginGateway gw, SetViewCategoryArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<SetViewCategoryArgs, SetViewCategoryResult>(gw, "acad.sheetsets.set_sheet_view_category", args, T_NORMAL, ct);
+
+    // The only tool in this category that writes .DWG files. Everything else touches the .DST
+    // and nothing else, which is why this one plans before it acts.
+    [McpTool("resave_all_sheets", "Re-save every drawing this sheet set references, so each one is current on disk. THE ONLY TOOL IN THIS CATEGORY THAT WRITES .DWG FILES - everything else edits the .DST alone. Reports a PLAN by default and writes nothing; pass apply=true to carry it out. Drawings open in the session are skipped unless includeOpenDrawings=true, because for a non-active document there is no reliable way to tell whether it has unsaved edits and saving it would commit them. Each written file is re-read afterwards and its layout count compared, so the report says whether the drawings survived - it does NOT claim AutoCAD refreshed its per-drawing cache of sheet-set data, which this tool cannot verify.", "sheetsets",
+        Intent = new[] { "zapisz ponownie wszystkie arkusze", "odswiez rysunki zestawu",
+                         "resave all sheets", "re-save every drawing in the sheet set",
+                         "zaktualizuj pliki dwg z zestawu", "refresh sheet set drawings" },
+        RequiresPlugin = true)]
+    public static Task<ResaveResult> ResaveAllSheets(IPluginGateway gw, ResaveArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<ResaveArgs, ResaveResult>(gw, "acad.sheetsets.resave_all_sheets", args, 120_000, ct);
 }

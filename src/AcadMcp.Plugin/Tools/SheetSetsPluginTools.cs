@@ -71,6 +71,7 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.list_sheet_views", ListSheetViews);
         host.Register("acad.sheetsets.create_view_category", CreateViewCategory);
         host.Register("acad.sheetsets.set_sheet_view_category", SetSheetViewCategory);
+        host.Register("acad.sheetsets.resave_all_sheets", ResaveAllSheets);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -764,6 +765,236 @@ internal static class SheetSetsPluginTools
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });
         });
+
+    // ─────────── resaving the referenced drawings ───────────
+
+    /// <summary>Distinct drawing files this set's sheets point at, in first-seen order.</summary>
+    private static List<string> ReferencedDrawings(IAcSmSubset subset, List<string>? into = null)
+    {
+        into ??= new List<string>();
+        var en = subset.GetSheetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var comp = en.Next();
+                if (comp is null) break;
+                try
+                {
+                    if (comp is IAcSmSheet sheet)
+                    {
+                        IAcSmAcDbLayoutReference? lr = null;
+                        try { lr = sheet.GetLayout(); } catch (COMException) { lr = null; }
+                        if (lr is not null)
+                        {
+                            try
+                            {
+                                var f = lr.GetFileName();
+                                if (!string.IsNullOrWhiteSpace(f))
+                                {
+                                    var norm = Path.GetFullPath(f);
+                                    if (!into.Exists(x => string.Equals(x, norm, StringComparison.OrdinalIgnoreCase)))
+                                        into.Add(norm);
+                                }
+                            }
+                            catch (Exception) { }
+                            finally { try { Marshal.ReleaseComObject(lr); } catch (Exception) { } }
+                        }
+                    }
+                    else if (comp is IAcSmSubset nested) ReferencedDrawings(nested, into);
+                }
+                finally { try { Marshal.ReleaseComObject(comp); } catch (Exception) { } }
+            }
+        }
+        finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
+        return into;
+    }
+
+    /// <summary>The open document for a path, or null. Compared by full path, not by name.</summary>
+    private static Document? OpenDocumentFor(string fullPath)
+    {
+        foreach (Document d in Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager)
+        {
+            string name;
+            try { name = d.Name; } catch (Exception) { continue; }
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            string norm;
+            try { norm = Path.GetFullPath(name); } catch (Exception) { continue; }
+            if (string.Equals(norm, fullPath, StringComparison.OrdinalIgnoreCase)) return d;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Re-save every drawing this sheet set references. THE ONLY TOOL HERE THAT WRITES DWG FILES.
+    /// </summary>
+    /// <remarks>
+    /// Everything else in this category edits the .DST and nothing else. This one rewrites the
+    /// caller's drawings, so it reports a PLAN by default and writes only when `apply` is true.
+    /// The plan names every file, its size and its date, and says why any of them would be
+    /// skipped — which is the information needed to decide, and which no amount of after-the-fact
+    /// reporting can substitute for.
+    ///
+    /// **What is proven and what is not.** That each drawing is rewritten and remains intact is
+    /// verified: every file is re-read afterwards and its layout count compared. Whether AutoCAD's
+    /// internal per-drawing cache of sheet-set data is refreshed by a save issued this way is NOT
+    /// established, and the description says so rather than implying it. A drawing open in this
+    /// session is saved through its own Document, which is the case where the refresh is most
+    /// likely to happen.
+    /// </remarks>
+    private static Task<ToolDispatchResult> ResaveAllSheets(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.resave_all_sheets", ct, (doc, db, tr) =>
+        {
+            var a = Read<ResaveArgsDto>(args);
+            var apply = a.Apply == true;
+
+            return WithSheetSet(a.Path, (ss, full) =>
+            {
+                // Deliberately WithSheetSet, not WithSheetSetWrite: the .DST is not modified. The
+                // drawings are. Locking the sheet set here would suggest otherwise.
+                var drawings = ReferencedDrawings(ss);
+                var plan = new List<object>();
+                var written = 0;
+                var skipped = 0;
+
+                foreach (var path in drawings)
+                {
+                    var exists = File.Exists(path);
+                    var open = exists ? OpenDocumentFor(path) : null;
+                    var readOnly = false;
+                    long sizeBefore = 0;
+                    string? whenBefore = null;
+                    if (exists)
+                    {
+                        var fi = new FileInfo(path);
+                        readOnly = fi.IsReadOnly;
+                        sizeBefore = fi.Length;
+                        whenBefore = fi.LastWriteTimeUtc.ToString("O");
+                    }
+
+                    // Open drawings are skipped unless the caller says otherwise, and the reason
+                    // is a limitation this bank has already measured: `Document.IsModified` is
+                    // not public and the reflection fallback always answers false (KNOWN-GAPS
+                    // A9), so for any document that is not the active one there is NO reliable
+                    // way to tell whether it has unsaved edits. Saving it would commit changes
+                    // nobody asked this tool to commit. Rather than guess, say so and skip.
+                    string? skip = null;
+                    if (!exists) skip = "the file does not exist";
+                    else if (readOnly) skip = "the file is read-only";
+                    else if (open is not null && a.IncludeOpenDrawings != true)
+                        skip = IsActive(open)
+                            ? (ActiveDbMod() != 0
+                                ? "it is the active drawing and has unsaved changes (DBMOD != 0); " +
+                                  "saving it would commit them"
+                                : "it is open in this session; pass includeOpenDrawings=true to " +
+                                  "save it too")
+                            : "it is open in this session and is not the active drawing, so " +
+                              "whether it has unsaved changes cannot be determined - " +
+                              "Document.IsModified is not public. Pass includeOpenDrawings=true " +
+                              "to save it anyway, accepting that any unsaved edits are committed";
+
+                    if (skip is not null)
+                    {
+                        skipped++;
+                        plan.Add(new { drawing = path, action = "skip", reason = skip,
+                                       bytes = sizeBefore, modifiedUtc = whenBefore });
+                        continue;
+                    }
+
+                    if (!apply)
+                    {
+                        plan.Add(new { drawing = path, action = "wouldResave",
+                                       openInSession = open is not null,
+                                       bytes = sizeBefore, modifiedUtc = whenBefore });
+                        continue;
+                    }
+
+                    string outcome, detail = "";
+                    int layoutsBefore = 0, layoutsAfter = 0;
+                    try
+                    {
+                        layoutsBefore = LayoutsOf(path).Count;
+                        if (open is not null)
+                        {
+                            // Through its own Document: the case where AutoCAD's sheet-set
+                            // machinery is actually in the loop.
+                            open.Database.SaveAs(path, DwgVersion.Current);
+                        }
+                        else
+                        {
+                            using var side = new Database(false, true);
+                            side.ReadDwgFile(path, FileOpenMode.OpenForReadAndAllShare, true, null);
+                            side.CloseInput(true);
+                            side.SaveAs(path, DwgVersion.Current);
+                        }
+                        // Re-read from disk: "a file was written" and "a drawing survived" are
+                        // different claims, and only the second one matters to the caller.
+                        layoutsAfter = LayoutsOf(path).Count;
+                        outcome = layoutsAfter == layoutsBefore ? "resaved" : "resavedButChanged";
+                        if (outcome == "resavedButChanged")
+                            detail = $"layout count went {layoutsBefore} -> {layoutsAfter}";
+                        written++;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        outcome = "failed";
+                        detail = ex.Message;
+                        skipped++;
+                    }
+
+                    var after = new FileInfo(path);
+                    plan.Add(new
+                    {
+                        drawing = path,
+                        action = outcome,
+                        detail = detail.Length == 0 ? null : detail,
+                        openInSession = open is not null,
+                        bytesBefore = sizeBefore,
+                        bytes = after.Length,
+                        modifiedUtc = after.LastWriteTimeUtc.ToString("O"),
+                        layouts = layoutsAfter,
+                    });
+                }
+
+                return Wrap(new
+                {
+                    path = full,
+                    applied = apply,
+                    drawings = plan,
+                    total = drawings.Count,
+                    written,
+                    skipped,
+                    note = apply
+                        ? "Each drawing was re-read after writing and its layout count compared, so " +
+                          "these files are intact. Whether AutoCAD refreshed its per-drawing cache " +
+                          "of sheet-set data is NOT verified by this tool."
+                        : "Nothing was written. This is the plan only - pass apply=true to carry it " +
+                          "out. This is the only tool in this category that writes .DWG files.",
+                });
+            });
+        });
+
+    private static bool IsActive(Document d)
+    {
+        try
+        {
+            return d == Autodesk.AutoCAD.ApplicationServices.Application
+                        .DocumentManager.MdiActiveDocument;
+        }
+        catch (Exception) { return false; }
+    }
+
+    /// <summary>DBMOD, which describes the ACTIVE document only. 0 when it cannot be read.</summary>
+    private static short ActiveDbMod()
+    {
+        try
+        {
+            var v = Autodesk.AutoCAD.ApplicationServices.Application.GetSystemVariable("DBMOD");
+            return System.Convert.ToInt16(v);
+        }
+        catch (Exception) { return 0; }
+    }
 
     // ─────────── sheet views ───────────
     //

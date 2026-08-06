@@ -46,7 +46,7 @@ These files are merged into `C:/Users/DELL/toolbank/registry/mcpd-registry.json`
     "requires_plugin": true,
     "supported_acad_versions": ["2020", "2021", "2022", "2023", "2024", "2025"],
     "supported_lt": false,
-    "owner": "AutoCAD MCP Megasystem"
+    "owner": "ToolBank AutoCAD"
   }
 }
 ```

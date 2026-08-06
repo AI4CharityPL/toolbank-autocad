@@ -1,4 +1,4 @@
-# Development History & Verification Status (AutoCAD MCP Megasystem)
+# Development History & Verification Status (ToolBank AutoCAD)
 
 Single source of truth for the team and AI coding agents on what shipped, how it was verified, and what's explicitly out of scope for v1. Historical detail and tool lists: [CHANGELOG.md](../CHANGELOG.md). Current known gaps: see [README.md § Known Limitations](../README.md#known-limitations).
 

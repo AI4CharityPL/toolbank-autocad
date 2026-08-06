@@ -2,7 +2,7 @@
 
 **Status:** PLAN — do akceptacji przed implementacją
 **Data:** 2026-04-23
-**Autor:** AutoCAD MCP Megasystem
+**Autor:** ToolBank AutoCAD
 **Cel:** Podnieść jakość generowanych rysunków z „parametrycznego MVP" (ściany + prostokąty pokoi + prostokąty-łóżka) do poziomu **rysunku wykonawczego biura architektonicznego** (referencja: wycinek planu dostarczony przez użytkownika 2026-04-23 — hotel/apartament z pełnym wyposażeniem, osiami Y1/Y3, klatkami schodowymi, łańcuchami wymiarowymi, sanitariatami, callout profili K1/K6/K10).
 
 ---

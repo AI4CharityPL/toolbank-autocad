@@ -6,7 +6,7 @@
     <AssemblyName>AcadMcp.Tests</AssemblyName>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <Description>xUnit unit + architecture tests for the AutoCAD MCP Megasystem. Runs without AutoCAD (reflection-only on [McpTool] metadata).</Description>
+    <Description>xUnit unit + architecture tests for the ToolBank AutoCAD. Runs without AutoCAD (reflection-only on [McpTool] metadata).</Description>
   </PropertyGroup>
 
   <ItemGroup>

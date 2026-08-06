@@ -1,6 +1,6 @@
 # 7 Architectural Invariants
 
-Seven sacred invariants of the AutoCAD MCP Megasystem architecture. Read this before touching ANY code.
+Seven sacred invariants of the ToolBank AutoCAD architecture. Read this before touching ANY code.
 
 These are non-negotiable. Breaking any of them = system corruption. If you must violate one, stop, ask the user, and update this rule.
 

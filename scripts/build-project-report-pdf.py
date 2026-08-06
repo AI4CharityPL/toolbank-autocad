@@ -93,7 +93,7 @@ def draw_footer(c, caption):
     c.setFillColor(white)
     c.setFont(FONT, 8)
     c.drawString(15 * mm, 9 * mm,
-                 "AutoCAD MCP Megasystem \u2014 Phase C Complete \u2014 zgodnie z "
+                 "ToolBank AutoCAD \u2014 Phase C Complete \u2014 zgodnie z "
                  "WT Dz.U.2022 poz.1225, MZ Dz.U.2019 poz.595, PN-EN 14644-1, "
                  "PN-EN 1822, PN-EN 1838, Prawo atomowe.")
     c.setFont(FONT_I, 7)
@@ -149,7 +149,7 @@ def draw_cover(c, total):
 
     c.setFont(FONT, 10)
     c.drawCentredString(PW / 2, 30 * mm,
-                        "Wygenerowano przez AutoCAD MCP Megasystem \u00b7 "
+                        "Wygenerowano przez ToolBank AutoCAD \u00b7 "
                         + datetime.date.today().isoformat())
     c.drawCentredString(PW / 2, 22 * mm,
                         f"Stron: {total}  \u00b7  \u0179r\u00f3d\u0142o: Rysunek4.dwg \u2192 Hospital2026_A0-001.dwg")

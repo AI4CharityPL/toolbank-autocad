@@ -178,7 +178,7 @@ public static class BankAutoRegister
                 ["requires_plugin"] = true,
                 ["supported_acad_versions"] = new JsonArray("2020", "2021", "2022", "2023", "2024", "2025"),
                 ["supported_lt"] = false,
-                ["owner"] = "AutoCAD MCP Megasystem",
+                ["owner"] = "ToolBank AutoCAD",
                 ["version"] = "0.1.0",
             },
         };

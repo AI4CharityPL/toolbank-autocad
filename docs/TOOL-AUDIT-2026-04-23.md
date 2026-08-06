@@ -1,4 +1,4 @@
-# Full tool audit — AutoCAD MCP Megasystem (2026-04-23)
+# Full tool audit — ToolBank AutoCAD (2026-04-23)
 
 **Scope:** literally every registered MCP tool across all 29 categories.
 **Request:** user instruction `dosłownie każdy tool przetestował wszystkie te kilkaset toolsów`.

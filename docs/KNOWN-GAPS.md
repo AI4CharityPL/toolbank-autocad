@@ -345,13 +345,13 @@ From the original public-release plan; phases 1–2 landed, the rest did not.
 - **Docs reorganisation** — split `docs/engineering-rules/` (universal) from a
   `docs/case-studies/hospital-2026/` (one project's history). `README.md` is 21 KB with no
   screenshots despite `assets/report/` holding finished renders.
-- **`Megasystem` placeholder branding** still in ~15 files (prose only; every shipped artefact
-  was fixed in the licensing commit).
+- ~~**`Megasystem` placeholder branding**~~ — **closed during the ToolBank rename.** It was 26
+  occurrences across 23 files, and the earlier note that "every shipped artefact was fixed"
+  was wrong: ten manifests carried `"owner": "AutoCAD MCP Megasystem"` and
+  `BankAutoRegister.cs` re-emitted it, so regenerating a manifest put the placeholder straight
+  back. Generator and manifests now both say `ToolBank AutoCAD`.
 - **ToolBank (the Python repo)** — the `safety.py` blocker and cross-repo install docs.
-  Version sync is done (both now read one `__version__`). The repo is still **private** while
-  its PyPI page is public, so every link on that page 404s for anyone who is not the owner —
-  and the rename makes this sharper, because `toolbank` is not on PyPI yet at all: what is
-  published is `mcpnexus` 1.0.7, under a name the project no longer uses.
+  Version sync is done (both now read one `__version__`).
 
 ---
 

@@ -1,4 +1,4 @@
-# AutoCAD MCP Megasystem — Full Tool Reference
+# ToolBank AutoCAD — Full Tool Reference
 
 Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools total.
 

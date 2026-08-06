@@ -2,7 +2,7 @@
 
 > **Status:** production-ready (v0.3.0 ToolBank / Phase 7 AutoCAD-MCP)
 > **Zakres:** architektoniczne uzasadnienie rozwiązania, pomiar oszczędności tokenów, integracja z silnikiem AutoCAD MCP
-> **Autorzy:** Mateusz Wiszniowski, Krzysztof Augiewicz (Talknbot), autor AutoCAD-MCP Megasystem
+> **Autorzy:** Mateusz Wiszniowski, Krzysztof Augiewicz (Talknbot), autor ToolBank AutoCAD
 
 ---
 
@@ -62,7 +62,7 @@ Trzy warstwy — trzy odpowiedzialności:
 
 1. **ToolBank Discovery / Dynamic** (Python) — globalna wyszukiwarka serwerów i narzędzi MCP w ekosystemie użytkownika.
 2. **`acad-router`** (C# .NET 8) — branżowy gateway dla AutoCAD-a. Wewnątrz używa tej samej idei ToolBank, ale w wąskim namespace `acad-*`.
-3. **AutoCAD MCP Megasystem** — 19 kategorii × ~12 narzędzi = 230 narzędzi dociąganych tylko na żądanie.
+3. **ToolBank AutoCAD** — 19 kategorii × ~12 narzędzi = 230 narzędzi dociąganych tylko na żądanie.
 
 ---
 
@@ -152,7 +152,7 @@ Każda kategoria AutoCAD-a ma plik `toolbank-manifests/acad-<name>.json`. Kontra
     "requires_plugin": true,
     "supported_acad_versions": ["2020","2021","2022","2023","2024","2025"],
     "supported_lt": false,
-    "owner": "AutoCAD MCP Megasystem"
+    "owner": "ToolBank AutoCAD"
   }
 }
 ```

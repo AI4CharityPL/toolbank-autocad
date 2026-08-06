@@ -1,6 +1,6 @@
 # ToolBank AutoCAD (v2025)
 
-> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: 1000+ tools spread across dozens of specialized micro-servers, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
+> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: **478 tools across 39 specialized categories**, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
@@ -217,7 +217,7 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 31 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all ~340 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 39 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all 478 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
 The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `toolbank-gateway` or `toolbank-server` entry (current ToolBank CLI names) and falling back to the older `toolbank-dynamic` / `toolbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\toolbank\registry\mcpd-registry.json`. Verified against both a `toolbank-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
@@ -270,7 +270,7 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**340 tools across 31 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`toolbank-manifests/`](toolbank-manifests), so it can't drift out of sync the way hand-written tool lists do — regenerate it after adding or renaming a tool.
+**478 tools across 39 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`toolbank-manifests/`](toolbank-manifests) by [`scripts/generate-tools-reference.py`](scripts/generate-tools-reference.py), so it can't drift out of sync the way hand-written tool lists do — run that script after adding or renaming a tool, or `--check` it in CI.
 
 ## Status
 

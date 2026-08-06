@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**411 tools across 36 categories** (updated 2026-08-04; this document was written at 337 across
+**478 tools across 39 categories** (updated 2026-08-06; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".

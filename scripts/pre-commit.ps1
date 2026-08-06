@@ -134,7 +134,7 @@ Write-Host ("Mode: {0}, Files: {1}" -f ($(if ($All) { 'ALL' } else { 'staged' })
 Write-Host ""
 
 # 1. Engineering rules well-formed
-Write-Host "[1/7] Engineering rules" -ForegroundColor Cyan
+Write-Host "[1/8] Engineering rules" -ForegroundColor Cyan
 $ruleFiles = Get-ChildItem -Path (Join-Path $RepoRoot "docs\engineering-rules") -Filter "*.md" -ErrorAction SilentlyContinue
 foreach ($rf in $ruleFiles) {
     $text = Get-Content $rf.FullName -Raw
@@ -151,7 +151,7 @@ foreach ($rf in $ruleFiles) {
 
 # 2. Manifests valid
 Write-Host ""
-Write-Host "[2/7] ToolBank manifests" -ForegroundColor Cyan
+Write-Host "[2/8] ToolBank manifests" -ForegroundColor Cyan
 $required = @("id", "name", "description", "transport", "tags", "intent_examples", "tools_summary")
 $mfFiles = Get-ChildItem -Path (Join-Path $RepoRoot "toolbank-manifests") -Filter "acad-*.json" -ErrorAction SilentlyContinue
 foreach ($mf in $mfFiles) {
@@ -213,7 +213,7 @@ foreach ($mf in $mfFiles) {
 
 # 3. Forbidden patterns in staged C#
 Write-Host ""
-Write-Host "[3/7] Forbidden C# patterns" -ForegroundColor Cyan
+Write-Host "[3/8] Forbidden C# patterns" -ForegroundColor Cyan
 $csStaged = $staged | Where-Object { $_ -like "*.cs" }
 $forbidden = @(
     @{ Pattern = 'Marshal\.GetActiveObject\s*\('; Reason = "use MarshalCompat (rule: AcadMcp.ComBridge)"; Scope = '*' },
@@ -287,7 +287,7 @@ if ($patternHits -eq 0) {
 
 # 4. Secrets
 Write-Host ""
-Write-Host "[4/7] Secret scan" -ForegroundColor Cyan
+Write-Host "[4/8] Secret scan" -ForegroundColor Cyan
 $secretRegex = '(?i)(api[_-]?key|password|secret|token|access[_-]?key)\s*[:=]\s*["''][A-Za-z0-9_\-]{16,}["'']'
 $skipExt = @(".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".dwg", ".dxf", ".zip", ".7z", ".dll", ".pdb", ".exe")
 foreach ($f in $staged) {
@@ -306,7 +306,7 @@ Add-OK "secret scan complete"
 
 # 5. CHANGELOG touched if src/ touched
 Write-Host ""
-Write-Host "[5/7] CHANGELOG.md gate" -ForegroundColor Cyan
+Write-Host "[5/8] CHANGELOG.md gate" -ForegroundColor Cyan
 $srcTouched = $staged | Where-Object { ($_ -replace '\\','/') -like 'src/*' -and $_ -notlike '*.md' -and $_ -notlike '*Tests*' }
 $changelogTouched = $staged | Where-Object { $_ -eq 'CHANGELOG.md' -or $_ -eq './CHANGELOG.md' }
 if ($srcTouched -and -not $changelogTouched) {
@@ -319,7 +319,7 @@ if ($srcTouched -and -not $changelogTouched) {
 # Skipped automatically when AcadMcp.Backend.exe is not built yet, so the
 # gate stays viable on a freshly cloned repo.
 Write-Host ""
-Write-Host "[6/7] Validator rules self-check" -ForegroundColor Cyan
+Write-Host "[6/8] Validator rules self-check" -ForegroundColor Cyan
 $yamlTouched = $staged | Where-Object { ($_ -replace '\\','/') -like 'validators/*' -and $_ -like '*.yaml' }
 $shouldRunSelfCheck = $All -or ($yamlTouched.Count -gt 0)
 if (-not $shouldRunSelfCheck) {
@@ -350,7 +350,7 @@ if (-not $shouldRunSelfCheck) {
 # Skipped silently when the assembly is not yet built (fresh clone) so new
 # contributors aren't blocked before their first `dotnet build`.
 Write-Host ""
-Write-Host "[7/7] Unit tests" -ForegroundColor Cyan
+Write-Host "[7/8] Unit tests" -ForegroundColor Cyan
 # Whichever configuration is actually built, prefer the newer one -- and remember which,
 # because `dotnet test --no-build` defaults to Debug regardless of the assembly we located.
 # Getting that wrong is how this check failed in CI on its first run: the runner builds
@@ -405,6 +405,31 @@ if ($null -eq $testsDll) {
         $summaryLine = @($testOutput) | Where-Object { $_ -match 'Powodzenie!|Passed!' } | Select-Object -First 1
         if (-not $summaryLine) { $summaryLine = 'tests passed' }
         Add-OK "unit tests OK ($($summaryLine.Trim()))"
+    }
+}
+
+# 8. Generated tool reference is current
+Write-Host ""
+Write-Host "[8/8] Tool reference" -ForegroundColor Cyan
+# docs/TOOLS-REFERENCE.md says it is generated from the manifests and therefore cannot
+# drift. It drifted anyway -- to 31 categories / 340 tools against an actual 39 / 478 --
+# because nothing regenerated it and nothing checked. A claim about how a file is
+# maintained is worth exactly as much as the gate behind it.
+$genScript = Join-Path $RepoRoot "scripts\generate-tools-reference.py"
+$py = (Get-Command python -ErrorAction SilentlyContinue)
+if ($null -eq $py) {
+    Add-OK "python not on PATH - skipped (run scripts/generate-tools-reference.py --check manually)"
+} elseif (-not (Test-Path $genScript)) {
+    Add-Err "scripts/generate-tools-reference.py is missing; docs/TOOLS-REFERENCE.md cannot be verified"
+} else {
+    # Invoke-NativeCapture, and $script:LastNativeExit rather than $LASTEXITCODE: the helper
+    # pipes through ForEach-Object, so by the time control returns here $LASTEXITCODE belongs
+    # to the pipeline, not to python. Reading it would make this check pass unconditionally.
+    $refOut = Invoke-NativeCapture $py.Source @($genScript, "--check")
+    if ($script:LastNativeExit -ne 0) {
+        Add-Err "docs/TOOLS-REFERENCE.md is stale - run: python scripts/generate-tools-reference.py`n         $($refOut -join "`n         ")"
+    } else {
+        Add-OK "docs/TOOLS-REFERENCE.md matches the manifests"
     }
 }
 

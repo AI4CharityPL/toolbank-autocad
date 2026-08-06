@@ -1,10 +1,11 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 478 tools total.
 
 ## Categories
 
 - [acad-annotations](#acad-annotations) (12 tools)
+- [acad-annotative](#acad-annotative) (15 tools)
 - [acad-architecture](#acad-architecture) (16 tools)
 - [acad-blocks](#acad-blocks) (16 tools)
 - [acad-boolean-ops](#acad-boolean-ops) (8 tools)
@@ -12,29 +13,36 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 - [acad-civil](#acad-civil) (12 tools)
 - [acad-dimensions](#acad-dimensions) (17 tools)
 - [acad-electrical](#acad-electrical) (15 tools)
-- [acad-files](#acad-files) (11 tools)
+- [acad-fields](#acad-fields) (17 tools)
+- [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (32 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (33 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
-- [acad-layers](#acad-layers) (14 tools)
-- [acad-layouts](#acad-layouts) (10 tools)
+- [acad-layers](#acad-layers) (20 tools)
+- [acad-layouts](#acad-layouts) (8 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
-- [acad-modify](#acad-modify) (18 tools)
+- [acad-modify](#acad-modify) (16 tools)
 - [acad-openings](#acad-openings) (10 tools)
 - [acad-parametric](#acad-parametric) (5 tools)
 - [acad-plotstyles](#acad-plotstyles) (3 tools)
 - [acad-plumbing](#acad-plumbing) (9 tools)
+- [acad-publish](#acad-publish) (6 tools)
 - [acad-router](#acad-router) (10 tools)
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
+- [acad-sheetsets](#acad-sheetsets) (6 tools)
+- [acad-styles](#acad-styles) (32 tools)
+- [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
 - [acad-verticals](#acad-verticals) (8 tools)
 - [acad-view](#acad-view) (8 tools)
+- [acad-viewports](#acad-viewports) (19 tools)
 - [acad-vision](#acad-vision) (9 tools)
+- [acad-xrefs](#acad-xrefs) (22 tools)
 
 ---
 
@@ -55,6 +63,26 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `update_dbtext` | Replace the contents of an existing DBText entity by handle. |
 | `update_mtext` | Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written. |
 
+## acad-annotative
+
+| Tool | Description |
+|---|---|
+| `add_annotation_scale` | Give annotative objects a representation at one or more scales, so they appear in viewports set to those scales. An annotative object is invisible in a viewport whose scale it has no representation for - this is the tool that fixes 'my text disappeared on the 1:100 sheet'. |
+| `add_scale_to_list` | Add an annotation scale to the drawing, e.g. name '1:25' with paperUnits 1 and drawingUnits 25. Idempotent - an existing name is updated rather than duplicated. |
+| `delete_scale_from_list` | Remove an annotation scale from the drawing's list. Fails if the scale is in use by an annotative object or a viewport, rather than silently orphaning them. |
+| `get_annotation_settings` | Report ANNOALLVISIBLE and ANNOAUTOSCALE, decoded. Read-only. |
+| `get_current_annotation_scale` | Return the current annotation scale (CANNOSCALE) with its ratio. Read-only. |
+| `list_annotative_objects` | Enumerate every annotative object in model space with the scales it carries. Pass scale to list only objects having a representation at that scale. Read-only. |
+| `list_object_annotation_scales` | List which scale representations each given entity carries, plus whether it is annotative at all. Read-only. Call this before wondering why an object is missing from a sheet. |
+| `list_scale_list` | List every annotation scale defined in this drawing, with its paper:drawing ratio and which one is current. Read-only. These are the scales available to add_annotation_scale and to viewports. |
+| `remove_annotation_scale` | Remove scale representations from annotative objects. The object stops appearing in viewports at those scales. An object's last remaining representation cannot be removed - use set_annotative false instead. |
+| `reset_scale_list` | Reset the drawing's scale list to AutoCAD's defaults, dropping custom entries that are not in use. Scales still referenced by objects or viewports are kept and reported. |
+| `set_annotation_visibility` | ANNOALLVISIBLE: show every annotative object regardless of whether it has a representation at the current scale, or show only those that do. Turning it OFF is how you check a sheet for annotation that will be missing at that scale. |
+| `set_annotative` | Turn the annotative flag on or off for one or more entities. Turning it ON gives the object a representation at the CURRENT annotation scale only - use add_annotation_scale for the others. Turning it OFF collapses it back to a single fixed-size object. |
+| `set_auto_add_scale` | ANNOAUTOSCALE: whether annotative objects automatically gain a representation when the current annotation scale changes. On is convenient while drafting and dangerous on an issued set, because objects silently acquire scales nobody asked for. |
+| `set_current_annotation_scale` | Set CANNOSCALE - the scale new annotative objects are created at, and the one model space displays. Does NOT retroactively add this scale to existing objects; use add_annotation_scale for that. |
+| `sync_scale_positions` | Reset every scale representation of the given objects back to the position of the current scale's representation. Use after moving annotation at one scale and wanting the others to follow rather than drift. |
+
 ## acad-architecture
 
 | Tool | Description |
@@ -67,7 +95,7 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `draw_wall` | Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset ±thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default — connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs. |
 | `draw_walls_chain` | Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex — joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall × N because it issues 3 polyline calls instead of 3·N line calls. |
 | `ensure_architectural_layers` | Idempotently create the AIA-style architectural + structural layer key (A-WALL, A-WALL-CTRL, A-DOOR, A-DOOR-SWING, A-GLAZ, A-ROOM-BNDY, A-ROOM-IDEN, A-CLNG, A-ROOF, A-STRS, A-ANNO-DIMS, A-ANNO-NOTE, plus structural S-COLS, S-COLS-CTRL, S-SLAB, S-SLAB-HATCH when includeStructural=true). Existing layers are left alone, never overwritten. Returns one outcome per layer (created \| already_exists \| failed). |
-| `insert_door` | Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs before drawing the panel -- omit it to only draw the door primitives without touching any wall. |
+| `insert_door` | Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs (hinge -> hinge + widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening). |
 | `insert_elevator` | Draw an elevator shaft on A-STRS as a rectangle with two diagonal lines (X) plus a centred label on A-ANNO-NOTE. No cab / mechanical details — use this as a plan-view placeholder for lifts/verticals. For more detail use acad-verticals in Phase D7. |
 | `insert_ramp` | Draw a simple rectangular ramp outline on A-STRS plus a slope arrow (shaft + head) along the travel direction and a text label reporting the gradient as 'N% RAMP' on A-ANNO-NOTE. widthMm runs perpendicular to directionDeg, lengthMm runs along it. |
 | `insert_rect_column` | Insert a rectangular structural column profile on layer S-COLS plus a small crosshair centre-mark on S-COLS-CTRL. width = X-axis, depth = Y-axis (before rotation). Column is auto-centered on the supplied point. |
@@ -179,21 +207,46 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `place_terminal_block` | Place a terminal block as `count` numbered rectangles in a horizontal row starting at `origin` (top-left corner), each rectangle of width pitchMm × height heightMm, with sequential numbers (startNumber, startNumber+1, …) labelled below. Per rule 39 §11 terminals live on layer E-TERM (ACI 6, 0.40 mm) and labels on E-LBL-WIRE. Returns each slot's body handle, label handle, AND its top + bottom centre points so wires can snap to either side of the block. |
 | `route_wireway` | Draw a wireway / trunking channel along `path` on layer E-PANEL (default) as a centreline plus two parallel edge lines offset ±widthMm/2 (mitred at interior vertices, same offset approach as acad-civil.draw_road_corridor / acad-architecture.draw_walls_chain). Use this for the physical cable-management channel between panel devices, distinct from the schematic wire routing of draw_wire. |
 
+## acad-fields
+
+| Tool | Description |
+|---|---|
+| `convert_field_to_text` | Freeze a field into plain text at its current value. One-way and deliberate: use it when issuing a drawing that must not change afterwards, never as a way to 'fix' a field showing the wrong thing. |
+| `get_field_evaluation_mode` | Report when fields currently re-evaluate (the FIELDEVAL bitmask, decoded). Read-only. |
+| `get_field_expression` | Return the raw AcVar expression and the evaluated value behind one text entity. Read-only. Use it to see what a field is actually bound to before trusting the number it shows. |
+| `insert_field_area` | Place a live area label for a closed shape, converted to the units you actually annotate in. AutoCAD reports Area in square DRAWING units, so a raw area field on a room drawn in millimetres reads 24000000 - correct and useless on a plan. This divides inside the field, so the number stays live: edit the room and the label follows. units accepts mm2, cm2, m2 (default) or ha, each with a sensible precision and unit suffix you can override. |
+| `insert_field_block_attribute` | Place a field bound to one attribute of an inserted block, found by its tag. Use it to echo a door number, an equipment ID or a title-block value somewhere else on the sheet without retyping it - change the attribute and every echo follows. An unknown tag is refused with the list of tags that block actually has. |
+| `insert_field_date` | Place a date field that re-evaluates rather than freezing. format is a .NET/AutoCAD date pattern (default yyyy-MM-dd). Use this for the date cell of a title block instead of writing today's date as text. |
+| `insert_field_expression` | Place a field from a raw AcVar expression, for anything the typed tools do not cover. Escape hatch - the expression is passed through unvalidated, and the evaluated result is returned so a wrong one is visible immediately rather than at plot time. |
+| `insert_field_filename` | Place a field showing this drawing's file name, optionally with its full path and extension. Survives Save As, which a typed file name does not. |
+| `insert_field_formula` | Place a field that computes an arithmetic expression, optionally over other fields. '2+3' evaluates to 5; nest a property reference to compute from live geometry, such as a room area divided by an occupancy factor. The expression is passed through unvalidated and the evaluated result comes back with the handle, so a mistake shows up now rather than as #### at plot time. |
+| `insert_field_layout_name` | Place a field showing the name of the layout the field sits on. This is the sheet-number cell of a title block: rename the tab and every sheet updates itself. |
+| `insert_field_object_property` | Place a field bound to a property of an existing entity by handle - Area, Length, Radius, Layer, Color and so on. The text follows the object: edit the geometry and the number changes with it. This is what makes a room-area label self-maintaining. |
+| `insert_field_plot_info` | Place a field showing how this sheet will plot: PaperSize, DeviceName, PlotScale, PlotOrientation, PlotDate, PlotStyleTable or LoginName. These are the title-block cells that are wrong most often, because they are usually typed once and then the page setup changes. Several evaluate to ---- until the layout has the setting, which is AutoCAD saying 'not set' rather than a broken field; the evaluated value is returned so you can tell. |
+| `insert_field_system_variable` | Place a field showing an AutoCAD system variable (DWGNAME, LOGINNAME, CTAB, DWGPREFIX, ...). Useful for drawn-by and drawing-status cells. |
+| `list_fields` | List every text entity in model space that contains a field, with its raw expression and its currently evaluated value. Read-only. Call this to find title-block cells that are still frozen text. |
+| `set_field_evaluation_mode` | Control when fields re-evaluate: on open, save, plot and/or regen (the FIELDEVAL bitmask). Turning them all off is how a drawing is frozen for issue without converting every field to text. |
+| `set_field_format` | Change how an existing field displays its value - decimal places, unit format, thousands separator - without rebuilding what it is bound to. Format strings are AutoCAD's field format codes, e.g. "%lu2%pr2" for two decimal places. Edits the field code rather than the text, because the text of a field is its answer, and writing that back would freeze the field into plain text. |
+| `update_fields` | Re-evaluate fields now. Pass handles to update specific ones, or omit them to update every field in the drawing. Returns how many were evaluated. |
+
 ## acad-files
 
 | Tool | Description |
 |---|---|
 | `audit_database` | Run AUDIT on the active document database. Reports the number of errors found and (if fix=true) fixed. |
 | `close_document` | Close a document by its file path (or the active document if path is null). Set save=true to save before closing. |
-| `export_file` | Export the active document to the given path. Format is one of "DWG", "DXF", "PDF", "DWF", "DWFX", "IMAGE" (PNG). Optional layout name (default: current). Scope is "Display" / "Extents" / "Limits" / "Window" (PDF/DWF only). |
+| `export_file` | Export the active document to the given path. Format is one of "DWG", "DXF", "PDF", "DWF", "DWFX", "IMAGE" / "PNG". Optional layout name (default: current). Scope is "Display" / "Extents" / "Limits" / "Window" / "View" / "Layout". When scope="Window" you MUST supply the model-space rectangle in `window`: { xMin, yMin, xMax, yMax } in drawing units. For raster (PNG/IMAGE) and vector plots you may supply `widthPx` / `heightPx` to request an output resolution (PNG only; ignored for DWG/DXF). Typical usage for AI visual review: { format:"PNG", scope:"Window", window:{xMin:0,yMin:0,xMax:80000,yMax:60000}, widthPx:4000, heightPx:3000 }. |
 | `get_active_document` | Return descriptor of the currently active document (path, name, modified flag, DWG version, entity count). |
 | `import_file` | Import a .dwg / .dxf file into the currently active document at the optional insertion point (default: 0,0,0). DWG files are merged into model space; DXF respects its own units. |
 | `list_documents` | List every open AutoCAD document with its file path, modified flag, read-only flag and entity count, plus the active document name. |
+| `list_drawing_properties` | Read the drawing's own properties - title, subject, author, keywords, comments, last saved by, revision number, hyperlink base - plus every custom name/value pair on it. Read-only. Worth knowing: acad-fields can bind a field to any of these, so a title block that reads its project name from here updates itself instead of being retyped on every sheet. |
 | `new_document` | Create a brand new empty document based on the default template (acad.dwt) and make it active. |
 | `open_document` | Open an existing .dwg / .dxf file in the AutoCAD UI as a new document and make it active. Optional readOnly flag and password for encrypted DWG. |
 | `purge_database` | Run a full database purge: removes every unused symbol-table record (blocks, layers, linetypes, text/dimstyle, mlinestyle, registered apps). Returns the count of records purged. |
 | `save_document` | Save the currently active document to its existing path (no-op if it has no path yet — call save_document_as instead). |
-| `save_document_as` | Save the currently active document to a new path. Optional dwgVersion is one of "AC1027" (2013), "AC1032" (2018), "AC1024" (2010), etc. Defaults to current AutoCAD's native format. |
+| `save_document_as` | Write the active drawing to a new path. IMPORTANT: this writes a COPY. The open document keeps its own name and its own unsaved state - this is the managed Database.SaveAs, not AutoCAD's SAVEAS command, and there is no managed way to re-point an open document. So save_document afterwards still writes to the ORIGINAL path, and DBMOD still reports unsaved changes, both correctly. The result gives savedTo and the document's own path side by side, because confusing the two is the entire trap. Optional dwgVersion is one of "AC1027" (2013), "AC1032" (2018), "AC1024" (2010); defaults to native. |
+| `set_drawing_custom_property` | Add, replace or remove one custom drawing property - an arbitrary name/value pair such as PROJECT-NUMBER or CLIENT. Pass value:null to remove it. These are the properties worth binding a title-block field to, because unlike the standard set they can be named after whatever the project actually tracks. The result says which of add, replace or remove happened. |
+| `set_drawing_properties` | Set any of the drawing's standard properties, leaving the rest alone. Omitting a field leaves it unchanged; passing an empty string clears it deliberately - the two are different and both are supported. Custom name/value pairs go through set_drawing_custom_property instead. The result reports every property afterwards, not just the changed ones, so a caller can see that nothing else moved. |
 
 ## acad-furniture
 
@@ -222,6 +275,7 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `draw_ellipse` | Draw an ellipse by center, major-axis end point and minor-to-major ratio (0 < ratio <= 1). |
 | `draw_hatch` | Apply an associative hatch over closed boundaries identified by handle. |
 | `draw_line` | Draw a 2D straight line segment between two points on the active drawing. |
+| `draw_mline` | Draw a multiline (MLINE) through the given vertices using a named multiline style - the way a wall of a defined type is drawn in one call rather than as two offset polylines that must be kept parallel by hand. style defaults to the drawing's current one; create one first with create_mlinestyle. justification is 'top', 'zero' or 'bottom' and decides which of the style's parallel lines the vertices you pass actually lie on, so it changes where the wall sits relative to your points. scale multiplies every element offset, so a 200mm style drawn at scale 1.5 is 300mm wide. |
 | `draw_mtext` | Draw multiline text (MTEXT) with wrap-width and height. |
 | `draw_point` | Draw a single point entity at a 2D position. |
 | `draw_polygon` | Draw a regular polygon (3..1024 sides), inscribed or circumscribed. |
@@ -295,13 +349,18 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 
 | Tool | Description |
 |---|---|
+| `compare_layer_state` | Answer whether restoring this state would change anything, without restoring it, and list the layers it covers. Read-only. This is the call to make before restore_layer_state in a drawing somebody is working in: the difference between a no-op and a restore that silently reorganises their view. |
 | `create_layer` | Create a new layer. Accepts color (RGB or ACI), linetype name, lineweight in mm, plottable flag and description. |
 | `delete_layer` | Delete a layer (only if no entities reference it). Layer 0 and Defpoints cannot be deleted. |
+| `delete_layer_state` | Delete a named layer state. THE LAYERS ARE NOT TOUCHED - a layer state is a recording of visibility and properties, so deleting it removes the recording and nothing else. The result says so explicitly, because this is a tool name an agent could reasonably fear means something more destructive. |
+| `export_layer_state` | Write one named layer state out to a .las file so it can be reused in other drawings or kept under version control alongside the project. It writes a file, not the DWG, so the drawing is unchanged. The result reports the byte count, because an export that produced an empty file is otherwise indistinguishable from one that worked. |
 | `get_layer` | Get full descriptor of one layer by name. |
+| `import_layer_state` | Read a .las file into this drawing as a named layer state. The name comes from inside the file rather than from you, so the result reports which states actually appeared - established by comparing the drawing before and after rather than by assuming. AutoCAD refuses to import over an existing name; delete or rename the local one first. |
 | `list_layer_states` | List every saved named layer state in the active drawing. |
 | `list_layers` | List every layer in the active drawing with color, linetype, lineweight, plottable/frozen/locked/off flags, plus the current layer name. |
 | `purge_unused_layers` | Purge every layer that has no entity references and is not protected (0 / Defpoints / current). Returns number of layers removed. |
 | `rename_layer` | Rename a layer. Layer 0 cannot be renamed; new name must be a valid AutoCAD symbol name. |
+| `rename_layer_state` | Rename a named layer state. Refuses a name that is already taken rather than merging into it, and confirms both halves of the rename in the result - the old name gone and the new one present - since a rename that half happened is worse than one that failed outright. |
 | `restore_layer_state` | Restore a previously saved named layer state. |
 | `save_layer_state` | Save the current visibility/lock/color/linetype state of every layer under a named layer state (LAS). |
 | `set_current_layer` | Set the active ("current") layer; subsequent draw operations default to this layer. |
@@ -309,6 +368,7 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `set_layer_linetype` | Set a layer's linetype (must already be loaded; returns LayerNotFound if linetype is missing). |
 | `set_layer_lineweight` | Set a layer's lineweight in millimeters; snaps to nearest standard AutoCAD value (e.g. 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm). |
 | `set_layer_state` | Toggle one or more layer state flags: frozen, locked, off, plottable. null = leave unchanged. Cannot freeze the current layer. |
+| `set_layer_state_description` | Attach or replace the description on a named layer state - what it is for, which sheet it belongs to, which discipline it serves. Pass an empty description to clear it. Worth doing: a drawing holding six states called PLAN-1 through PLAN-6 with no descriptions is one an agent cannot choose between. |
 
 ## acad-layouts
 
@@ -316,14 +376,12 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 |---|---|
 | `configure_plot` | Configure a layout's plot settings: plotter / device name, paper size (accepts canonical 'ISO_full_bleed_A0_(1189.00_x_841.00_MM)', locale 'ISO A0 (841.00 x 1189.00 MM)', or fuzzy alias 'A0' / 'ISO A0' / 'a0' — all three resolve to the plotter's canonical name), named plot style table, and 0/90/180/270 plot rotation. Pass null on any field to leave it untouched. Call layouts.list_paper_sizes first if you're unsure which media strings the installed plotter accepts. |
 | `create_layout` | Create a new paper-space layout (tab). Optionally make it the current/active layout right after creation. |
-| `create_viewport` | Create a paper-space Viewport entity on the named layout: a rectangular window of width × height centred at 'center' (paper-space coords). Optionally set a custom standard scale (e.g. 0.02 for 1:50, 0.01 for 1:100). Returns the Viewport entity handle. |
 | `delete_layout` | Delete a paper-space layout. Cannot delete the Model tab; cannot delete the last remaining paper-space tab. |
 | `get_layout` | Return descriptor of a single paper-space layout by name. |
 | `list_layouts` | List every paper-space layout (tab) in the active drawing with its tab order, current flag, and configured plotter / paper size. |
 | `list_paper_sizes` | Enumerate every paper size supported by a plotter (plotter=null -> the current layout's plotter or the first registered device). Returns the canonical media names (what configure_plot needs) plus the locale-facing display name. Call this before configure_plot if you're unsure which media strings the installed plotter accepts — especially for non-standard devices (e.g. 'DWG To PDF.pc3', 'Microsoft Print to PDF', pen plotters, PublishToWeb PNG). configure_plot accepts canonical / locale / fuzzy names (e.g. 'A0', 'ISO A0'); use this tool when even fuzzy resolution fails. |
 | `rename_layout` | Rename a paper-space layout. The Model tab cannot be renamed; the new name must be unique and valid as an AutoCAD symbol name. |
 | `set_current_layout` | Switch the active layout to the named tab (use "Model" to return to model space). All subsequent draw / viewport tools target this layout. |
-| `set_viewport_scale` | Set the model-space-to-paper scale factor of an existing Viewport entity (e.g. 0.02 → 1:50, 0.01 → 1:100, 0.001 → 1:1000). |
 
 ## acad-livestream
 
@@ -365,14 +423,12 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `match_properties` | Copy generic properties (layer, color, linetype, lineweight, ltscale) from source entity onto target entities. |
 | `mirror` | Mirror entities through a plane defined by point + normal (3D); optionally erase the source entities. |
 | `move` | Translate one or more entities by the vector from→to (WCS). |
-| `redo` | Redo the most recently undone action via SENDCOMMAND "_REDO". |
 | `rotate` | Rotate entities around a center by angle (degrees, CCW). Optional axis vector for 3D rotations (default Z). |
 | `scale` | Uniformly scale entities about a center point by a positive factor. |
 | `set_color` | Set the entity color to a true RGB color or an ACI index (1..255). |
 | `set_layer` | Move entities to the given layer (creates the layer if missing). |
 | `set_linetype` | Set the linetype (by name) and optional linetype scale on entities. The linetype must already be loaded. |
 | `set_lineweight` | Set entity lineweight in millimeters. Common values: 0.13, 0.18, 0.25, 0.5, 0.7, 1.0 mm. |
-| `undo` | Undo the last user/AI action by sending a SENDCOMMAND "_U". Counts the number of undo steps performed. |
 | `ungroup` | Delete a named Group (the underlying entities remain in the drawing). |
 
 ## acad-openings
@@ -422,20 +478,31 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `list_plumbing_in_model` | Enumerate all sanitary BlockReferences currently in model-space (block names starting with 'PLMB-'). Filter by layer or exact block name. Returns handle, block name, layer, position, rotation, INV_ID / TYPE attribute values + ACCESSIBLE flag. Read-only. |
 | `populate_bathroom` | Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: 'wc-public' (WC + basin, single cubicle), 'wc-accessible' (PN-EN 17210 accessible WC + accessible basin + grab-bar markers, min 1500x1800), 'bathroom-residential' (WC + basin + bathtub OR shower), 'bathroom-hospital-patient' (wall-hung WC + basin + walk-in shower + grab bars), 'shower-room' (shower + basin), 'wc-block-staff' (2x WC + 2x basin + urinal). accessible=true overrides with accessible variants. |
 
+## acad-publish
+
+| Tool | Description |
+|---|---|
+| `apply_page_setup` | Apply a named page setup to layouts, so a whole set plots identically. Name the layouts explicitly, or pass allLayouts true - there is no 'all layouts' default, because applying a page setup to every tab in a drawing because an argument was omitted is precisely the accident worth designing out. Reports the outcome per layout rather than a count, so a partial success reads as one. |
+| `create_page_setup` | Define a NAMED, reusable page setup in this drawing - device, paper size, plot style table, rotation - that can then be applied to many layouts at once. Either snapshot a layout you already configured by hand (fromLayout), or state the settings explicitly; passing both is an error rather than a precedence rule nobody remembers. Refuses to overwrite an existing name unless overwrite is true, because a firm's standard page setups should not be redefined by accident. |
+| `delete_page_setup` | Remove a named page setup from this drawing. Layouts previously configured from it keep their settings - applying a page setup copies it rather than linking to it - and the result says so, so nobody expects issued sheets to revert. |
+| `get_plot_area` | Report what a layout would plot: paper size, margins, the plot window, rotation, centring and scale. Read-only. This is the agent-shaped half of a plot preview - a preview is something a human looks at, while this is the part that can be checked before committing to output. Omit layoutName for the current layout. |
+| `list_page_setups` | List the named page setups defined in this drawing, with the device, paper size, plot style table and rotation each one carries. Read-only. Call this before apply_page_setup - the names are per-drawing, so an agent cannot know them in advance. |
+| `publish_sheets` | Publish several layouts into ONE file - a multi-sheet PDF, DWF or DWFX. This is the thing files.export_file cannot do: its layout argument is singular, so it produces one file per sheet. Name the layouts explicitly; there is no all-layouts default, for the same reason apply_page_setup has none. Optionally names a page setup to plot every sheet through, which is how a set comes out consistent. Reports the byte count of the file that actually appeared, and fails if none did. |
+
 ## acad-router
 
 | Tool | Description |
 |---|---|
-| `acad_status` | Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only). |
+| `acad_call` | UNIVERSAL dispatch: invoke any backend composite (e.g. 'schedules/generate_door_schedule') OR any plugin primitive (e.g. tool='acad.annotations.add_table', category left empty). Routes in-process, no subprocess spawn. |
+| `acad_describe_drawing` | Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call. |
+| `acad_design_iterate` | Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop. |
+| `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |
 | `acad_find_tools` | Semantic search across all acad-* MCP servers via ToolBank find_tools, filtered to our namespace. Returns ranked candidates with category and tool name. |
 | `acad_load_category` | Shortcut: connect to a single acad-<name> MCP server in lazy mode. Returns its tool list summary so you can pick the next call. |
 | `acad_recommend_categories` | Suggest the 1-3 most relevant categories for a free-text task description. Saves tokens by avoiding indiscriminate loading. |
-| `acad_explain_capabilities` | Returns a compact catalog of all known acad-* categories with one-line summaries. |
-| `acad_call` | UNIVERSAL dispatch: invoke any backend composite (e.g. 'schedules/generate_door_schedule') OR any plugin primitive (e.g. tool='acad.annotations.add_table', category left empty). Routes in-process, no subprocess spawn. |
-| `acad_describe_drawing` | Vision shortcut (Phase 4): screenshot active viewport + OCR + LLM-describe in one call. |
-| `acad_undo_checkpoint` | Create a named undo checkpoint so subsequent operations can be rolled back atomically (Phase 7). |
 | `acad_restore_checkpoint` | Roll back to a previously created checkpoint (Phase 7). Used by the auto-design loop on validation failure. |
-| `acad_design_iterate` | Auto-design loop (Phase 7.0): create a checkpoint, execute a planned sequence of tool calls, validate against a named standard, auto-fix fixable violations or roll back on failure. Closes the 12-of-10 agent loop. |
+| `acad_status` | Lightweight health-check: AutoCAD alive, version, vertical (vanilla/civil3d/mechanical/architecture/MEP/plant3d), active document, layer, entity count, mode banner (full vs com-only). |
+| `acad_undo_checkpoint` | Create a named undo checkpoint so subsequent operations can be rolled back atomically (Phase 7). |
 
 ## acad-schedules
 
@@ -477,13 +544,81 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 | `select_polygon` | Select entities inside (crossing=false) or intersecting (crossing=true) a closed polygonal region. |
 | `select_window` | Select entities fully inside (or, with crossing=true, intersecting) the WCS axis-aligned window from min to max. |
 
+## acad-sheetsets
+
+| Tool | Description |
+|---|---|
+| `get_sheet_property` | Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for. |
+| `get_sheet_set_info` | Summarise a sheet set file: its name, description, how many sheets it holds and how many subsets. Read-only. Takes the .DST path - every tool in this category does, because none of them hold a sheet set open between calls. Start here to confirm a path is a readable sheet set before asking it anything else. |
+| `get_sheet_set_path` | Confirm a .DST path resolves to a readable sheet set and report its name and description. Read-only. Cheaper than get_sheet_set_info because it does not walk the sheet tree, so it is the call to make when all you need is to validate a path before passing it to the other tools. |
+| `list_custom_properties` | List the custom properties defined at SHEET SET level - the project-wide values a title block binds to, such as client or project number. Read-only. Per-sheet custom properties are reported by get_sheet_property instead, because a sheet can override the set and reporting both here would hide which value actually applies. |
+| `list_sheets` | List every sheet in a sheet set - number, name, title, description, the subset it sits under, and whether it is marked do-not-plot. Read-only. Subsets are walked recursively and each sheet reports its full subset path, so a nested set reads as a flat list an agent can act on rather than a tree it has to traverse. |
+| `list_subsets` | List the subsets of a sheet set with their full paths and how many sheets each holds directly. Read-only. Subsets are how a real set is organised by discipline or by phase, and a subset path is what move_sheet_to_subset will take once the write half of this category exists. |
+
+## acad-styles
+
+| Tool | Description |
+|---|---|
+| `apply_dimstyle_override` | Override chosen properties on ONE dimension entity, leaving its named style and every other dimension untouched. Use this when a single dimension needs a smaller text or a different arrow without inventing a whole style for it. Property names are the same as create_dimstyle - see list_dimstyle_properties. The result reports every override the dimension carries afterwards, not just the ones just set, so a caller sees the accumulated state. |
+| `copy_dimstyle` | Duplicate a dimension style under a new name, optionally overriding some properties in the same call. This is how a 1:100 style is made from a 1:50 one: copy it, override scale, done - and the two changes stay atomic instead of leaving a half-made style behind if the second call fails. |
+| `create_dimstyle` | Create a named dimension style with chosen properties - text height, arrow size, decimal places, overall scale and the rest. Pass properties as a name-to-value map; use list_dimstyle_properties for the names and ranges. An unknown property name or an out-of-range value is an error, never silently skipped, because skipping would report success over a style that is not what was asked for. Refuses an existing name unless overwrite is true. |
+| `create_layer_filter` | Create a PROPERTY layer filter from an expression, so layers created later that match it join automatically. Expressions look like NAME=="A-*" or COLOR=="1", combined with AND / OR / NOT. Nest it under an existing filter with parent. The result reports matchCount - check it, because a valid expression that selects nothing is stored and listed exactly like one that works. |
+| `create_layer_group_filter` | Create a GROUP layer filter holding a fixed list of named layers. Unlike a property filter this never changes on its own - a layer added to the drawing afterwards does not join it. Use this when the set is a decision rather than a pattern. Every named layer must already exist; naming one that does not is an error rather than a silently smaller group. |
+| `create_mleaderstyle` | Create a named multileader style with chosen properties - text height, arrow size, dogleg length, whether the leader has a landing, how many points it may have. Pass properties as a name-to-value map; an unknown name or an out-of-range value is an error rather than a silent skip. Refuses an existing name unless overwrite is true. |
+| `create_mlinestyle` | Define a named multiline (MLINE) style from a list of parallel line elements, each given an offset from the centreline plus an optional colour and linetype. This is how a wall type is defined once and drawn many times: a 200mm wall is two elements at +100 and -100. Offsets are in drawing units and may be negative. Refuses an existing name unless overwrite is true, and refuses to redefine a style that entities already use, because AutoCAD does not allow that and reporting success would be a lie. |
+| `create_tablestyle` | Create a named table style with chosen properties - cell margins, flow direction, and text height per row type. This is what makes a generated door or room schedule match the rest of the set instead of arriving at AutoCAD's defaults. Refuses an existing name unless overwrite is true. |
+| `create_visual_style` | Create a named visual style derived from one of AutoCAD's presets - Conceptual, Realistic, Shaded, Hidden, Wireframe2D and the rest. Call list_visual_styles first for the full preset list. This deliberately does NOT expose per-trait authoring: DBVisualStyle offers only an untyped trait API with no property catalogue to advertise, so a tool promising arbitrary edits could not tell a caller what it accepts. Apply the result to a viewport with set_viewport_visual_style. |
+| `delete_dimstyle` | Delete a dimension style. Refuses to delete 'Standard', refuses to delete the current style, and refuses a style still in use - with the reason, and a pointer to dimensions.set_entity_dimstyle for moving the dimensions off it first. |
+| `delete_layer_filter` | Delete a layer filter. Deleting one that has nested filters takes those with it, and the result names them, because a filter count that dropped further than expected is otherwise a mystery. Refuses AutoCAD's built-in filters. Layers themselves are never touched - a filter is a view of them, not a container. |
+| `delete_mleaderstyle` | Delete a multileader style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code. |
+| `delete_tablestyle` | Delete a table style. Refuses to delete 'Standard', refuses to delete the current style, and refuses one still in use - with the reason rather than a bare AutoCAD error code. |
+| `import_dimstyle_from_dwg` | Copy dimension styles out of another drawing file into this one - the practical way to adopt an office standard without rebuilding it property by property. Name the styles to take, or omit names to take every non-Standard one. Existing names are SKIPPED unless overwrite is true, and the result lists imported and skipped separately, read back from the clone mapping rather than from what was asked for, because 'imported' that quietly meant 'did nothing' is the exact failure this reports around. |
+| `list_dimstyle_overrides` | Report the properties on which ONE dimension differs from the named style it carries, with both values side by side. Read-only. This is the tool for the question 'why does this dimension look different from the others' - AutoCAD stores no list of overrides, so it is worked out by comparing the dimension's effective values against its style. count 0 means it matches on every property this bank authors, which the note says explicitly rather than leaving as an empty answer. |
+| `list_dimstyle_properties` | List every dimension-style property this bank can set, with the AutoCAD DIMVAR behind it, what it does, and its valid range. Read-only. Call this first: the property names here are plain (textHeight, arrowSize, decimalPlaces) rather than DIMVAR spellings, because nobody should have to know that a text height is called DIMTXT in order to set one. |
+| `list_layer_filters` | List every layer filter in the drawing - both kinds - with the expression or layer list behind it and how many layers it currently selects. Read-only. matchCount is the field to read after creating one: an expression can be perfectly valid, be stored, be listed, and select nothing, which no return code can tell you. |
+| `list_mleaderstyle_properties` | List every multileader-style property this bank can set, with the API member behind it, what it does and its valid range. Read-only. Booleans travel as 0 or 1 so the whole properties argument stays one map of names to numbers - two value types in one dictionary would be two ways to be wrong about it. |
+| `list_mleaderstyles` | List the multileader styles defined in this drawing with all their properties, and which one is current. Read-only. |
+| `list_mlinestyles` | List every multiline (MLINE) style in the drawing with its parallel line elements, total width, end caps and whether anything is currently drawn with it. Read-only. inUse matters before deleting or redefining one: AutoCAD refuses to change a style that existing MLINE entities reference, so this is the call that tells you why a redefinition would fail. |
+| `list_tablestyle_properties` | List every table-style property this bank can set, with the API member behind it, which row it applies to, what it does and its range. Read-only. Text heights are per row - titleTextHeight, headerTextHeight, dataTextHeight - because a schedule's caption, its column headings and its content are three different sizes and pretending otherwise is how tables end up unreadable. |
+| `list_tablestyles` | List the table styles defined in this drawing with all their properties, and which one is current. Read-only. The schedules family draws into whichever style is current, so this is what tells you what a generated door or room schedule will look like before you generate it. |
+| `list_visual_styles` | List every visual style in the drawing with the preset it derives from, plus the full set of preset names available to create_visual_style. Read-only. Styles AutoCAD keeps for its own rendering passes are flagged internalUseOnly rather than hidden, because omitting them would misreport what the drawing contains. |
+| `modify_dimstyle` | Change properties on an existing dimension style, leaving the rest alone. The stored style changes immediately; dimensions already placed pick it up on the next regen, and the result says so - an unchanged screen after this call is not a failed call. |
+| `modify_mleaderstyle` | Change properties on an existing multileader style, leaving the rest alone. The stored style changes immediately; multileaders already placed pick it up on the next regen, and the result says so. |
+| `modify_mlinestyle` | Change an existing multiline style, leaving anything you do not pass alone. Passing elements REPLACES the whole element list rather than merging into it - a partial merge has no meaning when the elements are an ordered geometric set. Refuses a style that MLINE entities already reference, which is an AutoCAD restriction and not a choice made here. |
+| `modify_tablestyle` | Change properties on an existing table style, leaving the rest alone. The stored style changes immediately; tables already placed pick it up on the next regen, and the result says so. |
+| `set_current_dimstyle` | Make a dimension style the current one, so dimensions placed afterwards use it. Returns the style with all its properties, so the caller can confirm what they just switched to rather than trusting the name. |
+| `set_current_mleaderstyle` | Make a multileader style the current one, so leaders placed afterwards use it. Returns the style with all its properties, so the caller can confirm what they switched to rather than trusting the name. |
+| `set_current_tablestyle` | Make a table style the current one, so tables created afterwards use it - including the ones the schedules family generates. Returns the style with all its properties so the caller can confirm what they switched to. |
+| `set_point_display` | Set how POINT entities are drawn, drawing-wide. Give a plain glyph name - dot, none, plus, cross, tick - with an optional surround of circle, square or both, and this works out the PDMODE bit code for you; pass mode instead if you already know it. size sets PDSIZE: positive is absolute drawing units, negative is a percentage of the viewport. This is NOT a style object - AutoCAD has no per-point style, only these two system variables, so the change applies to every point in the drawing. |
+| `set_table_cell_style` | Set the per-cell properties of a table style - text height, alignment, text colour and background - for one cell class. A table style keeps a separate set of these for each class, typically _TITLE, _HEADER and _DATA, which is why the style-wide create/modify tools cannot reach them. Pass backgroundColorIndex as -1 to clear a background rather than set one. The result reports the cell's full state afterwards, so a caller sees what the other properties still are. |
+
+## acad-ucs
+
+| Tool | Description |
+|---|---|
+| `create_ucs_3point` | Define a UCS from three points: origin, a point on the positive X axis, and a point on the positive-Y side. This is the general case - it fixes origin, rotation and plane in one call. Pass a name to save it; makeCurrent defaults to true. |
+| `create_ucs_from_entity` | Align the UCS to an existing entity's own plane and orientation, given its handle. The fastest way to start drawing on something already in the model - a wall face, a sloped polyline, a rotated block. |
+| `create_ucs_from_view` | Set the current UCS so its XY plane faces the screen - AutoCAD's UCS View. This is what makes text and dimensions placed on an isometric or a rotated view read straight instead of lying flat on the model's own plane. The origin stays where the current UCS has it, because changing what you are looking at should not move where coordinates are measured from. |
+| `create_ucs_origin` | Move the UCS origin without changing its axis directions. The cheapest useful UCS: work near a building corner in small local coordinates instead of large absolute ones. |
+| `create_ucs_zaxis` | Define a UCS from an origin and a Z-axis direction; X and Y are derived. Use this for work on an inclined plane - a roof slope, a ramp, a sloped section. |
+| `delete_ucs` | Delete a named UCS. The current UCS is unaffected even if it happens to match the deleted definition. |
+| `get_current_ucs` | Return the current UCS: origin and the three axis vectors in WCS, plus whether it is the world system. Read-only. |
+| `list_ucs` | List every named UCS in the drawing with its origin and axes, plus the current one. Read-only. Call this before restore_ucs to see what names exist. |
+| `rename_ucs` | Rename a saved UCS. The new name must be a valid AutoCAD symbol name and must not already exist. |
+| `restore_ucs` | Make a previously saved named UCS current. Errors if the name does not exist rather than silently leaving the current UCS in place. |
+| `rotate_ucs` | Rotate the current UCS about its own X, Y or Z axis by an angle in degrees. axis is 'x', 'y' or 'z'. Rotating about Z is the usual case: aligning to a wall that does not run north-south. |
+| `save_ucs` | Save the current UCS under a name so it can be restored later. Named UCSs are how a multi-storey or multi-wing project keeps its local coordinate systems addressable. |
+| `set_ucs_previous` | Step back to the UCS in use before the last change, like AutoCAD's UCS Previous. The history covers changes made through these tools in this session only - a UCS changed by hand in AutoCAD is not in it, and the tool says so rather than silently doing nothing. Reports how many steps remain. |
+| `set_ucs_world` | Reset the current UCS to WCS. Every tool in the bank interprets coordinates in WCS by default, so this returns the drawing to the state those tools assume. |
+| `transform_point` | Convert one point between coordinate systems. 'from' and 'to' each accept 'world', 'current', or a saved UCS name. Use this to work out WCS coordinates for the drawing tools while they are still WCS-only. |
+
 ## acad-validators
 
 | Tool | Description |
 |---|---|
 | `add_validator_rule` | Persist a brand-new validator rule to the user-rules directory (%LOCALAPPDATA%/AcadMcp/validators/_user/<discipline>/<id>.yaml) and reload the registry. The 'yaml' argument is the full YAML document text. Returns the assigned id and on-disk path. |
 | `auto_fix_violations` | Apply the fix recipe for every fixable violation in the cached report (or only those for the supplied ruleIds). All fixes run inside a SINGLE plugin transaction (rule 34 §3); failure rolls back the whole batch. Set dryRun=true to preview the planned actions without writing. |
-| `check_overlaps` | Purely geometric overlap / intersection scanner. Finds pairs of entities whose bounding boxes (or curves, for mode=polyline_crosses_polyline) overlap or cross. Use cases: doors actually piercing walls, labels stacked on top of each other, notes touching geometry. Args: layersA (required), layersB (default layersA), mode bbox_intersect\|centroid_in_bbox\|polyline_crosses_polyline, tolerance mm, optional window rectangle. Result is sorted by severity then overlap area. |
+| `check_overlaps` | Find pairs of entities whose bounding boxes (or curves, for mode="polyline_crosses_polyline") overlap or intersect. Purely geometric - schema-free, does NOT need a validator rule. Intended for the AI visual-review pipeline: e.g. "which A-DOOR entities actually pierce an A-WALL-* polyline" or "which A-ANNO-TEXT labels stack on top of each other". Args: layersA (required, e.g. ["A-DOOR"]), layersB (optional, defaults to layersA for self-overlap), mode in { "bbox_intersect" (default), "centroid_in_bbox", "polyline_crosses_polyline" }, tolerance (mm, default 0), optional window rectangle to restrict to a region, maxResults (default 500). Result is sorted by severity (critical=2+ curve intersections, major=1 intersection or overlap>10000 sq-mm, minor=smaller overlap) then by overlap area descending. Handles are order-stable across calls. |
 | `explain_rule` | Return the full definition of one validator rule by id - severity, discipline, description, references, scope, list of checks and the optional fix recipe. Pure local query - does not touch AutoCAD. |
 | `list_standards` | List every bundled standard preset (id, human name, ordered list of rule ids it expands to). Standards are convenience presets for validate_against_standard. Pure local query. |
 | `list_validators` | List every available validator rule (id, name, severity, discipline, fix-available, description). Optional filters: discipline (general\|architectural\|mechanical\|electrical\|civil\|mep) and minSeverity (info\|warning\|error). Pure local query - does not touch AutoCAD. |
@@ -510,14 +645,38 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 
 | Tool | Description |
 |---|---|
-| `zoom_window` | Zoom the active model-space view to the axis-aligned rectangle defined by two corner points (drawing units). Use before acad.files.export_file scope="Display" to capture a specific region as PNG, or to frame an area for visual inspection. |
+| `get_current_view` | Return the currently active view's center point, width, height and paper-space flag. Use to confirm a zoom actually took effect before capturing. |
+| `list_views` | List all named views stored in the drawing's VIEW table with their center point and size. Use to pick a saved architectural view (e.g. "FLOOR-1", "SITE", "DETAIL-A") before capture. |
+| `set_current_view` | Restore a named view by name (equivalent to the VIEW _R <name> command). Fails with a clear error if the name doesn't exist in the VIEW table. |
+| `zoom_all` | Zoom the active view to the drawing limits + extents (ZOOM _A). Shows every drawing limit rectangle as well as the entity extent. |
+| `zoom_center` | Zoom to a specific center point with a requested view height in drawing units (ZOOM _C <center> <height>). Useful to frame a named fixture at a known scale. |
 | `zoom_extents` | Zoom the active model-space view to fit the bounding box of all entities (ZOOM _E). Use as a reset between regional captures. |
-| `zoom_all` | Zoom the active view to the drawing limits + extents (ZOOM _A). |
-| `zoom_center` | Zoom to a specific center point with a requested view height in drawing units. |
-| `zoom_scale` | Zoom the active view by a relative scale factor. |
-| `list_views` | List all named views stored in the drawing's VIEW table with center, width, height and paper-space flag. |
-| `set_current_view` | Restore a named view by name. |
-| `get_current_view` | Return the currently active view's center, width, height and paper-space flag. |
+| `zoom_scale` | Zoom the active view by a relative scale factor (ZOOM _S <factor>x). factor>1 zooms in, 0<factor<1 zooms out. |
+| `zoom_window` | Zoom the active model-space view to the axis-aligned rectangle defined by two corner points (drawing units). Use before acad.files.export_file scope="Display" to capture a specific region as PNG, or to frame an area for visual inspection. Corners can be in any order; the tool normalises them. This changes what the user sees in AutoCAD and what PlotType.Display would capture. |
+
+## acad-viewports
+
+| Tool | Description |
+|---|---|
+| `clip_viewport_by_object` | Clip a viewport to an existing closed shape - a closed polyline, circle or ellipse already in paper space. Use this when create_polygonal_viewport's vertex list is the wrong tool because the outline already exists, for instance a site boundary traced earlier. The shape must be closed; an open polyline is refused rather than assigned and left to corrupt the viewport later. |
+| `create_polygonal_viewport` | Create a non-rectangular paperspace viewport from an ordered vertex list in paper-space coordinates. Needs at least 3 vertices; the outline is closed automatically. Use this for L-shaped or angled sheet windows. |
+| `create_viewport` | Create a rectangular paperspace viewport on the named layout: a window width x height centred at 'center' in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50). |
+| `delete_viewport` | Delete a paperspace viewport by handle. The model geometry it showed is untouched - only the window is removed. |
+| `get_viewport_extents_in_model` | Return the model-space rectangle a viewport is currently showing, derived from its centre, paper size and scale. Use this to work out what geometry a sheet window actually covers before annotating it. |
+| `get_viewport_info` | Full descriptor of one viewport by handle, including its frozen layers and which layers carry property overrides. |
+| `list_viewports` | List paperspace viewports with handle, layout, paper geometry, scale, lock state and how many layer overrides each carries. Pass layoutName to restrict to one tab, omit it for the whole drawing. Read-only. |
+| `set_viewport_annotation_scale` | Set the annotation scale of a paperspace viewport, which decides what size annotative text and dimensions plot at in that window, and which annotative objects appear in it at all. By default the viewport's zoom scale is set to match, the way AutoCAD's own UI keeps the two linked; pass syncViewScale false to set annotation scale alone. The scale must already be in the drawing's list - use annotative.add_scale_to_list first if it is not. |
+| `set_viewport_layer_freeze` | Freeze layers in ONE viewport only. This is the mechanism that lets a single model produce an architectural plan and a fire plan: freeze the layers each sheet must not show, in that sheet's viewport, without touching the model or any other viewport. |
+| `set_viewport_layer_thaw` | Thaw layers that were frozen in one viewport, so they display there again. Layers not frozen in that viewport are left alone. |
+| `set_viewport_lock` | Lock or unlock a viewport. A locked viewport cannot have its zoom or scale changed by panning inside it, which is the single most common way an issued sheet silently ends up at the wrong scale. |
+| `set_viewport_on_off` | Turn a viewport's display on or off. An off viewport keeps its position, size and scale but renders nothing - useful for sheets under construction without deleting the window. |
+| `set_viewport_scale` | Set the model-to-paper scale of a viewport (0.02 = 1:50, 0.01 = 1:100, 0.001 = 1:1000). Locking the viewport afterwards is what stops an accidental zoom changing the drawn scale of an issued sheet. |
+| `set_viewport_shade_plot` | Set how a viewport plots: 'AsDisplayed', 'Wireframe', 'Hidden' or 'Rendered'. Hidden is what removes obscured 3D edges on a plotted sheet without changing the model. |
+| `set_viewport_twist` | Rotate the view inside a viewport by an angle, without rotating the model. Use it to put a wing of a building square on the sheet when it sits at an angle in the model - the drawing reads straight while the geometry stays where the survey put it. |
+| `set_viewport_ucs` | Give one paperspace viewport its own coordinate system, independent of the drawing's current UCS. This is what lets one sheet annotate a rotated wing of a building in that wing's own coordinates while the neighbouring viewport stays on the world axes. Pass a saved UCS name, or 'world' to clear it. Also sets UCSVP so the setting is stored with the viewport instead of vanishing at the next layout switch. |
+| `set_viewport_view_direction` | Set which way a viewport looks at the model: a named preset (top, bottom, front, back, left, right, sw-iso, se-iso, ne-iso, nw-iso) or an explicit direction vector. This is what turns one 3D model into a plan, an elevation and an isometric on the same sheet without duplicating geometry. |
+| `set_viewport_visual_style` | Set the visual style a viewport displays and plots with - 2dWireframe, Hidden, Realistic, Conceptual, Shaded and whatever else the drawing defines. Unknown names are refused with the list of what this drawing actually has, since visual styles are per-drawing rather than fixed. |
+| `sync_viewport_to_annotation_scale` | Set a viewport's zoom scale to match the annotation scale it already carries. set_viewport_annotation_scale does this by default; this tool is for repairing a viewport where the two have drifted apart - text sized for 1:50 on a window drawn at 1:100. Reports the scale before and after and whether anything changed. |
 
 ## acad-vision
 
@@ -525,10 +684,37 @@ Auto-generated from `toolbank-manifests/acad-*.json`. 31 categories, 340 tools t
 |---|---|
 | `classify_drawing` | Use a vision LLM (Anthropic Claude or OpenAI GPT-4o, whichever has an API key) to classify a drawing's discipline (arch / mech / elec / pid / civil / unknown) and sheet type (plan / section / detail / schedule / title / isometric / unknown). Returns a JSON verdict with confidence and a one-line rationale. Cached by image content hash. |
 | `cross_validate_with_dxf` | Compare a list of OCR'd strings against a list of DXF text strings (the latter typically harvested by exporting the active document via acad.files.export_file -> DXF and walking the entity stream). Returns matched / only-in-OCR / only-in-DXF buckets after case + whitespace normalisation. Optional numericTolerance (>0) treats numeric tokens within the tolerance as matched (e.g. 12.5 vs 12.6). |
-| `describe_image` | Free-form vision LLM description of any image (defaults to a CAD-reviewer prompt). Provider is "auto" (prefer Anthropic if ANTHROPIC_API_KEY is set, else OpenAI), "anthropic" or "openai". Image is downscaled to <=1568 px long side and JPEG-compressed q85 before sending. Cached by content hash + provider + first 64 chars of prompt. |
+| `describe_image` | Free-form vision LLM description of any image (defaults to a CAD-reviewer prompt). Provider is "auto" (prefer Anthropic if ANTHROPIC_API_KEY is set, else OpenAI), "anthropic" or "openai". Image is downscaled to <=1568 px long side and JPEG-compressed q85 before sending. OPTIONAL persona argument selects a curated review template: "architect-reviewer" (EN, Polish licensed architect reviewing a hospital floor plan at 1:100, structured output under walls-and-openings / doors / labels / code-compliance / visual-craft, with severity critical\|major\|minor and suggested MCP fix), "architect-reviewer-pl" (same in Polish), "delta-compare" (before/after regression check). When persona is set and prompt is left at default, the persona template replaces the prompt; otherwise the prompt is appended as "User focus: ...". Cached by content hash + provider + persona + first 64 chars of the composed prompt. |
 | `detect_symbols` | Run a custom YOLO CAD-symbol detector on a raster image. Discipline picks the per-discipline weights file: "arch" / "mech" / "elec" / "pid". Returns labelled bounding boxes (pixel coords) with confidence. If weights are missing returns 503 with an installHint pointing to scripts/setup-vision-models.ps1. |
 | `extract_dimensions` | Extract dimension callouts from a raster drawing. Filters OCR tokens that look like dimensions (e.g. 1234, 12.5 mm, 12'-6"), parses them to a numeric value in millimetres when possible, and returns each token with its pixel box and confidence. Units may be "mm", "cm", "m", "in", "ft" or "auto" (rely on the OCR'd unit suffix). |
 | `extract_titleblock` | Extract title-block fields (drawing_no, title, scale, date, drawn_by, checked_by, project, rev, sheet, ...) from a raster drawing. Pass a discipline hint ("architectural-eu" default, "architectural-us", "mechanical", "electrical", "civil") so the right field-alias dictionary is used. Returns canonical field keys + raw OCR labels + values with confidence and the panel rectangle. |
 | `ocr_image` | Run OCR on a raster image or a single PDF page. Returns recognised text tokens with per-token confidence and pixel bounding boxes (top-left origin). Engine is one of "paddleocr" (default, best on CAD), "easyocr", "tesseract". Image is referenced by absolute file path or base64 data URL; for PDFs supply page (1-based) and dpi. Uses on-disk cache keyed by content hash + engine + version. |
 | `vision_health` | Probe the AcadMcp.Vision Python sidecar at its discovered base URL (env ACADMCP_VISION_PORT, then %LOCALAPPDATA%\AcadMcp\vision.port, then default 50062). Returns status, version, phase and uptime. Use this to confirm the sidecar is reachable before calling other vision tools. |
 | `vision_version` | Return the AcadMcp.Vision sidecar version, phase, the availability flags of every optional ML dep (paddleocr, easyocr, tesseract, ultralytics, torch, sam2, anthropic, openai, pypdfium2) and whether vision-LLM API keys are present. Use this to tell the user exactly which install command they need. |
+
+## acad-xrefs
+
+| Tool | Description |
+|---|---|
+| `attach_xref` | Attach an external drawing as an XREF (attachment). Attachments are carried into any drawing that in turn references this one - use attach_xref_overlay when you do not want that. Block name defaults to the file name; insertion, scale and rotation default to origin/1/0. |
+| `attach_xref_overlay` | Attach an external drawing as an OVERLAY. Overlays are NOT carried through when this drawing is itself referenced elsewhere, which is what stops circular and duplicated references in a multi-discipline set. Prefer this for cross-discipline backgrounds. |
+| `bind_xref` | Bind an XREF into this drawing, making it a permanent local block. Default (bind mode) renames dependent symbols to blockName$0$LAYER; insertMode=true merges them into existing local symbols instead, which is usually what you want for issue-ready files but can collide with local names. |
+| `clip_xref_by_object` | Clip an external reference to an outline that already exists in the drawing - a closed polyline or a circle - instead of retyping its coordinates. On a real project the boundary is usually already drawn: a site outline, a fire compartment, a lease line. Set inverted to clip away the inside instead of the outside. A circle is approximated with 64 segments, finer than any plotted line width. |
+| `clip_xref_polygonal` | Clip one XREF insert to an arbitrary closed polygon given as an ordered vertex list in WCS. Needs at least 3 vertices; the polygon is closed automatically. |
+| `clip_xref_rect` | Clip one XREF insert to a rectangle given by two opposite corners in WCS. inverted=true hides what is inside the rectangle instead of outside. Clipping is per-insert, so pass a handle from get_xref_info, not a block name. |
+| `delete_xref_clip` | Remove the clip boundary from an XREF insert so the whole reference displays again. Succeeds quietly when there was no clip. |
+| `detach_xref` | Detach an XREF completely: removes the definition and every insert of it. Fails if the xref is nested under another reference - detach the parent instead. |
+| `find_missing_xrefs` | List every XREF whose file cannot be resolved at its saved path. Read-only; pair with set_xref_path or repath_all_xrefs to fix them. |
+| `get_xref_info` | Full descriptor of one XREF by block name, plus the handles of every BlockReference insert of it. Use the returned handles for clipping, which is per-insert. |
+| `invert_xref_clip` | Flip an existing clip boundary inside-out: what was hidden becomes visible and the reverse. Errors if the insert has no clip. |
+| `list_nested_xrefs` | List XREFs that are referenced by another XREF rather than directly by this drawing, with their parent. Nested references cannot be detached or repathed here - do that in the parent drawing. |
+| `list_xref_dependent_symbols` | List the layers, linetypes, text styles, dimension styles and blocks that arrive in this drawing through one XREF. These are the names that get renamed on bind - check here before binding to predict collisions. |
+| `list_xrefs` | List every XREF in the drawing with its path, resolution status, overlay/attachment kind, nesting and insert count. Read-only. This is the tool to call first when a drawing does not look right. |
+| `reload_all_xrefs` | Reload every resolved XREF in the drawing. Reports per-xref status so partial failures are visible. |
+| `reload_xref` | Reload one XREF from disk, picking up changes another author has saved. Returns the resolved status so a failure to find the file is visible rather than silent. |
+| `repath_all_xrefs` | Bulk path repair: replace oldPrefix with newPrefix in every XREF path. dryRun=true reports what would change, including whether each new path actually resolves, without writing anything. Run the dry run first. |
+| `reset_xref_layer_overrides` | Drop layer overrides for one XREF, returning its layers to the properties defined in the source drawing. Pass a layer name to reset just that one, or omit it to reset all of them. |
+| `set_clip_frame_display` | Show or hide clip boundary frames, for the WHOLE DRAWING. This does not change what any clip hides and it is not scoped to one reference: XCLIPFRAME is a drawing-wide system variable, so every clipped xref and block follows it together. Three modes, and the middle one is the useful one while laying out: 'hidden', 'display' (visible on screen, never plotted) and 'displayAndPlot'. The result reports the previous mode as well, so a caller can put it back. |
+| `set_xref_layer_override` | Override colour, linetype, lineweight, on/off or frozen state for one layer coming from an XREF, without touching the source drawing. This is how a background reference is greyed back on a plan. |
+| `set_xref_path` | Point one XREF at a different file. relativePath=true stores it relative to this drawing, which is what survives moving the project folder. Reloads by default so the result is immediately verifiable. |
+| `unload_xref` | Unload an XREF: its geometry stops displaying and stops loading, but the definition and inserts stay so it can be reloaded later. Use this rather than detach for temporarily hiding a heavy reference. |

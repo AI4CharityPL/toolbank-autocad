@@ -48,3 +48,15 @@ internal sealed record MoveSheetArgsDto(
     [property: JsonPropertyName("path")]   string? Path,
     [property: JsonPropertyName("sheet")]  string? Sheet,
     [property: JsonPropertyName("subset")] string? Subset);
+
+internal sealed record SetSheetPropertyArgsDto(
+    [property: JsonPropertyName("path")]     string? Path,
+    [property: JsonPropertyName("sheet")]    string? Sheet,
+    [property: JsonPropertyName("property")] string? Property,
+    [property: JsonPropertyName("value")]    string? Value);
+
+internal sealed record DefinePropertyArgsDto(
+    [property: JsonPropertyName("path")]         string? Path,
+    [property: JsonPropertyName("name")]         string? Name,
+    [property: JsonPropertyName("defaultValue")] string? DefaultValue,
+    [property: JsonPropertyName("scope")]        string? Scope);

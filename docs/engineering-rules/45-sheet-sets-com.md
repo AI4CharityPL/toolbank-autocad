@@ -168,6 +168,26 @@ And one more, from the subsets:
 | What the signature suggests | What it does |
 |---|---|
 | `InsertComponent(comp, before)` moves a component into a subset | It **adds**; it does not re-parent. Called on a sheet that still belongs to another subset it fails `E_INVALIDARG`; called on one already under the target it answers `0x800288C6` *duplicate identifier*. The second message is what explained the first. A move is `owner.RemoveSheet(sheet)` followed by `target.InsertComponent(sheet, null)`. |
+| A sheet or sheet set **is** a property bag | It is not. `IAcSmSheet` implements exactly `IAcSmComponent` and `IAcSmPersist`. The bag is **fetched**: `GetCustomPropertyBag()`. See the section below — this one shipped. |
+| `new AcSmCustomPropertyValue()` gives you a usable object | Half of one. It is not attached to a database until `InitNew(owner)` runs, and `SetValue` on an uninitialised value throws a bare `NullReferenceException` from inside the interop layer — no HRESULT, nothing naming initialisation as the problem. Every `IAcSmPersist` carries `InitNew` for this reason. |
+
+### The nearest miss: a wrong cast that produced an EMPTY RESULT
+
+`list_custom_properties` and the `custom` half of `get_sheet_property` shipped testing
+`x is IAcSmCustomPropertyBag bag` and falling back to an empty dictionary. Since neither a sheet
+nor a sheet set implements that interface, the test **always** failed, and both tools answered
+"no custom properties" for every sheet set ever passed to them. Both were verified at the time.
+
+The failure had no exception, no wrong value, no crooked geometry on screen. **A call that
+succeeds and returns nothing is indistinguishable from a sheet set that has nothing in it.** It
+was found only when the write tools forced the question of whether the bag was reachable at all,
+and confirmed by pointing the fixed reads at AutoCAD's sample set, which turned out to have
+carried `Client Name: ALLAN CONSTRUCTION LTD.` and eleven others the whole time.
+
+**Rule:** a read tool that can return an empty collection must be verified against a fixture
+**known to be non-empty**. Asserting that the call succeeded proves nothing about a tool whose
+failure mode is silence. `scripts/verify-sheetsets.py` now writes a property and reads it back,
+so empty can never pass again.
 
 `RemoveSheet` **detaches rather than destroys** — measured, by counting the set's sheets before
 and after a full move-out-and-back cycle and finding them equal. That was worth establishing

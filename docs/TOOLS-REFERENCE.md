@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 485 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 487 tools total.
 
 ## Categories
 
@@ -34,7 +34,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
-- [acad-sheetsets](#acad-sheetsets) (13 tools)
+- [acad-sheetsets](#acad-sheetsets) (15 tools)
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
@@ -549,6 +549,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | Tool | Description |
 |---|---|
 | `create_subset` | Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous. |
+| `define_custom_property` | Define a custom property on the sheet set - the project-wide data a title block binds to, such as client, project number or issue date. scope='sheetSet' (the default) means one value shared by the whole project; scope='sheet' means every sheet carries its own, which set_sheet_property then fills in per sheet. Writes to the shared .DST under a lock. Setting an existing property updates its value and keeps the scope it already had, so an update never silently re-scopes it. |
 | `delete_subset` | Delete an EMPTY subset from a sheet set. Refuses while it still holds sheets and reports how many, because what AutoCAD does with the sheets inside a removed subset is not documented and could include deleting them - move them out with move_sheet_to_subset first. Sheets are never removed by this tool. Writes to the shared .DST under a lock. |
 | `get_sheet_property` | Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for. |
 | `get_sheet_set_info` | Summarise a sheet set file: its name, description, how many sheets it holds and how many subsets. Read-only. Takes the .DST path - every tool in this category does, because none of them hold a sheet set open between calls. Start here to confirm a path is a readable sheet set before asking it anything else. |
@@ -560,6 +561,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `rename_sheet` | Rename and renumber a sheet in one locked write - AutoCAD's own "Rename & Renumber Sheet". Pass number, title, or both; at least one is required. A sheet has NO separately stored name: what the Sheet Set Manager displays is its number and title composed together, so those two are what renaming a sheet actually sets. Answers with all three fields as they were and as they now are. Pass "" as the title to clear it. |
 | `set_sheet_do_not_plot` | Mark one sheet do-not-plot, or clear that mark. The Publisher skips a do-not-plot sheet rather than failing the job, so this is how a sheet is held back from an issue without being removed from the set. Writes to the shared .DST under a lock. Pass doNotPlot=false to put the sheet back into the next publish. |
 | `set_sheet_number` | Renumber one sheet in a sheet set - the 'A-101' that appears in the title block and orders the drawing list. Writes to the shared .DST: it is locked for the call, saved, and unlocked. Addresses the sheet by its current name OR its current number, and answers with both the old and the new number so the edit can be undone from the result alone. |
+| `set_sheet_property` | Set a custom property on ONE sheet - the per-sheet value a title block prints, such as its revision or who checked it. Writes to the shared .DST under a lock and creates the property on that sheet if it does not exist yet. Refuses the built-in fields name, number, title and description, naming the tool that sets each, because writing one here would create a second property sharing the name and only one of them would mean anything. Answers with the previous value and whether it was created. |
 | `set_sheet_title` | Set a sheet's title - the descriptive line a title block prints under the number, such as 'Ground Floor Plan'. Writes to the shared .DST under a lock. The sheet's displayed name is composed from its number and title, so setting the title moves that name too. Pass "" to clear the title. AutoCAD itself rejects an empty title, so the tool sends a space and the file stores it as empty - the result reports the "" that will be on disk, not the space that is briefly in memory. |
 
 ## acad-styles

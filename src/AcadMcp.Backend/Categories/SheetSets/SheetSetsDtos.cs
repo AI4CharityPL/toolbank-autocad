@@ -168,3 +168,34 @@ public sealed record MoveSheetResult(
     [property: JsonPropertyName("to")]                   string To,
     [property: JsonPropertyName("movedToSheetSetRoot")]  bool MovedToSheetSetRoot,
     [property: JsonPropertyName("note")]                 string Note);
+
+// ─────────── custom properties ───────────
+
+public sealed record SetSheetPropertyArgs(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("sheet")]    string Sheet,
+    [property: JsonPropertyName("property")] string Property,
+    [property: JsonPropertyName("value")]    string Value);
+
+public sealed record DefinePropertyArgs(
+    [property: JsonPropertyName("path")]         string Path,
+    [property: JsonPropertyName("name")]         string Name,
+    [property: JsonPropertyName("defaultValue")] string? DefaultValue = null,
+    [property: JsonPropertyName("scope")]        string? Scope = null);
+
+public sealed record SetSheetPropertyResult(
+    [property: JsonPropertyName("path")]     string Path,
+    [property: JsonPropertyName("sheet")]    string Sheet,
+    [property: JsonPropertyName("property")] string Property,
+    [property: JsonPropertyName("before")]   string Before,
+    [property: JsonPropertyName("value")]    string Value,
+    [property: JsonPropertyName("created")]  bool Created);
+
+public sealed record DefinePropertyResult(
+    [property: JsonPropertyName("path")]         string Path,
+    [property: JsonPropertyName("name")]         string Name,
+    [property: JsonPropertyName("scope")]        string Scope,
+    [property: JsonPropertyName("defaultValue")] string DefaultValue,
+    [property: JsonPropertyName("before")]       string Before,
+    [property: JsonPropertyName("created")]      bool Created,
+    [property: JsonPropertyName("note")]         string Note);

@@ -163,4 +163,26 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<MoveSheetResult> MoveSheetToSubset(IPluginGateway gw, MoveSheetArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<MoveSheetArgs, MoveSheetResult>(gw, "acad.sheetsets.move_sheet_to_subset", args, T_NORMAL, ct);
+
+    // ─────────── custom properties: the data a title block binds to ───────────
+    //
+    // This is the half of the category that makes `fields.insert_field_sheet_set_property`
+    // worth having. Reading a property was enough to make that field render; writing one is
+    // what lets an agent fill a title block rather than only quote it.
+
+    [McpTool("set_sheet_property", "Set a custom property on ONE sheet - the per-sheet value a title block prints, such as its revision or who checked it. Writes to the shared .DST under a lock and creates the property on that sheet if it does not exist yet. Refuses the built-in fields name, number, title and description, naming the tool that sets each, because writing one here would create a second property sharing the name and only one of them would mean anything. Answers with the previous value and whether it was created.", "sheetsets",
+        Intent = new[] { "ustaw wlasciwosc arkusza", "wpisz rewizje do arkusza",
+                         "set a custom property on a sheet", "fill a title block field",
+                         "kto sprawdzil ten arkusz", "per-sheet custom value" },
+        RequiresPlugin = true)]
+    public static Task<SetSheetPropertyResult> SetSheetProperty(IPluginGateway gw, SetSheetPropertyArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<SetSheetPropertyArgs, SetSheetPropertyResult>(gw, "acad.sheetsets.set_sheet_property", args, T_NORMAL, ct);
+
+    [McpTool("define_custom_property", "Define a custom property on the sheet set - the project-wide data a title block binds to, such as client, project number or issue date. scope='sheetSet' (the default) means one value shared by the whole project; scope='sheet' means every sheet carries its own, which set_sheet_property then fills in per sheet. Writes to the shared .DST under a lock. Setting an existing property updates its value and keeps the scope it already had, so an update never silently re-scopes it.", "sheetsets",
+        Intent = new[] { "zdefiniuj wlasciwosc zestawu arkuszy", "dodaj numer projektu do zestawu",
+                         "define a sheet set custom property", "project-wide title block data",
+                         "nowa wlasciwosc dla wszystkich arkuszy", "add a custom property" },
+        RequiresPlugin = true)]
+    public static Task<DefinePropertyResult> DefineCustomProperty(IPluginGateway gw, DefinePropertyArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<DefinePropertyArgs, DefinePropertyResult>(gw, "acad.sheetsets.define_custom_property", args, T_NORMAL, ct);
 }

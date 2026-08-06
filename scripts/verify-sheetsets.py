@@ -192,6 +192,77 @@ do("set_sheet_do_not_plot", {"path": DST, "sheet": "A-102", "doNotPlot": False},
 check("PERSISTED: fresh-path copy has it cleared",
       (fresh_find(number="A-102") or {}).get("doNotPlot") is False, "fresh copy disagrees")
 
+# ── custom properties ─────────────────────────────────────────────────────────
+print("\n== define_custom_property at sheet-set scope ==")
+r = do("define_custom_property", {"path": DST, "name": "ACADMCP-Project",
+                                  "defaultValue": "P-2026-001"})
+if isinstance(r, dict):
+    check("defaults to sheetSet scope", r.get("scope") == "sheetSet", str(r)[:180])
+    check("reports it was created", r.get("created") is True, str(r)[:180])
+    check("carries the value back", r.get("defaultValue") == "P-2026-001", str(r)[:180])
+
+
+def fresh_setprops():
+    _fresh[0] += 1
+    copy = os.path.join(WORK, f"fresh-{_fresh[0]:02d}.dst")
+    shutil.copy2(DST, copy)
+    ok, r = S.call("list_custom_properties", {"path": copy})
+    return (r or {}).get("sheetSetProperties") or {} if ok else {}
+
+
+check("PERSISTED: a fresh-path copy carries the property",
+      fresh_setprops().get("ACADMCP-Project") == "P-2026-001", str(fresh_setprops())[:200])
+
+print("\n== updating it keeps the scope and reports the old value ==")
+r = do("define_custom_property", {"path": DST, "name": "ACADMCP-Project",
+                                  "defaultValue": "P-2026-002"},
+       label="define_custom_property (update)")
+if isinstance(r, dict):
+    check("reports the previous value", r.get("before") == "P-2026-001", str(r)[:180])
+    check("is not reported as created", r.get("created") is False, str(r)[:180])
+check("PERSISTED: the update landed",
+      fresh_setprops().get("ACADMCP-Project") == "P-2026-002", str(fresh_setprops())[:200])
+
+do("define_custom_property", {"path": DST, "name": "ACADMCP-Bad", "scope": "nonsense"},
+   label="an unknown scope is refused", expect_fail=True)
+
+print("\n== set_sheet_property ==")
+r = do("set_sheet_property", {"path": DST, "sheet": "A-102",
+                              "property": "ACADMCP-Rev", "value": "C"})
+if isinstance(r, dict):
+    check("reports it was created", r.get("created") is True, str(r)[:180])
+    check("carries the value back", r.get("value") == "C", str(r)[:180])
+
+ok, back = S.call("get_sheet_property", {"path": DST, "sheet": "A-102"})
+check("get_sheet_property sees it", ((back or {}).get("custom") or {}).get("ACADMCP-Rev") == "C",
+      str((back or {}).get("custom"))[:200])
+
+_fresh[0] += 1
+_copy = os.path.join(WORK, f"fresh-{_fresh[0]:02d}.dst")
+shutil.copy2(DST, _copy)
+ok, back = S.call("get_sheet_property", {"path": _copy, "sheet": "A-102"})
+check("PERSISTED: fresh-path copy carries the sheet property",
+      ((back or {}).get("custom") or {}).get("ACADMCP-Rev") == "C",
+      str((back or {}).get("custom"))[:200])
+
+r = do("set_sheet_property", {"path": DST, "sheet": "A-102",
+                              "property": "ACADMCP-Rev", "value": "D"},
+       label="set_sheet_property (update)")
+if isinstance(r, dict):
+    check("reports the previous value", r.get("before") == "C", str(r)[:180])
+    check("is not reported as created", r.get("created") is False, str(r)[:180])
+
+print("\n== built-in fields are refused, and the refusal names the right tool ==")
+for field, tool in [("number", "set_sheet_number"), ("title", "set_sheet_title"),
+                    ("name", "rename_sheet")]:
+    r = do("set_sheet_property", {"path": DST, "sheet": "A-102", "property": field, "value": "X"},
+           label=f"built-in '{field}' is refused", expect_fail=True)
+    check(f"and points at {tool}", tool in str(r), f"got: {str(r)[:160]}")
+
+check("the built-in number was NOT overwritten",
+      (fresh_find(number="A-102") or {}).get("number") == "A-102",
+      "a refused call changed the sheet")
+
 # ── subsets ───────────────────────────────────────────────────────────────────
 print("\n== create_subset ==")
 sheets_before = len(reread_fresh())

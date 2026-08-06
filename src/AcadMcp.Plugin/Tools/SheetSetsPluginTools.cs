@@ -62,6 +62,8 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.create_subset", CreateSubset);
         host.Register("acad.sheetsets.delete_subset", DeleteSubset);
         host.Register("acad.sheetsets.move_sheet_to_subset", MoveSheetToSubset);
+        host.Register("acad.sheetsets.set_sheet_property", SetSheetProperty);
+        host.Register("acad.sheetsets.define_custom_property", DefineCustomProperty);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -231,6 +233,35 @@ internal static class SheetSetsPluginTools
         finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
     }
 
+    /// <summary>The custom property bag of a sheet, subset or sheet set.</summary>
+    /// <remarks>
+    /// **Fetched, never cast.** `IAcSmSheet` implements exactly `IAcSmComponent` and
+    /// `IAcSmPersist` — it is not itself a property bag, and neither is `IAcSmSheetSet`. The
+    /// first version of the read tools tested `x is IAcSmCustomPropertyBag bag` and fell back to
+    /// an empty dictionary, so `list_custom_properties` and the `custom` half of
+    /// `get_sheet_property` answered "no custom properties" for every sheet set ever passed to
+    /// them. Both shipped and both were "verified", because a call that succeeds and returns
+    /// nothing looks exactly like a sheet set that has nothing.
+    ///
+    /// The nearest miss in this bank: the failure was not an exception, a wrong value or a
+    /// crash. It was an EMPTY RESULT, which is the hardest kind to notice, and only a fixture
+    /// with known properties in it could tell the difference.
+    /// </remarks>
+    private static IAcSmCustomPropertyBag? BagOf(object owner)
+    {
+        try
+        {
+            return owner switch
+            {
+                IAcSmSheet s => s.GetCustomPropertyBag(),
+                IAcSmSheetSet ss => ss.GetCustomPropertyBag(),
+                IAcSmSubset sub => sub.GetCustomPropertyBag(),
+                _ => null,
+            };
+        }
+        catch (COMException) { return null; }
+    }
+
     private static Dictionary<string, string> CustomProps(IAcSmCustomPropertyBag bag)
     {
         var into = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -348,9 +379,8 @@ internal static class SheetSetsPluginTools
                         ["title"] = found.GetTitle() ?? "",
                         ["description"] = found.GetDesc() ?? "",
                     };
-                    var custom = found is IAcSmCustomPropertyBag bag
-                        ? CustomProps(bag)
-                        : new Dictionary<string, string>();
+                    var bag = BagOf(found);
+                    var custom = bag is null ? new Dictionary<string, string>() : CustomProps(bag);
 
                     if (!string.IsNullOrWhiteSpace(a.Property))
                     {
@@ -462,9 +492,8 @@ internal static class SheetSetsPluginTools
             var a = Read<SheetSetPathArgsDto>(args);
             return WithSheetSet(a.Path, (ss, full) =>
             {
-                var setLevel = ss is IAcSmCustomPropertyBag bag
-                    ? CustomProps(bag)
-                    : new Dictionary<string, string>();
+                var bag = BagOf(ss);
+                var setLevel = bag is null ? new Dictionary<string, string>() : CustomProps(bag);
                 return Wrap(new
                 {
                     path = full,
@@ -728,6 +757,160 @@ internal static class SheetSetsPluginTools
                     });
                 }
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    // ─────────── custom properties ───────────
+
+    /// <summary>The four fields that are NOT custom properties, and what sets each instead.</summary>
+    /// <remarks>
+    /// `get_sheet_property` reports these under `builtIn` and everything else under `custom`, so a
+    /// caller can reasonably try to write one back through the same name. It has to be told no,
+    /// and told where to go — silently creating a custom property called "number" alongside the
+    /// real one would leave two things named the same and only one of them meaningful.
+    /// </remarks>
+    private static readonly Dictionary<string, string> BuiltInSheetFields =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["name"] = "rename_sheet",
+            ["number"] = "set_sheet_number",
+            ["title"] = "set_sheet_title",
+            ["description"] = "rename_sheet (it carries the sheet's description)",
+        };
+
+    /// <summary>Write one custom property into a bag, keeping the flags an existing one already had.</summary>
+    /// <remarks>
+    /// `SetProperty` takes an <c>AcSmCustomPropertyValue</c>, which is instantiable — it carries a
+    /// CoClass attribute. A NEW property needs its flags set explicitly, because `PropertyFlags`
+    /// is what tells AutoCAD whether the property belongs to the sheet set or to each sheet; a
+    /// value written with `EMPTY` flags is not shown as either. An EXISTING one keeps whatever it
+    /// had, so updating a value never silently re-scopes it.
+    /// </remarks>
+    private static string SetCustomProperty(
+        IAcSmCustomPropertyBag bag, string name, string value, PropertyFlags flagsIfNew)
+    {
+        string before = "";
+        AcSmCustomPropertyValue? existing = null;
+        try { existing = bag.GetProperty(name); } catch (COMException) { existing = null; }
+
+        var flags = flagsIfNew;
+        if (existing is not null)
+        {
+            try
+            {
+                before = existing.GetValue()?.ToString() ?? "";
+                flags = existing.GetFlags();
+            }
+            catch (COMException) { }
+            finally { try { Marshal.ReleaseComObject(existing); } catch (Exception) { } }
+        }
+
+        var pv = new AcSmCustomPropertyValue();
+        try
+        {
+            // InitNew FIRST, with the bag as owner. A freshly co-created AcSmCustomPropertyValue
+            // is not yet attached to a database, and SetValue on it throws a bare
+            // NullReferenceException from inside the interop layer - no HRESULT, no hint that
+            // initialisation is what is missing. Every IAcSmPersist carries InitNew for exactly
+            // this reason; the constructor is only half of creating one.
+            pv.InitNew((IAcSmPersist)bag);
+            pv.SetValue(value);
+            pv.SetFlags(flags);
+            bag.SetProperty(name, pv);
+        }
+        finally { try { Marshal.ReleaseComObject(pv); } catch (Exception) { } }
+        return before;
+    }
+
+    private static string ReadCustomProperty(IAcSmCustomPropertyBag bag, string name)
+    {
+        AcSmCustomPropertyValue? v = null;
+        try { v = bag.GetProperty(name); } catch (COMException) { return ""; }
+        try { return v?.GetValue()?.ToString() ?? ""; }
+        catch (COMException) { return ""; }
+        finally { if (v is not null) { try { Marshal.ReleaseComObject(v); } catch (Exception) { } } }
+    }
+
+    private static Task<ToolDispatchResult> SetSheetProperty(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.set_sheet_property", ct, (doc, db, tr) =>
+        {
+            var a = Read<SetSheetPropertyArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Property))
+                throw new ArgumentException("property is required: the custom property's name.");
+            if (a.Value is null)
+                throw new ArgumentException("value is required.");
+            if (BuiltInSheetFields.TryGetValue(a.Property!, out var instead))
+                throw new ArgumentException(
+                    "'" + a.Property + "' is a built-in sheet field, not a custom property. " +
+                    "Use " + instead + ". Writing it here would create a second, meaningless " +
+                    "property sharing the name.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var sheet = RequireSheet(ss, a.Sheet, full);
+                try
+                {
+                    var bag = BagOf(sheet)
+                        ?? throw new InvalidOperationException(
+                            "Sheet '" + sheet.GetName() + "' exposes no custom property bag.");
+
+                    // A sheet's own properties are CUSTOM_SHEET_PROP. Defining one that does not
+                    // exist yet is allowed here rather than refused: the SSM lets a sheet carry a
+                    // property the set has not declared, and refusing would make this tool unable
+                    // to do the thing its name says.
+                    var before = SetCustomProperty(bag, a.Property!, a.Value!,
+                                                   PropertyFlags.CUSTOM_SHEET_PROP);
+                    return Wrap(new
+                    {
+                        path = full,
+                        sheet = sheet.GetName(),
+                        property = a.Property,
+                        before,
+                        value = ReadCustomProperty(bag, a.Property!),
+                        created = before.Length == 0,
+                    });
+                }
+                finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
+            });
+        });
+
+    private static Task<ToolDispatchResult> DefineCustomProperty(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.define_custom_property", ct, (doc, db, tr) =>
+        {
+            var a = Read<DefinePropertyArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Name))
+                throw new ArgumentException("name is required: the custom property's name.");
+
+            var scope = (a.Scope ?? "sheetSet").Trim();
+            var flags = scope.Equals("sheet", StringComparison.OrdinalIgnoreCase)
+                ? PropertyFlags.CUSTOM_SHEET_PROP
+                : scope.Equals("sheetSet", StringComparison.OrdinalIgnoreCase)
+                    ? PropertyFlags.CUSTOM_SHEETSET_PROP
+                    : throw new ArgumentException(
+                        "scope must be 'sheetSet' or 'sheet', not '" + scope + "'. 'sheetSet' is " +
+                        "one project-wide value; 'sheet' gives every sheet its own.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var bag = BagOf(ss)
+                    ?? throw new InvalidOperationException(
+                        "'" + full + "' exposes no sheet-set custom property bag.");
+
+                var before = SetCustomProperty(bag, a.Name!, a.DefaultValue ?? "", flags);
+                return Wrap(new
+                {
+                    path = full,
+                    name = a.Name,
+                    scope,
+                    defaultValue = ReadCustomProperty(bag, a.Name!),
+                    before,
+                    created = before.Length == 0,
+                    note = scope.Equals("sheet", StringComparison.OrdinalIgnoreCase)
+                        ? "Scope 'sheet' means every sheet carries its own value; set them with " +
+                          "set_sheet_property. The value given here is the default."
+                        : "Scope 'sheetSet' means one project-wide value, which every title block " +
+                          "bound to this property reads.",
+                });
             });
         });
 

@@ -476,3 +476,39 @@ public sealed record SplineToPolylineResult(
     [property: JsonPropertyName("originalKept")]   bool OriginalKept,
     [property: JsonPropertyName("originalHandle")] string? OriginalHandle,
     [property: JsonPropertyName("note")]           string Note);
+
+// ─────────── lengthening and elliptical arcs (roadmap 3.1) ───────────
+
+public sealed record LengthenArgs(
+    [property: JsonPropertyName("handle")]  string Handle,
+    [property: JsonPropertyName("mode")]    string? Mode = null,
+    [property: JsonPropertyName("value")]   double? Value = null,
+    [property: JsonPropertyName("atStart")] bool? AtStart = null);
+
+public sealed record EllipseArcArgs(
+    [property: JsonPropertyName("center")]        Point2dDto Center,
+    [property: JsonPropertyName("majorAxis")]     Point2dDto MajorAxis,
+    [property: JsonPropertyName("ratio")]         double? Ratio = null,
+    [property: JsonPropertyName("startAngleDeg")] double? StartAngleDeg = null,
+    [property: JsonPropertyName("endAngleDeg")]   double? EndAngleDeg = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+public sealed record LengthenResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("type")]         string Type,
+    [property: JsonPropertyName("mode")]         string Mode,
+    [property: JsonPropertyName("lengthBefore")] double LengthBefore,
+    [property: JsonPropertyName("length")]       double Length,
+    [property: JsonPropertyName("changedBy")]    double ChangedBy,
+    [property: JsonPropertyName("atStart")]      bool AtStart,
+    [property: JsonPropertyName("note")]         string Note);
+
+public sealed record EllipseArcResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("startAngleDeg")] double StartAngleDeg,
+    [property: JsonPropertyName("endAngleDeg")]   double EndAngleDeg,
+    [property: JsonPropertyName("ratio")]         double Ratio,
+    [property: JsonPropertyName("majorLength")]   double MajorLength,
+    [property: JsonPropertyName("length")]        double Length,
+    [property: JsonPropertyName("closed")]        bool Closed,
+    [property: JsonPropertyName("note")]          string Note);

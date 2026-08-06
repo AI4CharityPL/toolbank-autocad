@@ -245,3 +245,19 @@ internal sealed record SplineConvertArgsDto(
     [property: JsonPropertyName("handle")]       string? Handle,
     [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
     [property: JsonPropertyName("layer")]        string? Layer);
+
+// ─────────── lengthening and elliptical arcs (roadmap 3.1) ───────────
+
+internal sealed record LengthenArgsDto(
+    [property: JsonPropertyName("handle")]  string? Handle,
+    [property: JsonPropertyName("mode")]    string? Mode,
+    [property: JsonPropertyName("value")]   double? Value,
+    [property: JsonPropertyName("atStart")] bool? AtStart);
+
+internal sealed record EllipseArcArgsDto(
+    [property: JsonPropertyName("center")]        Point2dDto? Center,
+    [property: JsonPropertyName("majorAxis")]     Point2dDto? MajorAxis,
+    [property: JsonPropertyName("ratio")]         double? Ratio,
+    [property: JsonPropertyName("startAngleDeg")] double? StartAngleDeg,
+    [property: JsonPropertyName("endAngleDeg")]   double? EndAngleDeg,
+    [property: JsonPropertyName("layer")]         string? Layer);

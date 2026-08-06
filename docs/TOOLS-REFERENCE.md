@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 515 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 517 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (51 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (53 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -277,6 +277,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_circle` | Draw a circle by center point and radius. |
 | `draw_donut` | Draw a donut (filled annulus) at a center, with inner and outer diameters. |
 | `draw_ellipse` | Draw an ellipse by center, major-axis end point and minor-to-major ratio (0 < ratio <= 1). |
+| `draw_ellipse_arc` | Draw a PART of an ellipse - an elliptical arc, which draw_ellipse cannot do since it only makes the whole thing. Takes the centre, the END POINT of the major axis (not its length), the minor-to-major ratio, and a start and end angle. Those angles are ELLIPSE PARAMETERS measured from the major axis and equal true bearings only when ratio is 1; on a squashed ellipse the drawn end sits at a different bearing than the number given, which is AutoCAD's convention rather than an error. |
 | `draw_hatch` | Apply an associative hatch over closed boundaries identified by handle. |
 | `draw_line` | Draw a 2D straight line segment between two points on the active drawing. |
 | `draw_mline` | Draw a multiline (MLINE) through the given vertices using a named multiline style - the way a wall of a defined type is drawn in one call rather than as two offset polylines that must be kept parallel by hand. style defaults to the drawing's current one; create one first with create_mlinestyle. justification is 'top', 'zero' or 'bottom' and decides which of the style's parallel lines the vertices you pass actually lie on, so it changes where the wall sits relative to your points. scale multiplies every element offset, so a 200mm style drawn at scale 1.5 is 300mm wide. |
@@ -304,6 +305,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_entity` | Return full descriptor (class, layer, color, bbox, length, area, endpoints) of an entity by handle. |
 | `get_intersections` | Return XY intersection points between two curves identified by handle. |
 | `join_curves` | Join multiple coincident curves into a single polyline if topology allows. |
+| `lengthen_curve` | Make an open curve longer or shorter WITHOUT a boundary to stop at - AutoCAD's LENGTHEN, as distinct from extend_curve, which runs until it meets another entity. mode is 'delta' (add this much, or a negative amount to take off), 'total' (end up this long) or 'percent' (150 makes it half as long again). By default the END moves and the start stays put; pass atStart=true to move the other one. The length is re-measured afterwards and a mismatch is reported as a failure rather than echoing back the number that was asked for. |
 | `list_entities_in_window` | List handles of all entities whose bounding box intersects the rectangular window. |
 | `list_polyline_vertices` | List a polyline's vertices with their positions, bulges and per-segment widths, plus its length and whether it is closed. Read-only, and the tool to call before any of the editing ones, since they address vertices by 0-based index and those indices shift as vertices are added or removed. A bulge is tan of a quarter of the arc's included angle: 0 is a straight segment, 1 is a half circle, and the sign gives the direction. |
 | `measure_object` | Mark a curve at a FIXED interval, placing a marker every given distance from the start - AutoCAD's MEASURE. Unlike divide_object the spacing is what you asked for and the leftover sits at the far end, which the result reports; that is the whole difference between the two. The curve is not cut. Name a block to place that instead of points, rotated to follow the curve unless alignToCurve is false. |

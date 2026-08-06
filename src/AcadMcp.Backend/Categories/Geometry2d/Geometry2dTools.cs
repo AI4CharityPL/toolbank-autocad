@@ -397,4 +397,22 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<SplineToPolylineResult> SplineToPolyline(IPluginGateway gw, SplineConvertArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<SplineConvertArgs, SplineToPolylineResult>(gw, "acad.geometry2d.spline_to_polyline", args, T_NORMAL, ct);
+
+    // ─────────── lengthening and elliptical arcs (roadmap 3.1) ───────────
+
+    [McpTool("lengthen_curve", "Make an open curve longer or shorter WITHOUT a boundary to stop at - AutoCAD's LENGTHEN, as distinct from extend_curve, which runs until it meets another entity. mode is 'delta' (add this much, or a negative amount to take off), 'total' (end up this long) or 'percent' (150 makes it half as long again). By default the END moves and the start stays put; pass atStart=true to move the other one. The length is re-measured afterwards and a mismatch is reported as a failure rather than echoing back the number that was asked for.", "geometry-2d",
+        Intent = new[] { "wydluz linie o", "skroc krzywa", "lengthen a curve by",
+                         "make this line 200 long", "przedluz odcinek bez granicy",
+                         "shorten a polyline" },
+        RequiresPlugin = true)]
+    public static Task<LengthenResult> LengthenCurve(IPluginGateway gw, LengthenArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<LengthenArgs, LengthenResult>(gw, "acad.geometry2d.lengthen_curve", args, T_NORMAL, ct);
+
+    [McpTool("draw_ellipse_arc", "Draw a PART of an ellipse - an elliptical arc, which draw_ellipse cannot do since it only makes the whole thing. Takes the centre, the END POINT of the major axis (not its length), the minor-to-major ratio, and a start and end angle. Those angles are ELLIPSE PARAMETERS measured from the major axis and equal true bearings only when ratio is 1; on a squashed ellipse the drawn end sits at a different bearing than the number given, which is AutoCAD's convention rather than an error.", "geometry-2d",
+        Intent = new[] { "narysuj luk eliptyczny", "wycinek elipsy",
+                         "draw an elliptical arc", "part of an ellipse",
+                         "elipsa od kata do kata", "ellipse arc between angles" },
+        RequiresPlugin = true)]
+    public static Task<EllipseArcResult> DrawEllipseArc(IPluginGateway gw, EllipseArcArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<EllipseArcArgs, EllipseArcResult>(gw, "acad.geometry2d.draw_ellipse_arc", args, T_NORMAL, ct);
 }

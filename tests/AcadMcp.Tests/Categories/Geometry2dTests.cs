@@ -51,6 +51,10 @@ public class Geometry2dTests
         // Roadmap 3.1, fourth tranche: splines. draw_spline interpolates THROUGH fit
         // points; draw_spline_cv is pulled by control vertices it does not touch.
         "draw_spline_cv", "edit_spline_fit_point", "spline_to_polyline",
+
+        // Roadmap 3.1, fifth tranche. lengthen_curve is NOT extend_curve: it takes a
+        // distance, where extend_curve runs until it meets a boundary entity.
+        "lengthen_curve", "draw_ellipse_arc",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

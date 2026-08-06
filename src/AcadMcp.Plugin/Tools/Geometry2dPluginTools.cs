@@ -90,6 +90,10 @@ internal static class Geometry2dPluginTools
         host.Register("acad.geometry2d.draw_spline_cv", DrawSplineCv);
         host.Register("acad.geometry2d.edit_spline_fit_point", EditSplineFitPoint);
         host.Register("acad.geometry2d.spline_to_polyline", SplineToPolyline);
+
+        // roadmap 3.1 - lengthening and elliptical arcs
+        host.Register("acad.geometry2d.lengthen_curve", LengthenCurve);
+        host.Register("acad.geometry2d.draw_ellipse_arc", DrawEllipseArc);
     }
 
     // ─────────── helpers ───────────
@@ -835,6 +839,165 @@ internal static class Geometry2dPluginTools
                 ent.Erase();
             }
             return Wrap(new { ok = true });
+        });
+
+    // ─────────── lengthening and elliptical arcs (roadmap 3.1) ───────────
+
+    private static Task<ToolDispatchResult> LengthenCurve(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.lengthen_curve", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<LengthenArgsDto>(args);
+            var c = RequireCurve(db, tr, a.Handle, OpenMode.ForWrite);
+            if (c.Closed)
+                throw new ArgumentException(
+                    "This curve is closed, so it has no end to lengthen. Lengthening applies to " +
+                    "open curves - a line, an arc, an open polyline or spline.");
+
+            var before = LengthOf(c);
+            var mode = (a.Mode ?? "delta").Trim().ToLowerInvariant();
+            double target = mode switch
+            {
+                "delta" => before + (a.Value ?? throw new ArgumentException(
+                    "value is required: how much to add, or a negative number to take off.")),
+                "total" => a.Value ?? throw new ArgumentException(
+                    "value is required: the length the curve should end up."),
+                "percent" => before * ((a.Value ?? throw new ArgumentException(
+                    "value is required: the percentage of the current length, so 150 makes it half " +
+                    "as long again and 50 halves it.")) / 100.0),
+                _ => throw new ArgumentException(
+                    "mode must be 'delta', 'total' or 'percent'; got '" + a.Mode + "'."),
+            };
+
+            if (target <= 1e-9)
+                throw new ArgumentException(
+                    "That would leave the curve " + target.ToString("0.###") + " long. A curve of " +
+                    "zero or negative length cannot be drawn - delete it instead if that is the aim.");
+
+            var atStart = a.AtStart == true;
+            var delta = target - before;
+            if (Math.Abs(delta) < 1e-12)
+                throw new ArgumentException(
+                    "The curve is already " + before.ToString("0.###") + " long, so there is " +
+                    "nothing to change.");
+
+            // The end being moved, and where it has to go. Shortening lands on a point that is
+            // already ON the curve; lengthening has to leave it, along the tangent there - which
+            // AutoCAD projects back onto an arc's own circle, so the same call serves both.
+            Point3d to;
+            if (delta < 0)
+            {
+                to = atStart ? c.GetPointAtDist(-delta) : c.GetPointAtDist(target);
+            }
+            else if (c is Arc arc)
+            {
+                // An arc extends ALONG ITS OWN CIRCLE, and AutoCAD does not project a stray
+                // point back onto it. Measured: extending a quarter arc of radius 100 by 50
+                // along the tangent asks it to reach (-50, 400), which is 111.8 from the centre
+                // rather than 100, and Extend answers eInvalidInput. The tangent is right for a
+                // line and wrong for anything curved.
+                //
+                // The right target is an ANGLE: an extra `delta` of arc at radius r is
+                // delta/r radians further round.
+                if (arc.Radius < 1e-12)
+                    throw new InvalidOperationException("This arc has no radius to extend along.");
+                var sweep = delta / arc.Radius;
+                var angle = atStart ? arc.StartAngle - sweep : arc.EndAngle + sweep;
+                to = arc.Center + new Vector3d(Math.Cos(angle), Math.Sin(angle), 0) * arc.Radius;
+            }
+            else
+            {
+                var end = atStart ? c.StartPoint : c.EndPoint;
+                var tangent = c.GetFirstDerivative(end);
+                if (tangent.Length < 1e-12)
+                    throw new InvalidOperationException(
+                        "The curve has no direction at the end being lengthened, so there is no " +
+                        "way to work out where to extend it to.");
+                var dir = tangent.GetNormal();
+                to = atStart ? end - dir * delta : end + dir * delta;
+            }
+
+            try { c.Extend(atStart, to); }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD would not lengthen this " + ((Entity)c).GetType().Name + " (" +
+                    ex.Message + "). Its target end was to move to " + Fmt(to) + ".");
+            }
+
+            // Checked, not assumed: Extend returns void, and an entity type that quietly ignores
+            // it would otherwise report the length the caller asked for rather than the one it has.
+            var after = LengthOf(c);
+            if (Math.Abs(after - target) > Math.Max(1e-6, Math.Abs(target) * 1e-6))
+                throw new InvalidOperationException(
+                    "The curve measures " + after.ToString("0.######") + " after being lengthened " +
+                    "to " + target.ToString("0.######") + ", so the change did not take as asked. " +
+                    "Nothing is being reported as success.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                type = ((Entity)c).GetType().Name,
+                mode,
+                lengthBefore = before,
+                length = after,
+                changedBy = after - before,
+                atStart,
+                note = atStart
+                    ? "The START of the curve moved; its other end stayed where it was."
+                    : "The END of the curve moved; its start stayed where it was.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DrawEllipseArc(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.draw_ellipse_arc", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<EllipseArcArgsDto>(args);
+            if (a.Center is null || a.MajorAxis is null)
+                throw new ArgumentException("center and majorAxis are both required.");
+            if (a.Ratio is null || a.Ratio <= 0 || a.Ratio > 1)
+                throw new ArgumentException(
+                    "ratio is required and must be greater than 0 and at most 1: the minor axis " +
+                    "as a fraction of the major. A ratio of 1 is a circular arc.");
+            if (a.StartAngleDeg is null || a.EndAngleDeg is null)
+                throw new ArgumentException(
+                    "startAngleDeg and endAngleDeg are both required - without them this is a " +
+                    "full ellipse, which draw_ellipse already makes.");
+
+            var centre = AcadEnv.ToPoint3d(a.Center);
+            var majorVec = AcadEnv.ToPoint3d(a.MajorAxis) - centre;
+            if (majorVec.Length < 1e-12)
+                throw new ArgumentException(
+                    "majorAxis is the END POINT of the major axis, not its length, and it " +
+                    "coincides with the centre - so the axis has no length or direction.");
+
+            // AutoCAD's ellipse parameters are NOT the geometric angle except on a circle: the
+            // parameter runs on the unit circle before the minor-axis squash. Feeding a bearing
+            // straight in puts the ends somewhere plausible but wrong, which is why the note
+            // below says which convention this used.
+            var startRad = a.StartAngleDeg.Value * Math.PI / 180.0;
+            var endRad = a.EndAngleDeg.Value * Math.PI / 180.0;
+            if (Math.Abs(endRad - startRad) < 1e-12)
+                throw new ArgumentException(
+                    "startAngleDeg and endAngleDeg are the same, so the arc would have no extent.");
+
+            var el = new Ellipse(centre, Vector3d.ZAxis, majorVec, a.Ratio.Value, startRad, endRad);
+            var handle = AcadEnv.Persist(db, tr, el, a.Layer);
+
+            return Wrap(new
+            {
+                entity = handle,
+                startAngleDeg = a.StartAngleDeg,
+                endAngleDeg = a.EndAngleDeg,
+                ratio = el.RadiusRatio,
+                majorLength = majorVec.Length,
+                length = el.GetDistanceAtParameter(el.EndParam)
+                       - el.GetDistanceAtParameter(el.StartParam),
+                closed = el.Closed,
+                note = "Angles are ELLIPSE PARAMETERS measured from the major axis, which equal " +
+                       "true bearings only when ratio is 1. On a squashed ellipse the drawn end " +
+                       "sits at a different bearing than the number given - that is AutoCAD's own " +
+                       "convention, not a rounding error.",
+            });
         });
 
     // ─────────── splines (roadmap 3.1) ───────────

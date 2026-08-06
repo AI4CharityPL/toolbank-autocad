@@ -203,4 +203,12 @@ public static class SheetSetsTools
         RequiresPlugin = true)]
     public static Task<RemoveSheetResult> RemoveSheet(IPluginGateway gw, SheetRefArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<SheetRefArgs, RemoveSheetResult>(gw, "acad.sheetsets.remove_sheet", args, T_NORMAL, ct);
+
+    [McpTool("add_sheet", "Add an existing paper-space layout to the sheet set as a new sheet - AutoCAD's \"Import Layout as Sheet\". Takes the .DWG holding the layout and the layout's name; the drawing itself is NOT modified, the set gains a reference to it. Checks the layout exists before touching the sheet set and lists the drawing's layouts if it does not, and refuses a layout already in the set, since one layout belongs to one sheet. Give number and title to control how it reads in the drawing list, and subset to file it under a discipline.", "sheetsets",
+        Intent = new[] { "dodaj arkusz do zestawu", "zaimportuj uklad jako arkusz",
+                         "add a layout to the sheet set", "import layout as sheet",
+                         "nowy arkusz z ukladu w rysunku", "put this layout in the drawing list" },
+        RequiresPlugin = true)]
+    public static Task<AddSheetResult> AddSheet(IPluginGateway gw, AddSheetArgs args, CancellationToken ct)
+        => SheetSetsProxy.CallAsync<AddSheetArgs, AddSheetResult>(gw, "acad.sheetsets.add_sheet", args, T_NORMAL, ct);
 }

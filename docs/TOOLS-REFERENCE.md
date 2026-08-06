@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 489 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 490 tools total.
 
 ## Categories
 
@@ -34,7 +34,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
-- [acad-sheetsets](#acad-sheetsets) (17 tools)
+- [acad-sheetsets](#acad-sheetsets) (18 tools)
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
@@ -548,6 +548,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `add_sheet` | Add an existing paper-space layout to the sheet set as a new sheet - AutoCAD's "Import Layout as Sheet". Takes the .DWG holding the layout and the layout's name; the drawing itself is NOT modified, the set gains a reference to it. Checks the layout exists before touching the sheet set and lists the drawing's layouts if it does not, and refuses a layout already in the set, since one layout belongs to one sheet. Give number and title to control how it reads in the drawing list, and subset to file it under a discipline. |
 | `create_subset` | Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous. |
 | `define_custom_property` | Define a custom property on the sheet set - the project-wide data a title block binds to, such as client, project number or issue date. scope='sheetSet' (the default) means one value shared by the whole project; scope='sheet' means every sheet carries its own, which set_sheet_property then fills in per sheet. Writes to the shared .DST under a lock. Setting an existing property updates its value and keeps the scope it already had, so an update never silently re-scopes it. |
 | `delete_subset` | Delete an EMPTY subset from a sheet set. Refuses while it still holds sheets and reports how many, because what AutoCAD does with the sheets inside a removed subset is not documented and could include deleting them - move them out with move_sheet_to_subset first. Sheets are never removed by this tool. Writes to the shared .DST under a lock. |

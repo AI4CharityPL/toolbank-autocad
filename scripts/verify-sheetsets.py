@@ -418,6 +418,79 @@ check("PERSISTED: exactly one sheet fewer", len(reread_fresh()) == count_before 
 do("remove_sheet", {"path": DST, "sheet": victim},
    label="removing it twice is refused", expect_fail=True)
 
+# ── add_sheet ─────────────────────────────────────────────────────────────────
+print("\n== add_sheet: the error message has to be the documentation ==")
+SRC_DWG = os.path.join(os.path.dirname(SAMPLE), "A-01.dwg")
+check("a sample drawing to add from exists", os.path.exists(SRC_DWG), SRC_DWG)
+
+def discover_layout(dwg):
+    """Ask for a layout that cannot exist and read the real ones out of the refusal.
+
+    The refusal is supposed to be the documentation: a tool whose failure teaches you the right
+    argument is worth more than one that only says no. This uses it that way, which also means
+    the message is under test on every run rather than eyeballed once.
+    """
+    ok, res = S.call("add_sheet", {"path": DST, "drawingPath": dwg, "layout": "NO-SUCH-LAYOUT"})
+    text = str(res)
+    if "It has: " not in text:
+        return None, text
+    listed = text.split("It has: ", 1)[1].split(".")[0]
+    first = listed.split(",")[0].strip()
+    return (None if first == "(none)" else first), text
+
+
+layout_name, msg = discover_layout(SRC_DWG)
+results.append(("an unknown layout is refused", "It has:" in msg))
+print(f"  {'OK  ' if 'It has:' in msg else 'FAIL'} an unknown layout is refused")
+check("and the refusal lists the layouts that DO exist", "It has:" in msg, msg[:220])
+check("and says model space is not a candidate", "Model space" in msg, msg[:220])
+print(f"  discovered layout: {layout_name!r}")
+
+if layout_name and layout_name != "(none)":
+    count_before = len(reread_fresh())
+    r = do("add_sheet", {"path": DST, "drawingPath": SRC_DWG, "layout": layout_name,
+                         "number": "ZZ-500", "title": "Added by verify"})
+    if isinstance(r, dict):
+        check("reports the number it was given", r.get("number") == "ZZ-500", str(r)[:220])
+        check("reports the title it was given", r.get("title") == "Added by verify", str(r)[:220])
+        check("reports the layout it referenced", r.get("layout") == layout_name, str(r)[:220])
+        check("says the drawing was not modified", "not modified" in (r.get("note") or ""),
+              str(r)[:220])
+    check("PERSISTED: the new sheet is in a fresh-path copy",
+          fresh_find(number="ZZ-500") is not None, "not listed")
+    check("PERSISTED: exactly one sheet more", len(reread_fresh()) == count_before + 1,
+          f"{count_before} -> {len(reread_fresh())}")
+
+    print("\n== the same layout cannot be added twice ==")
+    r = do("add_sheet", {"path": DST, "drawingPath": SRC_DWG, "layout": layout_name},
+           label="a layout already in the set is refused", expect_fail=True)
+    check("and the refusal names the sheet holding it", "already in this set" in str(r),
+          str(r)[:220])
+    check("no second sheet was created", len(reread_fresh()) == count_before + 1,
+          f"expected {count_before + 1}, got {len(reread_fresh())}")
+
+    print("\n== added into a subset, from a different drawing ==")
+    # A different DWG, and its own layout name discovered the same way - A-02 does not carry the
+    # same layout name as A-01, and assuming it did was what made the first run of this section
+    # look like a tool failure.
+    other_dwg = os.path.join(os.path.dirname(SAMPLE), "A-02.dwg")
+    other_layout, _ = discover_layout(other_dwg)
+    print(f"  discovered layout in A-02.dwg: {other_layout!r}")
+    do("create_subset", {"path": DST, "name": "ACADMCP-Added"}, label="a subset to add into")
+    r = do("add_sheet", {"path": DST, "drawingPath": other_dwg, "layout": other_layout,
+                         "number": "ZZ-501", "subset": "ACADMCP-Added"},
+           label="add_sheet (into a subset)")
+    if isinstance(r, dict):
+        check("filed under the named subset", r.get("subset") == "ACADMCP-Added", str(r)[:220])
+    check("PERSISTED: it landed in that subset",
+          (fresh_find(number="ZZ-501") or {}).get("subset", "").endswith("ACADMCP-Added"),
+          str(fresh_find(number="ZZ-501"))[:200])
+
+do("add_sheet", {"path": DST, "drawingPath": os.path.join(WORK, "nope.dwg"), "layout": "x"},
+   label="a missing drawing is refused", expect_fail=True)
+do("add_sheet", {"path": DST, "drawingPath": SRC_DWG},
+   label="a missing layout argument is refused", expect_fail=True)
+
 # ── refusals ──────────────────────────────────────────────────────────────────
 print("\n== refusals are refusals, not silent successes ==")
 do("set_sheet_number", {"path": DST, "sheet": "no-such-sheet", "value": "X-1"},
@@ -431,13 +504,14 @@ do("rename_sheet", {"path": os.path.join(WORK, "does-not-exist.dst"), "sheet": "
 print("\n== the sheet set is still intact ==")
 final = do("get_sheet_set_info", {"path": DST}, label="get_sheet_set_info (after writes)")
 if isinstance(final, dict) and isinstance(info, dict):
-    # One fewer than we started with, and exactly one: remove_sheet took a single sheet, and
-    # nothing else in this script was supposed to change the count. Asserting the exact figure
-    # rather than "unchanged" is what makes the earlier move and reorder checks meaningful — a
-    # tool that quietly dropped a sheet would show up right here.
-    check("exactly one sheet fewer than we started with, from the one removal",
-          final.get("sheetCount") == (info.get("sheetCount") or 0) - 1,
-          f"{info.get('sheetCount')} -> {final.get('sheetCount')}")
+    # The exact arithmetic of what this script did: one remove_sheet, two add_sheet. Asserting
+    # the precise figure rather than "unchanged" is what makes the move, reorder and import
+    # checks mean anything — a tool that quietly dropped or duplicated a sheet shows up here and
+    # nowhere else.
+    expected = (info.get("sheetCount") or 0) - 1 + 2
+    check(f"sheet count is exactly {expected}: started {info.get('sheetCount')}, -1 removed, +2 added",
+          final.get("sheetCount") == expected,
+          f"{info.get('sheetCount')} -> {final.get('sheetCount')}, expected {expected}")
 check("every other sheet untouched",
       len([s for s in reread_fresh() if s.get("number") == "AS-01"]) == 1,
       "a neighbouring sheet moved")

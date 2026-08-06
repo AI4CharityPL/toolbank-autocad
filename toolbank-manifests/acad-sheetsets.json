@@ -10,6 +10,7 @@
   },
   "lazy_mode": true,
   "tags": [
+    "add",
     "autocad",
     "cad",
     "create",
@@ -43,6 +44,7 @@
   "intent_examples": [
     "add a custom property",
     "add a discipline folder",
+    "add a layout to the sheet set",
     "arkusz nie nalezy juz do zestawu",
     "assign sheet to a discipline",
     "change drawing list order",
@@ -56,6 +58,7 @@
     "dane arkusza do tabliczki",
     "define a sheet set custom property",
     "delete a subset",
+    "dodaj arkusz do zestawu",
     "dodaj folder branzowy do zestawu",
     "dodaj numer projektu do zestawu",
     "drop a sheet from the drawing list",
@@ -63,6 +66,7 @@
     "fill a title block field",
     "get a sheet property",
     "ile arkuszy ma ten zestaw",
+    "import layout as sheet",
     "informacje o zestawie arkuszy",
     "inna nazwa arkusza w zestawie",
     "jak podzielony jest zestaw arkuszy",
@@ -80,6 +84,7 @@
     "nazwa zestawu arkuszy z pliku",
     "nie drukuj tego arkusza",
     "nowa wlasciwosc dla wszystkich arkuszy",
+    "nowy arkusz z ukladu w rysunku",
     "nowy podzestaw",
     "numer projektu w zestawie",
     "numery arkuszy",
@@ -99,6 +104,7 @@
     "przesun arkusz w gore listy",
     "przypisz arkusz do branzy",
     "przywroc arkusz do drukowania",
+    "put this layout in the drawing list",
     "put this sheet after that one",
     "read sheet number and title",
     "remove a sheet from the sheet set",
@@ -140,6 +146,7 @@
     "wyjmij arkusz z podzestawu",
     "wylacz arkusz z drukowania",
     "wyrzuc arkusz z listy rysunkow",
+    "zaimportuj uklad jako arkusz",
     "zdefiniuj wlasciwosc zestawu arkuszy",
     "zmien kolejnosc arkuszy",
     "zmien nazwe arkusza",
@@ -148,6 +155,22 @@
     "zmien tytul arkusza"
   ],
   "tools_summary": [
+    {
+      "name": "add_sheet",
+      "description": "Add an existing paper-space layout to the sheet set as a new sheet - AutoCAD\u0027s \u0022Import Layout as Sheet\u0022. Takes the .DWG holding the layout and the layout\u0027s name; the drawing itself is NOT modified, the set gains a reference to it. Checks the layout exists before touching the sheet set and lists the drawing\u0027s layouts if it does not, and refuses a layout already in the set, since one layout belongs to one sheet. Give number and title to control how it reads in the drawing list, and subset to file it under a discipline.",
+      "tags": [
+        "add",
+        "sheet"
+      ],
+      "intent": [
+        "dodaj arkusz do zestawu",
+        "zaimportuj uklad jako arkusz",
+        "add a layout to the sheet set",
+        "import layout as sheet",
+        "nowy arkusz z ukladu w rysunku",
+        "put this layout in the drawing list"
+      ]
+    },
     {
       "name": "create_subset",
       "description": "Create a subset in a sheet set - the discipline or phase folder a real project organises its sheets into, such as Architectural or Phase 2. Nests inside another subset when parent names one, otherwise sits at the top level of the set. Writes to the shared .DST under a lock. Refuses a name already in use, because subset names are how move_sheet_to_subset addresses them and a duplicate would make that ambiguous.",
@@ -453,8 +476,8 @@
     "supported_lt": false,
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
-    "tool_count_target": 17,
-    "last_regenerated_utc": "2026-08-06T11:34:18.9375185Z",
+    "tool_count_target": 18,
+    "last_regenerated_utc": "2026-08-06T11:43:02.4572374Z",
     "phase": "phase2.1_sheetsets"
   }
 }

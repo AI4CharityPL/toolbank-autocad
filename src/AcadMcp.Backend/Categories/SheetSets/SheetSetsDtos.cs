@@ -228,3 +228,22 @@ public sealed record RemoveSheetResult(
     [property: JsonPropertyName("fromSubset")]      string FromSubset,
     [property: JsonPropertyName("sheetsRemaining")] int SheetsRemaining,
     [property: JsonPropertyName("note")]            string Note);
+
+public sealed record AddSheetArgs(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("drawingPath")] string DrawingPath,
+    [property: JsonPropertyName("layout")]      string Layout,
+    [property: JsonPropertyName("number")]      string? Number = null,
+    [property: JsonPropertyName("title")]       string? Title = null,
+    [property: JsonPropertyName("subset")]      string? Subset = null);
+
+public sealed record AddSheetResult(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("number")]      string Number,
+    [property: JsonPropertyName("title")]       string Title,
+    [property: JsonPropertyName("layout")]      string Layout,
+    [property: JsonPropertyName("drawingPath")] string DrawingPath,
+    [property: JsonPropertyName("subset")]      string Subset,
+    [property: JsonPropertyName("sheetCount")]  int SheetCount,
+    [property: JsonPropertyName("note")]        string Note);

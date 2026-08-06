@@ -70,3 +70,11 @@ internal sealed record ReorderArgsDto(
 internal sealed record SheetRefArgsDto(
     [property: JsonPropertyName("path")]  string? Path,
     [property: JsonPropertyName("sheet")] string? Sheet);
+
+internal sealed record AddSheetArgsDto(
+    [property: JsonPropertyName("path")]        string? Path,
+    [property: JsonPropertyName("drawingPath")] string? DrawingPath,
+    [property: JsonPropertyName("layout")]      string? Layout,
+    [property: JsonPropertyName("number")]      string? Number,
+    [property: JsonPropertyName("title")]       string? Title,
+    [property: JsonPropertyName("subset")]      string? Subset);

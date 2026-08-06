@@ -66,6 +66,7 @@ internal static class SheetSetsPluginTools
         host.Register("acad.sheetsets.define_custom_property", DefineCustomProperty);
         host.Register("acad.sheetsets.reorder_sheet", ReorderSheet);
         host.Register("acad.sheetsets.remove_sheet", RemoveSheet);
+        host.Register("acad.sheetsets.add_sheet", AddSheet);
     }
 
     private static T Read<T>(JsonObject a) => JsonSerializer.Deserialize<T>(a, Opts)
@@ -761,6 +762,191 @@ internal static class SheetSetsPluginTools
                 finally { try { Marshal.ReleaseComObject(sheet); } catch (Exception) { } }
             });
         });
+
+    // ─────────── adding a sheet ───────────
+
+    /// <summary>Every paper-space layout in a drawing, with its handle, read without opening it.</summary>
+    /// <remarks>
+    /// Side-loaded through <c>Database.ReadDwgFile</c> rather than through the Document manager,
+    /// so a sheet can be added from any drawing on disk without disturbing what the user has
+    /// open. `Model` is excluded: a sheet set holds paper-space layouts, and offering Model as a
+    /// candidate would produce a sheet that cannot be plotted as one.
+    /// </remarks>
+    private static Dictionary<string, string> LayoutsOf(string dwgPath)
+    {
+        var found = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var side = new Database(false, true);
+        side.ReadDwgFile(dwgPath, FileOpenMode.OpenForReadAndAllShare, allowCPConversion: true, password: null);
+        using var tr = side.TransactionManager.StartTransaction();
+        var dict = (DBDictionary)tr.GetObject(side.LayoutDictionaryId, OpenMode.ForRead);
+        foreach (DBDictionaryEntry e in dict)
+        {
+            if (string.Equals(e.Key, "Model", StringComparison.OrdinalIgnoreCase)) continue;
+            var layout = (Layout)tr.GetObject(e.Value, OpenMode.ForRead);
+            found[layout.LayoutName] = layout.Handle.ToString();
+        }
+        tr.Commit();
+        return found;
+    }
+
+    private static Task<ToolDispatchResult> AddSheet(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunWriteAsync("acad.sheetsets.add_sheet", ct, (doc, db, tr) =>
+        {
+            var a = Read<AddSheetArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.DrawingPath))
+                throw new ArgumentException(
+                    "drawingPath is required: the .DWG holding the layout to add as a sheet.");
+            if (string.IsNullOrWhiteSpace(a.Layout))
+                throw new ArgumentException("layout is required: the paper-space layout's name.");
+
+            var dwg = Path.GetFullPath(a.DrawingPath!);
+            if (!File.Exists(dwg))
+                throw new ArgumentException("No such drawing: " + dwg);
+
+            // Resolved BEFORE the sheet set is touched. A layout name that does not exist is the
+            // likeliest mistake here, and finding out after the .DST is locked and half-edited
+            // would be worse than finding out now - with the names that DO exist in the message.
+            var layouts = LayoutsOf(dwg);
+            if (!layouts.TryGetValue(a.Layout!, out var handle))
+                throw new ArgumentException(
+                    "'" + dwg + "' has no paper-space layout named '" + a.Layout + "'. It has: " +
+                    (layouts.Count == 0 ? "(none)" : string.Join(", ", layouts.Keys)) +
+                    ". Model space is not offered: a sheet set holds paper-space layouts.");
+
+            return WithSheetSetWrite(a.Path, (ss, full) =>
+            {
+                var target = RequireSubsetOrRoot(ss, a.Subset, full);
+                var toRoot = ReferenceEquals(target, ss);
+                try
+                {
+                    // A layout belongs to at most one sheet. Importing it twice makes a second
+                    // sheet pointing at the same layout, which then plots twice and renumbers
+                    // independently - a mess that is much easier to refuse than to unpick.
+                    foreach (var existing in SheetsWithLayout(ss, dwg, a.Layout!))
+                        throw new ArgumentException(
+                            "Layout '" + a.Layout + "' of '" + dwg + "' is already in this set as " +
+                            "sheet '" + existing + "'. A layout belongs to one sheet.");
+
+                    var reference = new AcSmAcDbLayoutReference();
+                    IAcSmSheet? created = null;
+                    try
+                    {
+                        // Built from STRINGS. SetAcDbObject / ResolveAcDbObject are the only
+                        // members that need AXDBLib, and skipping them keeps this category free
+                        // of an interop assembly that is not reliably present.
+                        reference.InitNew((IAcSmPersist)target);
+                        reference.SetFileName(dwg);
+                        reference.SetName(a.Layout);
+                        reference.SetAcDbHandle(handle);
+
+                        created = target.ImportSheet((AcSmAcDbLayoutReference)reference)
+                            ?? throw new InvalidOperationException(
+                                "AutoCAD imported no sheet for layout '" + a.Layout + "' and " +
+                                "raised no error.");
+
+                        if (a.Number is not null) created.SetNumber(a.Number);
+                        if (a.Title is not null) created.SetTitle(TitleToSet(a.Title));
+
+                        var number = created.GetNumber();
+                        var name = created.GetName();
+
+                        // ImportSheet BUILDS a sheet; it does not necessarily file it under the
+                        // subset. Measured: the returned sheet was not findable in the tree, and
+                        // the in-lock check abandoned the whole import. This is the same split
+                        // as InsertComponent, which adds rather than re-parents - in this API
+                        // creating an object and placing it are two separate steps.
+                        //
+                        // Attempted rather than assumed, because whether ImportSheet files the
+                        // sheet may well differ by AutoCAD version: insert only if it is missing,
+                        // since inserting one the subset already holds answers 0x800288C6.
+                        var back = FindSheet(ss, number) ?? FindSheet(ss, name);
+                        if (back is null)
+                        {
+                            target.InsertComponent((IAcSmComponent)created, null);
+                            back = FindSheet(ss, number) ?? FindSheet(ss, name);
+                        }
+                        if (back is null)
+                            throw new InvalidOperationException(
+                                "The new sheet could not be found in '" + full + "' after import, " +
+                                "even after inserting it explicitly, so the import was abandoned " +
+                                "and nothing was saved.");
+                        try { Marshal.ReleaseComObject(back); } catch (Exception) { }
+
+                        var all = new List<object>();
+                        WalkSheets(ss, "", all);
+                        return Wrap(new
+                        {
+                            path = full,
+                            name,
+                            number,
+                            title = PersistedTitle(created.GetTitle()),
+                            layout = a.Layout,
+                            drawingPath = dwg,
+                            subset = toRoot ? ss.GetName() : target.GetName(),
+                            sheetCount = all.Count,
+                            note = "The sheet REFERENCES that layout; the drawing itself was not " +
+                                   "modified. Give number and title to control how it reads in the " +
+                                   "drawing list, or set them later.",
+                        });
+                    }
+                    finally
+                    {
+                        if (created is not null) { try { Marshal.ReleaseComObject(created); } catch (Exception) { } }
+                        try { Marshal.ReleaseComObject(reference); } catch (Exception) { }
+                    }
+                }
+                finally { if (!toRoot) { try { Marshal.ReleaseComObject(target); } catch (Exception) { } } }
+            });
+        });
+
+    /// <summary>Names of sheets already pointing at this layout of this drawing.</summary>
+    private static IEnumerable<string> SheetsWithLayout(IAcSmSubset root, string dwg, string layout)
+    {
+        var hits = new List<string>();
+        CollectSheetsWithLayout(root, dwg, layout, hits);
+        return hits;
+    }
+
+    private static void CollectSheetsWithLayout(
+        IAcSmSubset subset, string dwg, string layout, List<string> into)
+    {
+        var en = subset.GetSheetEnumerator();
+        try
+        {
+            en.Reset();
+            while (true)
+            {
+                var comp = en.Next();
+                if (comp is null) break;
+                try
+                {
+                    if (comp is IAcSmSheet sheet)
+                    {
+                        IAcSmAcDbLayoutReference? lr = null;
+                        try { lr = sheet.GetLayout(); } catch (COMException) { lr = null; }
+                        if (lr is not null)
+                        {
+                            try
+                            {
+                                if (string.Equals(lr.GetName(), layout, StringComparison.OrdinalIgnoreCase)
+                                    && string.Equals(Path.GetFullPath(lr.GetFileName() ?? ""), dwg,
+                                                     StringComparison.OrdinalIgnoreCase))
+                                    into.Add(sheet.GetName());
+                            }
+                            catch (Exception) { }
+                            finally { try { Marshal.ReleaseComObject(lr); } catch (Exception) { } }
+                        }
+                    }
+                    else if (comp is IAcSmSubset nested)
+                    {
+                        CollectSheetsWithLayout(nested, dwg, layout, into);
+                    }
+                }
+                finally { try { Marshal.ReleaseComObject(comp); } catch (Exception) { } }
+            }
+        }
+        finally { try { Marshal.ReleaseComObject(en); } catch (Exception) { } }
+    }
 
     // ─────────── sheet order and removal ───────────
 

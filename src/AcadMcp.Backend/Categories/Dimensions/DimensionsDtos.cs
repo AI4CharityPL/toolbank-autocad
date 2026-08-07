@@ -169,3 +169,63 @@ public sealed record DimStyleListResult(
 
 public sealed record DimAffectedCount(
     [property: JsonPropertyName("affected")] int Affected);
+
+// ─────────── roadmap 3.2, first tranche ───────────
+
+public sealed record JoggedRadiusArgs(
+    [property: JsonPropertyName("curveHandle")]    string CurveHandle,
+    [property: JsonPropertyName("chordPoint")]     Point3dDto ChordPoint,
+    [property: JsonPropertyName("overrideCenter")] Point3dDto? OverrideCenter = null,
+    [property: JsonPropertyName("jogPoint")]       Point3dDto? JogPoint = null,
+    [property: JsonPropertyName("jogAngleDeg")]    double? JogAngleDeg = null,
+    [property: JsonPropertyName("dimStyle")]       string? DimStyle = null,
+    [property: JsonPropertyName("layer")]          string? Layer = null);
+
+public sealed record JoggedRadiusResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("type")]           string Type,
+    [property: JsonPropertyName("radius")]         double Radius,
+    [property: JsonPropertyName("measurement")]    double Measurement,
+    [property: JsonPropertyName("jogAngleDeg")]    double JogAngleDeg,
+    [property: JsonPropertyName("center")]         IReadOnlyList<double> Center,
+    [property: JsonPropertyName("overrideCenter")] IReadOnlyList<double> OverrideCenter,
+    [property: JsonPropertyName("jogPoint")]       IReadOnlyList<double> JogPoint,
+    // Added after it came back null through this DTO while the plugin was emitting it - the
+    // silent-drop of KNOWN-GAPS C0, caught here only because a check asked for the value.
+    [property: JsonPropertyName("jogOffset")]      double JogOffset,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record ObliqueArgs(
+    [property: JsonPropertyName("handles")]    IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("obliqueDeg")] double? ObliqueDeg = null);
+
+public sealed record ObliquedDimDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("measurement")] double Measurement);
+
+public sealed record ObliqueResult(
+    [property: JsonPropertyName("affected")]   int Affected,
+    [property: JsonPropertyName("obliqueDeg")] double ObliqueDeg,
+    [property: JsonPropertyName("dimensions")] IReadOnlyList<ObliquedDimDto> Dimensions,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record EditDimTextArgs(
+    [property: JsonPropertyName("handle")]          string Handle,
+    [property: JsonPropertyName("text")]            string? Text = null,
+    [property: JsonPropertyName("textPosition")]    Point3dDto? TextPosition = null,
+    [property: JsonPropertyName("textRotationDeg")] double? TextRotationDeg = null,
+    [property: JsonPropertyName("resetPosition")]   bool? ResetPosition = null);
+
+public sealed record EditDimTextResult(
+    [property: JsonPropertyName("handle")]              string Handle,
+    [property: JsonPropertyName("type")]                string Type,
+    [property: JsonPropertyName("measurement")]         double Measurement,
+    [property: JsonPropertyName("textBefore")]          string? TextBefore,
+    [property: JsonPropertyName("text")]                string? Text,
+    [property: JsonPropertyName("displaysMeasurement")] bool DisplaysMeasurement,
+    [property: JsonPropertyName("textSuppressed")]      bool TextSuppressed,
+    [property: JsonPropertyName("positionBefore")]      IReadOnlyList<double> PositionBefore,
+    [property: JsonPropertyName("textPosition")]        IReadOnlyList<double> TextPosition,
+    [property: JsonPropertyName("usingDefaultTextPosition")] bool UsingDefaultTextPosition,
+    [property: JsonPropertyName("note")]                string Note);

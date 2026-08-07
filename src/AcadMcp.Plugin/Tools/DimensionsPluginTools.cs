@@ -42,6 +42,11 @@ internal static class DimensionsPluginTools
         host.Register("acad.dimensions.ensure_architectural_dimstyle", EnsureArchitecturalDimStyle);
         host.Register("acad.dimensions.cumulative_chain",      CumulativeChain);
         host.Register("acad.dimensions.apply_arch_tick_style", ApplyArchTickStyle);
+
+        // roadmap 3.2 - editing a dimension after it is placed
+        host.Register("acad.dimensions.jogged_radius",         JoggedRadius);
+        host.Register("acad.dimensions.oblique",               Oblique);
+        host.Register("acad.dimensions.edit_dimension_text",   EditDimensionText);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -416,4 +421,263 @@ internal static class DimensionsPluginTools
         Ellipse e => e.Center,
         _ => throw new ArgumentException($"radial dimension expects Circle/Arc/Ellipse, got {ent.GetRXClass().Name}.")
     };
+
+    // ─────────── roadmap 3.2: editing a dimension after it is placed ───────────
+    //
+    // The category could PLACE eleven kinds of dimension and change none of them afterwards.
+    // All three tools below share one claim that is easy to get wrong and impossible to see in
+    // a return code: they change how a dimension LOOKS and must not change what it MEASURES.
+    // Measurement is therefore read before and after in every one of them, and a change in it
+    // is reported as a failure rather than as a successful edit.
+
+    private static Dimension RequireDimension(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException("handle is required: the dimension to edit.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), mode);
+        if (ent is Dimension d) return d;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetType().Name + ", not a Dimension. These tools " +
+            "edit dimensions that already exist; place one first with dimensions.linear, " +
+            "aligned, radial and the rest.");
+    }
+
+    private static double RadiusOfCurve(Entity ent) => ent switch
+    {
+        Circle c => c.Radius,
+        Arc a    => a.Radius,
+        _ => throw new ArgumentException(
+            "A jogged radius dimension expects a Circle or an Arc, not a " +
+            ent.GetRXClass().Name + ". An ellipse has no single radius to jog.")
+    };
+
+    private static Task<ToolDispatchResult> JoggedRadius(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.jogged_radius", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<JoggedRadiusArgsDto>(args);
+            var ent = ResolveEntity(db, tr, a.CurveHandle);
+            var centre = CenterOfCurve(ent);
+            var radius = RadiusOfCurve(ent);
+            var chord = AcadEnv.ToPoint3d(a.ChordPoint);
+
+            // The whole point of DIMJOGGED: the real centre is off the sheet, so the dimension is
+            // drawn from a FALSE centre near the arc and the line is jogged to say so. Default it
+            // to a point on the same ray, one radius back from the chord point, which is where a
+            // draughtsman would put it.
+            var dir = (chord - centre).GetNormal();
+            var overrideCentre = a.OverrideCenter is not null
+                ? AcadEnv.ToPoint3d(a.OverrideCenter)
+                : chord - dir * radius * 0.5;
+
+            // The jog point must be OFF the centre-to-chord line. Measured, because the first
+            // version defaulted it onto that line and every number still came out right: the
+            // entity was a RadialDimensionLarge, the measurement was the true radius, the false
+            // centre differed from the real one - and it drew as a plain straight leader with no
+            // jog at all. Its lateral extent was 3.542, the width of the text and nothing more,
+            // against 63.1 for the same dimension with the jog point moved 60 aside.
+            var perp = new Vector3d(-dir.Y, dir.X, 0);
+            var jog = a.JogPoint is not null
+                ? AcadEnv.ToPoint3d(a.JogPoint)
+                : overrideCentre + (chord - overrideCentre) * 0.5 + perp * radius * 0.15;
+
+            // How far the jog sits off the leader. This is the number that separates a jogged
+            // dimension from a straight one, so a caller who supplies their own collinear point
+            // is told rather than handed a dimension that quietly is not jogged.
+            var lateral = Math.Abs((jog - centre).DotProduct(perp));
+            if (lateral < radius * 1e-3)
+                throw new ArgumentException(
+                    "jogPoint (" + jog.X + ", " + jog.Y + ") lies on the line from the centre to chordPoint, " +
+                    "only " + lateral + " off it, so there is nothing for the jog to bend around " +
+                    "and this would draw as a plain straight leader under a jogged class - " +
+                    "indistinguishable on the sheet from dimensions.radial. Move it sideways, or " +
+                    "omit jogPoint and a default " + (radius * 0.15) + " off the line is used.");
+
+            var jogAngleDeg = a.JogAngleDeg ?? 45.0;
+            if (jogAngleDeg <= 0 || jogAngleDeg >= 180)
+                throw new ArgumentException(
+                    "jogAngleDeg must be between 0 and 180 exclusive; AutoCAD's own default is 45. " +
+                    "A jog of 0 or 180 degrees would be a straight line, which is a plain radial " +
+                    "dimension - use dimensions.radial for that.");
+
+            var dim = new RadialDimensionLarge(
+                centre, chord, overrideCentre, jog,
+                jogAngleDeg * Math.PI / 180.0,
+                "",
+                AcadEnv.ResolveDimStyleOrCurrent(db, tr, a.DimStyle));
+
+            var handle = AcadEnv.Persist(db, tr, dim, a.Layer);
+
+            // The jog is a DRAWING device. If it changed the measured radius the dimension would
+            // be lying, so this is checked rather than assumed.
+            var measured = dim.Measurement;
+            if (Math.Abs(measured - radius) > 1e-6)
+                throw new InvalidOperationException(
+                    "The jogged dimension measures " + measured + " where the curve's radius is " +
+                    radius + ". A jog changes how the dimension is DRAWN, never what it reports, " +
+                    "so this is not being returned as success.");
+
+            return Wrap(new
+            {
+                entity = handle,
+                type = nameof(RadialDimensionLarge),
+                radius,
+                measurement = measured,
+                jogAngleDeg,
+                center = new[] { centre.X, centre.Y, centre.Z },
+                overrideCenter = new[] { overrideCentre.X, overrideCentre.Y, overrideCentre.Z },
+                jogPoint = new[] { jog.X, jog.Y, jog.Z },
+                jogOffset = lateral,
+                note = "A jogged radius exists for arcs whose true centre is off the sheet: the " +
+                       "dimension is drawn from overrideCenter, a FALSE centre near the arc, and " +
+                       "the bend in the leader says so. jogOffset is how far the jog sits off " +
+                       "the centre-to-chord line - at zero the leader would be straight and this " +
+                       "would be a plain radial dimension wearing a jogged class, so it is " +
+                       "reported rather than assumed. The measurement is still the real radius, " +
+                       measured + ". Use dimensions.radial when the centre is on the sheet.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> Oblique(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.oblique", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ObliqueArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException(
+                    "handles is required: which dimensions to slant. DIMEDIT Oblique takes a " +
+                    "selection because obliquing one dimension of a crowded chain and not its " +
+                    "neighbours is what makes the chain readable.");
+            if (a.ObliqueDeg is null)
+                throw new ArgumentException(
+                    "obliqueDeg is required: the angle the EXTENSION lines lean to, in degrees " +
+                    "CCW from the X axis. Pass 0 to straighten them again.");
+
+            var deg = a.ObliqueDeg.Value;
+            var changed = new List<object>();
+
+            foreach (var h in a.Handles)
+            {
+                var d = RequireDimension(db, tr, h, OpenMode.ForWrite);
+                var before = d.Measurement;
+
+                // Oblique is NOT on the Dimension base class - only the two linear kinds carry
+                // it, because it is the extension lines that lean and a radial dimension has
+                // none. Checked by the compiler, not assumed: Dimension.Oblique does not exist.
+                switch (d)
+                {
+                    case RotatedDimension rd: rd.Oblique = deg * Math.PI / 180.0; break;
+                    case AlignedDimension ad: ad.Oblique = deg * Math.PI / 180.0; break;
+                    default:
+                        throw new ArgumentException(
+                            "Entity " + h + " is a " + d.GetType().Name + ". Only linear and " +
+                            "aligned dimensions can be obliqued - they are the ones with " +
+                            "extension lines to lean. A radial, diametric or angular dimension " +
+                            "has none.");
+                }
+
+                // Obliquing is a change of APPEARANCE. A changed measurement would mean the
+                // dimension now reports a different distance than the one it was placed on.
+                var after = d.Measurement;
+                if (Math.Abs(after - before) > 1e-9)
+                    throw new InvalidOperationException(
+                        "Dimension " + h + " measured " + before + " and now measures " + after +
+                        ". Obliquing leans the extension lines and must not change the measured " +
+                        "distance, so this is not being reported as success.");
+
+                changed.Add(new { handle = h, type = d.GetType().Name, measurement = after });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                obliqueDeg = deg,
+                dimensions = changed,
+                note = "The EXTENSION lines now lean to " + deg + " degrees; the dimension line " +
+                       "and the measured distance are untouched. This is what separates a " +
+                       "crowded chain into readable steps. Pass obliqueDeg 0 to undo it.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> EditDimensionText(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.edit_dimension_text", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<EditDimTextArgsDto>(args);
+            var d = RequireDimension(db, tr, a.Handle, OpenMode.ForWrite);
+
+            if (a.Text is null && a.TextPosition is null && a.TextRotationDeg is null &&
+                a.ResetPosition is not true)
+                throw new ArgumentException(
+                    "Nothing to change. Give text, textPosition, textRotationDeg or " +
+                    "resetPosition: true.");
+
+            var measurement = d.Measurement;
+            var textBefore = d.DimensionText;
+            var posBefore = d.TextPosition;
+
+            if (a.Text is not null)
+            {
+                // AutoCAD's own convention, and it is not obvious from the outside:
+                //   ""   -> use the measurement (this is the DEFAULT state, not "blank")
+                //   "<>" -> the measurement, embedded in surrounding text
+                //   " "  -> a single space SUPPRESSES the text entirely
+                // A caller passing "" to mean "clear the text" gets the measurement back
+                // instead, which looks like the tool ignored them. Say so rather than let them
+                // find out on the sheet.
+                d.DimensionText = a.Text;
+            }
+
+            if (a.ResetPosition == true)
+            {
+                if (a.TextPosition is not null)
+                    throw new ArgumentException(
+                        "resetPosition and textPosition contradict each other: one puts the text " +
+                        "back where the style wants it, the other puts it somewhere specific.");
+                d.UsingDefaultTextPosition = true;
+            }
+            else if (a.TextPosition is not null)
+            {
+                d.TextPosition = AcadEnv.ToPoint3d(a.TextPosition);
+                d.UsingDefaultTextPosition = false;
+            }
+
+            if (a.TextRotationDeg is not null)
+                d.TextRotation = a.TextRotationDeg.Value * Math.PI / 180.0;
+
+            // Rebuild the dimension's block so the change is on screen and not only in the
+            // record. Without this a moved text can read back correctly and still be drawn in
+            // its old place until the drawing is regenerated.
+            d.RecomputeDimensionBlock(true);
+
+            // The decisive check for this tool. An override changes what the dimension SAYS; it
+            // must not change what it MEASURED, or the number on the sheet stops being a fact
+            // about the drawing.
+            var after = d.Measurement;
+            if (Math.Abs(after - measurement) > 1e-9)
+                throw new InvalidOperationException(
+                    "The measurement changed from " + measurement + " to " + after + ". Editing " +
+                    "the text overrides what is DISPLAYED and must never touch the measured " +
+                    "value, so this is not being reported as success.");
+
+            var textNow = d.DimensionText;
+            var suppressed = textNow == " ";
+            var usesMeasurement = string.IsNullOrEmpty(textNow) || textNow.Contains("<>");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                type = d.GetType().Name,
+                measurement = after,
+                textBefore,
+                text = textNow,
+                displaysMeasurement = usesMeasurement,
+                textSuppressed = suppressed,
+                positionBefore = new[] { posBefore.X, posBefore.Y, posBefore.Z },
+                textPosition = new[] { d.TextPosition.X, d.TextPosition.Y, d.TextPosition.Z },
+                usingDefaultTextPosition = d.UsingDefaultTextPosition,
+                note = "The measurement is unchanged at " + after + " - an override changes what " +
+                       "the dimension SAYS, never what it measured. AutoCAD's conventions for " +
+                       "text: \"\" means show the measurement (the default state, not blank), " +
+                       "\"<>\" embeds the measurement inside your own text, and a single space " +
+                       "suppresses the text altogether.",
+            });
+        });
 }

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 524 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 527 tools total.
 
 ## Categories
 
@@ -11,7 +11,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-boolean-ops](#acad-boolean-ops) (8 tools)
 - [acad-callouts](#acad-callouts) (5 tools)
 - [acad-civil](#acad-civil) (12 tools)
-- [acad-dimensions](#acad-dimensions) (17 tools)
+- [acad-dimensions](#acad-dimensions) (20 tools)
 - [acad-electrical](#acad-electrical) (15 tools)
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
@@ -179,10 +179,13 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `dimension_continued_chain` | Build a continued chain of linear dimensions: each new dimension's first extension line is the previous dimension's second extension line. |
 | `dimension_cumulative_chain` | Cumulative dimension chain: N dimensions sharing a SINGLE dim line, each reporting the distance from baselinePoint to point_i (running total). Use for exterior overall/axis/opening dimension rows per rule 66 §1. Differs from baseline_chain (staggered by DIMDLI) and continued_chain (end-to-end). |
 | `dimension_diametric` | Place a diametric dimension on a Circle through farPoint (the leader anchor on the far side of the curve). |
+| `dimension_jogged_radius` | Place a JOGGED radius dimension on a circle or arc - AutoCAD's DIMJOGGED. This is the dimension for an arc whose true centre is off the sheet: it is drawn from overrideCenter, a false centre near the arc, and the zig-zag in the dimension line is what tells the reader the centre is not really there. The MEASUREMENT is still the real radius, and the tool refuses to return a dimension whose measurement does not match the curve. Use dimensions.radial when the centre is on the sheet. |
 | `dimension_linear` | Place a linear (rotated) dimension between p1 and p2 with the dim line passing through dimLinePoint at the given rotation in degrees (0 = horizontal). |
+| `dimension_oblique` | Lean the EXTENSION lines of linear and aligned dimensions to a given angle - AutoCAD's DIMEDIT Oblique. This is what separates a crowded chain of dimensions into something readable, and it changes appearance only: the dimension line and the measured distance are untouched, and the tool refuses to report success if a measurement moved. Radial, diametric and angular dimensions have no extension lines and are refused by name. Pass obliqueDeg 0 to straighten them again. |
 | `dimension_ordinate` | Place an ordinate (X or Y datum) dimension at definingPoint with leader endpoint at leaderEnd. useXAxis=true measures the X distance from UCS origin. |
 | `dimension_overall` | Place a single linear dimension spanning the overall bbox of one or more entities projected onto rotationDeg. Useful for 'outer-most' exterior dimensions (rule 66 level 1). rotationDeg 0° measures along X (horizontal), 90° along Y. Uses the bounding boxes fetched via acad.geometry2d.get_entity. |
 | `dimension_radial` | Place a radial dimension on a Circle or Arc; chordPoint specifies which side of the curve the leader exits. |
+| `edit_dimension_text` | Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD's text conventions are carried through and reported: "" means show the measurement (the default state, not blank), "<>" embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of. |
 | `ensure_architectural_dimstyle` | Idempotently create (or update) the ARCH-ISO dimension style used by the 3-level architectural dimension hierarchy (rule 66). Sets architectural tick arrowheads ('ArchTick'), text height scaled to plot scale, mm precision, no trailing zeros. Safe to call multiple times; returns whether the style was created, updated or left untouched. |
 | `list_dimstyles` | List all dimension styles defined in the active drawing plus the current Dimstyle. |
 | `set_entity_dimstyle` | Assign a dimension style to one or more existing dimension entities (by handle). |

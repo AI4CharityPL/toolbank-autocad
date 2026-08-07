@@ -116,3 +116,25 @@ internal sealed record EnsureArchDimStyleResultDto(
     [property: JsonPropertyName("created")]     bool Created,
     [property: JsonPropertyName("updated")]     bool Updated,
     [property: JsonPropertyName("madeCurrent")] bool MadeCurrent);
+
+// ─────────── roadmap 3.2, first tranche ───────────
+
+internal sealed record JoggedRadiusArgsDto(
+    [property: JsonPropertyName("curveHandle")]  string CurveHandle,
+    [property: JsonPropertyName("chordPoint")]   Point3dDto ChordPoint,
+    [property: JsonPropertyName("overrideCenter")] Point3dDto? OverrideCenter,
+    [property: JsonPropertyName("jogPoint")]     Point3dDto? JogPoint,
+    [property: JsonPropertyName("jogAngleDeg")]  double? JogAngleDeg,
+    [property: JsonPropertyName("dimStyle")]     string? DimStyle = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+internal sealed record ObliqueArgsDto(
+    [property: JsonPropertyName("handles")]     List<string>? Handles,
+    [property: JsonPropertyName("obliqueDeg")]  double? ObliqueDeg);
+
+internal sealed record EditDimTextArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("text")]         string? Text,
+    [property: JsonPropertyName("textPosition")] Point3dDto? TextPosition,
+    [property: JsonPropertyName("textRotationDeg")] double? TextRotationDeg,
+    [property: JsonPropertyName("resetPosition")] bool? ResetPosition);

@@ -32,20 +32,26 @@
     "dimstyle",
     "dimstyles",
     "dwg",
+    "edit",
     "ensure",
     "entity",
+    "jogged",
     "length",
     "linear",
     "list",
+    "oblique",
     "ordinate",
     "overall",
     "radial",
+    "radius",
     "set",
     "style",
+    "text",
     "tick",
     "walls"
   ],
   "intent_examples": [
+    "add a suffix to a dimension",
     "aligned dimension",
     "angle 3 points",
     "angle between two lines",
@@ -79,12 +85,17 @@
     "dimbaseline",
     "dimcontinue",
     "dimdiameter",
+    "dimedit oblique",
     "dimension parallel to segment",
+    "dimjogged",
     "dimradius",
     "dimstyle z kreskami architektonicznymi",
     "dlugosc luku wymiar",
+    "dopisz TYP do wymiaru",
+    "edit dimension text",
     "ensure ARCH-ISO dimstyle",
     "horizontal dimension",
+    "jogged radius dimension",
     "kat miedzy liniami",
     "kat z trzech punktow",
     "lancuch wymiarow bazowych",
@@ -92,18 +103,28 @@
     "lancuch wymiarow narastajacych",
     "linear dimension",
     "list dimension styles",
+    "make a crowded dimension chain readable",
+    "move dimension text",
     "normalise dim layer style",
+    "oblique dimension extension lines",
     "ordinate dimension",
     "outer dimension of entities",
     "overall dimension",
+    "override dimension text",
+    "pochyl linie pomocnicze wymiaru",
+    "promien luku o srodku poza arkuszem",
     "promien okregu wymiar",
+    "przesun tekst wymiaru",
     "radial dimension",
+    "radius dimension with a jog",
     "retrofit dim layer to arch",
     "rotated linear dim",
+    "rozsun stloczone wymiary",
     "running totals dimension",
     "set dimstyle on dimension",
     "setup architectural dim style",
     "show dimstyles",
+    "skos linii wymiarowych",
     "srednica okregu wymiar",
     "stworz styl wymiarowania architektoniczny",
     "swap dimension style",
@@ -114,12 +135,14 @@
     "wszystkie dimstyles",
     "wylistuj style wymiarowania",
     "wymiar dlugosci luku",
+    "wymiar duzego promienia",
     "wymiar katowy 2 linie",
     "wymiar katowy 3 punkty",
     "wymiar liniowy",
     "wymiar ogolny budynku",
     "wymiar poziomy",
     "wymiar promienia",
+    "wymiar promienia z odsadzeniem",
     "wymiar rownolegly",
     "wymiar srednicy",
     "wymiar wspolrzednych",
@@ -129,6 +152,7 @@
     "wymiary od bazy",
     "zamien styl wymiarow na warstwie",
     "zmien styl wymiarow",
+    "zmien tekst wymiaru",
     "zmien wszystkie wymiary na warstwie",
     "zrob lancuch wymiarow po scianach"
   ],
@@ -293,6 +317,23 @@
       ]
     },
     {
+      "name": "dimension_jogged_radius",
+      "description": "Place a JOGGED radius dimension on a circle or arc - AutoCAD\u0027s DIMJOGGED. This is the dimension for an arc whose true centre is off the sheet: it is drawn from overrideCenter, a false centre near the arc, and the zig-zag in the dimension line is what tells the reader the centre is not really there. The MEASUREMENT is still the real radius, and the tool refuses to return a dimension whose measurement does not match the curve. Use dimensions.radial when the centre is on the sheet.",
+      "tags": [
+        "dimension",
+        "jogged",
+        "radius"
+      ],
+      "intent": [
+        "wymiar promienia z odsadzeniem",
+        "promien luku o srodku poza arkuszem",
+        "jogged radius dimension",
+        "dimjogged",
+        "radius dimension with a jog",
+        "wymiar duzego promienia"
+      ]
+    },
+    {
       "name": "dimension_linear",
       "description": "Place a linear (rotated) dimension between p1 and p2 with the dim line passing through dimLinePoint at the given rotation in degrees (0 = horizontal).",
       "tags": [
@@ -305,6 +346,22 @@
         "horizontal dimension",
         "wymiar poziomy",
         "rotated linear dim"
+      ]
+    },
+    {
+      "name": "dimension_oblique",
+      "description": "Lean the EXTENSION lines of linear and aligned dimensions to a given angle - AutoCAD\u0027s DIMEDIT Oblique. This is what separates a crowded chain of dimensions into something readable, and it changes appearance only: the dimension line and the measured distance are untouched, and the tool refuses to report success if a measurement moved. Radial, diametric and angular dimensions have no extension lines and are refused by name. Pass obliqueDeg 0 to straighten them again.",
+      "tags": [
+        "dimension",
+        "oblique"
+      ],
+      "intent": [
+        "pochyl linie pomocnicze wymiaru",
+        "rozsun stloczone wymiary",
+        "oblique dimension extension lines",
+        "dimedit oblique",
+        "skos linii wymiarowych",
+        "make a crowded dimension chain readable"
       ]
     },
     {
@@ -350,6 +407,24 @@
         "promien okregu wymiar",
         "dim radius of circle",
         "dimradius"
+      ]
+    },
+    {
+      "name": "edit_dimension_text",
+      "description": "Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD\u0027s text conventions are carried through and reported: \u0022\u0022 means show the measurement (the default state, not blank), \u0022\u003C\u003E\u0022 embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of.",
+      "tags": [
+        "edit",
+        "dimension",
+        "text"
+      ],
+      "intent": [
+        "zmien tekst wymiaru",
+        "dopisz TYP do wymiaru",
+        "przesun tekst wymiaru",
+        "edit dimension text",
+        "override dimension text",
+        "move dimension text",
+        "add a suffix to a dimension"
       ]
     },
     {
@@ -402,7 +477,7 @@
   ],
   "metadata": {
     "category": "dimensions",
-    "tool_count_target": 17,
+    "tool_count_target": 20,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -416,6 +491,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-05T13:09:26.8886394Z"
+    "last_regenerated_utc": "2026-08-07T16:18:36.8871648Z"
   }
 }

@@ -37,6 +37,40 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.2, first tranche — editing a dimension after it is placed.** `acad-dimensions`
+  17 → 20, bank 524 → 527: `dimension_jogged_radius`, `dimension_oblique`,
+  `edit_dimension_text`. Verified live **70/70**.
+
+  The category could place eleven kinds of dimension and change none of them afterwards. All
+  three of these change how a dimension **looks**, and the thing none of them may change is what
+  it **measures** — so each reads `Measurement` before and after and refuses to report success if
+  it moved. A tool that edited the geometry instead of the presentation would place a perfectly
+  good dimension reporting a different number, and every "did it work" check would pass.
+
+  `dimension_jogged_radius` shipped broken once and the tally did not notice. It produced a
+  `RadialDimensionLarge` with the true radius as its measurement, a false centre distinct from
+  the real one, and the requested jog angle — 63 checks green — and **drew as a dead straight
+  leader with no jog at all**, because the default jog point came out collinear with the
+  centre-to-chord line and a bend needs somewhere to bend to. Measured against a plain radial
+  dimension on an identical arc:
+
+  | jog point | drawn width |
+  |---|---|
+  | collinear (the shipped default) | **3.542** — the width of the text and nothing else |
+  | 60 aside | 63.1 |
+  | 120 aside | 123.1 |
+
+  Fixed three ways: the default jog point is now offset perpendicular by `0.15 × radius`; a
+  caller-supplied collinear point is **refused**, because the result is indistinguishable on the
+  sheet from `dimensions.radial`; and `jogOffset` is reported so the bend is checkable from
+  outside. The verification gained the check that would have caught it — drawn width against a
+  plain radial control, since 3.542 means nothing alone and everything next to 63.1.
+
+  `edit_dimension_text` carries AutoCAD's three text conventions rather than leaving them to be
+  discovered on a plotted sheet: `""` means *show the measurement* (the default state, not
+  blank), `"<>"` embeds the measurement in your own text, and a **single space** is what
+  suppresses it. Each is asserted separately.
+
 - **Phase 3.1 — 2D geometry editing: 29 tools over ten tranches.** Bank 495 → 524;
   `acad-geometry-2d` 33 → 60, `acad-modify` 16 → 18. Every tranche was verified live against a
   running AutoCAD and confirmed on an exported PNG, never on a return code:

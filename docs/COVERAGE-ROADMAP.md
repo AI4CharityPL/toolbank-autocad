@@ -471,15 +471,32 @@ Three tools from this phase were **withdrawn after measurement** rather than shi
 approximate — see KNOWN-GAPS §B for the numbers: `blend_curves` `continuity=smooth`,
 `set_object_transparency` `byLayer`/`byBlock`, and (from 2.1) `add_sheet_view`.
 
-### 3.2 `acad-dimensions` extensions (≈14)
+### 3.2 `acad-dimensions` extensions (≈14 → **3 built, 4 blocked by the API**)
 
 ```
-dimension_jogged_radius     dimension_jog_linear       dimension_break
-dimension_space             dimension_inspect          dimension_reassociate
-dimension_oblique           dimension_center_mark      dimension_centerline
-edit_dimension_text         dimension_update           quick_dimension
-dimension_arc_symbol        dimension_tolerance
+dimension_jogged_radius ✔   dimension_jog_linear ✘     dimension_break ..
+dimension_space ..          dimension_inspect ✘        dimension_reassociate ..
+dimension_oblique ✔         dimension_center_mark ✘    dimension_centerline ✘
+edit_dimension_text ✔       dimension_update ..        quick_dimension ..
+dimension_arc_symbol ..     dimension_tolerance ..
 ```
+
+Before any of this was written, the 2025 managed assemblies were **asked what they contain**,
+by compiling a throwaway file that names every type and property the phase would need. That is
+the authoritative answer and it splits the list in two — the four marked ✘ are not a question of
+effort:
+
+| present | absent |
+|---|---|
+| `RadialDimensionLarge`, `RotatedDimension.Oblique`, `AlignedDimension.Oblique`, `DimensionText`, `TextPosition`, `TextRotation`, `Dimtol`/`Dimtp`/`Dimtm`/`Dimtdec`, `ArcDimension.ArcSymbolType` | `CenterMark`, `CenterLine` (types), `Inspection`/`InspectionLabel`/`InspectionRate`/`InspectionFrame`, `JogSymbolHeight`/`JogSymbolPosition` |
+
+`Dimension.Oblique` does not exist on the base class either — only the two linear kinds carry
+it, which is why `dimension_oblique` refuses radial, diametric and angular dimensions by name.
+The four absent ones are recorded in [KNOWN-GAPS](KNOWN-GAPS.md) §B with the compiler errors.
+
+A first attempt at reading the assembly through PowerShell reported everything as absent. That
+output was **discarded, not used**: the assembly had failed to load, so every "absent" was an
+artefact of the failure rather than a finding.
 
 ### 3.3 `acad-annotations` extensions (≈18)
 

@@ -1,4 +1,4 @@
-// AutoCAD acad-dimensions category. 12 tools covering linear / aligned / angular (3-point and 2-line) /
+﻿// AutoCAD acad-dimensions category. 12 tools covering linear / aligned / angular (3-point and 2-line) /
 // radial / diametric / arc-length / ordinate dimensions, baseline and continued chains derived from
 // repeated linear dims, plus dimstyle list and per-entity style assignment.
 //
@@ -264,4 +264,30 @@ public static class DimensionsTools
         return await DimensionsProxy.CallAsync<LinearDimArgs, DimEntityResult>(
             gw, "acad.dimensions.linear", linArgs, T_NORMAL, ct).ConfigureAwait(false);
     }
+
+    // ─────────── roadmap 3.2: editing a dimension after it is placed ───────────
+
+    [McpTool("dimension_jogged_radius", "Place a JOGGED radius dimension on a circle or arc - AutoCAD's DIMJOGGED. This is the dimension for an arc whose true centre is off the sheet: it is drawn from overrideCenter, a false centre near the arc, and the zig-zag in the dimension line is what tells the reader the centre is not really there. The MEASUREMENT is still the real radius, and the tool refuses to return a dimension whose measurement does not match the curve. Use dimensions.radial when the centre is on the sheet.", "dimensions",
+        Intent = new[] { "wymiar promienia z odsadzeniem", "promien luku o srodku poza arkuszem",
+                         "jogged radius dimension", "dimjogged", "radius dimension with a jog",
+                         "wymiar duzego promienia" },
+        RequiresPlugin = true)]
+    public static Task<JoggedRadiusResult> DimensionJoggedRadius(IPluginGateway gw, JoggedRadiusArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<JoggedRadiusArgs, JoggedRadiusResult>(gw, "acad.dimensions.jogged_radius", args, T_NORMAL, ct);
+
+    [McpTool("dimension_oblique", "Lean the EXTENSION lines of linear and aligned dimensions to a given angle - AutoCAD's DIMEDIT Oblique. This is what separates a crowded chain of dimensions into something readable, and it changes appearance only: the dimension line and the measured distance are untouched, and the tool refuses to report success if a measurement moved. Radial, diametric and angular dimensions have no extension lines and are refused by name. Pass obliqueDeg 0 to straighten them again.", "dimensions",
+        Intent = new[] { "pochyl linie pomocnicze wymiaru", "rozsun stloczone wymiary",
+                         "oblique dimension extension lines", "dimedit oblique",
+                         "skos linii wymiarowych", "make a crowded dimension chain readable" },
+        RequiresPlugin = true)]
+    public static Task<ObliqueResult> DimensionOblique(IPluginGateway gw, ObliqueArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<ObliqueArgs, ObliqueResult>(gw, "acad.dimensions.oblique", args, T_NORMAL, ct);
+
+    [McpTool("edit_dimension_text", "Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD's text conventions are carried through and reported: \"\" means show the measurement (the default state, not blank), \"<>\" embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of.", "dimensions",
+        Intent = new[] { "zmien tekst wymiaru", "dopisz TYP do wymiaru", "przesun tekst wymiaru",
+                         "edit dimension text", "override dimension text",
+                         "move dimension text", "add a suffix to a dimension" },
+        RequiresPlugin = true)]
+    public static Task<EditDimTextResult> EditDimensionText(IPluginGateway gw, EditDimTextArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<EditDimTextArgs, EditDimTextResult>(gw, "acad.dimensions.edit_dimension_text", args, T_NORMAL, ct);
 }

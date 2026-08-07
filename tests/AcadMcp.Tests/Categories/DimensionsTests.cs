@@ -11,11 +11,11 @@ namespace AcadMcp.Tests.Categories;
 public class DimensionsTests
 {
     [Fact]
-    public void Catalog_contains_all_seventeen_dimension_tools()
+    public void Catalog_contains_all_twenty_dimension_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("dimensions");
-        Assert.Equal(17, tools.Count);
+        Assert.Equal(20, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         // original 12:
@@ -37,5 +37,11 @@ public class DimensionsTests
         Assert.Contains("apply_arch_tick_style", names);
         Assert.Contains("auto_dim_walls", names);
         Assert.Contains("dimension_overall", names);
+        // Roadmap 3.2, first tranche: the category could PLACE eleven kinds of dimension and
+        // change none of them afterwards. All three edit how a dimension looks, never what it
+        // measures.
+        Assert.Contains("dimension_jogged_radius", names);
+        Assert.Contains("dimension_oblique", names);
+        Assert.Contains("edit_dimension_text", names);
     }
 }

@@ -76,3 +76,29 @@ internal sealed record CreateTextStyleArgsDto(
 
 internal sealed record TextStyleNameArgDto(
     [property: JsonPropertyName("name")] string Name);
+
+// ─────────── roadmap 3.3, first tranche: finding text across a drawing ───────────
+
+internal sealed record TextSearchArgsDto(
+    [property: JsonPropertyName("pattern")]     string? Pattern,
+    [property: JsonPropertyName("regex")]       bool? Regex,
+    [property: JsonPropertyName("matchCase")]   bool? MatchCase,
+    [property: JsonPropertyName("wholeWord")]   bool? WholeWord,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter,
+    [property: JsonPropertyName("handles")]     List<string>? Handles,
+    [property: JsonPropertyName("limit")]       int? Limit);
+
+internal sealed record FindReplaceArgsDto(
+    [property: JsonPropertyName("find")]        string? Find,
+    [property: JsonPropertyName("replaceWith")] string? ReplaceWith,
+    [property: JsonPropertyName("regex")]       bool? Regex,
+    [property: JsonPropertyName("matchCase")]   bool? MatchCase,
+    [property: JsonPropertyName("wholeWord")]   bool? WholeWord,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter,
+    [property: JsonPropertyName("handles")]     List<string>? Handles,
+    [property: JsonPropertyName("dryRun")]      bool? DryRun);
+
+internal sealed record ExportTextArgsDto(
+    [property: JsonPropertyName("path")]        string? Path,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter,
+    [property: JsonPropertyName("format")]      string? Format);

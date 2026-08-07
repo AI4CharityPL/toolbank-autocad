@@ -99,3 +99,83 @@ public sealed record AnnAffectedCount(
 public sealed record TextStyleListResult(
     [property: JsonPropertyName("styles")]  IReadOnlyList<string> Styles,
     [property: JsonPropertyName("current")] string Current);
+
+// ─────────── roadmap 3.3, first tranche: finding text across a drawing ───────────
+
+public sealed record TextSearchArgs(
+    [property: JsonPropertyName("pattern")]     string Pattern,
+    [property: JsonPropertyName("regex")]       bool? Regex = null,
+    [property: JsonPropertyName("matchCase")]   bool? MatchCase = null,
+    [property: JsonPropertyName("wholeWord")]   bool? WholeWord = null,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter = null,
+    [property: JsonPropertyName("handles")]     IReadOnlyList<string>? Handles = null,
+    [property: JsonPropertyName("limit")]       int? Limit = null);
+
+public sealed record TextHitDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("layer")]       string Layer,
+    [property: JsonPropertyName("text")]        string Text,
+    [property: JsonPropertyName("occurrences")] int Occurrences,
+    [property: JsonPropertyName("position")]    IReadOnlyList<double> Position);
+
+public sealed record TextSearchResult(
+    [property: JsonPropertyName("pattern")]       string Pattern,
+    [property: JsonPropertyName("regex")]         bool Regex,
+    [property: JsonPropertyName("matchCase")]     bool MatchCase,
+    [property: JsonPropertyName("wholeWord")]     bool WholeWord,
+    [property: JsonPropertyName("scanned")]       int Scanned,
+    [property: JsonPropertyName("scannedByType")] IReadOnlyDictionary<string, int> ScannedByType,
+    [property: JsonPropertyName("matched")]       int Matched,
+    [property: JsonPropertyName("occurrences")]   int Occurrences,
+    [property: JsonPropertyName("truncated")]     bool Truncated,
+    [property: JsonPropertyName("results")]       IReadOnlyList<TextHitDto> Results,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record FindReplaceArgs(
+    [property: JsonPropertyName("find")]        string Find,
+    [property: JsonPropertyName("replaceWith")] string? ReplaceWith = null,
+    [property: JsonPropertyName("regex")]       bool? Regex = null,
+    [property: JsonPropertyName("matchCase")]   bool? MatchCase = null,
+    [property: JsonPropertyName("wholeWord")]   bool? WholeWord = null,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter = null,
+    [property: JsonPropertyName("handles")]     IReadOnlyList<string>? Handles = null,
+    [property: JsonPropertyName("dryRun")]      bool? DryRun = null);
+
+public sealed record ReplacedTextDto(
+    [property: JsonPropertyName("handle")]             string Handle,
+    [property: JsonPropertyName("type")]               string Type,
+    [property: JsonPropertyName("layer")]              string Layer,
+    [property: JsonPropertyName("before")]             string Before,
+    [property: JsonPropertyName("after")]              string After,
+    [property: JsonPropertyName("occurrences")]        int Occurrences,
+    [property: JsonPropertyName("hadFormattingCodes")] bool HadFormattingCodes);
+
+public sealed record SkippedTextDto(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("type")]         string Type,
+    [property: JsonPropertyName("reason")]       string Reason,
+    [property: JsonPropertyName("renderedText")] string? RenderedText = null);
+
+public sealed record FindReplaceResult(
+    [property: JsonPropertyName("find")]            string Find,
+    [property: JsonPropertyName("replaceWith")]     string ReplaceWith,
+    [property: JsonPropertyName("dryRun")]          bool DryRun,
+    [property: JsonPropertyName("scanned")]         int Scanned,
+    [property: JsonPropertyName("entitiesChanged")] int EntitiesChanged,
+    [property: JsonPropertyName("occurrences")]     int Occurrences,
+    [property: JsonPropertyName("changed")]         IReadOnlyList<ReplacedTextDto> Changed,
+    [property: JsonPropertyName("skipped")]         IReadOnlyList<SkippedTextDto> Skipped,
+    [property: JsonPropertyName("note")]            string Note);
+
+public sealed record ExportTextArgs(
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("layerFilter")] string? LayerFilter = null,
+    [property: JsonPropertyName("format")]      string? Format = null);
+
+public sealed record ExportTextResult(
+    [property: JsonPropertyName("path")]   string Path,
+    [property: JsonPropertyName("format")] string Format,
+    [property: JsonPropertyName("items")]  int Items,
+    [property: JsonPropertyName("bytes")]  long Bytes,
+    [property: JsonPropertyName("note")]   string Note);

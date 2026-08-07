@@ -37,6 +37,31 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3, first tranche — finding text across a drawing.** `acad-annotations` 12 → 15,
+  bank 532 → 535: `list_text_by_pattern`, `find_replace_text`, `export_text_content`. Verified
+  live **63/63**.
+
+  All three share one scanner, because the whole difficulty is in it. **Text lives in six
+  places**, and a search reading only DBText and MText misses most of a real sheet: a room name
+  is MText, a level tag is a block **attribute**, a note is an MLeader, a schedule is a **table**,
+  a dimension can carry a text override. Every one is read, and `scannedByType` is reported so
+  "no matches" can be told from "no matches in the two types I bothered to look at". Each type is
+  asserted by handle in the verification, and the exported CSV was read back outside the tool.
+
+  The compiler caught a trap nothing downstream would have: **`Table` derives from
+  `BlockReference`**, so the block branch swallowed every table and schedule text would never
+  have been scanned. The table case has to come first.
+
+  The second difficulty is **formatting codes**. `MText.Contents` stores `\fArial|b1|i0;`
+  alongside the words, so a replacement made on that string can land inside a code — changing a
+  font instead of the text, or breaking the entity. Searching therefore runs on the **rendered**
+  text, and replacement only touches an item when the pattern matches the same number of times
+  in the stored string as in the rendered one; otherwise it goes on the skipped list with that
+  reason. Verified with an MText whose *code* contains the search word while its visible text
+  does not: the tool changes nothing and the entity still renders `PLAN`.
+
+  `dryRun` is checked by reading the entities back, not by trusting the flag.
+
 - **`dimensions.quick_dimension` — phase 3.2 COMPLETE.** `acad-dimensions` 24 → 25, bank
   531 → 532. Verified live **34/34**. Phase 3.2 finishes at 8 built and 6 blocked by the managed
   API, every one of the six recorded in [KNOWN-GAPS](docs/KNOWN-GAPS.md) §B with the compiler

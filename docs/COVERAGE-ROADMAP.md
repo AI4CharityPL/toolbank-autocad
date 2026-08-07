@@ -518,16 +518,29 @@ A first attempt at reading the assembly through PowerShell reported everything a
 output was **discarded, not used**: the assembly had failed to load, so every "absent" was an
 artefact of the failure rather than a finding.
 
-### 3.3 `acad-annotations` extensions (≈18)
+### 3.3 `acad-annotations` extensions (≈18 → **3 built, 2 blocked by the API**)
 
 ```
-find_replace_text           spell_check                text_to_mtext
-mtext_column_settings       arc_aligned_text           set_text_justification
-scale_text_in_place         justify_text               background_mask_mtext
-mtext_bullets_numbering     insert_symbol              stack_fraction
-set_paragraph_format        text_fit                   list_text_by_pattern
-export_text_content         set_mtext_frame            explode_mtext_to_text
+find_replace_text ✔         spell_check ✘              text_to_mtext ..
+mtext_column_settings ..    arc_aligned_text ✘         set_text_justification ..
+scale_text_in_place ..      justify_text ..            background_mask_mtext ..
+mtext_bullets_numbering ..  insert_symbol ..           stack_fraction ..
+set_paragraph_format ..     text_fit ..                list_text_by_pattern ✔
+export_text_content ✔       set_mtext_frame ..         explode_mtext_to_text ..
 ```
+
+Asked of the compiler before anything was written, as in 3.2. **`ArcAlignedText` and
+`SpellChecker` do not exist** in the 2025 managed assemblies — both are express-tool / UI
+features — so those two are struck rather than deferred. Everything else on the list resolves:
+`DBText.Justify`, `AlignmentPoint`, `WidthFactor`, `Oblique`, `AdjustAlignment`; `MText.Attachment`,
+`BackgroundFill`, `BackgroundScaleFactor`, `ColumnType`, `ColumnCount`, `ColumnWidth`,
+`ColumnGutterWidth`, `LineSpacingFactor`. `MText.ExplodeFragments` exists but returns `void` —
+it walks fragments rather than exploding, so `explode_mtext_to_text` will use `Explode()`.
+
+The first tranche is the three that share a scanner, because that is where the difficulty is:
+**text lives in six places**, and one reading only DBText and MText misses most of a real sheet.
+A `Table` derives from `BlockReference`, so its case has to be taken first or schedule text is
+never scanned at all — caught by the compiler calling the table branch unreachable.
 
 ### 3.4 `acad-selection` extensions (≈12)
 

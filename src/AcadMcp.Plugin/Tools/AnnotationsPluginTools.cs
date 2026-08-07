@@ -1,4 +1,4 @@
-// AutoCAD plugin handlers for the acad-annotations category.
+﻿// AutoCAD plugin handlers for the acad-annotations category.
 // Registered under "acad.annotations.<verb>"; everything runs on the UI thread.
 //
 // Rules: 10 (UI thread), 11 (transactions), 12 (error mapping), 19 (impl pattern),
@@ -6,8 +6,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using AcadMcp.Plugin.Threading;
@@ -39,6 +41,11 @@ internal static class AnnotationsPluginTools
         host.Register("acad.annotations.set_current_text_style", SetCurrentTextStyle);
         host.Register("acad.annotations.list_text_styles",      ListTextStyles);
         host.Register("acad.annotations.delete_text_style",     DeleteTextStyle);
+
+        // roadmap 3.3 - finding text across a drawing
+        host.Register("acad.annotations.list_text_by_pattern",  ListTextByPattern);
+        host.Register("acad.annotations.find_replace_text",     FindReplaceText);
+        host.Register("acad.annotations.export_text_content",   ExportTextContent);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -328,4 +335,412 @@ internal static class AnnotationsPluginTools
             rec.Erase(true);
             return Wrap(new { affected = 1 });
         });
+
+    // ─────────── roadmap 3.3: finding text across a drawing ───────────
+    //
+    // Text lives in six different places and a search that only reads DBText and MText will
+    // quietly miss most of a real sheet: a room name is MText, a level tag is a block ATTRIBUTE,
+    // a note is an MLeader, a schedule is a Table, and a dimension can carry a text override.
+    // All six are read here and the per-type counts are reported, so "0 matches" can be told
+    // apart from "0 matches in the two types I bothered to look at".
+    //
+    // The trap that makes replacement different from search: MText.Contents carries FORMATTING
+    // CODES - \fArial|b0|i0;, \W0.8;, {\H1.5x;...}. A replacement done blindly on that string can
+    // land inside a code and silently change the formatting instead of the words, or corrupt the
+    // entity outright. MText.Text is the rendered text and is read-only, so it cannot be written
+    // to directly - but it CAN be used to check the result, which is what happens below.
+
+    private sealed class TextSlot
+    {
+        public string Handle = "";
+        public string Type = "";
+        public string Layer = "";
+        public string Text = "";          // what a reader sees
+        public string Raw = "";           // what is stored, codes and all
+        public double[] Position = new double[3];
+        public Func<string, bool>? Write; // null when this slot is read-only
+    }
+
+    /// <summary>Everything in model space that carries text a person would read.</summary>
+    private static List<TextSlot> TextSlots(Database db, Transaction tr, string? layerFilter,
+                                            IReadOnlyList<string>? only)
+    {
+        var wanted = only is { Count: > 0 }
+            ? new HashSet<string>(only, StringComparer.OrdinalIgnoreCase)
+            : null;
+        var slots = new List<TextSlot>();
+
+        var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+        var ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
+
+        void Add(Entity owner, string type, string text, string raw, Point3d at,
+                 Func<string, bool>? write)
+            => slots.Add(new TextSlot
+            {
+                Handle = owner.Handle.ToString(),
+                Type = type,
+                Layer = owner.Layer,
+                Text = text,
+                Raw = raw,
+                Position = new[] { at.X, at.Y, at.Z },
+                Write = write,
+            });
+
+        foreach (ObjectId id in ms)
+        {
+            if (tr.GetObject(id, OpenMode.ForRead) is not Entity ent) continue;
+            if (wanted is not null && !wanted.Contains(ent.Handle.ToString())) continue;
+            if (!string.IsNullOrEmpty(layerFilter) &&
+                !string.Equals(ent.Layer, layerFilter, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            switch (ent)
+            {
+                case DBText t:
+                    Add(t, "DBText", t.TextString, t.TextString, t.Position, s =>
+                    {
+                        var w = (DBText)tr.GetObject(t.ObjectId, OpenMode.ForWrite);
+                        w.TextString = s;
+                        return w.TextString == s;
+                    });
+                    break;
+
+                case MText m:
+                    Add(m, "MText", m.Text, m.Contents, m.Location, s =>
+                    {
+                        var w = (MText)tr.GetObject(m.ObjectId, OpenMode.ForWrite);
+                        w.Contents = s;
+                        return w.Contents == s;
+                    });
+                    break;
+
+                case MLeader ml when ml.ContentType == ContentType.MTextContent:
+                {
+                    var content = ml.MText;
+                    if (content is null) break;
+                    Add(ml, "MLeader", content.Text, content.Contents, content.Location, s =>
+                    {
+                        var w = (MLeader)tr.GetObject(ml.ObjectId, OpenMode.ForWrite);
+                        var c = w.MText;
+                        if (c is null) return false;
+                        c.Contents = s;
+                        w.MText = c;   // the MText is a COPY; it has to be assigned back
+                        return w.MText?.Contents == s;
+                    });
+                    break;
+                }
+
+                case Dimension d when !string.IsNullOrEmpty(d.DimensionText):
+                    Add(d, "Dimension", d.DimensionText, d.DimensionText, d.TextPosition, s =>
+                    {
+                        var w = (Dimension)tr.GetObject(d.ObjectId, OpenMode.ForWrite);
+                        w.DimensionText = s;
+                        return w.DimensionText == s;
+                    });
+                    break;
+
+                // A Table IS a BlockReference in AutoCAD's object model, so this case has
+                // to come FIRST - otherwise the block branch swallows every table and the
+                // schedule text is never scanned. The compiler catches it here; nothing
+                // downstream would have.
+                case Table tb:
+                    for (int row = 0; row < tb.Rows.Count; row++)
+                    for (int col = 0; col < tb.Columns.Count; col++)
+                    {
+                        string cell;
+                        try { cell = tb.Cells[row, col].TextString ?? ""; }
+                        catch { continue; }
+                        if (cell.Length == 0) continue;
+                        int r = row, c2 = col;
+                        slots.Add(new TextSlot
+                        {
+                            Handle = tb.Handle.ToString(),
+                            Type = "TableCell:" + r + "," + c2,
+                            Layer = tb.Layer,
+                            Text = cell,
+                            Raw = cell,
+                            Position = new[] { tb.Position.X, tb.Position.Y, tb.Position.Z },
+                            Write = s =>
+                            {
+                                var w = (Table)tr.GetObject(tb.ObjectId, OpenMode.ForWrite);
+                                w.Cells[r, c2].TextString = s;
+                                return w.Cells[r, c2].TextString == s;
+                            },
+                        });
+                    }
+                    break;
+
+                case BlockReference br:
+                    foreach (ObjectId attId in br.AttributeCollection)
+                    {
+                        if (tr.GetObject(attId, OpenMode.ForRead) is not AttributeReference at)
+                            continue;
+                        var tag = at.Tag;
+                        slots.Add(new TextSlot
+                        {
+                            Handle = at.Handle.ToString(),
+                            Type = "Attribute:" + tag,
+                            Layer = br.Layer,
+                            Text = at.TextString,
+                            Raw = at.TextString,
+                            Position = new[] { at.Position.X, at.Position.Y, at.Position.Z },
+                            Write = s =>
+                            {
+                                var w = (AttributeReference)tr.GetObject(at.ObjectId,
+                                                                         OpenMode.ForWrite);
+                                w.TextString = s;
+                                return w.TextString == s;
+                            },
+                        });
+                    }
+                    break;
+            }
+        }
+        return slots;
+    }
+
+    /// <summary>A compiled matcher for the pattern options the two search tools share.</summary>
+    private static Regex BuildMatcher(string pattern, bool isRegex, bool matchCase, bool wholeWord)
+    {
+        var opts = matchCase ? RegexOptions.None : RegexOptions.IgnoreCase;
+        var body = isRegex ? pattern : Regex.Escape(pattern);
+        if (wholeWord) body = @"\b(?:" + body + @")\b";
+        try { return new Regex(body, opts); }
+        catch (ArgumentException ex)
+        {
+            throw new ArgumentException(
+                "The pattern is not a valid regular expression: " + ex.Message +
+                ". Drop regex: true to search for it as literal text instead.");
+        }
+    }
+
+    private static Task<ToolDispatchResult> ListTextByPattern(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunReadAsync("acad.annotations.list_text_by_pattern", ct, (doc, db, tr) =>
+        {
+            var a = Read<TextSearchArgsDto>(args);
+            if (string.IsNullOrEmpty(a.Pattern))
+                throw new ArgumentException(
+                    "pattern is required. Pass regex: true to treat it as a regular expression; " +
+                    "by default it is literal text.");
+
+            var rx = BuildMatcher(a.Pattern!, a.Regex == true, a.MatchCase == true,
+                                  a.WholeWord == true);
+            var limit = a.Limit ?? 500;
+            if (limit < 1) throw new ArgumentException("limit must be at least 1.");
+
+            var slots = TextSlots(db, tr, a.LayerFilter, a.Handles);
+            var byType = new Dictionary<string, int>(StringComparer.Ordinal);
+            var hits = new List<object>();
+            int total = 0;
+
+            foreach (var s in slots)
+            {
+                var kind = s.Type.Split(':')[0];
+                byType[kind] = byType.TryGetValue(kind, out var n) ? n + 1 : 1;
+                // Matched against the RENDERED text, not the stored string. A search over
+                // MText.Contents would hit "Arial" inside a font code and report a match nobody
+                // can see on the sheet.
+                var m = rx.Matches(s.Text);
+                if (m.Count == 0) continue;
+                total += m.Count;
+                if (hits.Count < limit)
+                    hits.Add(new
+                    {
+                        handle = s.Handle,
+                        type = s.Type,
+                        layer = s.Layer,
+                        text = s.Text,
+                        occurrences = m.Count,
+                        position = s.Position,
+                    });
+            }
+
+            return Wrap(new
+            {
+                pattern = a.Pattern,
+                regex = a.Regex == true,
+                matchCase = a.MatchCase == true,
+                wholeWord = a.WholeWord == true,
+                scanned = slots.Count,
+                scannedByType = byType,
+                matched = hits.Count,
+                occurrences = total,
+                truncated = total > 0 && hits.Count >= limit,
+                results = hits,
+                note = "Matched against the RENDERED text, not the stored string - a search over " +
+                       "MText.Contents would hit words inside formatting codes and report a match " +
+                       "nobody can see. scannedByType says what was actually looked at, so no " +
+                       "matches in a drawing full of text can be told from no matches at all.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> FindReplaceText(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.find_replace_text", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FindReplaceArgsDto>(args);
+            if (string.IsNullOrEmpty(a.Find))
+                throw new ArgumentException("find is required: the text to look for.");
+            if (a.ReplaceWith is null)
+                throw new ArgumentException(
+                    "replaceWith is required. To search without changing anything, use " +
+                    "list_text_by_pattern, or pass dryRun: true here to see what would change.");
+
+            var rx = BuildMatcher(a.Find!, a.Regex == true, a.MatchCase == true,
+                                  a.WholeWord == true);
+            var dry = a.DryRun == true;
+            var slots = TextSlots(db, tr, a.LayerFilter, a.Handles);
+
+            var changed = new List<object>();
+            var skipped = new List<object>();
+            int occurrences = 0;
+
+            foreach (var s in slots)
+            {
+                var hits = rx.Matches(s.Text);
+                if (hits.Count == 0) continue;
+
+                if (s.Write is null)
+                {
+                    skipped.Add(new { handle = s.Handle, type = s.Type, reason = "read-only" });
+                    continue;
+                }
+
+                // Replace in the STORED string, which is what has to be written back, but only
+                // after checking the stored and rendered strings agree. When an MText carries
+                // formatting codes the two differ, and a blind replacement on the stored string
+                // can land inside a code - changing the font instead of the words, or breaking
+                // the entity. Those are reported rather than attempted.
+                if (!string.Equals(s.Raw, s.Text, StringComparison.Ordinal))
+                {
+                    var wouldBe = rx.Replace(s.Raw, a.ReplaceWith!);
+                    var rawHits = rx.Matches(s.Raw).Count;
+                    if (rawHits != hits.Count)
+                    {
+                        skipped.Add(new
+                        {
+                            handle = s.Handle,
+                            type = s.Type,
+                            reason = "this text carries MText formatting codes, and the pattern " +
+                                     "matches " + rawHits + " time(s) in the stored string against " +
+                                     hits.Count + " in what is rendered - replacing would change " +
+                                     "a formatting code rather than the words. Edit it with " +
+                                     "update_mtext, or narrow the pattern.",
+                            renderedText = s.Text,
+                        });
+                        continue;
+                    }
+                    if (!dry && !s.Write(wouldBe))
+                    {
+                        skipped.Add(new
+                        {
+                            handle = s.Handle, type = s.Type,
+                            reason = "the new text did not read back after being written",
+                        });
+                        continue;
+                    }
+                    occurrences += hits.Count;
+                    changed.Add(new
+                    {
+                        handle = s.Handle, type = s.Type, layer = s.Layer,
+                        before = s.Text, after = rx.Replace(s.Text, a.ReplaceWith!),
+                        occurrences = hits.Count, hadFormattingCodes = true,
+                    });
+                    continue;
+                }
+
+                var after = rx.Replace(s.Raw, a.ReplaceWith!);
+                if (!dry && !s.Write(after))
+                {
+                    skipped.Add(new
+                    {
+                        handle = s.Handle, type = s.Type,
+                        reason = "the new text did not read back after being written",
+                    });
+                    continue;
+                }
+                occurrences += hits.Count;
+                changed.Add(new
+                {
+                    handle = s.Handle, type = s.Type, layer = s.Layer,
+                    before = s.Text, after, occurrences = hits.Count,
+                    hadFormattingCodes = false,
+                });
+            }
+
+            return Wrap(new
+            {
+                find = a.Find,
+                replaceWith = a.ReplaceWith,
+                dryRun = dry,
+                scanned = slots.Count,
+                entitiesChanged = changed.Count,
+                occurrences,
+                changed,
+                skipped,
+                note = (dry
+                        ? "dryRun: NOTHING was written. This is what would change. "
+                        : "Every write was read back; anything that did not take is on the " +
+                          "skipped list rather than counted. ") +
+                       "Text carrying MText formatting codes is only touched when the pattern " +
+                       "matches the same number of times in the stored string as in the rendered " +
+                       "one - otherwise the replacement would be landing inside a code, and it " +
+                       "is skipped with that reason instead.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ExportTextContent(JsonObject args, CancellationToken ct) =>
+        PluginToolRunner.RunReadAsync("acad.annotations.export_text_content", ct, (doc, db, tr) =>
+        {
+            var a = Read<ExportTextArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Path))
+                throw new ArgumentException("path is required: where to write the file.");
+
+            var fmt = (a.Format ?? "csv").Trim().ToLowerInvariant();
+            if (fmt is not ("csv" or "txt"))
+                throw new ArgumentException(
+                    "format must be csv or txt. csv carries the handle, type, layer and text of " +
+                    "every item; txt is the text alone, one item per line.");
+
+            var dir = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(a.Path!));
+            if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
+                throw new ArgumentException("The folder " + dir + " does not exist.");
+
+            var slots = TextSlots(db, tr, a.LayerFilter, null);
+            var sb = new System.Text.StringBuilder();
+            if (fmt == "csv")
+            {
+                sb.AppendLine("handle,type,layer,text");
+                foreach (var s in slots)
+                    sb.AppendLine(string.Join(",", Csv(s.Handle), Csv(s.Type), Csv(s.Layer),
+                                              Csv(s.Text)));
+            }
+            else
+            {
+                foreach (var s in slots) sb.AppendLine(s.Text);
+            }
+            System.IO.File.WriteAllText(a.Path!, sb.ToString(), new System.Text.UTF8Encoding(true));
+
+            var written = new System.IO.FileInfo(a.Path!);
+            if (!written.Exists || written.Length == 0)
+                throw new InvalidOperationException(
+                    "Nothing arrived at " + a.Path + ", so this is not being reported as a " +
+                    "successful export.");
+
+            return Wrap(new
+            {
+                path = written.FullName,
+                format = fmt,
+                items = slots.Count,
+                bytes = written.Length,
+                note = "Written UTF-8 with a byte order mark, so Excel opens it with accented " +
+                       "characters intact rather than as mojibake. The text column is what a " +
+                       "reader sees, with MText formatting codes already resolved.",
+            });
+        });
+
+    /// <summary>One CSV field, quoted only when it has to be.</summary>
+    private static string Csv(string s) =>
+        s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) < 0
+            ? s
+            : "\"" + s.Replace("\"", "\"\"") + "\"";
 }

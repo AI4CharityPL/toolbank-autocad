@@ -99,4 +99,30 @@ public static class AnnotationsTools
         RequiresPlugin = true)]
     public static Task<AnnAffectedCount> DeleteTextStyle(IPluginGateway gw, TextStyleNameArg args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<TextStyleNameArg, AnnAffectedCount>(gw, "acad.annotations.delete_text_style", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 3.3: finding text across a drawing ───────────
+
+    [McpTool("list_text_by_pattern", "Find every piece of text in the drawing matching a pattern, WITHOUT changing anything. Reads all six places text lives - single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides - and reports scannedByType, so 'no matches' in a drawing full of text can be told from 'no matches in the two types a lesser search bothered to look at'. Matching runs against the RENDERED text, not the stored string: a search over MText contents would hit words inside formatting codes and report matches nobody can see on the sheet. Set regex, matchCase or wholeWord as needed.", "annotations",
+        Intent = new[] { "znajdz tekst w rysunku", "wyszukaj napisy", "gdzie jest ten tekst",
+                         "find text in the drawing", "search all text",
+                         "list text matching a pattern", "szukaj po wzorcu" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<TextSearchResult> ListTextByPattern(IPluginGateway gw, TextSearchArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<TextSearchArgs, TextSearchResult>(gw, "acad.annotations.list_text_by_pattern", args, T_SLOW, ct);
+
+    [McpTool("find_replace_text", "Find and replace text across the whole drawing - AutoCAD's FIND. Covers single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides. Every write is READ BACK and anything that did not take is listed as skipped rather than counted. Text carrying MText formatting codes is only changed when the pattern matches the same number of times in the stored string as in the rendered one; otherwise the replacement would be landing inside a code - changing a font rather than the words - and it is skipped with that reason. Pass dryRun true to see exactly what would change without writing anything.", "annotations",
+        Intent = new[] { "zamien tekst w calym rysunku", "znajdz i zamien", "popraw nazwe wszedzie",
+                         "find and replace text", "rename across the drawing",
+                         "replace text everywhere", "zamiana napisow" },
+        RequiresPlugin = true)]
+    public static Task<FindReplaceResult> FindReplaceText(IPluginGateway gw, FindReplaceArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<FindReplaceArgs, FindReplaceResult>(gw, "acad.annotations.find_replace_text", args, T_SLOW, ct);
+
+    [McpTool("export_text_content", "Write every piece of text in the drawing to a file - single-line text, MText, MLeaders, block attributes, table cells and dimension overrides. format csv carries handle, type, layer and text; txt is the text alone, one item per line. The text column is what a reader sees, with MText formatting codes already resolved. Written UTF-8 with a byte order mark so a spreadsheet opens accented characters intact rather than as mojibake, and the file is checked to be non-empty before this reports success.", "annotations",
+        Intent = new[] { "wyeksportuj teksty z rysunku", "zapisz wszystkie napisy do pliku",
+                         "export all text", "dump drawing text to csv",
+                         "lista tekstow do pliku", "extract text content" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<ExportTextResult> ExportTextContent(IPluginGateway gw, ExportTextArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<ExportTextArgs, ExportTextResult>(gw, "acad.annotations.export_text_content", args, T_SLOW, ct);
 }

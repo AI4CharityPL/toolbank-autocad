@@ -11,11 +11,11 @@ namespace AcadMcp.Tests.Categories;
 public class DimensionsTests
 {
     [Fact]
-    public void Catalog_contains_all_twenty_dimension_tools()
+    public void Catalog_contains_all_twenty_four_dimension_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("dimensions");
-        Assert.Equal(20, tools.Count);
+        Assert.Equal(24, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         // original 12:
@@ -43,5 +43,12 @@ public class DimensionsTests
         Assert.Contains("dimension_jogged_radius", names);
         Assert.Contains("dimension_oblique", names);
         Assert.Contains("edit_dimension_text", names);
+        // Second tranche. dimension_update is NOT a second name for set_entity_dimstyle: that
+        // one assigns a style and leaves per-entity overrides standing, this one re-applies the
+        // style's own values and clears them.
+        Assert.Contains("dimension_tolerance", names);
+        Assert.Contains("dimension_update", names);
+        Assert.Contains("dimension_space", names);
+        Assert.Contains("dimension_arc_symbol", names);
     }
 }

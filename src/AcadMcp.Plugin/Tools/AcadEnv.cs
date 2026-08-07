@@ -389,11 +389,34 @@ internal static class AcadEnv
     }
 
     /// <summary>Resolve a dimension style by name; falls back to current Dimstyle if missing.</summary>
+    /// <summary>The named dimension style, or the current one when no name is given.</summary>
+    /// <remarks>
+    /// An UNKNOWN name is refused rather than quietly swapped for the current style. It used to
+    /// fall through to <c>db.Dimstyle</c>, so a caller asking for a style that does not exist got
+    /// a different one and a success — measured on `dimension_update` with dimStyle
+    /// "NoSuchStyle", which returned affected: 1 having applied ISO-25. That silent substitution
+    /// reached all 13 tools in the dimensions category that take a style name.
+    ///
+    /// No name at all still means the current style; that is the "OrCurrent" in the name and is
+    /// a legitimate default. A name that was typed and cannot be found never is.
+    /// </remarks>
     public static ObjectId ResolveDimStyleOrCurrent(Database db, Transaction tr, string? name)
     {
         var dst = (DimStyleTable)tr.GetObject(db.DimStyleTableId, OpenMode.ForRead);
-        if (!string.IsNullOrWhiteSpace(name) && dst.Has(name)) return dst[name];
-        return db.Dimstyle;
+        if (string.IsNullOrWhiteSpace(name)) return db.Dimstyle;
+        if (dst.Has(name)) return dst[name!];
+
+        var known = new List<string>();
+        foreach (ObjectId id in dst)
+        {
+            var rec = tr.GetObject(id, OpenMode.ForRead) as DimStyleTableRecord;
+            if (rec is not null) known.Add(rec.Name);
+        }
+        known.Sort(StringComparer.OrdinalIgnoreCase);
+        throw new ArgumentException(
+            "Dimension style '" + name + "' does not exist. This drawing has: " +
+            string.Join(", ", known) + ". Omit dimStyle to use the current one (" +
+            ((DimStyleTableRecord)tr.GetObject(db.Dimstyle, OpenMode.ForRead)).Name + ").");
     }
 
     /// <summary>Open a layer (read-only) by name; throws ArgumentException if missing.</summary>

@@ -45,13 +45,19 @@
     "radial",
     "radius",
     "set",
+    "space",
     "style",
+    "symbol",
     "text",
     "tick",
+    "tolerance",
+    "update",
     "walls"
   ],
   "intent_examples": [
     "add a suffix to a dimension",
+    "add a tolerance to a dimension",
+    "align dimension lines",
     "aligned dimension",
     "angle 3 points",
     "angle between two lines",
@@ -62,6 +68,8 @@
     "apply arch tick style",
     "apply dimstyle to entities",
     "arc length dimension",
+    "arc length symbol position",
+    "arc symbol above the text",
     "auto dim walls",
     "automatycznie wymiaruj sciany",
     "baseline chain dimensions",
@@ -82,15 +90,20 @@
     "dim y ordinate",
     "dimaligned",
     "dimarc",
+    "dimarcsym",
     "dimbaseline",
     "dimcontinue",
     "dimdiameter",
     "dimedit oblique",
+    "dimension limits",
     "dimension parallel to segment",
     "dimjogged",
     "dimradius",
+    "dimspace",
+    "dimstyle apply",
     "dimstyle z kreskami architektonicznymi",
     "dlugosc luku wymiar",
+    "dodaj tolerancje do wymiaru",
     "dopisz TYP do wymiaru",
     "edit dimension text",
     "ensure ARCH-ISO dimstyle",
@@ -111,25 +124,38 @@
     "outer dimension of entities",
     "overall dimension",
     "override dimension text",
+    "plus minus tolerance",
     "pochyl linie pomocnicze wymiaru",
     "promien luku o srodku poza arkuszem",
     "promien okregu wymiar",
     "przesun tekst wymiaru",
+    "przywroc styl wymiaru",
     "radial dimension",
     "radius dimension with a jog",
+    "reset dimension overrides",
     "retrofit dim layer to arch",
     "rotated linear dim",
+    "rozstaw wymiary rownomiernie",
     "rozsun stloczone wymiary",
     "running totals dimension",
     "set dimstyle on dimension",
+    "set upper and lower deviation",
     "setup architectural dim style",
     "show dimstyles",
     "skos linii wymiarowych",
+    "space dimensions evenly",
     "srednica okregu wymiar",
     "stworz styl wymiarowania architektoniczny",
     "swap dimension style",
+    "symbol luku przy wymiarze",
     "tick marks dimension style",
+    "tolerancja wymiaru",
+    "update dimensions to their style",
+    "uporzadkuj lancuch wymiarow",
     "ustaw styl wymiarowania",
+    "ustaw symbol dlugosci luku",
+    "usun nadpisania wymiaru",
+    "usun symbol luku",
     "what dimstyles exist",
     "wspolrzedna od ukladu",
     "wszystkie dimstyles",
@@ -147,9 +173,12 @@
     "wymiar srednicy",
     "wymiar wspolrzednych",
     "wymiar wzdluz krawedzi",
+    "wymiar z odchylka",
     "wymiary ciagle",
     "wymiary kumulatywne od bazy",
     "wymiary od bazy",
+    "wyrownaj linie wymiarowe",
+    "zaktualizuj wymiary do stylu",
     "zamien styl wymiarow na warstwie",
     "zmien styl wymiarow",
     "zmien tekst wymiaru",
@@ -251,6 +280,23 @@
         "dlugosc luku wymiar",
         "dim arc length",
         "dimarc"
+      ]
+    },
+    {
+      "name": "dimension_arc_symbol",
+      "description": "Choose where the arc symbol sits on an arc LENGTH dimension - DIMARCSYM. position=\u0027preceding\u0027 puts it before the text (AutoCAD\u0027s default), \u0027above\u0027 over the text, \u0027none\u0027 removes it. Only an ArcDimension has one; a radial dimension on the same arc is a different entity and is refused by name. The measured arc length is untouched.",
+      "tags": [
+        "dimension",
+        "arc",
+        "symbol"
+      ],
+      "intent": [
+        "symbol luku przy wymiarze",
+        "ustaw symbol dlugosci luku",
+        "arc length symbol position",
+        "dimarcsym",
+        "usun symbol luku",
+        "arc symbol above the text"
       ]
     },
     {
@@ -410,6 +456,55 @@
       ]
     },
     {
+      "name": "dimension_space",
+      "description": "Space parallel linear dimensions evenly from a base one - AutoCAD\u0027s DIMSPACE. The base does not move; each other dimension is placed at a multiple of spacing from it, numbered outwards on whichever side it already sat, so a chain keeps its order instead of being reshuffled. spacing 0 ALIGNS them all onto the base\u0027s dimension line, which is what DIMSPACE does with zero. Dimensions not parallel to the base are refused with the angle between them, because spacing them would move each along a direction that means nothing for it. No measurement changes.",
+      "tags": [
+        "dimension",
+        "space"
+      ],
+      "intent": [
+        "rozstaw wymiary rownomiernie",
+        "wyrownaj linie wymiarowe",
+        "space dimensions evenly",
+        "dimspace",
+        "uporzadkuj lancuch wymiarow",
+        "align dimension lines"
+      ]
+    },
+    {
+      "name": "dimension_tolerance",
+      "description": "Put a tolerance on existing dimensions - how much the measured size may vary. mode=\u0027symmetrical\u0027 prints one plus-minus value from upper alone; \u0027deviation\u0027 prints separate upper and lower; \u0027limits\u0027 replaces the number with the two extreme sizes; \u0027none\u0027 turns it off. These are per-entity OVERRIDES of the dimension style, so every other dimension using that style is untouched, and dimensions_update puts an overridden one back under its style. The measured size is read before and after and a change is reported as a failure, because a tolerance annotates the measurement and must never alter it.",
+      "tags": [
+        "dimension",
+        "tolerance"
+      ],
+      "intent": [
+        "dodaj tolerancje do wymiaru",
+        "wymiar z odchylka",
+        "add a tolerance to a dimension",
+        "plus minus tolerance",
+        "tolerancja wymiaru",
+        "dimension limits",
+        "set upper and lower deviation"
+      ]
+    },
+    {
+      "name": "dimension_update",
+      "description": "Re-apply a dimension style\u0027s own values to existing dimensions, which RESETS the per-entity overrides they carry - AutoCAD\u0027s DIMSTYLE Apply. This is what set_entity_dimstyle does not do: that one assigns the style and leaves overrides such as a tolerance standing, so a dimension can wear the right style name and still print the wrong thing. The result reports toleranceOverrideBefore and toleranceOverrideAfter for every dimension, which is the measurable difference between the two tools. Omit dimStyle to apply the current one.",
+      "tags": [
+        "dimension",
+        "update"
+      ],
+      "intent": [
+        "zaktualizuj wymiary do stylu",
+        "usun nadpisania wymiaru",
+        "update dimensions to their style",
+        "dimstyle apply",
+        "reset dimension overrides",
+        "przywroc styl wymiaru"
+      ]
+    },
+    {
       "name": "edit_dimension_text",
       "description": "Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD\u0027s text conventions are carried through and reported: \u0022\u0022 means show the measurement (the default state, not blank), \u0022\u003C\u003E\u0022 embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of.",
       "tags": [
@@ -477,7 +572,7 @@
   ],
   "metadata": {
     "category": "dimensions",
-    "tool_count_target": 20,
+    "tool_count_target": 24,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -491,6 +586,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-07T16:18:36.8871648Z"
+    "last_regenerated_utc": "2026-08-07T16:29:19.2709020Z"
   }
 }

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 527 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 531 tools total.
 
 ## Categories
 
@@ -11,7 +11,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-boolean-ops](#acad-boolean-ops) (8 tools)
 - [acad-callouts](#acad-callouts) (5 tools)
 - [acad-civil](#acad-civil) (12 tools)
-- [acad-dimensions](#acad-dimensions) (20 tools)
+- [acad-dimensions](#acad-dimensions) (24 tools)
 - [acad-electrical](#acad-electrical) (15 tools)
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
@@ -175,6 +175,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `dimension_angular_2l` | Place an angular dimension between two existing line entities. The arc passes through arcPoint. |
 | `dimension_angular_3p` | Place an angular dimension defined by a vertex (center) and two rays through 'first' and 'second'. The arc passes through arcPoint. |
 | `dimension_arc_length` | Place an arc-length dimension on an Arc; arcPoint locates the dimension arc. |
+| `dimension_arc_symbol` | Choose where the arc symbol sits on an arc LENGTH dimension - DIMARCSYM. position='preceding' puts it before the text (AutoCAD's default), 'above' over the text, 'none' removes it. Only an ArcDimension has one; a radial dimension on the same arc is a different entity and is refused by name. The measured arc length is untouched. |
 | `dimension_baseline_chain` | Build a baseline chain of linear dimensions from a common baseline point to N subsequent points; spacing is taken from the dimstyle's DIMDLI. |
 | `dimension_continued_chain` | Build a continued chain of linear dimensions: each new dimension's first extension line is the previous dimension's second extension line. |
 | `dimension_cumulative_chain` | Cumulative dimension chain: N dimensions sharing a SINGLE dim line, each reporting the distance from baselinePoint to point_i (running total). Use for exterior overall/axis/opening dimension rows per rule 66 §1. Differs from baseline_chain (staggered by DIMDLI) and continued_chain (end-to-end). |
@@ -185,6 +186,9 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `dimension_ordinate` | Place an ordinate (X or Y datum) dimension at definingPoint with leader endpoint at leaderEnd. useXAxis=true measures the X distance from UCS origin. |
 | `dimension_overall` | Place a single linear dimension spanning the overall bbox of one or more entities projected onto rotationDeg. Useful for 'outer-most' exterior dimensions (rule 66 level 1). rotationDeg 0° measures along X (horizontal), 90° along Y. Uses the bounding boxes fetched via acad.geometry2d.get_entity. |
 | `dimension_radial` | Place a radial dimension on a Circle or Arc; chordPoint specifies which side of the curve the leader exits. |
+| `dimension_space` | Space parallel linear dimensions evenly from a base one - AutoCAD's DIMSPACE. The base does not move; each other dimension is placed at a multiple of spacing from it, numbered outwards on whichever side it already sat, so a chain keeps its order instead of being reshuffled. spacing 0 ALIGNS them all onto the base's dimension line, which is what DIMSPACE does with zero. Dimensions not parallel to the base are refused with the angle between them, because spacing them would move each along a direction that means nothing for it. No measurement changes. |
+| `dimension_tolerance` | Put a tolerance on existing dimensions - how much the measured size may vary. mode='symmetrical' prints one plus-minus value from upper alone; 'deviation' prints separate upper and lower; 'limits' replaces the number with the two extreme sizes; 'none' turns it off. These are per-entity OVERRIDES of the dimension style, so every other dimension using that style is untouched, and dimensions_update puts an overridden one back under its style. The measured size is read before and after and a change is reported as a failure, because a tolerance annotates the measurement and must never alter it. |
+| `dimension_update` | Re-apply a dimension style's own values to existing dimensions, which RESETS the per-entity overrides they carry - AutoCAD's DIMSTYLE Apply. This is what set_entity_dimstyle does not do: that one assigns the style and leaves overrides such as a tolerance standing, so a dimension can wear the right style name and still print the wrong thing. The result reports toleranceOverrideBefore and toleranceOverrideAfter for every dimension, which is the measurable difference between the two tools. Omit dimStyle to apply the current one. |
 | `edit_dimension_text` | Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD's text conventions are carried through and reported: "" means show the measurement (the default state, not blank), "<>" embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of. |
 | `ensure_architectural_dimstyle` | Idempotently create (or update) the ARCH-ISO dimension style used by the 3-level architectural dimension hierarchy (rule 66). Sets architectural tick arrowheads ('ArchTick'), text height scaled to plot scale, mm precision, no trailing zeros. Safe to call multiple times; returns whether the style was created, updated or left untouched. |
 | `list_dimstyles` | List all dimension styles defined in the active drawing plus the current Dimstyle. |

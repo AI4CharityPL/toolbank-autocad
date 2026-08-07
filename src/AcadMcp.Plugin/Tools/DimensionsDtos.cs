@@ -138,3 +138,25 @@ internal sealed record EditDimTextArgsDto(
     [property: JsonPropertyName("textPosition")] Point3dDto? TextPosition,
     [property: JsonPropertyName("textRotationDeg")] double? TextRotationDeg,
     [property: JsonPropertyName("resetPosition")] bool? ResetPosition);
+
+// ─────────── roadmap 3.2, second tranche ───────────
+
+internal sealed record DimToleranceArgsDto(
+    [property: JsonPropertyName("handles")]  List<string>? Handles,
+    [property: JsonPropertyName("mode")]     string? Mode,
+    [property: JsonPropertyName("upper")]    double? Upper,
+    [property: JsonPropertyName("lower")]    double? Lower,
+    [property: JsonPropertyName("decimals")] int? Decimals);
+
+internal sealed record DimUpdateArgsDto(
+    [property: JsonPropertyName("handles")]  List<string>? Handles,
+    [property: JsonPropertyName("dimStyle")] string? DimStyle);
+
+internal sealed record DimSpaceArgsDto(
+    [property: JsonPropertyName("handles")]    List<string>? Handles,
+    [property: JsonPropertyName("baseHandle")] string? BaseHandle,
+    [property: JsonPropertyName("spacing")]    double? Spacing);
+
+internal sealed record ArcSymbolArgsDto(
+    [property: JsonPropertyName("handles")]  List<string>? Handles,
+    [property: JsonPropertyName("position")] string? Position);

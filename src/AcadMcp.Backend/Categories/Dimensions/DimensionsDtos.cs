@@ -229,3 +229,85 @@ public sealed record EditDimTextResult(
     [property: JsonPropertyName("textPosition")]        IReadOnlyList<double> TextPosition,
     [property: JsonPropertyName("usingDefaultTextPosition")] bool UsingDefaultTextPosition,
     [property: JsonPropertyName("note")]                string Note);
+
+// ─────────── roadmap 3.2, second tranche ───────────
+
+public sealed record DimToleranceArgs(
+    [property: JsonPropertyName("handles")]  IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("mode")]     string? Mode = null,
+    [property: JsonPropertyName("upper")]    double? Upper = null,
+    [property: JsonPropertyName("lower")]    double? Lower = null,
+    [property: JsonPropertyName("decimals")] int? Decimals = null);
+
+public sealed record ToleranceDimDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("measurement")] double Measurement,
+    [property: JsonPropertyName("dimtol")]      bool Dimtol,
+    [property: JsonPropertyName("dimlim")]      bool Dimlim,
+    [property: JsonPropertyName("upper")]       double Upper,
+    [property: JsonPropertyName("lower")]       double Lower,
+    [property: JsonPropertyName("decimals")]    int Decimals);
+
+public sealed record DimToleranceResult(
+    [property: JsonPropertyName("affected")]   int Affected,
+    [property: JsonPropertyName("mode")]       string Mode,
+    [property: JsonPropertyName("dimensions")] IReadOnlyList<ToleranceDimDto> Dimensions,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record DimUpdateArgs(
+    [property: JsonPropertyName("handles")]  IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("dimStyle")] string? DimStyle = null);
+
+public sealed record UpdatedDimDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("measurement")] double Measurement,
+    [property: JsonPropertyName("styleBefore")] string StyleBefore,
+    [property: JsonPropertyName("style")]       string Style,
+    [property: JsonPropertyName("toleranceOverrideBefore")] bool ToleranceOverrideBefore,
+    [property: JsonPropertyName("toleranceOverrideAfter")]  bool ToleranceOverrideAfter);
+
+public sealed record DimUpdateResult(
+    [property: JsonPropertyName("affected")]   int Affected,
+    [property: JsonPropertyName("style")]      string Style,
+    [property: JsonPropertyName("dimensions")] IReadOnlyList<UpdatedDimDto> Dimensions,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record DimSpaceArgs(
+    [property: JsonPropertyName("handles")]    IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("baseHandle")] string? BaseHandle = null,
+    [property: JsonPropertyName("spacing")]    double? Spacing = null);
+
+public sealed record SpacedDimDto(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("type")]         string Type,
+    [property: JsonPropertyName("offsetBefore")] double OffsetBefore,
+    [property: JsonPropertyName("offset")]       double Offset,
+    [property: JsonPropertyName("measurement")]  double Measurement);
+
+public sealed record DimSpaceResult(
+    [property: JsonPropertyName("affected")]   int Affected,
+    [property: JsonPropertyName("baseHandle")] string BaseHandle,
+    [property: JsonPropertyName("spacing")]    double Spacing,
+    [property: JsonPropertyName("aligned")]    bool Aligned,
+    [property: JsonPropertyName("basePoint")]  IReadOnlyList<double> BasePoint,
+    [property: JsonPropertyName("dimensions")] IReadOnlyList<SpacedDimDto> Dimensions,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record ArcSymbolArgs(
+    [property: JsonPropertyName("handles")]  IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("position")] string? Position = null);
+
+public sealed record ArcSymbolDimDto(
+    [property: JsonPropertyName("handle")]          string Handle,
+    [property: JsonPropertyName("arcSymbolBefore")] int ArcSymbolBefore,
+    [property: JsonPropertyName("arcSymbol")]       int ArcSymbol,
+    [property: JsonPropertyName("measurement")]     double Measurement);
+
+public sealed record ArcSymbolResult(
+    [property: JsonPropertyName("affected")]      int Affected,
+    [property: JsonPropertyName("position")]      string Position,
+    [property: JsonPropertyName("arcSymbolType")] int ArcSymbolType,
+    [property: JsonPropertyName("dimensions")]    IReadOnlyList<ArcSymbolDimDto> Dimensions,
+    [property: JsonPropertyName("note")]          string Note);

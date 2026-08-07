@@ -37,6 +37,29 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.2, second tranche — tolerances, style reset, spacing, arc symbol.**
+  `acad-dimensions` 20 → 24, bank 527 → 531: `dimension_tolerance`, `dimension_update`,
+  `dimension_space`, `dimension_arc_symbol`. Verified live **56/56**.
+
+  `dimension_update` was nearly struck as a second name for `set_entity_dimstyle`, and the
+  difference was **measured rather than argued**: a tolerance override went on two identical
+  dimensions, one through each tool. `set_entity_dimstyle` left the override standing — it only
+  assigns `DimensionStyle` — while `dimension_update` re-applies the style's own values through
+  `SetDimstyleData` and clears it. A dimension can otherwise wear the right style name and still
+  print the wrong thing. Both `toleranceOverrideBefore` and `toleranceOverrideAfter` are
+  reported so the distinction stays checkable from outside rather than living in a description.
+
+  The first run of that experiment was **void and would have passed anyway**. It hardcoded the
+  style name `Standard`, which a metric template does not have, so the control arm errored and
+  only the `dimension_update` arm ran: "the override is gone" read as proof of a difference while
+  showing nothing whatever about the other tool. The script now reads the drawing's own styles.
+
+  `dimension_space` is asserted by **offset**, not by "it moved" — a tool that piled every
+  dimension in one place, or reversed the order of a chain, would still return a tidy list of new
+  positions. Two of the four test dimensions start 10 apart so a mis-sort would swap them.
+  `dimension_tolerance` separates `limits` from `deviation`, which set **opposite** flags
+  (`Dimlim` versus `Dimtol`), and each is asserted on its own.
+
 - **Phase 3.2, first tranche — editing a dimension after it is placed.** `acad-dimensions`
   17 → 20, bank 524 → 527: `dimension_jogged_radius`, `dimension_oblique`,
   `edit_dimension_text`. Verified live **70/70**.
@@ -182,6 +205,17 @@ All notable changes to this project will be documented in this file. Format: [Ke
     from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
 
 ### Fixed
+
+- **An unknown `dimStyle` name was silently swapped for the current style, in all 13 dimension
+  tools that take one.** `AcadEnv.ResolveDimStyleOrCurrent` fell through to `db.Dimstyle`
+  whenever the name it was given did not exist, so a caller asking for a style that is not in the
+  drawing got a different one and a success. Measured on `dimension_update` with
+  `dimStyle: "NoSuchStyle"`, which returned `affected: 1` having applied ISO-25.
+
+  An absent name still means the current style — that is the `OrCurrent` in the helper's name and
+  a legitimate default. A name that was typed and cannot be found never is: it is now refused,
+  and the refusal lists the styles the drawing actually has plus the current one. Found while
+  verifying a single new tool; it reached every tool in the category.
 
 - **`modify.align` skipped the rotation whenever it was exactly 180°.** The axis came from
   `sV.CrossProduct(tV)`, guarded by `axis.Length > 1e-9`. That cross product vanishes when the

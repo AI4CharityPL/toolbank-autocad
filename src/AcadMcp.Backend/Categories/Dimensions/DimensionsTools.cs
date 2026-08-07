@@ -290,4 +290,36 @@ public static class DimensionsTools
         RequiresPlugin = true)]
     public static Task<EditDimTextResult> EditDimensionText(IPluginGateway gw, EditDimTextArgs args, CancellationToken ct)
         => DimensionsProxy.CallAsync<EditDimTextArgs, EditDimTextResult>(gw, "acad.dimensions.edit_dimension_text", args, T_NORMAL, ct);
+
+    [McpTool("dimension_tolerance", "Put a tolerance on existing dimensions - how much the measured size may vary. mode='symmetrical' prints one plus-minus value from upper alone; 'deviation' prints separate upper and lower; 'limits' replaces the number with the two extreme sizes; 'none' turns it off. These are per-entity OVERRIDES of the dimension style, so every other dimension using that style is untouched, and dimensions_update puts an overridden one back under its style. The measured size is read before and after and a change is reported as a failure, because a tolerance annotates the measurement and must never alter it.", "dimensions",
+        Intent = new[] { "dodaj tolerancje do wymiaru", "wymiar z odchylka",
+                         "add a tolerance to a dimension", "plus minus tolerance",
+                         "tolerancja wymiaru", "dimension limits", "set upper and lower deviation" },
+        RequiresPlugin = true)]
+    public static Task<DimToleranceResult> DimensionTolerance(IPluginGateway gw, DimToleranceArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<DimToleranceArgs, DimToleranceResult>(gw, "acad.dimensions.tolerance", args, T_NORMAL, ct);
+
+    [McpTool("dimension_update", "Re-apply a dimension style's own values to existing dimensions, which RESETS the per-entity overrides they carry - AutoCAD's DIMSTYLE Apply. This is what set_entity_dimstyle does not do: that one assigns the style and leaves overrides such as a tolerance standing, so a dimension can wear the right style name and still print the wrong thing. The result reports toleranceOverrideBefore and toleranceOverrideAfter for every dimension, which is the measurable difference between the two tools. Omit dimStyle to apply the current one.", "dimensions",
+        Intent = new[] { "zaktualizuj wymiary do stylu", "usun nadpisania wymiaru",
+                         "update dimensions to their style", "dimstyle apply",
+                         "reset dimension overrides", "przywroc styl wymiaru" },
+        RequiresPlugin = true)]
+    public static Task<DimUpdateResult> DimensionUpdate(IPluginGateway gw, DimUpdateArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<DimUpdateArgs, DimUpdateResult>(gw, "acad.dimensions.update", args, T_NORMAL, ct);
+
+    [McpTool("dimension_space", "Space parallel linear dimensions evenly from a base one - AutoCAD's DIMSPACE. The base does not move; each other dimension is placed at a multiple of spacing from it, numbered outwards on whichever side it already sat, so a chain keeps its order instead of being reshuffled. spacing 0 ALIGNS them all onto the base's dimension line, which is what DIMSPACE does with zero. Dimensions not parallel to the base are refused with the angle between them, because spacing them would move each along a direction that means nothing for it. No measurement changes.", "dimensions",
+        Intent = new[] { "rozstaw wymiary rownomiernie", "wyrownaj linie wymiarowe",
+                         "space dimensions evenly", "dimspace",
+                         "uporzadkuj lancuch wymiarow", "align dimension lines" },
+        RequiresPlugin = true)]
+    public static Task<DimSpaceResult> DimensionSpace(IPluginGateway gw, DimSpaceArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<DimSpaceArgs, DimSpaceResult>(gw, "acad.dimensions.space", args, T_NORMAL, ct);
+
+    [McpTool("dimension_arc_symbol", "Choose where the arc symbol sits on an arc LENGTH dimension - DIMARCSYM. position='preceding' puts it before the text (AutoCAD's default), 'above' over the text, 'none' removes it. Only an ArcDimension has one; a radial dimension on the same arc is a different entity and is refused by name. The measured arc length is untouched.", "dimensions",
+        Intent = new[] { "symbol luku przy wymiarze", "ustaw symbol dlugosci luku",
+                         "arc length symbol position", "dimarcsym",
+                         "usun symbol luku", "arc symbol above the text" },
+        RequiresPlugin = true)]
+    public static Task<ArcSymbolResult> DimensionArcSymbol(IPluginGateway gw, ArcSymbolArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<ArcSymbolArgs, ArcSymbolResult>(gw, "acad.dimensions.arc_symbol", args, T_NORMAL, ct);
 }

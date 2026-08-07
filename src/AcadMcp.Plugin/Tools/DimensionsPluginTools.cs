@@ -47,6 +47,10 @@ internal static class DimensionsPluginTools
         host.Register("acad.dimensions.jogged_radius",         JoggedRadius);
         host.Register("acad.dimensions.oblique",               Oblique);
         host.Register("acad.dimensions.edit_dimension_text",   EditDimensionText);
+        host.Register("acad.dimensions.tolerance",             DimTolerance);
+        host.Register("acad.dimensions.update",                DimUpdate);
+        host.Register("acad.dimensions.space",                 DimSpace);
+        host.Register("acad.dimensions.arc_symbol",            ArcSymbol);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -678,6 +682,385 @@ internal static class DimensionsPluginTools
                        "text: \"\" means show the measurement (the default state, not blank), " +
                        "\"<>\" embeds the measurement inside your own text, and a single space " +
                        "suppresses the text altogether.",
+            });
+        });
+
+    // ─────────── roadmap 3.2, second tranche ───────────
+
+    /// <summary>The direction a linear dimension measures along, and the normal to it.</summary>
+    /// <remarks>
+    /// A rotated dimension carries its direction as an ANGLE; an aligned one takes it from its
+    /// two extension line points. Read the wrong one and the perpendicular is wrong by the
+    /// dimension's rotation, so every offset computed from it lands somewhere plausible.
+    /// </remarks>
+    private static (Vector3d dir, Vector3d perp) LinearAxes(Dimension d)
+    {
+        Vector3d dir;
+        switch (d)
+        {
+            case RotatedDimension rd:
+                dir = new Vector3d(Math.Cos(rd.Rotation), Math.Sin(rd.Rotation), 0);
+                break;
+            case AlignedDimension ald:
+            {
+                var v = ald.XLine2Point - ald.XLine1Point;
+                if (v.Length < 1e-12)
+                    throw new ArgumentException(
+                        "Aligned dimension " + d.Handle + " has both extension lines at the same " +
+                        "point, so it defines no direction to space along.");
+                dir = v.GetNormal();
+                break;
+            }
+            default:
+                throw new ArgumentException(
+                    "Entity " + d.Handle + " is a " + d.GetType().Name + ". Spacing applies to " +
+                    "linear and aligned dimensions, the ones that sit on parallel dimension " +
+                    "lines. A radial or angular dimension has no such line.");
+        }
+        return (dir, new Vector3d(-dir.Y, dir.X, 0));
+    }
+
+    private static Point3d DimLineOf(Dimension d) => d switch
+    {
+        RotatedDimension rd => rd.DimLinePoint,
+        AlignedDimension ad => ad.DimLinePoint,
+        _ => throw new ArgumentException(
+            "Entity " + d.Handle + " is a " + d.GetType().Name + " and has no dimension line " +
+            "point to move."),
+    };
+
+    private static void SetDimLine(Dimension d, Point3d p)
+    {
+        switch (d)
+        {
+            case RotatedDimension rd: rd.DimLinePoint = p; break;
+            case AlignedDimension ad: ad.DimLinePoint = p; break;
+            default: throw new ArgumentException("Entity " + d.Handle + " has no dimension line.");
+        }
+    }
+
+    private static Task<ToolDispatchResult> DimTolerance(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.tolerance", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DimToleranceArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which dimensions to change.");
+
+            var mode = (a.Mode ?? "symmetrical").Trim().ToLowerInvariant();
+            if (mode is not ("none" or "symmetrical" or "deviation" or "limits"))
+                throw new ArgumentException(
+                    "mode must be none, symmetrical, deviation or limits. symmetrical prints one " +
+                    "plus-minus value and needs upper only; deviation prints separate upper and " +
+                    "lower; limits replaces the measurement with the two extreme sizes; none " +
+                    "turns the tolerance off.");
+
+            if (mode is "symmetrical" or "deviation" or "limits" && a.Upper is null)
+                throw new ArgumentException(
+                    "upper is required for mode " + mode + ": how far ABOVE the measured size is " +
+                    "still acceptable.");
+            if (mode is "deviation" or "limits" && a.Lower is null)
+                throw new ArgumentException(
+                    "lower is required for mode " + mode + ". A symmetrical tolerance does not " +
+                    "take one - the same value is used both ways.");
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var d = RequireDimension(db, tr, h, OpenMode.ForWrite);
+                var before = d.Measurement;
+
+                switch (mode)
+                {
+                    case "none":
+                        d.Dimtol = false;
+                        d.Dimlim = false;
+                        break;
+                    case "symmetrical":
+                        d.Dimtol = true;
+                        d.Dimlim = false;
+                        // AutoCAD prints a single plus-minus only when the two agree, so the
+                        // lower is set from the upper rather than left at whatever it held.
+                        d.Dimtp = a.Upper!.Value;
+                        d.Dimtm = a.Upper!.Value;
+                        break;
+                    case "deviation":
+                        d.Dimtol = true;
+                        d.Dimlim = false;
+                        d.Dimtp = a.Upper!.Value;
+                        d.Dimtm = a.Lower!.Value;
+                        break;
+                    case "limits":
+                        d.Dimlim = true;
+                        d.Dimtol = false;
+                        d.Dimtp = a.Upper!.Value;
+                        d.Dimtm = a.Lower!.Value;
+                        break;
+                }
+                if (a.Decimals is not null)
+                {
+                    if (a.Decimals < 0 || a.Decimals > 8)
+                        throw new ArgumentException("decimals must be between 0 and 8.");
+                    d.Dimtdec = a.Decimals.Value;
+                }
+
+                d.RecomputeDimensionBlock(true);
+
+                // A tolerance says how much the MEASURED size may vary. It must not change the
+                // measured size itself.
+                var after = d.Measurement;
+                if (Math.Abs(after - before) > 1e-9)
+                    throw new InvalidOperationException(
+                        "Dimension " + h + " measured " + before + " and now measures " + after +
+                        ". A tolerance annotates the measurement and must not alter it.");
+
+                changed.Add(new
+                {
+                    handle = h,
+                    type = d.GetType().Name,
+                    measurement = after,
+                    dimtol = d.Dimtol,
+                    dimlim = d.Dimlim,
+                    upper = d.Dimtp,
+                    lower = d.Dimtm,
+                    decimals = d.Dimtdec,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                mode,
+                dimensions = changed,
+                note = "These are per-entity OVERRIDES of the dimension style, not edits to the " +
+                       "style - every other dimension using that style is untouched. " +
+                       "dimensions.update puts an overridden dimension back under its style.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DimUpdate(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.update", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DimUpdateArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which dimensions to update.");
+
+            var styleId = AcadEnv.ResolveDimStyleOrCurrent(db, tr, a.DimStyle);
+            var styleRec = (DimStyleTableRecord)tr.GetObject(styleId, OpenMode.ForRead);
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var d = RequireDimension(db, tr, h, OpenMode.ForWrite);
+                var measured = d.Measurement;
+                var styleBefore = d.DimensionStyleName;
+                var tolBefore = d.Dimtol || d.Dimlim;
+
+                // SetDimstyleData re-applies the style's own values to the entity. That is the
+                // whole difference from set_entity_dimstyle, which assigns DimensionStyle and
+                // leaves per-entity overrides standing - so the override state is REPORTED
+                // before and after rather than claimed in a description.
+                d.DimensionStyle = styleId;
+                d.SetDimstyleData(styleRec);
+                d.RecomputeDimensionBlock(true);
+
+                var after = d.Measurement;
+                if (Math.Abs(after - measured) > 1e-9)
+                    throw new InvalidOperationException(
+                        "Dimension " + h + " measured " + measured + " and now measures " + after +
+                        ". Applying a style changes presentation, never the measured value.");
+
+                changed.Add(new
+                {
+                    handle = h,
+                    type = d.GetType().Name,
+                    measurement = after,
+                    styleBefore,
+                    style = d.DimensionStyleName,
+                    toleranceOverrideBefore = tolBefore,
+                    toleranceOverrideAfter = d.Dimtol || d.Dimlim,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                style = styleRec.Name,
+                dimensions = changed,
+                note = "Re-applies the style's own values to each dimension. " +
+                       "toleranceOverrideBefore and toleranceOverrideAfter are reported for " +
+                       "every one, because that pair is the only thing separating this from " +
+                       "set_entity_dimstyle, which assigns the style and leaves overrides alone.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DimSpace(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.space", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<DimSpaceArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count < 2)
+                throw new ArgumentException(
+                    "handles needs at least 2 dimensions: one to space, and the base it is " +
+                    "spaced from.");
+            if (a.Spacing is null)
+                throw new ArgumentException(
+                    "spacing is required: the gap between neighbouring dimension lines. Pass 0 " +
+                    "to ALIGN them all onto the base's line instead, which is what DIMSPACE " +
+                    "does with a spacing of zero.");
+            if (a.Spacing < 0)
+                throw new ArgumentException(
+                    "spacing cannot be negative. Which side each dimension lands on is decided " +
+                    "by where it already sits, not by a sign.");
+
+            var baseHandle = a.BaseHandle ?? a.Handles[0];
+            if (!a.Handles.Contains(baseHandle, StringComparer.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "baseHandle " + baseHandle + " is not in handles. The base is the dimension " +
+                    "that stays put, so it has to be one of the ones being spaced.");
+
+            var baseDim = RequireDimension(db, tr, baseHandle, OpenMode.ForRead);
+            var (dir, perp) = LinearAxes(baseDim);
+            var basePoint = DimLineOf(baseDim);
+
+            // Every dimension must be PARALLEL to the base. Spacing a chain that is not would
+            // move each one along a direction meaningless for it, and still return a tidy list
+            // of new positions.
+            var others = new List<(string h, Dimension d, double offset)>();
+            foreach (var h in a.Handles)
+            {
+                if (string.Equals(h, baseHandle, StringComparison.OrdinalIgnoreCase)) continue;
+                var d = RequireDimension(db, tr, h, OpenMode.ForWrite);
+                var (dd, _) = LinearAxes(d);
+                if (Math.Abs(Math.Abs(dd.DotProduct(dir)) - 1.0) > 1e-6)
+                    throw new ArgumentException(
+                        "Dimension " + h + " is not parallel to the base " + baseHandle +
+                        "; their directions differ by " +
+                        (Math.Acos(Math.Min(1, Math.Abs(dd.DotProduct(dir)))) * 180 / Math.PI) +
+                        " degrees. Spacing only means something for dimensions sharing a " +
+                        "direction, so group them and space each direction separately.");
+                others.Add((h, d, (DimLineOf(d) - basePoint).DotProduct(perp)));
+            }
+
+            // Each side of the base is numbered outwards from it, so a dimension already above
+            // the base stays above it. Sorting by offset within a side keeps the chain in the
+            // order it was drawn instead of reshuffling it.
+            var above = others.Where(o => o.offset >= 0).OrderBy(o => o.offset).ToList();
+            var below = others.Where(o => o.offset < 0).OrderByDescending(o => o.offset).ToList();
+
+            var moved = new List<object>();
+            void Place(List<(string h, Dimension d, double offset)> side, int sign)
+            {
+                for (int i = 0; i < side.Count; i++)
+                {
+                    var (h, d, was) = side[i];
+                    var target = a.Spacing.Value == 0 ? 0 : sign * (i + 1) * a.Spacing.Value;
+                    var before = d.Measurement;
+                    SetDimLine(d, basePoint + perp * target);
+                    d.RecomputeDimensionBlock(true);
+
+                    var now = (DimLineOf(d) - basePoint).DotProduct(perp);
+                    if (Math.Abs(now - target) > 1e-6)
+                        throw new InvalidOperationException(
+                            "Dimension " + h + " sits " + now + " from the base where " + target +
+                            " was intended, so the move did not take.");
+                    if (Math.Abs(d.Measurement - before) > 1e-9)
+                        throw new InvalidOperationException(
+                            "Dimension " + h + " changed what it measures while being moved, " +
+                            "from " + before + " to " + d.Measurement + ".");
+
+                    moved.Add(new
+                    {
+                        handle = h,
+                        type = d.GetType().Name,
+                        offsetBefore = was,
+                        offset = now,
+                        measurement = d.Measurement,
+                    });
+                }
+            }
+            Place(above, +1);
+            Place(below, -1);
+
+            return Wrap(new
+            {
+                affected = moved.Count,
+                baseHandle,
+                spacing = a.Spacing,
+                aligned = a.Spacing.Value == 0,
+                basePoint = new[] { basePoint.X, basePoint.Y, basePoint.Z },
+                dimensions = moved,
+                note = a.Spacing.Value == 0
+                    ? "spacing 0 ALIGNS every dimension onto the base's dimension line rather " +
+                      "than stacking them, so each offset is now 0."
+                    : "Each dimension sits a multiple of " + a.Spacing + " from the base, " +
+                      "numbered outwards on whichever side it was already on. The base did not " +
+                      "move and no measurement changed.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ArcSymbol(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.arc_symbol", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ArcSymbolArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which arc length dimensions.");
+
+            // DIMARCSYM is a plain int on the entity, not an enum - the compiler said so by
+            // rejecting a string for it. Naming the three positions keeps 0, 1 and 2 out of the
+            // caller's hands, where they mean nothing.
+            var pos = (a.Position ?? "preceding").Trim().ToLowerInvariant();
+            int value = pos switch
+            {
+                "preceding" => 0,
+                "above" => 1,
+                "none" => 2,
+                _ => throw new ArgumentException(
+                    "position must be preceding (the symbol before the text, AutoCAD's default), " +
+                    "above (over the text), or none (no symbol at all)."),
+            };
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var d = RequireDimension(db, tr, h, OpenMode.ForWrite);
+                if (d is not ArcDimension arc)
+                    throw new ArgumentException(
+                        "Entity " + h + " is a " + d.GetType().Name + ", not an ArcDimension. " +
+                        "The arc symbol belongs to an arc LENGTH dimension - place one with " +
+                        "dimensions.arc_length. A radial dimension on the same arc is a " +
+                        "different thing and has no such symbol.");
+
+                var before = arc.Measurement;
+                var symBefore = arc.ArcSymbolType;
+                arc.ArcSymbolType = value;
+                arc.RecomputeDimensionBlock(true);
+
+                if (arc.ArcSymbolType != value)
+                    throw new InvalidOperationException(
+                        "Arc symbol on " + h + " reads back as " + arc.ArcSymbolType +
+                        " rather than " + value + ", so the change did not take.");
+                if (Math.Abs(arc.Measurement - before) > 1e-9)
+                    throw new InvalidOperationException(
+                        "Dimension " + h + " changed what it measures, from " + before + " to " +
+                        arc.Measurement + ". A symbol is decoration and must not touch the arc " +
+                        "length.");
+
+                changed.Add(new
+                {
+                    handle = h,
+                    arcSymbolBefore = symBefore,
+                    arcSymbol = arc.ArcSymbolType,
+                    measurement = arc.Measurement,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                position = pos,
+                arcSymbolType = value,
+                dimensions = changed,
+                note = "0 puts the arc symbol before the text, 1 above it, 2 removes it. The " +
+                       "measured arc length is untouched either way.",
             });
         });
 }

@@ -471,14 +471,14 @@ Three tools from this phase were **withdrawn after measurement** rather than shi
 approximate — see KNOWN-GAPS §B for the numbers: `blend_curves` `continuity=smooth`,
 `set_object_transparency` `byLayer`/`byBlock`, and (from 2.1) `add_sheet_view`.
 
-### 3.2 `acad-dimensions` extensions (≈14 → **3 built, 4 blocked by the API**)
+### 3.2 `acad-dimensions` extensions (≈14 → **7 built, 6 blocked by the API, 1 left**)
 
 ```
-dimension_jogged_radius ✔   dimension_jog_linear ✘     dimension_break ..
-dimension_space ..          dimension_inspect ✘        dimension_reassociate ..
+dimension_jogged_radius ✔   dimension_jog_linear ✘     dimension_break ✘
+dimension_space ✔           dimension_inspect ✘        dimension_reassociate ✘
 dimension_oblique ✔         dimension_center_mark ✘    dimension_centerline ✘
-edit_dimension_text ✔       dimension_update ..        quick_dimension ..
-dimension_arc_symbol ..     dimension_tolerance ..
+edit_dimension_text ✔       dimension_update ✔         quick_dimension ..
+dimension_arc_symbol ✔      dimension_tolerance ✔
 ```
 
 Before any of this was written, the 2025 managed assemblies were **asked what they contain**,
@@ -488,7 +488,19 @@ effort:
 
 | present | absent |
 |---|---|
-| `RadialDimensionLarge`, `RotatedDimension.Oblique`, `AlignedDimension.Oblique`, `DimensionText`, `TextPosition`, `TextRotation`, `Dimtol`/`Dimtp`/`Dimtm`/`Dimtdec`, `ArcDimension.ArcSymbolType` | `CenterMark`, `CenterLine` (types), `Inspection`/`InspectionLabel`/`InspectionRate`/`InspectionFrame`, `JogSymbolHeight`/`JogSymbolPosition` |
+| `RadialDimensionLarge`, `RotatedDimension.Oblique`, `AlignedDimension.Oblique`, `DimensionText`, `TextPosition`, `TextRotation`, `Dimtol`/`Dimlim`/`Dimtp`/`Dimtm`/`Dimtdec`, `ArcDimension.ArcSymbolType`, `DimLinePoint`, `GetDimstyleData`/`SetDimstyleData` | `CenterMark`, `CenterLine` (types), `Inspection*` (4), `JogSymbolHeight`/`JogSymbolPosition`, `Dimbreak`, `Dimassoc` and the `DimAssoc` type |
+
+`dimension_update` was nearly struck as a second name for `set_entity_dimstyle`. It is not, and
+the difference was measured rather than argued: a tolerance override was put on two identical
+dimensions, one sent through each tool. `set_entity_dimstyle` **left the override standing** —
+it only assigns `DimensionStyle` — while `dimension_update` re-applies the style's own values
+through `SetDimstyleData` and clears it. The tool reports `toleranceOverrideBefore` and
+`toleranceOverrideAfter` for every dimension so that difference stays checkable from outside.
+
+The first run of that experiment was **void and nearly passed anyway**: it hardcoded the style
+name `Standard`, which a metric template does not have, so the control arm failed and only the
+`dimension_update` arm ran. "The override is gone" then looked like proof of a difference while
+demonstrating nothing about the other tool.
 
 `Dimension.Oblique` does not exist on the base class either — only the two linear kinds carry
 it, which is why `dimension_oblique` refuses radial, diametric and angular dimensions by name.

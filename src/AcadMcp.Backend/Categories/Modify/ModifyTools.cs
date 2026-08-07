@@ -61,11 +61,11 @@ public static class ModifyTools
     public static Task<CopiedEntities> ArrayPolar(IPluginGateway gw, ArrayPolarArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<ArrayPolarArgs, CopiedEntities>(gw, "acad.modify.array_polar", args, T_SLOW, ct);
 
-    [McpTool("align", "Align entities so that source point pair (A,B) maps onto target point pair (A,B). Optional uniform scale to make distances match.", "modify",
+    [McpTool("align", "Move and turn entities so that source point pair (A,B) maps onto target point pair (A,B) - AutoCAD's ALIGN. Without scale, A lands on its target and B only POINTS at its own; scale=true additionally resizes the selection so B lands exactly on it, which is the whole of that flag. The result reports where B actually ended up and how far that is from the target, so the difference is checkable rather than taken on trust. Use modify.move, rotate or scale when the displacement, angle or factor is already known.", "modify",
         Intent = new[] { "dopasuj obiekty", "align entities", "two point alignment", "fit entities to two points", "wyrownanie do dwoch punktow" },
         RequiresPlugin = true)]
-    public static Task<AffectedCount> Align(IPluginGateway gw, AlignArgs args, CancellationToken ct)
-        => ModifyProxy.CallAsync<AlignArgs, AffectedCount>(gw, "acad.modify.align", args, T_NORMAL, ct);
+    public static Task<AlignResult> Align(IPluginGateway gw, AlignArgs args, CancellationToken ct)
+        => ModifyProxy.CallAsync<AlignArgs, AlignResult>(gw, "acad.modify.align", args, T_NORMAL, ct);
 
     // ─────────────── properties ───────────────
 
@@ -175,4 +175,5 @@ public static class ModifyTools
         RequiresPlugin = true)]
     public static Task<ReferenceRotateResult> RotateByReference(IPluginGateway gw, ReferenceRotateArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<ReferenceRotateArgs, ReferenceRotateResult>(gw, "acad.modify.rotate_by_reference", args, T_NORMAL, ct);
+
 }

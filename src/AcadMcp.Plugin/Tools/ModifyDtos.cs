@@ -1,4 +1,4 @@
-// Plugin-side DTOs for the acad-modify category.
+﻿// Plugin-side DTOs for the acad-modify category.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

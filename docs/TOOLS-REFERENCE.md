@@ -441,7 +441,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
-| `align` | Align entities so that source point pair (A,B) maps onto target point pair (A,B). Optional uniform scale to make distances match. |
+| `align` | Move and turn entities so that source point pair (A,B) maps onto target point pair (A,B) - AutoCAD's ALIGN. Without scale, A lands on its target and B only POINTS at its own; scale=true additionally resizes the selection so B lands exactly on it, which is the whole of that flag. The result reports where B actually ended up and how far that is from the target, so the difference is checkable rather than taken on trust. Use modify.move, rotate or scale when the displacement, angle or factor is already known. |
 | `array_polar` | Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path. |
 | `array_rectangular` | Rectangular array (rows × cols × levels) by row, column and optional Z level spacing. |
 | `copy` | Copy entities by translation from→to. Set count > 1 for an evenly stepped chain of copies. |

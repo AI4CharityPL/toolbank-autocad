@@ -146,7 +146,7 @@
   "tools_summary": [
     {
       "name": "align",
-      "description": "Align entities so that source point pair (A,B) maps onto target point pair (A,B). Optional uniform scale to make distances match.",
+      "description": "Move and turn entities so that source point pair (A,B) maps onto target point pair (A,B) - AutoCAD\u0027s ALIGN. Without scale, A lands on its target and B only POINTS at its own; scale=true additionally resizes the selection so B lands exactly on it, which is the whole of that flag. The result reports where B actually ended up and how far that is from the target, so the difference is checkable rather than taken on trust. Use modify.move, rotate or scale when the displacement, angle or factor is already known.",
       "tags": [
         "align"
       ],
@@ -427,6 +427,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-06T19:00:07.2805131Z"
+    "last_regenerated_utc": "2026-08-07T10:18:53.5765977Z"
   }
 }

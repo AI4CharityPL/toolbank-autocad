@@ -426,7 +426,7 @@ prose. Decide before writing, not after.
 
 The existing 2D coverage is broad but not complete. These are commands a draughtsman uses daily.
 
-### 3.1 `acad-geometry-2d` extensions (≈30 → **29 built, 1 struck**) — one tool left
+### 3.1 `acad-geometry-2d` extensions (≈30 → **29 built, 2 struck**) — COMPLETE
 
 ```
 draw_mline ✔                edit_mline_vertex ✔        mline_join ✔
@@ -434,7 +434,7 @@ draw_spline_cv ✔            edit_spline_fit_point ✔    spline_to_polyline �
 fit_polyline ✔              edit_polyline_vertex ✔     polyline_add_vertex ✔
 polyline_remove_vertex ✔    set_polyline_width ✔       reverse_curve ✔
 break_at_point ✔            break_between_points ✔     lengthen_curve ✔
-stretch_window ✔            align_objects ..           scale_by_reference ✔
+stretch_window ✔            align_objects ✘            scale_by_reference ✔
 rotate_by_reference ✔       divide_object ✔            measure_object ✔
 blend_curves ✔              boundary_from_point ✔      region_from_boundary ✔
 create_wipeout ✔            set_wipeout_frame ✔        set_draworder ✔
@@ -450,12 +450,22 @@ tool takes a vertex index and nothing could report what the indices were.
 `scale_by_reference` and `rotate_by_reference` went into `acad-modify` rather than here, next to
 the plain `scale` and `rotate` they are the reference-driven forms of.
 
-**`draw_construction_geometry` is struck**, not deferred. AutoCAD has exactly two construction
-entities, XLINE and RAY, and `draw_xline` and `draw_ray` already draw both. A third tool over
-the same two classes would give the router two ways to spell one action, which is worse than
-not having it. What is genuinely NOT covered is the XLINE command's Bisect and Offset modes —
-those are ways of computing a base point and direction, not new geometry, and they are recorded
-in [KNOWN-GAPS](KNOWN-GAPS.md) §B rather than left implied by a ticked box.
+**Two entries are struck as duplicates**, not deferred — both were listed here by a name the
+bank does not use, and a scan for the literal name reported them missing when the capability
+was already there.
+
+- `draw_construction_geometry`: AutoCAD has exactly two construction entities, XLINE and RAY,
+  and `draw_xline` and `draw_ray` already draw both. A third tool over the same two classes
+  would give the router two ways to spell one action. What is genuinely NOT covered is the
+  XLINE command's Bisect and Offset modes — ways of computing a base point and direction, not
+  new geometry — recorded in [KNOWN-GAPS](KNOWN-GAPS.md) §B rather than left implied by a tick.
+- `align_objects`: **`modify.align` has existed since the original 18** and maps a source point
+  pair onto a target pair with optional scaling, which is the whole of ALIGN. Writing the
+  replacement is what found a real bug in it: the rotation axis came from the cross product of
+  the two directions, which vanishes when they are PARALLEL — covering both "already aligned"
+  and "exactly reversed". A 180° align therefore moved nothing, turned nothing and returned
+  `affected: 1`. Measured against a 90° control, fixed, and `align` now reports the angle, the
+  factor and where source B landed instead of only a count. Verified live 32/32.
 
 Three tools from this phase were **withdrawn after measurement** rather than shipped
 approximate — see KNOWN-GAPS §B for the numbers: `blend_curves` `continuity=smooth`,

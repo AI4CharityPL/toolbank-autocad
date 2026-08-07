@@ -1,4 +1,4 @@
-// Typed DTOs for the acad-modify category.
+﻿// Typed DTOs for the acad-modify category.
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -150,4 +150,15 @@ public sealed record ReferenceRotateResult(
     [property: JsonPropertyName("newAngleDeg")]       double NewAngleDeg,
     [property: JsonPropertyName("rotatedByDeg")]      double RotatedByDeg,
     [property: JsonPropertyName("basePoint")]         IReadOnlyList<double> BasePoint,
+    [property: JsonPropertyName("note")]              string Note);
+
+/// <summary>What `align` actually did, rather than only how many entities it touched.</summary>
+public sealed record AlignResult(
+    [property: JsonPropertyName("affected")]          int Affected,
+    [property: JsonPropertyName("movedBy")]           IReadOnlyList<double> MovedBy,
+    [property: JsonPropertyName("rotatedByDeg")]      double RotatedByDeg,
+    [property: JsonPropertyName("scaled")]            bool Scaled,
+    [property: JsonPropertyName("factor")]            double Factor,
+    [property: JsonPropertyName("sourceBLandedAt")]   IReadOnlyList<double> SourceBLandedAt,
+    [property: JsonPropertyName("distanceToTargetB")] double DistanceToTargetB,
     [property: JsonPropertyName("note")]              string Note);

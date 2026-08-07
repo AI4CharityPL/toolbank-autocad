@@ -253,17 +253,59 @@ internal static class ModifyPluginTools
             double dot = sV.GetNormal().DotProduct(tV.GetNormal());
             double angle = Math.Acos(Math.Clamp(dot, -1.0, 1.0));
             Matrix3d m = Matrix3d.Displacement(tA - sA);
-            if (angle > 1e-9 && axis.Length > 1e-9)
+            if (angle > 1e-9)
             {
-                m = m * Matrix3d.Rotation(angle, axis.GetNormal(), sA);
+                // The cross product vanishes when the two directions are PARALLEL, and that
+                // covers two opposite cases: already aligned (angle 0, excluded above) and
+                // exactly REVERSED (angle pi). The guard used to be `axis.Length > 1e-9`, so a
+                // reversal skipped the rotation entirely - measured against a 90 degree control,
+                // aligning (0,0)->(100,0) onto (0,0)->(-100,0) left the line exactly where it
+                // was and still reported affected: 1. Any axis perpendicular to sV turns it
+                // through pi; Z is the right one for the 2D case, unless sV is itself along Z.
+                var n = axis.Length > 1e-9
+                    ? axis.GetNormal()
+                    : Math.Abs(sV.GetNormal().DotProduct(Vector3d.ZAxis)) > 0.999
+                        ? Vector3d.XAxis
+                        : Vector3d.ZAxis;
+                m = m * Matrix3d.Rotation(angle, n, sA);
             }
+            double factor = 1;
             if (a.Scale)
             {
-                double f = tV.Length / sV.Length;
-                m = m * Matrix3d.Scaling(f, sA);
+                factor = tV.Length / sV.Length;
+                m = m * Matrix3d.Scaling(factor, sA);
             }
             foreach (var e in ents) e.TransformBy(m);
-            return Wrap(new { affected = ents.Count });
+
+            // Where source B actually ended up, from the same matrix the entities got. Without
+            // scale it points AT target B and stops short of or past it; with scale it must land
+            // on it. Reporting the distance is what makes the flag checkable from outside rather
+            // than something the caller has to take on trust.
+            var landed = sB.TransformBy(m);
+            var gap = landed.DistanceTo(tB);
+            if (a.Scale && gap > 1e-6)
+                throw new InvalidOperationException(
+                    "scale was asked for, but source point B landed " + gap.ToString("0.######") +
+                    " away from target B instead of on it, so this is not being reported as " +
+                    "success.");
+
+            return Wrap(new
+            {
+                affected = ents.Count,
+                movedBy = new[] { (tA - sA).X, (tA - sA).Y, (tA - sA).Z },
+                rotatedByDeg = angle * 180.0 / Math.PI,
+                scaled = a.Scale,
+                factor,
+                sourceBLandedAt = new[] { landed.X, landed.Y, landed.Z },
+                distanceToTargetB = gap,
+                note = a.Scale
+                    ? "Source A is on target A and so is source B, which is what the factor of " +
+                      factor.ToString("0.######") + " bought - every distance inside the " +
+                      "selection changed by it."
+                    : "Source A is on target A and source B points AT target B, stopping short " +
+                      "of or past it by " + gap.ToString("0.######") + "; nothing was resized. " +
+                      "Pass scale=true to make B land exactly.",
+            });
         });
 
     // ─────────────── properties ───────────────

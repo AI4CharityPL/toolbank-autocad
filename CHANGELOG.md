@@ -46,10 +46,11 @@ All notable changes to this project will be documented in this file. Format: [Ke
   `blend_curves` (26/26), multiline editing (41/41), and `fit_polyline` with `stretch_window`
   (72/72).
 
-  One tool from the phase's list is **struck rather than deferred**:
-  `draw_construction_geometry`. AutoCAD has exactly two construction entities, XLINE and RAY,
-  and `draw_xline` and `draw_ray` already draw both — a third tool over the same two classes
-  would give the router two ways to spell one action. `align_objects` is the one still to build.
+  **Phase 3.1 is complete.** Two of its thirty entries are struck rather than deferred, both
+  because they were listed under a name the bank does not use and a scan for the literal name
+  reported a gap where the capability already existed: `draw_construction_geometry` (AutoCAD has
+  exactly two construction entities and `draw_xline`/`draw_ray` already draw both) and
+  `align_objects` (`modify.align` has done this since the original 18).
 
   Three things this phase established, each of which had first produced a green tally that
   meant nothing:
@@ -147,6 +148,32 @@ All notable changes to this project will be documented in this file. Format: [Ke
     from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
 
 ### Fixed
+
+- **`modify.align` skipped the rotation whenever it was exactly 180°.** The axis came from
+  `sV.CrossProduct(tV)`, guarded by `axis.Length > 1e-9`. That cross product vanishes when the
+  two directions are **parallel**, which covers two opposite cases — already aligned, and
+  exactly reversed — and the guard treated both as "no rotation needed". So a reversal moved
+  nothing, turned nothing and returned `affected: 1`, the only field the tool reported.
+
+  Measured against a 90° control, so that "it did not move" could not be read as "the tool is
+  broken":
+
+  | | before | after |
+  |---|---|---|
+  | 90°, `(0,0)-(100,0)` → `(0,0)-(0,100)` | x 0..0, y 0..100 — correct | unchanged |
+  | 180°, `(0,500)-(100,500)` → `(0,500)-(-100,500)` | **x 0..100, untouched** | x -100..0 |
+
+  Any axis perpendicular to the source direction turns it through π; Z is the right one for the
+  2D case, with a fallback to X when the source direction is itself along Z.
+
+  `align` now also reports **what it did** rather than only how many entities it touched:
+  `rotatedByDeg`, `factor`, `scaled`, and `sourceBLandedAt` with `distanceToTargetB`. That last
+  pair is what makes the `scale` flag checkable from outside — without scale, source B only
+  *points at* target B and stops short of it by a stated distance; with scale it lands on it,
+  and the tool now refuses to report success if it did not. Verified live **32/32**.
+
+  Found while writing `align_objects` from the phase 3.1 list, which turned out to be this tool
+  under another name. The duplicate was dropped; the bug it exposed was not.
 
 - **`hatches.draw_hatch_by_boundary` and `apply_material_preset_by_point` work again**
   (KNOWN-GAPS A1, the oldest entry on the broken-on-valid-input list). `Editor.TraceBoundary`

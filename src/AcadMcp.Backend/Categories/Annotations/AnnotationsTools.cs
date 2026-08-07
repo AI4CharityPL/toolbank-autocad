@@ -125,4 +125,30 @@ public static class AnnotationsTools
         RequiresPlugin = true, ReadOnly = true)]
     public static Task<ExportTextResult> ExportTextContent(IPluginGateway gw, ExportTextArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<ExportTextArgs, ExportTextResult>(gw, "acad.annotations.export_text_content", args, T_SLOW, ct);
+
+    // ─────────── roadmap 3.3: where text sits and how big it is ───────────
+
+    [McpTool("set_text_justification", "Change which point anchors a piece of text WITHOUT moving the text - AutoCAD's JUSTIFYTEXT. Setting the justification on its own relocates the text, because the justification decides which point of it sits on the alignment point: same anchor, different meaning. This moves the anchor to match, and the extent is measured before and after so a text that shifted is reported as a failure rather than an edit. Accepts the Top, Middle, Bottom and Base rows against Left, Center and Right; the Base row sits on the BASELINE, where descenders hang below, and Bottom sits under them. Works on single-line text and MText.", "annotations",
+        Intent = new[] { "zmien justowanie tekstu", "wyrownaj tekst do srodka bez przesuwania",
+                         "change text justification", "justifytext",
+                         "set text anchor point", "przypnij tekst do innego rogu" },
+        RequiresPlugin = true)]
+    public static Task<JustifyTextResult> SetTextJustification(IPluginGateway gw, JustifyTextArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<JustifyTextArgs, JustifyTextResult>(gw, "acad.annotations.set_text_justification", args, T_NORMAL, ct);
+
+    [McpTool("text_fit", "Stretch a single-line text to run exactly between two points - AutoCAD's TEXTFIT. The text is widened or narrowed while its HEIGHT stays put, which is the whole difference from scaling it, and the height is checked before and after. The text is left on AutoCAD's Fit alignment, so later edits to its contents re-stretch it between the same two points instead of overflowing them. MText is refused by name: it has a width of its own and wraps rather than stretching.", "annotations",
+        Intent = new[] { "dopasuj tekst miedzy dwa punkty", "rozciagnij napis do szerokosci",
+                         "fit text between two points", "textfit",
+                         "sciesnij tekst zeby sie zmiescil", "stretch text to fit" },
+        RequiresPlugin = true)]
+    public static Task<TextFitResult> TextFit(IPluginGateway gw, TextFitArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<TextFitArgs, TextFitResult>(gw, "acad.annotations.text_fit", args, T_NORMAL, ct);
+
+    [McpTool("scale_text_in_place", "Resize text about its OWN anchor point - AutoCAD's SCALETEXT. Every item holds still while it grows, which is what modify.scale cannot do: that one scales distances too, so a row of tags would bunch towards the base point as well as get bigger. Give either factor, which multiplies each text's own height and so keeps a mixed selection's relative sizes, or newHeight, which makes every one of them that height. The anchor is measured before and after and any drift is reported as a failure.", "annotations",
+        Intent = new[] { "zmien wysokosc tekstu w miejscu", "powieksz napisy bez przesuwania",
+                         "scale text in place", "scaletext",
+                         "ustaw wysokosc wszystkich napisow", "resize text without moving it" },
+        RequiresPlugin = true)]
+    public static Task<ScaleTextResult> ScaleTextInPlace(IPluginGateway gw, ScaleTextArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<ScaleTextArgs, ScaleTextResult>(gw, "acad.annotations.scale_text_in_place", args, T_NORMAL, ct);
 }

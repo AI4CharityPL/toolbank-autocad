@@ -1,10 +1,10 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 535 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 538 tools total.
 
 ## Categories
 
-- [acad-annotations](#acad-annotations) (15 tools)
+- [acad-annotations](#acad-annotations) (18 tools)
 - [acad-annotative](#acad-annotative) (15 tools)
 - [acad-architecture](#acad-architecture) (16 tools)
 - [acad-blocks](#acad-blocks) (16 tools)
@@ -61,8 +61,11 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `find_replace_text` | Find and replace text across the whole drawing - AutoCAD's FIND. Covers single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides. Every write is READ BACK and anything that did not take is listed as skipped rather than counted. Text carrying MText formatting codes is only changed when the pattern matches the same number of times in the stored string as in the rendered one; otherwise the replacement would be landing inside a code - changing a font rather than the words - and it is skipped with that reason. Pass dryRun true to see exactly what would change without writing anything. |
 | `list_text_by_pattern` | Find every piece of text in the drawing matching a pattern, WITHOUT changing anything. Reads all six places text lives - single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides - and reports scannedByType, so 'no matches' in a drawing full of text can be told from 'no matches in the two types a lesser search bothered to look at'. Matching runs against the RENDERED text, not the stored string: a search over MText contents would hit words inside formatting codes and report matches nobody can see on the sheet. Set regex, matchCase or wholeWord as needed. |
 | `list_text_styles` | List every text style defined in the active drawing plus the current style name. |
+| `scale_text_in_place` | Resize text about its OWN anchor point - AutoCAD's SCALETEXT. Every item holds still while it grows, which is what modify.scale cannot do: that one scales distances too, so a row of tags would bunch towards the base point as well as get bigger. Give either factor, which multiplies each text's own height and so keeps a mixed selection's relative sizes, or newHeight, which makes every one of them that height. The anchor is measured before and after and any drift is reported as a failure. |
 | `set_current_text_style` | Set the active text style for new DBText / MText entities; subsequent text creation defaults to it. |
 | `set_table_cell` | Set the text content of a single Table cell by (row, col), 0-based. |
+| `set_text_justification` | Change which point anchors a piece of text WITHOUT moving the text - AutoCAD's JUSTIFYTEXT. Setting the justification on its own relocates the text, because the justification decides which point of it sits on the alignment point: same anchor, different meaning. This moves the anchor to match, and the extent is measured before and after so a text that shifted is reported as a failure rather than an edit. Accepts the Top, Middle, Bottom and Base rows against Left, Center and Right; the Base row sits on the BASELINE, where descenders hang below, and Bottom sits under them. Works on single-line text and MText. |
+| `text_fit` | Stretch a single-line text to run exactly between two points - AutoCAD's TEXTFIT. The text is widened or narrowed while its HEIGHT stays put, which is the whole difference from scaling it, and the height is checked before and after. The text is left on AutoCAD's Fit alignment, so later edits to its contents re-stretch it between the same two points instead of overflowing them. MText is refused by name: it has a width of its own and wraps rather than stretching. |
 | `update_dbtext` | Replace the contents of an existing DBText entity by handle. |
 | `update_mtext` | Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written. |
 

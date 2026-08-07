@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**532 tools across 39 categories** (updated 2026-08-07; this document was written at 337 across
+**538 tools across 39 categories** (updated 2026-08-07; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -518,14 +518,14 @@ A first attempt at reading the assembly through PowerShell reported everything a
 output was **discarded, not used**: the assembly had failed to load, so every "absent" was an
 artefact of the failure rather than a finding.
 
-### 3.3 `acad-annotations` extensions (≈18 → **3 built, 2 blocked by the API**)
+### 3.3 `acad-annotations` extensions (≈18 → **6 built, 2 blocked, 1 struck**)
 
 ```
 find_replace_text ✔         spell_check ✘              text_to_mtext ..
-mtext_column_settings ..    arc_aligned_text ✘         set_text_justification ..
-scale_text_in_place ..      justify_text ..            background_mask_mtext ..
+mtext_column_settings ..    arc_aligned_text ✘         set_text_justification ✔
+scale_text_in_place ✔       justify_text ✘             background_mask_mtext ..
 mtext_bullets_numbering ..  insert_symbol ..           stack_fraction ..
-set_paragraph_format ..     text_fit ..                list_text_by_pattern ✔
+set_paragraph_format ..     text_fit ✔                 list_text_by_pattern ✔
 export_text_content ✔       set_mtext_frame ..         explode_mtext_to_text ..
 ```
 
@@ -541,6 +541,17 @@ The first tranche is the three that share a scanner, because that is where the d
 **text lives in six places**, and one reading only DBText and MText misses most of a real sheet.
 A `Table` derives from `BlockReference`, so its case has to be taken first or schedule text is
 never scanned at all — caught by the compiler calling the table branch unreachable.
+
+`justify_text` is **struck as a duplicate** of `set_text_justification` — the roadmap listed the
+same operation twice.
+
+The second tranche's three tools share a failure mode: the obvious implementation MOVES THE TEXT
+and reports success anyway. `set_text_justification` proved it. A first version computed where
+the anchor ought to go from the extents box, and `BottomRight` moved the text by exactly the
+descender depth while `BaseLeft` threw `eNotApplicable` — the default justification uses
+`Position`, not `AlignmentPoint`. The box says where the ink is, not where a justification line
+is. The displacement is now measured and undone rather than predicted.
+
 
 ### 3.4 `acad-selection` extensions (≈12)
 

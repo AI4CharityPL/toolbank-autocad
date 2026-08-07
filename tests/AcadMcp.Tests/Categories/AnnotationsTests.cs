@@ -13,11 +13,11 @@ public class AnnotationsTests
     // category that grew from one that had been gutted. Named and counted, like every other
     // category's catalogue test.
     [Fact]
-    public void Catalog_contains_all_fifteen_annotation_tools()
+    public void Catalog_contains_all_eighteen_annotation_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("annotations");
-        Assert.Equal(15, tools.Count);
+        Assert.Equal(18, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         Assert.Contains("add_dbtext", names);
@@ -38,5 +38,10 @@ public class AnnotationsTests
         Assert.Contains("list_text_by_pattern", names);
         Assert.Contains("find_replace_text", names);
         Assert.Contains("export_text_content", names);
+        // Second tranche. All three would report success while leaving the text somewhere
+        // else, so each measures the position or size back off the entity.
+        Assert.Contains("set_text_justification", names);
+        Assert.Contains("text_fit", names);
+        Assert.Contains("scale_text_in_place", names);
     }
 }

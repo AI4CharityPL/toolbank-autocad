@@ -109,9 +109,11 @@ if isinstance(r, dict):
     check("it counted the 5 source vertices", r.get("verticesBefore") == 5, str(r)[:220])
     check("it reports the length before", close(r.get("lengthBefore"), len_before, 1e-6),
           f"{r.get('lengthBefore')} vs measured {len_before}")
+    # NOT `(x or 1) < 1e-6`: a perfect fit measures exactly 0, which is falsy, and the `or`
+    # would replace the right answer with a sentinel that fails.
+    _d = r.get("maxDistanceFromOriginalVertices")
     check("PROVEN by the tool: max distance from the original vertices is ~0",
-          (r.get("maxDistanceFromOriginalVertices") or 1) < 1e-6,
-          f"got {r.get('maxDistanceFromOriginalVertices')}")
+          _d is not None and abs(_d) < 1e-6, f"got {_d!r}")
 
 print("\n-- and MEASURED INDEPENDENTLY, vertex by vertex --")
 for (x, y) in ZIG:

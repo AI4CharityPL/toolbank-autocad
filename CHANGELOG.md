@@ -37,6 +37,29 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3, second tranche — where text sits and how big it is.** `acad-annotations` 15 → 18,
+  bank 535 → 538: `set_text_justification`, `text_fit`, `scale_text_in_place`. Verified live
+  **60/60**. `justify_text` from the roadmap list is struck as a second name for
+  `set_text_justification`.
+
+  What the three have in common is that **the obvious implementation moves the text** and reports
+  success either way, so every assertion is a position or a size read back off the entity.
+
+  `set_text_justification` first tried to compute where the anchor *ought* to go, reading the
+  corner of the extents box each justification names. That was guessing, and it worked by luck:
+  `BottomRight` moved the text by **3.333** — exactly the descender depth, because "ANCHOR TEST"
+  is all capitals so the bottom of its box *is* the baseline while Bottom justification anchors
+  below descenders — and `BaseLeft` threw `eNotApplicable`, since that is the default
+  justification and AutoCAD uses `Position` rather than `AlignmentPoint` for it. The box tells
+  you where the ink is, not where a justification line is. Now the displacement is **measured**:
+  set the justification, see where the text landed, move it back by the difference. Exact for
+  every justification, and it needs to know nothing about what any of them mean. `correctedBy`
+  reports how far it jumped, which is the size of the mistake the tool exists to undo.
+
+  `scale_text_in_place` is verified against a **control** — `modify.scale` on an identical pair.
+  That one drags the far text out to 1000 while this leaves its twin at 500, visible as two rows
+  in the PNG. Without the control arm, "it did not move" proves nothing.
+
 - **Phase 3.3, first tranche — finding text across a drawing.** `acad-annotations` 12 → 15,
   bank 532 → 535: `list_text_by_pattern`, `find_replace_text`, `export_text_content`. Verified
   live **63/63**.
@@ -254,6 +277,26 @@ All notable changes to this project will be documented in this file. Format: [Ke
     from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
 
 ### Fixed
+
+- **Verification scripts could silently measure two different drawings.** Every MCP category runs
+  in its **own backend process**, and when more than one drawing is open those processes can bind
+  to **different documents** — so a handle created through the `annotations` session resolves, in
+  the `geometry-2d` session, to a different entity or to nothing at all. Two tools measure two
+  drawings and every assertion still returns a number.
+
+  Measured while it was happening: `annotations` wrote `SELFTEST` at y=7000 and read it back
+  fine, `geometry-2d` found nothing in that window, and `files.list_documents` reported
+  `Rysunek1.dwg` and `Rysunek2.dwg` both open. The cause is the scripts themselves — each calls
+  `new_document` and none ever closed the drawing it replaced, so runs accumulated. Latent in
+  every verification written so far; it had simply never mattered because the documents happened
+  to agree.
+
+  `scripts/verify-*.py` now start from a `fresh_drawing()` helper that makes the new drawing,
+  **closes every other one**, and then **proves** cross-session agreement by placing a probe in
+  one category and reading its bounding box in another before anything is measured.
+
+  Noted while investigating and not yet chased: `files.list_documents` reports `isActive` as
+  null for every document, so it cannot currently answer which drawing is the active one.
 
 - **An unknown `dimStyle` name was silently swapped for the current style, in all 13 dimension
   tools that take one.** `AcadEnv.ResolveDimStyleOrCurrent` fell through to `db.Dimstyle`

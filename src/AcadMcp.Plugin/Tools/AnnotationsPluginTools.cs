@@ -46,6 +46,11 @@ internal static class AnnotationsPluginTools
         host.Register("acad.annotations.list_text_by_pattern",  ListTextByPattern);
         host.Register("acad.annotations.find_replace_text",     FindReplaceText);
         host.Register("acad.annotations.export_text_content",   ExportTextContent);
+
+        // roadmap 3.3 - where text sits and how big it is
+        host.Register("acad.annotations.set_text_justification", SetTextJustification);
+        host.Register("acad.annotations.text_fit",               TextFit);
+        host.Register("acad.annotations.scale_text_in_place",    ScaleTextInPlace);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -743,4 +748,300 @@ internal static class AnnotationsPluginTools
         s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) < 0
             ? s
             : "\"" + s.Replace("\"", "\"\"") + "\"";
+
+    // ─────────── roadmap 3.3: where text sits and how big it is ───────────
+    //
+    // What these three have in common is that the obvious implementation MOVES THE TEXT, and the
+    // result reads as a success either way.
+    //
+    // Setting DBText.Justify on its own relocates the text, because the justification decides
+    // which point of the text sits on the alignment point - change the justification and the
+    // same anchor now means somewhere else. AutoCAD's JUSTIFYTEXT exists precisely because the
+    // naive version is wrong. So the extent is measured before and after and a text that moved
+    // is a failure, not an edit.
+
+    private static readonly Dictionary<string, AttachmentPoint> Justifications =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["TopLeft"] = AttachmentPoint.TopLeft,
+            ["TopCenter"] = AttachmentPoint.TopCenter,
+            ["TopRight"] = AttachmentPoint.TopRight,
+            ["MiddleLeft"] = AttachmentPoint.MiddleLeft,
+            ["MiddleCenter"] = AttachmentPoint.MiddleCenter,
+            ["MiddleRight"] = AttachmentPoint.MiddleRight,
+            ["BottomLeft"] = AttachmentPoint.BottomLeft,
+            ["BottomCenter"] = AttachmentPoint.BottomCenter,
+            ["BottomRight"] = AttachmentPoint.BottomRight,
+            ["BaseLeft"] = AttachmentPoint.BaseLeft,
+            ["BaseCenter"] = AttachmentPoint.BaseCenter,
+            ["BaseRight"] = AttachmentPoint.BaseRight,
+        };
+
+    // An earlier version of this computed where the anchor OUGHT to go, by reading the corner of
+    // the extents box that each justification names. It was guessing, and it worked by luck for
+    // some of them. Two ways it was wrong, both measured:
+    //
+    //   BottomRight moved the text by 3.333 - exactly a third of its height. "ANCHOR TEST" is
+    //   all capitals, so the bottom of its extents box IS the baseline, while Bottom
+    //   justification anchors below the descenders. The box does not tell you where a
+    //   justification line is; it tells you where the ink is.
+    //
+    //   BaseLeft threw eNotApplicable. It is the DEFAULT justification, and AutoCAD uses
+    //   Position rather than AlignmentPoint for that one, so assigning the alignment point is
+    //   not a thing you may do.
+    //
+    // So the displacement is MEASURED instead of predicted: set the justification, see where the
+    // text landed, and move it back by the difference. That is exact for every justification and
+    // needs to know nothing about what any of them mean.
+
+    private static Task<ToolDispatchResult> SetTextJustification(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.set_text_justification", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<JustifyTextArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which text to re-justify.");
+            if (string.IsNullOrWhiteSpace(a.Justification) ||
+                !Justifications.TryGetValue(a.Justification!.Trim(), out var target))
+                throw new ArgumentException(
+                    "justification must be one of: " +
+                    string.Join(", ", Justifications.Keys) + ". The Base row sits on the text's " +
+                    "BASELINE, which is where descenders hang below; the Bottom row sits under " +
+                    "them.");
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+                Extents3d before;
+                try { before = ent.GeometricExtents; }
+                catch
+                {
+                    throw new ArgumentException(
+                        "Entity " + h + " has no extents to re-justify around - it may be empty " +
+                        "text.");
+                }
+
+                string kind, was;
+                switch (ent)
+                {
+                    case DBText t:
+                        kind = "DBText";
+                        was = t.Justify.ToString();
+                        t.Justify = target;
+                        t.AdjustAlignment(db);
+                        break;
+                    case MText m:
+                        kind = "MText";
+                        was = m.Attachment.ToString();
+                        m.Attachment = target;
+                        break;
+                    default:
+                        throw new ArgumentException(
+                            "Entity " + h + " is a " + ent.GetType().Name + ". Justification " +
+                            "applies to single-line text and MText.");
+                }
+
+                // Where it landed, and the correction back. Measured, not predicted.
+                var landed = ent.GeometricExtents;
+                var back = before.MinPoint - landed.MinPoint;
+                var jumped = back.Length;
+                if (jumped > 1e-12) ent.TransformBy(Matrix3d.Displacement(back));
+
+                // The claim of this tool, measured. A naive implementation gets everything else
+                // right and leaves the text somewhere else on the sheet.
+                var after = ent.GeometricExtents;
+                var moved = Math.Max(
+                    before.MinPoint.DistanceTo(after.MinPoint),
+                    before.MaxPoint.DistanceTo(after.MaxPoint));
+                if (moved > 1e-6)
+                    throw new InvalidOperationException(
+                        "Re-justifying " + h + " moved it by " + moved + ". Changing the " +
+                        "justification is meant to change which point anchors the text, not " +
+                        "where the text is, so this is not being reported as success.");
+
+                changed.Add(new
+                {
+                    handle = h, type = kind, justificationBefore = was,
+                    justification = target.ToString(),
+                    // How far the text jumped when the justification alone was changed, and
+                    // therefore how far it had to be put back. Reported because it is the size
+                    // of the mistake this tool exists to undo.
+                    correctedBy = jumped,
+                    movedBy = moved,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                justification = target.ToString(),
+                items = changed,
+                note = "The text has NOT moved - movedBy is the measured proof. What changed is " +
+                       "which point anchors it, so later edits and any grip on it work from the " +
+                       "new corner. Setting the justification without moving the anchor is what " +
+                       "makes text jump across a sheet.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> TextFit(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.text_fit", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<TextFitArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException("handle is required: the single-line text to fit.");
+            if (a.Point1 is null || a.Point2 is null)
+                throw new ArgumentException(
+                    "point1 and point2 are required: the two points the text has to span.");
+
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            if (ent is not DBText t)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetType().Name + ", not single-line " +
+                    "text. MText has its own width and wraps instead of stretching - set its " +
+                    "Width with add_mtext, or use set_mtext_width.");
+
+            var p1 = AcadEnv.ToPoint3d(a.Point1);
+            var p2 = AcadEnv.ToPoint3d(a.Point2);
+            var span = p1.DistanceTo(p2);
+            if (span < 1e-9)
+                throw new ArgumentException(
+                    "point1 and point2 are the same point, so there is no distance to fit into.");
+            if (string.IsNullOrEmpty(t.TextString))
+                throw new ArgumentException(
+                    "This text is empty, so there is nothing to stretch between the two points.");
+
+            var heightBefore = t.Height;
+            var widthFactorBefore = t.WidthFactor;
+
+            // AutoCAD's own Fit alignment does the work: the text is stretched horizontally to
+            // run from Position to AlignmentPoint while its HEIGHT stays put. That last part is
+            // what separates a fit from a scale, and it is measured below rather than assumed.
+            t.HorizontalMode = TextHorizontalMode.TextFit;
+            t.Position = p1;
+            t.AlignmentPoint = p2;
+            t.AdjustAlignment(db);
+
+            var e = ent.GeometricExtents;
+            var fittedWidth = Math.Sqrt(
+                Math.Pow(e.MaxPoint.X - e.MinPoint.X, 2) +
+                Math.Pow(e.MaxPoint.Y - e.MinPoint.Y, 2));
+
+            if (Math.Abs(t.Height - heightBefore) > 1e-9)
+                throw new InvalidOperationException(
+                    "Fitting changed the text height from " + heightBefore + " to " + t.Height +
+                    ". A fit stretches the text sideways and leaves the height alone - that is " +
+                    "the whole difference from scaling it.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                span,
+                fittedWidth,
+                height = t.Height,
+                heightBefore,
+                widthFactor = t.WidthFactor,
+                widthFactorBefore,
+                point1 = new[] { p1.X, p1.Y, p1.Z },
+                point2 = new[] { p2.X, p2.Y, p2.Z },
+                note = "The text now runs from point1 to point2 and its HEIGHT is unchanged at " +
+                       t.Height + " - that is what separates a fit from a scale. The text is " +
+                       "left on AutoCAD's Fit alignment, so editing its contents re-stretches it " +
+                       "between the same two points rather than overflowing them.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ScaleTextInPlace(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.scale_text_in_place", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ScaleTextArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which text to resize.");
+
+            var haveFactor = a.Factor is not null;
+            var haveHeight = a.NewHeight is not null;
+            if (haveFactor == haveHeight)
+                throw new ArgumentException(
+                    "Give EITHER factor OR newHeight, not both and not neither. factor multiplies " +
+                    "each text's own height, so a mixed selection keeps its relative sizes; " +
+                    "newHeight makes every one of them that height.");
+            if (haveFactor && a.Factor <= 0)
+                throw new ArgumentException("factor must be greater than zero.");
+            if (haveHeight && a.NewHeight <= 0)
+                throw new ArgumentException("newHeight must be greater than zero.");
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+
+                double before, now;
+                double[] anchorBefore, anchorAfter;
+                string kind;
+
+                switch (ent)
+                {
+                    case DBText t:
+                    {
+                        kind = "DBText";
+                        before = t.Height;
+                        // The anchor is the alignment point when the text is justified, and the
+                        // position when it is not - reading the wrong one makes a left-justified
+                        // text appear to hold still while a centred one drifts.
+                        var justified = t.HorizontalMode != TextHorizontalMode.TextLeft ||
+                                        t.VerticalMode != TextVerticalMode.TextBase;
+                        var anchor = justified ? t.AlignmentPoint : t.Position;
+                        anchorBefore = new[] { anchor.X, anchor.Y, anchor.Z };
+                        t.Height = haveFactor ? before * a.Factor!.Value : a.NewHeight!.Value;
+                        t.AdjustAlignment(db);
+                        var after = justified ? t.AlignmentPoint : t.Position;
+                        anchorAfter = new[] { after.X, after.Y, after.Z };
+                        now = t.Height;
+                        break;
+                    }
+                    case MText m:
+                    {
+                        kind = "MText";
+                        before = m.TextHeight;
+                        anchorBefore = new[] { m.Location.X, m.Location.Y, m.Location.Z };
+                        m.TextHeight = haveFactor ? before * a.Factor!.Value : a.NewHeight!.Value;
+                        anchorAfter = new[] { m.Location.X, m.Location.Y, m.Location.Z };
+                        now = m.TextHeight;
+                        break;
+                    }
+                    default:
+                        throw new ArgumentException(
+                            "Entity " + h + " is a " + ent.GetType().Name + ". This resizes " +
+                            "single-line text and MText.");
+                }
+
+                // IN PLACE is the entire claim. modify.scale would move every one of these
+                // towards a common base point; each of these has to hold its own.
+                var drift = Math.Sqrt(
+                    Math.Pow(anchorAfter[0] - anchorBefore[0], 2) +
+                    Math.Pow(anchorAfter[1] - anchorBefore[1], 2));
+                if (drift > 1e-6)
+                    throw new InvalidOperationException(
+                        "Text " + h + " moved by " + drift + " while being resized. This scales " +
+                        "each text about its OWN anchor; use modify.scale when everything should " +
+                        "move towards a common base point.");
+
+                changed.Add(new
+                {
+                    handle = h, type = kind,
+                    heightBefore = before, height = now,
+                    anchor = anchorAfter, movedBy = drift,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                factor = a.Factor,
+                newHeight = a.NewHeight,
+                items = changed,
+                note = "Each text was resized about its OWN anchor and movedBy proves none of " +
+                       "them drifted. modify.scale is the other thing: it scales distances too, " +
+                       "so a row of tags would bunch towards the base point as well as growing.",
+            });
+        });
 }

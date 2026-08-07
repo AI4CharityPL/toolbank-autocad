@@ -102,3 +102,19 @@ internal sealed record ExportTextArgsDto(
     [property: JsonPropertyName("path")]        string? Path,
     [property: JsonPropertyName("layerFilter")] string? LayerFilter,
     [property: JsonPropertyName("format")]      string? Format);
+
+// ─────────── roadmap 3.3, second tranche: where text sits and how big it is ───────────
+
+internal sealed record JustifyTextArgsDto(
+    [property: JsonPropertyName("handles")]       List<string>? Handles,
+    [property: JsonPropertyName("justification")] string? Justification);
+
+internal sealed record TextFitArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("point1")] Point3dDto? Point1,
+    [property: JsonPropertyName("point2")] Point3dDto? Point2);
+
+internal sealed record ScaleTextArgsDto(
+    [property: JsonPropertyName("handles")]   List<string>? Handles,
+    [property: JsonPropertyName("factor")]    double? Factor,
+    [property: JsonPropertyName("newHeight")] double? NewHeight);

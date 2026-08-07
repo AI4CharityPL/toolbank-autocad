@@ -179,3 +179,59 @@ public sealed record ExportTextResult(
     [property: JsonPropertyName("items")]  int Items,
     [property: JsonPropertyName("bytes")]  long Bytes,
     [property: JsonPropertyName("note")]   string Note);
+
+// ─────────── roadmap 3.3, second tranche: where text sits and how big it is ───────────
+
+public sealed record JustifyTextArgs(
+    [property: JsonPropertyName("handles")]       IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("justification")] string? Justification = null);
+
+public sealed record JustifiedTextDto(
+    [property: JsonPropertyName("handle")]              string Handle,
+    [property: JsonPropertyName("type")]                string Type,
+    [property: JsonPropertyName("justificationBefore")] string JustificationBefore,
+    [property: JsonPropertyName("justification")]       string Justification,
+    [property: JsonPropertyName("movedBy")]             double MovedBy);
+
+public sealed record JustifyTextResult(
+    [property: JsonPropertyName("affected")]      int Affected,
+    [property: JsonPropertyName("justification")] string Justification,
+    [property: JsonPropertyName("items")]         IReadOnlyList<JustifiedTextDto> Items,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record TextFitArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("point1")] Point3dDto? Point1 = null,
+    [property: JsonPropertyName("point2")] Point3dDto? Point2 = null);
+
+public sealed record TextFitResult(
+    [property: JsonPropertyName("handle")]            string Handle,
+    [property: JsonPropertyName("span")]              double Span,
+    [property: JsonPropertyName("fittedWidth")]       double FittedWidth,
+    [property: JsonPropertyName("height")]            double Height,
+    [property: JsonPropertyName("heightBefore")]      double HeightBefore,
+    [property: JsonPropertyName("widthFactor")]       double WidthFactor,
+    [property: JsonPropertyName("widthFactorBefore")] double WidthFactorBefore,
+    [property: JsonPropertyName("point1")]            IReadOnlyList<double> Point1,
+    [property: JsonPropertyName("point2")]            IReadOnlyList<double> Point2,
+    [property: JsonPropertyName("note")]              string Note);
+
+public sealed record ScaleTextArgs(
+    [property: JsonPropertyName("handles")]   IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("factor")]    double? Factor = null,
+    [property: JsonPropertyName("newHeight")] double? NewHeight = null);
+
+public sealed record ScaledTextDto(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("type")]         string Type,
+    [property: JsonPropertyName("heightBefore")] double HeightBefore,
+    [property: JsonPropertyName("height")]       double Height,
+    [property: JsonPropertyName("anchor")]       IReadOnlyList<double> Anchor,
+    [property: JsonPropertyName("movedBy")]      double MovedBy);
+
+public sealed record ScaleTextResult(
+    [property: JsonPropertyName("affected")]  int Affected,
+    [property: JsonPropertyName("factor")]    double? Factor,
+    [property: JsonPropertyName("newHeight")] double? NewHeight,
+    [property: JsonPropertyName("items")]     IReadOnlyList<ScaledTextDto> Items,
+    [property: JsonPropertyName("note")]      string Note);

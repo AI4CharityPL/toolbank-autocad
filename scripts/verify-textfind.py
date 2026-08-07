@@ -64,8 +64,50 @@ def text_of(handle):
     return None
 
 
+
+def fresh_drawing():
+    """A new drawing, and ONLY that drawing open.
+
+    Every verification script calls new_document, and none of them ever closed the drawing it
+    replaced - so the runs pile up. With more than one document open the backend processes
+    behind these sessions land on DIFFERENT ones, and then a handle created by `annotations`
+    resolves to a different entity in `geometry-2d`, or to nothing at all. That is far worse
+    than an error: it is two tools quietly measuring two drawings.
+
+    Measured while it was happening: annotations wrote SELFTEST at y=7000 and saw it; geometry-2d
+    found nothing in that window; files reported Rysunek1.dwg and Rysunek2.dwg both open.
+
+    So: make the new drawing, close every other one, and PROVE the sessions agree before
+    measuring anything.
+    """
+    do("files", "new_document", {})
+    ok, r = S["files"].call("list_documents", {})
+    docs = (r or {}).get("documents") or []
+    # The new one is the last created; close the rest. They are unsaved scratch drawings from
+    # earlier runs, which is the only reason this is safe to do unasked.
+    for d in docs[:-1]:
+        S["files"].call("close_document", {"path": d.get("path") or d.get("name"),
+                                           "save": False})
+    ok, r = S["files"].call("list_documents", {})
+    left = (r or {}).get("documents") or []
+    check("exactly one drawing is open, so no two sessions can be on different ones",
+          len(left) == 1, f"{[d.get('name') for d in left]}")
+
+    # Cross-session agreement, proved rather than assumed.
+    okp, rp = S["annotations"].call(
+        "add_dbtext", {"position": {"x": 0, "y": 9000}, "height": 10,
+                       "contents": "SESSIONPROBE"})
+    probe = hnd(rp) if okp else None
+    ok2, bb = S["geometry-2d"].call("get_bounding_box", {"handle": probe}) if probe else (False, None)
+    seen = ((bb or {}).get("bbox") or {}).get("min") or {} if isinstance(bb, dict) else {}
+    check("the annotations and geometry-2d sessions are on the SAME drawing",
+          bool(ok2) and abs((seen.get("y") or 0) - 9000) < 1e-6,
+          f"probe={probe} placed at y=9000; geometry-2d answered {str(bb)[:160]}")
+    if probe:
+        S["geometry-2d"].call("delete_entities", {"handles": [probe]})
+
 print("== fresh drawing ==")
-do("files", "new_document", {})
+fresh_drawing()
 
 print("\n== text in five different places ==")
 t1 = hnd(do("annotations", "add_dbtext",

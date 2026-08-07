@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 531 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 532 tools total.
 
 ## Categories
 
@@ -11,7 +11,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-boolean-ops](#acad-boolean-ops) (8 tools)
 - [acad-callouts](#acad-callouts) (5 tools)
 - [acad-civil](#acad-civil) (12 tools)
-- [acad-dimensions](#acad-dimensions) (24 tools)
+- [acad-dimensions](#acad-dimensions) (25 tools)
 - [acad-electrical](#acad-electrical) (15 tools)
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
@@ -192,6 +192,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `edit_dimension_text` | Override what a dimension DISPLAYS, and where that text sits, without touching what it measured. AutoCAD's text conventions are carried through and reported: "" means show the measurement (the default state, not blank), "<>" embeds the measurement inside your own text, and a single space suppresses the text altogether. textPosition moves the text, resetPosition puts it back where the style wants it, and textRotationDeg turns it. The measurement is read before and after and a change is reported as a failure, because an override must never alter the number the drawing is a record of. |
 | `ensure_architectural_dimstyle` | Idempotently create (or update) the ARCH-ISO dimension style used by the 3-level architectural dimension hierarchy (rule 66). Sets architectural tick arrowheads ('ArchTick'), text height scaled to plot scale, mm precision, no trailing zeros. Safe to call multiple times; returns whether the style was created, updated or left untouched. |
 | `list_dimstyles` | List all dimension styles defined in the active drawing plus the current Dimstyle. |
+| `quick_dimension` | Dimension a set of entities by working the key points out from the geometry itself - AutoCAD's QDIM. The chain tools here are handed a list of points; this one reads them off lines, polylines, arcs, circles and points, projects them onto whichever axis the geometry is more spread along, and builds a chain. Coordinates within a tolerance of each other are MERGED, because a corner shared by two walls would otherwise become a zero-length dimension that draws as nothing and still counts as one - pointsFound and pointsUsed are both reported so the difference is visible. mode='continuous' spans one gap each, 'baseline' measures every dimension from the first point. In continuous mode the measurements are checked to sum to the full span, so a dropped or doubled dimension is a failure rather than a plausible list of numbers. |
 | `set_entity_dimstyle` | Assign a dimension style to one or more existing dimension entities (by handle). |
 
 ## acad-electrical

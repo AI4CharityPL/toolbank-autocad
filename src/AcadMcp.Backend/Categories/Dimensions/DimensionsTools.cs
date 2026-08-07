@@ -322,4 +322,12 @@ public static class DimensionsTools
         RequiresPlugin = true)]
     public static Task<ArcSymbolResult> DimensionArcSymbol(IPluginGateway gw, ArcSymbolArgs args, CancellationToken ct)
         => DimensionsProxy.CallAsync<ArcSymbolArgs, ArcSymbolResult>(gw, "acad.dimensions.arc_symbol", args, T_NORMAL, ct);
+
+    [McpTool("quick_dimension", "Dimension a set of entities by working the key points out from the geometry itself - AutoCAD's QDIM. The chain tools here are handed a list of points; this one reads them off lines, polylines, arcs, circles and points, projects them onto whichever axis the geometry is more spread along, and builds a chain. Coordinates within a tolerance of each other are MERGED, because a corner shared by two walls would otherwise become a zero-length dimension that draws as nothing and still counts as one - pointsFound and pointsUsed are both reported so the difference is visible. mode='continuous' spans one gap each, 'baseline' measures every dimension from the first point. In continuous mode the measurements are checked to sum to the full span, so a dropped or doubled dimension is a failure rather than a plausible list of numbers.", "dimensions",
+        Intent = new[] { "zwymiaruj szybko zaznaczone obiekty", "wymiary z geometrii",
+                         "quick dimension", "qdim",
+                         "dimension these walls automatically", "auto dimension a selection" },
+        RequiresPlugin = true)]
+    public static Task<QuickDimResult> QuickDimension(IPluginGateway gw, QuickDimArgs args, CancellationToken ct)
+        => DimensionsProxy.CallAsync<QuickDimArgs, QuickDimResult>(gw, "acad.dimensions.quick", args, T_SLOW, ct);
 }

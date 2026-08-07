@@ -37,6 +37,30 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`dimensions.quick_dimension` — phase 3.2 COMPLETE.** `acad-dimensions` 24 → 25, bank
+  531 → 532. Verified live **34/34**. Phase 3.2 finishes at 8 built and 6 blocked by the managed
+  API, every one of the six recorded in [KNOWN-GAPS](docs/KNOWN-GAPS.md) §B with the compiler
+  error behind it.
+
+  The chain tools already in the bank are handed a list of points; this one reads them off
+  lines, polylines, arcs, circles and points, projects them onto whichever axis the geometry is
+  spread along, and builds the chain. That is the part a caller cannot do from outside without
+  first reading every entity.
+
+  Its trap is duplicates. Three walls laid end to end give **six** key points of which only
+  **four** are distinct — each shared corner is contributed twice — and a chain built without
+  merging them contains zero-length dimensions: drawn as nothing, read as 0 if you go looking,
+  and counted all the same. Coordinates within a tolerance are merged and **both** counts are
+  reported. In continuous mode the measurements are additionally checked to sum to the
+  geometry's own span, because a dropped or doubled dimension otherwise leaves a perfectly
+  plausible list of numbers.
+
+  `auto` picks the axis rather than assuming X: a tool that always chose X would look correct on
+  every horizontal test and be wrong at the first vertical wall, so both are verified. `baseline`
+  mode is asserted by its **values** (300, 800, 1000) against continuous (300, 500, 200) — the
+  difference between the modes is invisible in a count of dimensions. Entities with no key
+  points go on a `skipped` list with a reason instead of being passed over silently.
+
 - **Phase 3.2, second tranche — tolerances, style reset, spacing, arc symbol.**
   `acad-dimensions` 20 → 24, bank 527 → 531: `dimension_tolerance`, `dimension_update`,
   `dimension_space`, `dimension_arc_symbol`. Verified live **56/56**.

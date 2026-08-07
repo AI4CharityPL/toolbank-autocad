@@ -51,6 +51,7 @@ internal static class DimensionsPluginTools
         host.Register("acad.dimensions.update",                DimUpdate);
         host.Register("acad.dimensions.space",                 DimSpace);
         host.Register("acad.dimensions.arc_symbol",            ArcSymbol);
+        host.Register("acad.dimensions.quick",                 QuickDimension);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -1061,6 +1062,186 @@ internal static class DimensionsPluginTools
                 dimensions = changed,
                 note = "0 puts the arc symbol before the text, 1 above it, 2 removes it. The " +
                        "measured arc length is untouched either way.",
+            });
+        });
+
+    // ─────────── quick_dimension (roadmap 3.2) ───────────
+    //
+    // The chain tools already here are handed a list of POINTS. QDIM's whole value is that it
+    // works those points out from the geometry you select, which is the part a caller cannot do
+    // from outside without reading every entity first.
+    //
+    // The trap is duplicates. Two walls meeting at a corner contribute the same coordinate
+    // twice, and a chain built without collapsing them contains a ZERO-LENGTH dimension: it
+    // draws as nothing, reads as "0" if you find it, and the tool still reports one more
+    // dimension than it made anything of. So coordinates are merged within a tolerance and both
+    // counts are reported.
+
+    /// <summary>The points of an entity a dimension would naturally be pulled to.</summary>
+    private static List<Point3d>? KeyPoints(Entity ent)
+    {
+        switch (ent)
+        {
+            case Line ln:
+                return new List<Point3d> { ln.StartPoint, ln.EndPoint };
+            case Polyline pl:
+            {
+                var v = new List<Point3d>();
+                for (int i = 0; i < pl.NumberOfVertices; i++) v.Add(pl.GetPoint3dAt(i));
+                return v;
+            }
+            case Arc arc:
+                return new List<Point3d> { arc.StartPoint, arc.EndPoint, arc.Center };
+            case Circle c:
+                return new List<Point3d> { c.Center };
+            case DBPoint p:
+                return new List<Point3d> { p.Position };
+            default:
+                return null;
+        }
+    }
+
+    private static Task<ToolDispatchResult> QuickDimension(JsonObject args, CancellationToken ct) =>
+        Run("acad.dimensions.quick", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<QuickDimArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException(
+                    "handles is required: the geometry to dimension. Unlike the chain tools, " +
+                    "this one works the points out from the entities rather than being given " +
+                    "them.");
+
+            var mode = (a.Mode ?? "continuous").Trim().ToLowerInvariant();
+            if (mode is not ("continuous" or "baseline"))
+                throw new ArgumentException(
+                    "mode must be 'continuous' (each dimension spans one gap, end to end) or " +
+                    "'baseline' (every dimension measured from the first point, so they read " +
+                    "cumulatively). dimensions.cumulative_chain is the variant that shares one " +
+                    "dimension line.");
+
+            var dirArg = (a.Direction ?? "auto").Trim().ToLowerInvariant();
+            if (dirArg is not ("auto" or "horizontal" or "vertical"))
+                throw new ArgumentException(
+                    "direction must be auto, horizontal or vertical. 'auto' picks whichever " +
+                    "axis the geometry is more spread along, which is the one worth dimensioning.");
+
+            // Gather. A type with no natural key points is REPORTED rather than passed over, so
+            // a caller who selected a hatch and a block finds out why the chain is short.
+            var pts = new List<Point3d>();
+            var skipped = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForRead);
+                var kp = KeyPoints(ent);
+                if (kp is null || kp.Count == 0)
+                {
+                    skipped.Add(new
+                    {
+                        handle = h,
+                        type = ent.GetType().Name,
+                        reason = "no key points a dimension would be pulled to; lines, " +
+                                 "polylines, arcs, circles and points are what this reads",
+                    });
+                    continue;
+                }
+                pts.AddRange(kp);
+            }
+            if (pts.Count == 0)
+                throw new ArgumentException(
+                    "None of the " + a.Handles.Count + " entities has key points to dimension. " +
+                    "This reads lines, polylines, arcs, circles and points.");
+
+            double SpreadOn(Func<Point3d, double> sel) =>
+                pts.Max(sel) - pts.Min(sel);
+            var horizontal = dirArg switch
+            {
+                "horizontal" => true,
+                "vertical" => false,
+                _ => SpreadOn(p => p.X) >= SpreadOn(p => p.Y),
+            };
+            Func<Point3d, double> axis = horizontal ? (p => p.X) : (p => p.Y);
+
+            var found = pts.Count;
+            var tol = a.Tolerance ?? 1e-6;
+            if (tol < 0) throw new ArgumentException("tolerance cannot be negative.");
+
+            // Collapse coordinates that are the same point for drawing purposes. Without this a
+            // corner shared by two walls becomes a zero-length dimension - drawn as nothing,
+            // counted as something.
+            var coords = new List<double>();
+            foreach (var v in pts.Select(axis).OrderBy(v => v))
+                if (coords.Count == 0 || Math.Abs(v - coords[^1]) > tol) coords.Add(v);
+
+            if (coords.Count < 2)
+                throw new ArgumentException(
+                    "All " + found + " key points collapse to a single coordinate along the " +
+                    (horizontal ? "X" : "Y") + " axis within a tolerance of " + tol +
+                    ", so there is no distance to dimension. Try direction='" +
+                    (horizontal ? "vertical" : "horizontal") + "'.");
+
+            // The dimension line sits clear of the geometry by default, on the far side of the
+            // other axis, so it does not land on top of what it measures.
+            var otherMax = horizontal ? pts.Max(p => p.Y) : pts.Max(p => p.X);
+            var otherMin = horizontal ? pts.Min(p => p.Y) : pts.Min(p => p.X);
+            var reach = Math.Max(otherMax - otherMin, coords[^1] - coords[0]);
+            var offset = a.DimLineCoord ?? (otherMax + Math.Max(reach * 0.15, 1.0));
+
+            var dimStyleId = AcadEnv.ResolveDimStyleOrCurrent(db, tr, a.DimStyle);
+            var rot = horizontal ? 0.0 : Math.PI / 2;
+
+            Point3d At(double c) => horizontal
+                ? new Point3d(c, otherMin, 0)
+                : new Point3d(otherMin, c, 0);
+            var dimLineP = horizontal
+                ? new Point3d((coords[0] + coords[^1]) / 2, offset, 0)
+                : new Point3d(offset, (coords[0] + coords[^1]) / 2, 0);
+
+            var made = new List<EntityHandle>();
+            var measurements = new List<double>();
+            for (int i = 1; i < coords.Count; i++)
+            {
+                var from = mode == "baseline" ? coords[0] : coords[i - 1];
+                var dim = new RotatedDimension(rot, At(from), At(coords[i]), dimLineP, "",
+                                               dimStyleId);
+                made.Add(AcadEnv.Persist(db, tr, dim, a.Layer));
+                var placed = (RotatedDimension)tr.GetObject(
+                    AcadEnv.ResolveHandle(db, made[^1].Handle), OpenMode.ForRead);
+                measurements.Add(placed.Measurement);
+            }
+
+            // The chain has to account for the whole span. A dimension dropped or doubled would
+            // leave a plausible list of numbers that does not add up to the distance measured.
+            var span = coords[^1] - coords[0];
+            if (mode == "continuous")
+            {
+                var total = measurements.Sum();
+                if (Math.Abs(total - span) > 1e-6)
+                    throw new InvalidOperationException(
+                        "The chain measures " + total + " in total where the geometry spans " +
+                        span + ", so a dimension is missing or doubled and this is not being " +
+                        "reported as success.");
+            }
+
+            return Wrap(new
+            {
+                entities = made,
+                mode,
+                direction = horizontal ? "horizontal" : "vertical",
+                sourceEntities = a.Handles.Count,
+                pointsFound = found,
+                pointsUsed = coords.Count,
+                coordinates = coords,
+                measurements,
+                span,
+                skipped,
+                note = "pointsFound counts every key point read off the geometry; pointsUsed is " +
+                       "what is left after coordinates within " + tol + " of each other are " +
+                       "merged. The gap between them is corners shared by two entities, which " +
+                       "would otherwise each become a zero-length dimension. " +
+                       (mode == "continuous"
+                            ? "The measurements sum to the full span of " + span + "."
+                            : "Every dimension is measured from the first coordinate, so the " +
+                              "numbers read cumulatively up to " + span + "."),
             });
         });
 }

@@ -160,3 +160,12 @@ internal sealed record DimSpaceArgsDto(
 internal sealed record ArcSymbolArgsDto(
     [property: JsonPropertyName("handles")]  List<string>? Handles,
     [property: JsonPropertyName("position")] string? Position);
+
+internal sealed record QuickDimArgsDto(
+    [property: JsonPropertyName("handles")]       List<string>? Handles,
+    [property: JsonPropertyName("mode")]          string? Mode,
+    [property: JsonPropertyName("direction")]     string? Direction,
+    [property: JsonPropertyName("dimLineCoord")]  double? DimLineCoord,
+    [property: JsonPropertyName("tolerance")]     double? Tolerance,
+    [property: JsonPropertyName("dimStyle")]      string? DimStyle,
+    [property: JsonPropertyName("layer")]         string? Layer);

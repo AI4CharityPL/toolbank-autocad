@@ -42,6 +42,7 @@
     "oblique",
     "ordinate",
     "overall",
+    "quick",
     "radial",
     "radius",
     "set",
@@ -71,6 +72,7 @@
     "arc length symbol position",
     "arc symbol above the text",
     "auto dim walls",
+    "auto dimension a selection",
     "automatycznie wymiaruj sciany",
     "baseline chain dimensions",
     "baseline dimension chain",
@@ -97,6 +99,7 @@
     "dimedit oblique",
     "dimension limits",
     "dimension parallel to segment",
+    "dimension these walls automatically",
     "dimjogged",
     "dimradius",
     "dimspace",
@@ -130,6 +133,8 @@
     "promien okregu wymiar",
     "przesun tekst wymiaru",
     "przywroc styl wymiaru",
+    "qdim",
+    "quick dimension",
     "radial dimension",
     "radius dimension with a jog",
     "reset dimension overrides",
@@ -177,13 +182,15 @@
     "wymiary ciagle",
     "wymiary kumulatywne od bazy",
     "wymiary od bazy",
+    "wymiary z geometrii",
     "wyrownaj linie wymiarowe",
     "zaktualizuj wymiary do stylu",
     "zamien styl wymiarow na warstwie",
     "zmien styl wymiarow",
     "zmien tekst wymiaru",
     "zmien wszystkie wymiary na warstwie",
-    "zrob lancuch wymiarow po scianach"
+    "zrob lancuch wymiarow po scianach",
+    "zwymiaruj szybko zaznaczone obiekty"
   ],
   "tools_summary": [
     {
@@ -554,6 +561,22 @@
       ]
     },
     {
+      "name": "quick_dimension",
+      "description": "Dimension a set of entities by working the key points out from the geometry itself - AutoCAD\u0027s QDIM. The chain tools here are handed a list of points; this one reads them off lines, polylines, arcs, circles and points, projects them onto whichever axis the geometry is more spread along, and builds a chain. Coordinates within a tolerance of each other are MERGED, because a corner shared by two walls would otherwise become a zero-length dimension that draws as nothing and still counts as one - pointsFound and pointsUsed are both reported so the difference is visible. mode=\u0027continuous\u0027 spans one gap each, \u0027baseline\u0027 measures every dimension from the first point. In continuous mode the measurements are checked to sum to the full span, so a dropped or doubled dimension is a failure rather than a plausible list of numbers.",
+      "tags": [
+        "quick",
+        "dimension"
+      ],
+      "intent": [
+        "zwymiaruj szybko zaznaczone obiekty",
+        "wymiary z geometrii",
+        "quick dimension",
+        "qdim",
+        "dimension these walls automatically",
+        "auto dimension a selection"
+      ]
+    },
+    {
       "name": "set_entity_dimstyle",
       "description": "Assign a dimension style to one or more existing dimension entities (by handle).",
       "tags": [
@@ -572,7 +595,7 @@
   ],
   "metadata": {
     "category": "dimensions",
-    "tool_count_target": 24,
+    "tool_count_target": 25,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -586,6 +609,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-07T16:29:19.2709020Z"
+    "last_regenerated_utc": "2026-08-07T17:00:12.7235540Z"
   }
 }

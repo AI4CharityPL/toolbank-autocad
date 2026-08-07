@@ -1,4 +1,4 @@
-// Smoke test for acad-dimensions category.
+﻿// Smoke test for acad-dimensions category.
 // Pins tool count and names (rule 24 + rule 66).
 
 using System.Linq;
@@ -11,11 +11,11 @@ namespace AcadMcp.Tests.Categories;
 public class DimensionsTests
 {
     [Fact]
-    public void Catalog_contains_all_twenty_four_dimension_tools()
+    public void Catalog_contains_all_twenty_five_dimension_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("dimensions");
-        Assert.Equal(24, tools.Count);
+        Assert.Equal(25, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         // original 12:
@@ -50,5 +50,9 @@ public class DimensionsTests
         Assert.Contains("dimension_update", names);
         Assert.Contains("dimension_space", names);
         Assert.Contains("dimension_arc_symbol", names);
+        // The chain tools are handed points; this one works them out from the geometry, and
+        // merges coordinates that coincide so a shared corner does not become a zero-length
+        // dimension.
+        Assert.Contains("quick_dimension", names);
     }
 }

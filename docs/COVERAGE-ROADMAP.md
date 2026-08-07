@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**524 tools across 39 categories** (updated 2026-08-07; this document was written at 337 across
+**532 tools across 39 categories** (updated 2026-08-07; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -471,15 +471,23 @@ Three tools from this phase were **withdrawn after measurement** rather than shi
 approximate — see KNOWN-GAPS §B for the numbers: `blend_curves` `continuity=smooth`,
 `set_object_transparency` `byLayer`/`byBlock`, and (from 2.1) `add_sheet_view`.
 
-### 3.2 `acad-dimensions` extensions (≈14 → **7 built, 6 blocked by the API, 1 left**)
+### 3.2 `acad-dimensions` extensions (≈14 → **8 built, 6 blocked by the API**) — COMPLETE
 
 ```
 dimension_jogged_radius ✔   dimension_jog_linear ✘     dimension_break ✘
 dimension_space ✔           dimension_inspect ✘        dimension_reassociate ✘
 dimension_oblique ✔         dimension_center_mark ✘    dimension_centerline ✘
-edit_dimension_text ✔       dimension_update ✔         quick_dimension ..
+edit_dimension_text ✔       dimension_update ✔         quick_dimension ✔
 dimension_arc_symbol ✔      dimension_tolerance ✔
 ```
+
+`quick_dimension` is the one that could not be reduced to the chain tools already here: those
+are handed a list of points, and this works them out from the geometry. Its trap is duplicates —
+three walls laid end to end give **six** key points of which only **four** are distinct, and a
+chain built without merging them carries zero-length dimensions that draw as nothing and still
+count. Both `pointsFound` and `pointsUsed` are reported, and in continuous mode the measurements
+are checked to sum to the geometry's own span, so a dropped or doubled dimension fails instead
+of leaving a plausible list of numbers.
 
 Before any of this was written, the 2025 managed assemblies were **asked what they contain**,
 by compiling a throwaway file that names every type and property the phase would need. That is

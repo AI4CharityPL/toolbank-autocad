@@ -311,3 +311,30 @@ public sealed record ArcSymbolResult(
     [property: JsonPropertyName("arcSymbolType")] int ArcSymbolType,
     [property: JsonPropertyName("dimensions")]    IReadOnlyList<ArcSymbolDimDto> Dimensions,
     [property: JsonPropertyName("note")]          string Note);
+
+public sealed record QuickDimArgs(
+    [property: JsonPropertyName("handles")]      IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("mode")]         string? Mode = null,
+    [property: JsonPropertyName("direction")]    string? Direction = null,
+    [property: JsonPropertyName("dimLineCoord")] double? DimLineCoord = null,
+    [property: JsonPropertyName("tolerance")]    double? Tolerance = null,
+    [property: JsonPropertyName("dimStyle")]     string? DimStyle = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record QuickDimResult(
+    [property: JsonPropertyName("entities")]       IReadOnlyList<EntityHandle> Entities,
+    [property: JsonPropertyName("mode")]           string Mode,
+    [property: JsonPropertyName("direction")]      string Direction,
+    [property: JsonPropertyName("sourceEntities")] int SourceEntities,
+    [property: JsonPropertyName("pointsFound")]    int PointsFound,
+    [property: JsonPropertyName("pointsUsed")]     int PointsUsed,
+    [property: JsonPropertyName("coordinates")]    IReadOnlyList<double> Coordinates,
+    [property: JsonPropertyName("measurements")]   IReadOnlyList<double> Measurements,
+    [property: JsonPropertyName("span")]           double Span,
+    [property: JsonPropertyName("skipped")]        IReadOnlyList<SkippedSourceDto> Skipped,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record SkippedSourceDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("type")]   string Type,
+    [property: JsonPropertyName("reason")] string Reason);

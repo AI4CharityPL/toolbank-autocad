@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 522 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 524 tools total.
 
 ## Categories
 
@@ -16,7 +16,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
-- [acad-geometry-2d](#acad-geometry-2d) (58 tools)
+- [acad-geometry-2d](#acad-geometry-2d) (60 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (15 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
@@ -300,6 +300,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `explode_entity` | Explode a polyline/block/hatch into its component primitives. |
 | `extend_curve` | Extend a curve until it reaches one of the boundary entities. |
 | `fillet_corner` | Fillet two curves at their intersection with the given radius; returns the new fillet arc. |
+| `fit_polyline` | Smooth a polyline into a curve - AutoCAD's PEDIT Fit and Spline. These are two different curves, not two words for one: mode='fit' (the default) runs THROUGH every vertex, mode='spline' treats the vertices as control points so the curve is pulled towards them and touches only the first and last. The result reports the MEASURED distance from the original vertices, which is the only thing that tells the two modes apart from outside. Arc segments in the source are discarded, because a fit runs through the vertices only, and the count is reported rather than passed over. output='polyline' converts back to arc segments and reports how far that approximation strays. |
 | `get_area` | Return enclosed area for a closed curve (circle, ellipse, closed polyline, hatch). |
 | `get_bounding_box` | Return axis-aligned bounding box of an entity by handle (XY plane). |
 | `get_curve_length` | Return curve length (perimeter) of a line/polyline/arc/spline by handle. |
@@ -324,6 +325,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `set_polyline_width` | Set a polyline's width - the whole polyline when segment is omitted, or one 0-based segment when it is given. Setting the whole polyline also clears any per-segment widths set earlier, so the result is the width asked for rather than a mix of old and new. Answers with every vertex's widths before and after. |
 | `set_wipeout_frame` | Show or hide the outline around every wipeout in the drawing - the WIPEOUTFRAME system variable. 'hidden' removes it, 'shown' displays and plots it, and 'displayedNotPlotted' is what a real sheet usually wants: visible while you work, absent from the plot. Drawing-wide, so every wipeout changes together; this is not a per-entity property. |
 | `spline_to_polyline` | Convert a spline into a polyline, for export or for tools that cannot take a true curve. The conversion APPROXIMATES the spline with arc and line segments, so the length changes slightly and both values are reported - do not treat them as equal. The original spline is erased unless keepOriginal is true, in which case two entities end up overlapping and the caller has to decide which to keep. |
+| `stretch_window` | Move the parts of the drawing that lie inside a window and leave the rest attached - AutoCAD's STRETCH. Vertices INSIDE the window move by the displacement; an entity caught by one end bends, one caught entirely moves whole, and one merely crossed with no vertex inside is left alone. Lines, polylines, multilines, splines and points stretch; circles, arcs, ellipses, text and block references have no vertex to drag, so they move whole when their centre or insertion point is caught. Every moved point is read back, and candidates come from model space rather than a screen selection, so geometry scrolled out of view is not silently left behind. |
 | `trim_curve` | Trim a curve at intersections with the boundary list, keeping the side opposite the pick point. |
 
 ## acad-geometry-3d

@@ -284,3 +284,20 @@ internal sealed record MlineJoinArgsDto(
     [property: JsonPropertyName("handle1")]   string? Handle1,
     [property: JsonPropertyName("handle2")]   string? Handle2,
     [property: JsonPropertyName("tolerance")] double? Tolerance);
+
+// ─────────── smoothing and stretching (roadmap 3.1) ───────────
+
+internal sealed record FitPolylineArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("mode")]         string? Mode,
+    [property: JsonPropertyName("output")]       string? Output,
+    [property: JsonPropertyName("degree")]       int? Degree,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
+    [property: JsonPropertyName("layer")]        string? Layer);
+
+internal sealed record StretchWindowArgsDto(
+    [property: JsonPropertyName("corner1")]      Point2dDto? Corner1,
+    [property: JsonPropertyName("corner2")]      Point2dDto? Corner2,
+    [property: JsonPropertyName("displacement")] Point2dDto? Displacement,
+    [property: JsonPropertyName("handles")]      List<string>? Handles,
+    [property: JsonPropertyName("layerFilter")]  string? LayerFilter);

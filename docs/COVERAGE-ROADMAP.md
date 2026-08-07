@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**495 tools across 39 categories** (updated 2026-08-06; this document was written at 337 across
+**524 tools across 39 categories** (updated 2026-08-07; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -426,20 +426,40 @@ prose. Decide before writing, not after.
 
 The existing 2D coverage is broad but not complete. These are commands a draughtsman uses daily.
 
-### 3.1 `acad-geometry-2d` extensions (≈30)
+### 3.1 `acad-geometry-2d` extensions (≈30 → **29 built, 1 struck**) — one tool left
 
 ```
-draw_mline                  edit_mline_vertex          mline_join
-draw_spline_cv              edit_spline_fit_point      spline_to_polyline
-fit_polyline                edit_polyline_vertex       polyline_add_vertex
-polyline_remove_vertex      set_polyline_width         reverse_curve
-break_at_point              break_between_points       lengthen_curve
-stretch_window              align_objects              scale_by_reference
-rotate_by_reference         divide_object              measure_object
-blend_curves                boundary_from_point        region_from_boundary
-create_wipeout              set_wipeout_frame          set_draworder
-set_object_transparency     draw_ellipse_arc           draw_construction_geometry
+draw_mline ✔                edit_mline_vertex ✔        mline_join ✔
+draw_spline_cv ✔            edit_spline_fit_point ✔    spline_to_polyline ✔
+fit_polyline ✔              edit_polyline_vertex ✔     polyline_add_vertex ✔
+polyline_remove_vertex ✔    set_polyline_width ✔       reverse_curve ✔
+break_at_point ✔            break_between_points ✔     lengthen_curve ✔
+stretch_window ✔            align_objects ..           scale_by_reference ✔
+rotate_by_reference ✔       divide_object ✔            measure_object ✔
+blend_curves ✔              boundary_from_point ✔      region_from_boundary ✔
+create_wipeout ✔            set_wipeout_frame ✔        set_draworder ✔
+set_object_transparency ✔   draw_ellipse_arc ✔         draw_construction_geometry ✘
 ```
+
+Two tools were added that this list did not plan for, both because a visual check showed the
+planned ones were unusable without them: `set_point_style`, because `divide_object` and
+`measure_object` place DBPoints that draw as a single pixel at the default PDMODE and therefore
+looked like nothing had happened; and `list_polyline_vertices`, because every other polyline
+tool takes a vertex index and nothing could report what the indices were.
+
+`scale_by_reference` and `rotate_by_reference` went into `acad-modify` rather than here, next to
+the plain `scale` and `rotate` they are the reference-driven forms of.
+
+**`draw_construction_geometry` is struck**, not deferred. AutoCAD has exactly two construction
+entities, XLINE and RAY, and `draw_xline` and `draw_ray` already draw both. A third tool over
+the same two classes would give the router two ways to spell one action, which is worse than
+not having it. What is genuinely NOT covered is the XLINE command's Bisect and Offset modes —
+those are ways of computing a base point and direction, not new geometry, and they are recorded
+in [KNOWN-GAPS](KNOWN-GAPS.md) §B rather than left implied by a ticked box.
+
+Three tools from this phase were **withdrawn after measurement** rather than shipped
+approximate — see KNOWN-GAPS §B for the numbers: `blend_curves` `continuity=smooth`,
+`set_object_transparency` `byLayer`/`byBlock`, and (from 2.1) `add_sheet_view`.
 
 ### 3.2 `acad-dimensions` extensions (≈14)
 

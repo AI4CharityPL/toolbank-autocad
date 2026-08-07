@@ -73,6 +73,7 @@
     "reverse",
     "set",
     "spline",
+    "stretch",
     "style",
     "text",
     "to",
@@ -136,6 +137,7 @@
     "create revcloud markup",
     "create spline",
     "create xline",
+    "curve fit a polyline",
     "cut a curve at a point",
     "CV spline",
     "decompose into segments",
@@ -188,6 +190,7 @@
     "fillet corner with radius",
     "fillet polilinii",
     "find entities in rectangle",
+    "fit a curve through a polyline",
     "fixed spacing along a curve",
     "flatten a spline",
     "flip curve direction",
@@ -233,6 +236,7 @@
     "merge two walls end to end",
     "move a point the spline passes through",
     "move a polyline point",
+    "move a wall and keep it connected",
     "move a wall corner",
     "mtext at point",
     "najkrotsza odleglosc do encji",
@@ -266,6 +270,7 @@
     "opisz encje",
     "parallel copy curve",
     "part of an ellipse",
+    "pedit fit",
     "perpendicular distance",
     "place markers evenly along a curve",
     "place markers every N units along a curve",
@@ -302,6 +307,7 @@
     "przesun krzywa rownolegle",
     "przesun naroznik sciany",
     "przesun punkt splajnu",
+    "przesun sciane zostawiajac polaczenia",
     "przesun wierzcholek polilinii",
     "przezroczystosc wedlug warstwy",
     "przytnij krzywa",
@@ -321,6 +327,7 @@
     "reverse polyline direction",
     "round corner between curves",
     "rozbij obiekt",
+    "rozciagnij fragment rysunku",
     "rozetnij polilinie w punkcie",
     "rozmiesc bloki co metr",
     "rozstaw punkty co 500 wzdluz linii",
@@ -344,10 +351,14 @@
     "skasuj punkt z polilinii",
     "skroc krzywa",
     "skroc polilinie o wierzcholek",
+    "smooth a polyline",
     "smooth transition between two curves",
+    "splajn z polilinii",
     "spline through points",
     "spline to polyline for export",
     "split a line in two",
+    "stretch a window",
+    "stretch part of the drawing",
     "stworz elipse",
     "stworz kolo",
     "stworz luk okregu",
@@ -384,10 +395,13 @@
     "wyczysc miejsce pod opis",
     "wydluz krzywa",
     "wydluz linie o",
+    "wydluz pomieszczenie",
+    "wygladz polilinie",
     "wypelnij obszar wzorem",
     "wypelnij przerwe miedzy liniami",
     "wytnij fragment linii",
     "zamien poczatek z koncem",
+    "zamien polilinie na krzywa",
     "zamien splajn na polilinie",
     "zamien zamkniety obszar na region",
     "zaokraglij naroznik",
@@ -922,6 +936,23 @@
       ]
     },
     {
+      "name": "fit_polyline",
+      "description": "Smooth a polyline into a curve - AutoCAD\u0027s PEDIT Fit and Spline. These are two different curves, not two words for one: mode=\u0027fit\u0027 (the default) runs THROUGH every vertex, mode=\u0027spline\u0027 treats the vertices as control points so the curve is pulled towards them and touches only the first and last. The result reports the MEASURED distance from the original vertices, which is the only thing that tells the two modes apart from outside. Arc segments in the source are discarded, because a fit runs through the vertices only, and the count is reported rather than passed over. output=\u0027polyline\u0027 converts back to arc segments and reports how far that approximation strays.",
+      "tags": [
+        "fit",
+        "polyline"
+      ],
+      "intent": [
+        "wygladz polilinie",
+        "zamien polilinie na krzywa",
+        "smooth a polyline",
+        "fit a curve through a polyline",
+        "splajn z polilinii",
+        "pedit fit",
+        "curve fit a polyline"
+      ]
+    },
+    {
       "name": "get_area",
       "description": "Return enclosed area for a closed curve (circle, ellipse, closed polyline, hatch).",
       "tags": [
@@ -1313,6 +1344,22 @@
       ]
     },
     {
+      "name": "stretch_window",
+      "description": "Move the parts of the drawing that lie inside a window and leave the rest attached - AutoCAD\u0027s STRETCH. Vertices INSIDE the window move by the displacement; an entity caught by one end bends, one caught entirely moves whole, and one merely crossed with no vertex inside is left alone. Lines, polylines, multilines, splines and points stretch; circles, arcs, ellipses, text and block references have no vertex to drag, so they move whole when their centre or insertion point is caught. Every moved point is read back, and candidates come from model space rather than a screen selection, so geometry scrolled out of view is not silently left behind.",
+      "tags": [
+        "stretch",
+        "window"
+      ],
+      "intent": [
+        "rozciagnij fragment rysunku",
+        "przesun sciane zostawiajac polaczenia",
+        "stretch a window",
+        "stretch part of the drawing",
+        "wydluz pomieszczenie",
+        "move a wall and keep it connected"
+      ]
+    },
+    {
       "name": "trim_curve",
       "description": "Trim a curve at intersections with the boundary list, keeping the side opposite the pick point.",
       "tags": [
@@ -1330,7 +1377,7 @@
   ],
   "metadata": {
     "category": "geometry-2d",
-    "tool_count_target": 58,
+    "tool_count_target": 60,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -1344,6 +1391,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-06T20:27:20.0888910Z"
+    "last_regenerated_utc": "2026-08-07T07:40:19.0383581Z"
   }
 }

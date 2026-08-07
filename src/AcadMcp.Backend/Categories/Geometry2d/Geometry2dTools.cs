@@ -467,4 +467,22 @@ public static class Geometry2dTools
         RequiresPlugin = true)]
     public static Task<MlineJoinResult> MlineJoin(IPluginGateway gw, MlineJoinArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<MlineJoinArgs, MlineJoinResult>(gw, "acad.geometry2d.mline_join", args, T_NORMAL, ct);
+
+    // ─────────── smoothing and stretching (roadmap 3.1) ───────────
+
+    [McpTool("fit_polyline", "Smooth a polyline into a curve - AutoCAD's PEDIT Fit and Spline. These are two different curves, not two words for one: mode='fit' (the default) runs THROUGH every vertex, mode='spline' treats the vertices as control points so the curve is pulled towards them and touches only the first and last. The result reports the MEASURED distance from the original vertices, which is the only thing that tells the two modes apart from outside. Arc segments in the source are discarded, because a fit runs through the vertices only, and the count is reported rather than passed over. output='polyline' converts back to arc segments and reports how far that approximation strays.", "geometry-2d",
+        Intent = new[] { "wygladz polilinie", "zamien polilinie na krzywa",
+                         "smooth a polyline", "fit a curve through a polyline",
+                         "splajn z polilinii", "pedit fit", "curve fit a polyline" },
+        RequiresPlugin = true)]
+    public static Task<FitPolylineResult> FitPolyline(IPluginGateway gw, FitPolylineArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<FitPolylineArgs, FitPolylineResult>(gw, "acad.geometry2d.fit_polyline", args, T_NORMAL, ct);
+
+    [McpTool("stretch_window", "Move the parts of the drawing that lie inside a window and leave the rest attached - AutoCAD's STRETCH. Vertices INSIDE the window move by the displacement; an entity caught by one end bends, one caught entirely moves whole, and one merely crossed with no vertex inside is left alone. Lines, polylines, multilines, splines and points stretch; circles, arcs, ellipses, text and block references have no vertex to drag, so they move whole when their centre or insertion point is caught. Every moved point is read back, and candidates come from model space rather than a screen selection, so geometry scrolled out of view is not silently left behind.", "geometry-2d",
+        Intent = new[] { "rozciagnij fragment rysunku", "przesun sciane zostawiajac polaczenia",
+                         "stretch a window", "stretch part of the drawing",
+                         "wydluz pomieszczenie", "move a wall and keep it connected" },
+        RequiresPlugin = true)]
+    public static Task<StretchWindowResult> StretchWindow(IPluginGateway gw, StretchWindowArgs args, CancellationToken ct)
+        => Geometry2dProxy.CallAsync<StretchWindowArgs, StretchWindowResult>(gw, "acad.geometry2d.stretch_window", args, T_NORMAL, ct);
 }

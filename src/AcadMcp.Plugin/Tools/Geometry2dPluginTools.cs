@@ -103,6 +103,10 @@ internal static class Geometry2dPluginTools
         // roadmap 3.1 - multiline editing
         host.Register("acad.geometry2d.edit_mline_vertex", EditMlineVertex);
         host.Register("acad.geometry2d.mline_join", MlineJoin);
+
+        // roadmap 3.1 - smoothing and stretching
+        host.Register("acad.geometry2d.fit_polyline", FitPolyline);
+        host.Register("acad.geometry2d.stretch_window", StretchWindow);
     }
 
     // ─────────── helpers ───────────
@@ -995,6 +999,396 @@ internal static class Geometry2dPluginTools
                 note = "The second multiline is GONE and its handle with it; everything is now on " +
                        "the first. The shared vertex is not duplicated, so indices past the seam " +
                        "shift by " + (before1 - 1) + ".",
+            });
+        });
+
+    // ─────────── smoothing and stretching (roadmap 3.1) ───────────
+    //
+    // fit_polyline is PEDIT's Fit and Spline options, which are two curves and not two names for
+    // one. Fit passes THROUGH every vertex; Spline treats the vertices as control points and
+    // touches only the two ends. Swap them and you still get a plausible smooth curve, just not
+    // where the caller asked for it - so the mode is explicit, and the result carries the
+    // measured distance from the original vertices, which is ~0 for one mode and large for the
+    // other. That number is the only thing that tells the two apart from outside.
+    //
+    // stretch_window is STRETCH. It reads its candidates from model space rather than from a
+    // crossing SELECTION, because a selection needs a view and would silently leave behind
+    // anything scrolled off screen - the trap KNOWN-GAPS A1 records against the boundary tools.
+
+    private static Task<ToolDispatchResult> FitPolyline(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.fit_polyline", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FitPolylineArgsDto>(args);
+            var pl = RequirePolyline(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var mode = (a.Mode ?? "fit").Trim().ToLowerInvariant();
+            if (mode != "fit" && mode != "spline")
+                throw new ArgumentException(
+                    "mode must be 'fit' or 'spline'. 'fit' runs the curve THROUGH every vertex; " +
+                    "'spline' treats the vertices as control points, so the curve is pulled " +
+                    "towards them and touches only the first and last. They are AutoCAD's two " +
+                    "PEDIT options and they give different curves, not different names.");
+
+            var output = (a.Output ?? "spline").Trim().ToLowerInvariant();
+            if (output != "spline" && output != "polyline")
+                throw new ArgumentException(
+                    "output must be 'spline' or 'polyline'. 'polyline' converts the smoothed " +
+                    "curve back to arc segments, which is an approximation and is reported as one.");
+
+            var n = pl.NumberOfVertices;
+            if (n < 3)
+                throw new ArgumentException(
+                    "This polyline has " + n + " vertices. Two points are a straight line and " +
+                    "there is nothing between them to smooth.");
+
+            var degree = a.Degree ?? 3;
+            if (degree < 2 || degree > 11)
+                throw new ArgumentException(
+                    "degree must be between 2 and 11; 3 is AutoCAD's default. Degree 1 would be " +
+                    "the polyline you already have.");
+            if (mode == "spline" && n <= degree)
+                throw new ArgumentException(
+                    "A degree-" + degree + " spline needs more than " + degree + " control " +
+                    "points; this polyline has " + n + ". Lower degree, add vertices with " +
+                    "polyline_add_vertex, or use mode='fit', which has no such limit.");
+
+            var pts = new Point3dCollection();
+            var original = new List<Point3d>();
+            var arcs = 0;
+            for (int i = 0; i < n; i++)
+            {
+                var p = pl.GetPoint3dAt(i);
+                pts.Add(p);
+                original.Add(p);
+                if (Math.Abs(pl.GetBulgeAt(i)) > 1e-12) arcs++;
+            }
+
+            // A closed polyline has no repeated last vertex - the closing segment is implied. Both
+            // constructors below build an OPEN curve, so without this the smoothed result would
+            // quietly lose that last segment and come out shorter.
+            var closed = pl.Closed;
+            if (closed) pts.Add(pts[0]);
+
+            var lengthBefore = pl.GetDistanceAtParameter(pl.EndParam) -
+                               pl.GetDistanceAtParameter(pl.StartParam);
+
+            Spline sp;
+            if (mode == "fit")
+            {
+                sp = new Spline(pts, 0, 0.0);
+            }
+            else
+            {
+                var weights = new DoubleCollection();
+                for (int i = 0; i < pts.Count; i++) weights.Add(1.0);
+                sp = new Spline(degree, false, false, false,
+                                pts, ClampedKnots(pts.Count, degree), weights, 0.0, 0.0);
+            }
+            sp.SetPropertiesFrom(pl);
+
+            // MEASURED rather than asserted. For mode='fit' this must be ~0 and is the entire
+            // claim of that mode; for mode='spline' it is expected to be large at the interior
+            // vertices. Reporting it is what stops the two modes reading as one tool with a
+            // different label on it.
+            double worst = 0;
+            foreach (var p in original)
+                worst = Math.Max(worst, sp.GetClosestPointTo(p, false).DistanceTo(p));
+
+            if (mode == "fit" && worst > 1e-6)
+                throw new InvalidOperationException(
+                    "mode='fit' is meant to run through every vertex, but the curve built here " +
+                    "misses one by " + worst + ", so it is not being reported as a fit.");
+
+            Entity result = sp;
+            double? approxError = null;
+            if (output == "polyline")
+            {
+                if (sp.ToPolyline() is not Entity conv)
+                    throw new InvalidOperationException(
+                        "AutoCAD returned no polyline for the smoothed curve.");
+                conv.SetPropertiesFrom(pl);
+                result = conv;
+                if (conv is Curve cc)
+                {
+                    double e = 0;
+                    foreach (var p in original)
+                        e = Math.Max(e, cc.GetClosestPointTo(p, false).DistanceTo(p));
+                    approxError = e;
+                }
+            }
+
+            var handle = AcadEnv.Persist(db, tr, result, a.Layer);
+            var keep = a.KeepOriginal == true;
+            if (!keep) pl.Erase();
+
+            return Wrap(new
+            {
+                entity = handle,
+                type = result.GetType().Name,
+                mode,
+                output,
+                degree = mode == "spline" ? degree : (int?)null,
+                verticesBefore = n,
+                sourceClosed = closed,
+                arcSegmentsDiscarded = arcs,
+                lengthBefore,
+                length = result is Curve rc
+                    ? rc.GetDistanceAtParameter(rc.EndParam) - rc.GetDistanceAtParameter(rc.StartParam)
+                    : (double?)null,
+                maxDistanceFromOriginalVertices = worst,
+                approximationError = approxError,
+                originalKept = keep,
+                originalHandle = keep ? a.Handle : null,
+                note =
+                    (mode == "fit"
+                        ? "mode='fit' runs the curve through every original vertex - " +
+                          "maxDistanceFromOriginalVertices is the measured proof of that. "
+                        : "mode='spline' uses the vertices as CONTROL points, so the curve does " +
+                          "NOT pass through the interior ones; maxDistanceFromOriginalVertices " +
+                          "says how far it stays off them. ") +
+                    (arcs > 0
+                        ? "This polyline had " + arcs + " arc segment(s). A fit runs through the " +
+                          "VERTICES only, so those arcs are gone and the shape between them has " +
+                          "changed - not just smoothed. "
+                        : "") +
+                    (closed
+                        ? "The source was closed, so the curve returns to its start point. "
+                        : "") +
+                    (output == "polyline"
+                        ? "output='polyline' converted it back with arc segments; " +
+                          "approximationError is how far that approximation strays from the " +
+                          "original vertices."
+                        : "The result is a Spline. Pass output='polyline' for a polyline instead."),
+            });
+        });
+
+    /// <summary>The points of an entity that STRETCH, or null when it can only move whole.</summary>
+    /// <remarks>
+    /// The split matters and is what STRETCH actually does. A line caught by one endpoint bends;
+    /// a circle caught anywhere moves whole, because it has no vertex to drag. Anything not named
+    /// here is reported as skipped rather than guessed at - moving something the caller did not
+    /// expect to move is worse than leaving it and saying so.
+    /// </remarks>
+    private static List<Point3d>? StretchPoints(Entity ent)
+    {
+        switch (ent)
+        {
+            case Line ln:
+                return new List<Point3d> { ln.StartPoint, ln.EndPoint };
+            case Polyline pl:
+            {
+                var v = new List<Point3d>();
+                for (int i = 0; i < pl.NumberOfVertices; i++) v.Add(pl.GetPoint3dAt(i));
+                return v;
+            }
+            case Mline ml:
+            {
+                var v = new List<Point3d>();
+                for (int i = 0; i < ml.NumberOfVertices; i++) v.Add(ml.VertexAt(i));
+                return v;
+            }
+            case AcadDb.Spline sp:
+            {
+                var v = new List<Point3d>();
+                if (sp.NumFitPoints > 0)
+                    for (int i = 0; i < sp.NumFitPoints; i++) v.Add(sp.GetFitPointAt(i));
+                else
+                    for (int i = 0; i < sp.NumControlPoints; i++) v.Add(sp.GetControlPointAt(i));
+                return v;
+            }
+            case DBPoint pt:
+                return new List<Point3d> { pt.Position };
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>The single point that decides whether a move-whole entity is caught.</summary>
+    private static Point3d? AnchorPoint(Entity ent) => ent switch
+    {
+        Circle c => c.Center,
+        Arc arc => arc.Center,
+        Ellipse el => el.Center,
+        DBText t => t.Position,
+        MText m => m.Location,
+        BlockReference br => br.Position,
+        _ => null,
+    };
+
+    private static Task<ToolDispatchResult> StretchWindow(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry2d.stretch_window", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<StretchWindowArgsDto>(args);
+            if (a.Corner1 is null || a.Corner2 is null)
+                throw new ArgumentException(
+                    "corner1 and corner2 are required (expected { x, y }): the crossing window. " +
+                    "Vertices INSIDE it move; everything else stays where it is.");
+            if (a.Displacement is null)
+                throw new ArgumentException(
+                    "displacement is required (expected { x, y }): how far what the window catches " +
+                    "moves. This is a vector, not a destination point.");
+
+            double xMin = Math.Min(a.Corner1.X, a.Corner2.X), xMax = Math.Max(a.Corner1.X, a.Corner2.X);
+            double yMin = Math.Min(a.Corner1.Y, a.Corner2.Y), yMax = Math.Max(a.Corner1.Y, a.Corner2.Y);
+            if (xMax - xMin < 1e-9 || yMax - yMin < 1e-9)
+                throw new ArgumentException(
+                    "The window has no area - corner1 and corner2 share an edge, so it could " +
+                    "never catch a vertex.");
+
+            var dp = AcadEnv.ToPoint3d(a.Displacement);
+            var d = new Vector3d(dp.X, dp.Y, dp.Z);
+            if (d.Length < 1e-12)
+                throw new ArgumentException("displacement is zero, so nothing would move.");
+            var xform = Matrix3d.Displacement(d);
+
+            bool Inside(Point3d p) =>
+                p.X >= xMin && p.X <= xMax && p.Y >= yMin && p.Y <= yMax;
+
+            var only = a.Handles is { Count: > 0 }
+                ? new HashSet<string>(a.Handles!, StringComparer.OrdinalIgnoreCase)
+                : null;
+
+            var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+            var ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
+
+            var changed = new List<object>();
+            var skipped = new List<object>();
+            int examined = 0, crossing = 0;
+
+            foreach (ObjectId id in ms)
+            {
+                if (tr.GetObject(id, OpenMode.ForRead) is not Entity peek) continue;
+                examined++;
+
+                var h = peek.Handle.ToString();
+                if (only is not null && !only.Contains(h)) continue;
+                if (!string.IsNullOrEmpty(a.LayerFilter) &&
+                    !string.Equals(peek.Layer, a.LayerFilter, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                Extents3d ext;
+                try { ext = peek.GeometricExtents; } catch { continue; }
+                var intersects = !(ext.MaxPoint.X < xMin || ext.MinPoint.X > xMax ||
+                                   ext.MaxPoint.Y < yMin || ext.MinPoint.Y > yMax);
+                if (!intersects) continue;
+                crossing++;
+
+                var pts = StretchPoints(peek);
+                var anchor = pts is null ? AnchorPoint(peek) : null;
+                if (pts is null && anchor is null)
+                {
+                    skipped.Add(new
+                    {
+                        handle = h,
+                        type = peek.GetType().Name,
+                        reason = "not a type this tool stretches, and it has no single defining " +
+                                 "point to move it by, so it was left alone rather than guessed at",
+                    });
+                    continue;
+                }
+
+                try
+                {
+                    var ent = (Entity)tr.GetObject(id, OpenMode.ForWrite);
+
+                    if (pts is null)
+                    {
+                        if (!Inside(anchor!.Value)) continue;
+                        ent.TransformBy(xform);
+                        changed.Add(new
+                        {
+                            handle = h, type = ent.GetType().Name, movedWhole = true,
+                            pointsMoved = 1, pointsTotal = 1,
+                        });
+                        continue;
+                    }
+
+                    var hit = new List<int>();
+                    for (int i = 0; i < pts.Count; i++) if (Inside(pts[i])) hit.Add(i);
+                    if (hit.Count == 0) continue;
+
+                    var whole = hit.Count == pts.Count;
+                    if (whole)
+                    {
+                        ent.TransformBy(xform);
+                    }
+                    else
+                    {
+                        foreach (var i in hit)
+                        {
+                            var to = pts[i] + d;
+                            switch (ent)
+                            {
+                                case Line ln:
+                                    if (i == 0) ln.StartPoint = to; else ln.EndPoint = to;
+                                    break;
+                                case Polyline p2:
+                                    p2.SetPointAt(i, new Point2d(to.X, to.Y));
+                                    break;
+                                case Mline ml:
+                                    ml.MoveVertexAt(i, to);
+                                    break;
+                                case AcadDb.Spline s2:
+                                    if (s2.NumFitPoints > 0) s2.SetFitPointAt(i, to);
+                                    else s2.SetControlPointAt(i, to);
+                                    break;
+                                case DBPoint dp2:
+                                    dp2.Position = to;
+                                    break;
+                            }
+                        }
+                    }
+
+                    // Re-read rather than trust. Every setter above returns void, and a vertex
+                    // that refused to move would leave the entity present, countable and wrong.
+                    var after = StretchPoints(ent);
+                    if (after is not null && after.Count == pts.Count)
+                    {
+                        foreach (var i in hit)
+                        {
+                            var want = pts[i] + d;
+                            if (after[i].DistanceTo(want) > 1e-6)
+                                throw new InvalidOperationException(
+                                    "Point " + i + " of " + h + " reads back at " + Fmt(after[i]) +
+                                    " rather than " + Fmt(want) + ", so the stretch did not take.");
+                        }
+                    }
+
+                    changed.Add(new
+                    {
+                        handle = h, type = ent.GetType().Name, movedWhole = whole,
+                        pointsMoved = hit.Count, pointsTotal = pts.Count,
+                    });
+                }
+                catch (AcadRt.Exception ex)
+                {
+                    skipped.Add(new { handle = h, type = peek.GetType().Name, reason = ex.Message });
+                }
+            }
+
+            if (crossing == 0)
+                throw new ArgumentException(
+                    "Nothing crosses the window (" + xMin + ", " + yMin + ") to (" + xMax + ", " +
+                    yMax + "); " + examined + " entities were examined. Check the coordinates - " +
+                    "this window is in WCS.");
+
+            return Wrap(new
+            {
+                window = new[] { xMin, yMin, xMax, yMax },
+                displacement = new[] { d.X, d.Y, d.Z },
+                examined,
+                crossingWindow = crossing,
+                entitiesChanged = changed.Count,
+                changed,
+                skipped,
+                note = "Only points INSIDE the window moved, which is what makes this a stretch " +
+                       "and not a move: an entity caught by one end bends, one caught entirely " +
+                       "moves whole (movedWhole), and one merely crossed by the window with no " +
+                       "point inside it is left alone. Circles, arcs, ellipses, text and block " +
+                       "references have no vertex to drag, so they move whole when their centre " +
+                       "or insertion point is caught - AutoCAD stretches an arc's endpoints and " +
+                       "this does not. Candidates are read from model space, so geometry off " +
+                       "screen is included.",
             });
         });
 

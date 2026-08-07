@@ -598,3 +598,59 @@ public sealed record MlineJoinResult(
     [property: JsonPropertyName("vertices")]       int Vertices,
     [property: JsonPropertyName("joinedAt")]       IReadOnlyList<double> JoinedAt,
     [property: JsonPropertyName("note")]           string Note);
+
+// ─────────── smoothing and stretching (roadmap 3.1) ───────────
+
+public sealed record FitPolylineArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("mode")]         string? Mode = null,
+    [property: JsonPropertyName("output")]       string? Output = null,
+    [property: JsonPropertyName("degree")]       int? Degree = null,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record StretchWindowArgs(
+    [property: JsonPropertyName("corner1")]      Point2dDto? Corner1 = null,
+    [property: JsonPropertyName("corner2")]      Point2dDto? Corner2 = null,
+    [property: JsonPropertyName("displacement")] Point2dDto? Displacement = null,
+    [property: JsonPropertyName("handles")]      IReadOnlyList<string>? Handles = null,
+    [property: JsonPropertyName("layerFilter")]  string? LayerFilter = null);
+
+public sealed record FitPolylineResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("type")]           string Type,
+    [property: JsonPropertyName("mode")]           string Mode,
+    [property: JsonPropertyName("output")]         string Output,
+    [property: JsonPropertyName("degree")]         int? Degree,
+    [property: JsonPropertyName("verticesBefore")] int VerticesBefore,
+    [property: JsonPropertyName("sourceClosed")]   bool SourceClosed,
+    [property: JsonPropertyName("arcSegmentsDiscarded")] int ArcSegmentsDiscarded,
+    [property: JsonPropertyName("lengthBefore")]   double LengthBefore,
+    [property: JsonPropertyName("length")]         double? Length,
+    [property: JsonPropertyName("maxDistanceFromOriginalVertices")] double MaxDistanceFromOriginalVertices,
+    [property: JsonPropertyName("approximationError")] double? ApproximationError,
+    [property: JsonPropertyName("originalKept")]   bool OriginalKept,
+    [property: JsonPropertyName("originalHandle")] string? OriginalHandle,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record StretchedEntityDto(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("type")]        string Type,
+    [property: JsonPropertyName("movedWhole")]  bool MovedWhole,
+    [property: JsonPropertyName("pointsMoved")] int PointsMoved,
+    [property: JsonPropertyName("pointsTotal")] int PointsTotal);
+
+public sealed record SkippedEntityDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("type")]   string Type,
+    [property: JsonPropertyName("reason")] string Reason);
+
+public sealed record StretchWindowResult(
+    [property: JsonPropertyName("window")]          IReadOnlyList<double> Window,
+    [property: JsonPropertyName("displacement")]    IReadOnlyList<double> Displacement,
+    [property: JsonPropertyName("examined")]        int Examined,
+    [property: JsonPropertyName("crossingWindow")]  int CrossingWindow,
+    [property: JsonPropertyName("entitiesChanged")] int EntitiesChanged,
+    [property: JsonPropertyName("changed")]         IReadOnlyList<StretchedEntityDto> Changed,
+    [property: JsonPropertyName("skipped")]         IReadOnlyList<SkippedEntityDto> Skipped,
+    [property: JsonPropertyName("note")]            string Note);

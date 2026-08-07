@@ -68,6 +68,11 @@ public class Geometry2dTests
         // Roadmap 3.1, eighth tranche. draw_mline could draw a wall and acad-styles could
         // author its style, but nothing could change one afterwards.
         "edit_mline_vertex", "mline_join",
+
+        // Roadmap 3.1, ninth tranche. fit_polyline's two modes are two different curves -
+        // one runs through the vertices, the other is only pulled towards them - and
+        // stretch_window is the one edit that moves part of an entity and leaves the rest.
+        "fit_polyline", "stretch_window",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

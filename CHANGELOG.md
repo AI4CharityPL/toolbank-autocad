@@ -37,13 +37,19 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
-- **Phase 3.1 — 2D geometry editing: 27 tools over nine tranches.** Bank 495 → 522;
-  `acad-geometry-2d` 33 → 58, `acad-modify` 16 → 18. Every tranche was verified live against a
+- **Phase 3.1 — 2D geometry editing: 29 tools over ten tranches.** Bank 495 → 524;
+  `acad-geometry-2d` 33 → 60, `acad-modify` 16 → 18. Every tranche was verified live against a
   running AutoCAD and confirmed on an exported PNG, never on a return code:
   polyline vertex editing (51/51), break/divide/measure (55/55), scale and rotate by reference
   (37/37), draw order, transparency and wipeouts (43/43), splines (42/42), `lengthen_curve` and
   `draw_ellipse_arc` (52/52), `boundary_from_point` and `region_from_boundary` (27/27),
-  `blend_curves` (26/26), and multiline editing (41/41).
+  `blend_curves` (26/26), multiline editing (41/41), and `fit_polyline` with `stretch_window`
+  (72/72).
+
+  One tool from the phase's list is **struck rather than deferred**:
+  `draw_construction_geometry`. AutoCAD has exactly two construction entities, XLINE and RAY,
+  and `draw_xline` and `draw_ray` already draw both — a third tool over the same two classes
+  would give the router two ways to spell one action. `align_objects` is the one still to build.
 
   Three things this phase established, each of which had first produced a green tally that
   meant nothing:

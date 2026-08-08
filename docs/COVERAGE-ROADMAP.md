@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**546 tools across 39 categories** (updated 2026-08-08; this document was written at 337 across
+**549 tools across 39 categories** (updated 2026-08-08; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -584,22 +584,37 @@ bind_underlay
 Today: 7 primitives, extrude, revolve, one planar surface, 6 booleans, 5 queries. That is the
 beginning of 3D, not 3D.
 
-### 4.1 `acad-solids-advanced` (≈34)
+### 4.1 `acad-solids-advanced` (≈34 → **3 built, 6 struck as duplicates**)
 
 ```
-sweep_curve                 loft_curves                loft_with_guides
-loft_with_path              draw_helix                 draw_polysolid
-presspull                   slice_solid                separate_solids
-shell_solid                 clean_solid                check_solid
-imprint_edges               extract_edges              interfere_solids
-fillet_edge                 chamfer_edge
-extrude_face                move_face                  rotate_face
-offset_face                 taper_face                 delete_face
-copy_face                   color_face
-align_3d                    move_3d                    rotate_3d
-mirror_3d                   array_3d_rectangular       array_3d_polar
-array_path                  convert_to_solid           convert_to_surface
+sweep_curve ✔               loft_curves ✔              loft_with_guides ✔
+loft_with_path ✔            draw_helix ✔               draw_polysolid ..
+presspull ..                slice_solid ..             separate_solids ✘
+shell_solid ✘               clean_solid ..             check_solid ..
+imprint_edges ..            extract_edges ✘            interfere_solids ..
+fillet_edge ..              chamfer_edge ..
+extrude_face ..             move_face ..               rotate_face ..
+offset_face ..              taper_face ..              delete_face ..
+copy_face ..                color_face ..
+align_3d ✘                  move_3d ✘                  rotate_3d ✘
+mirror_3d ✘                 array_3d_rectangular ✘     array_3d_polar ✘
+array_path ..               convert_to_solid ..        convert_to_surface ..
 ```
+
+**Six entries are struck as duplicates of `acad-modify`, which has worked in 3D all along** —
+checked by capability, not by name, after `align_objects` taught that lesson in 3.1.
+`modify.move` takes 3D vectors, `rotate` takes an axis, `mirror` takes a plane point and normal,
+`array_rectangular` has Z levels, `array_polar` goes round a centre, and `align` maps a source
+point pair onto a target pair in 3D. Building six more would give the router two ways to spell
+each of them.
+
+`loft_with_guides` and `loft_with_path` are options on `loft_curves` rather than separate tools —
+AutoCAD's LOFT offers them as alternatives and refuses both at once, which the tool enforces.
+
+Asked of the compiler before anything was written: `Solid3d.CreateSweptSolid`,
+`CreateLoftedSolid`, `SweepOptions`, `LoftOptions` and `Helix` all exist, while
+**`ShellSolid`, `Separate` and `ExtractBrep` do not** — so `shell_solid`, `separate_solids` and
+`extract_edges` are struck rather than deferred.
 
 ### 4.2 `acad-surfaces` (≈18)
 

@@ -69,3 +69,33 @@ internal sealed record PlanarSurfaceArgsDto(
 
 internal sealed record HandleArg3Dto(
     [property: JsonPropertyName("handle")] string Handle);
+
+// ─────────── roadmap 4.1, first tranche: sweep, loft, helix ───────────
+
+internal sealed record SweepArgsDto(
+    [property: JsonPropertyName("profileHandle")] string? ProfileHandle,
+    [property: JsonPropertyName("pathHandle")]    string? PathHandle,
+    [property: JsonPropertyName("align")]         string? Align,
+    [property: JsonPropertyName("bank")]          bool? Bank,
+    [property: JsonPropertyName("twistDeg")]      double? TwistDeg,
+    [property: JsonPropertyName("scale")]         double? Scale,
+    [property: JsonPropertyName("eraseSources")]  bool? EraseSources,
+    [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record LoftArgsDto(
+    [property: JsonPropertyName("profileHandles")] List<string>? ProfileHandles,
+    [property: JsonPropertyName("guideHandles")]   List<string>? GuideHandles,
+    [property: JsonPropertyName("pathHandle")]     string? PathHandle,
+    [property: JsonPropertyName("closed")]         bool? Closed,
+    [property: JsonPropertyName("ruled")]          bool? Ruled,
+    [property: JsonPropertyName("eraseSources")]   bool? EraseSources,
+    [property: JsonPropertyName("layer")]          string? Layer);
+
+internal sealed record HelixArgsDto(
+    [property: JsonPropertyName("center")]     Point3dDto? Center,
+    [property: JsonPropertyName("baseRadius")] double? BaseRadius,
+    [property: JsonPropertyName("topRadius")]  double? TopRadius,
+    [property: JsonPropertyName("height")]     double? Height,
+    [property: JsonPropertyName("turns")]      double? Turns,
+    [property: JsonPropertyName("clockwise")]  bool? Clockwise,
+    [property: JsonPropertyName("layer")]      string? Layer);

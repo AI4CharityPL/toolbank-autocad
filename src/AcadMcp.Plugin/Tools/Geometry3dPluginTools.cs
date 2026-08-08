@@ -1,4 +1,4 @@
-// AutoCAD plugin handlers for the acad-geometry-3d category.
+﻿// AutoCAD plugin handlers for the acad-geometry-3d category.
 // Each handler is registered under "acad.geometry3d.<verb>" and ALWAYS runs on the UI thread.
 //
 // Rules: 10 (UI thread), 11 (transactions), 12 (error mapping), 19 (impl pattern).
@@ -14,6 +14,7 @@ using AcadMcp.Shared;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using AcadRt = Autodesk.AutoCAD.Runtime;
 using Brep = Autodesk.AutoCAD.BoundaryRepresentation.Brep;
 
 namespace AcadMcp.Plugin.Tools;
@@ -42,6 +43,11 @@ internal static class Geometry3dPluginTools
         host.Register("acad.geometry3d.get_3d_centroid",     Get3dCentroid);
         host.Register("acad.geometry3d.get_3d_bounding_box", Get3dBoundingBox);
         host.Register("acad.geometry3d.get_mass_properties", GetMassProperties);
+
+        // roadmap 4.1 - the rest of how a solid is made from a curve
+        host.Register("acad.geometry3d.sweep_curve",         SweepCurve);
+        host.Register("acad.geometry3d.loft_curves",         LoftCurves);
+        host.Register("acad.geometry3d.draw_helix",          DrawHelix);
     }
 
     // ─────────── helpers ───────────
@@ -373,6 +379,307 @@ internal static class Geometry3dPluginTools
                 centroid = AcadEnv.FromPoint3d(mp.Centroid),
                 momentsOfInertia = moi,
                 radiiOfGyration = rog,
+            });
+        });
+
+    // ─────────── roadmap 4.1: sweep, loft, helix ───────────
+    //
+    // extrude_curve pushes a profile in a straight line and revolve_curve spins it about an
+    // axis. These three are the rest of how a solid gets made from a curve: along an arbitrary
+    // PATH, between a series of CROSS SECTIONS, and the helix that is the usual path for a
+    // spring or a thread.
+    //
+    // All three can be checked against ARITHMETIC rather than against another call of the same
+    // code, which is rare and worth using: a solid swept along a straight path has the volume of
+    // its profile times the path length, and a helix has the length of its own hypotenuse.
+
+    /// <summary>A closed planar curve as a Region, which is what the solid builders take.</summary>
+    private static Region RegionFrom(Entity ent, string what)
+    {
+        if (ent is Region r) return r;
+        if (ent is Curve c)
+        {
+            using var col = new DBObjectCollection();
+            col.Add(c);
+            DBObjectCollection regions;
+            try
+            {
+                regions = Region.CreateFromCurves(col);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                // It THROWS on an open curve rather than returning an empty collection, so a
+                // count check never runs and the caller gets a bare eInvalidInput that says
+                // nothing about what was wrong with their profile.
+                throw new ArgumentException(
+                    "The " + what + " (" + ent.GetRXClass().Name + ") could not be made into a " +
+                    "region - AutoCAD reported " + ex.ErrorStatus + ". A solid needs a CLOSED " +
+                    "planar profile; an open curve would sweep into a surface, not a solid.");
+            }
+            using (regions)
+            {
+                if (regions.Count == 0)
+                    throw new ArgumentException(
+                        "The " + what + " (" + ent.GetRXClass().Name + ") made no region - a " +
+                        "solid needs a CLOSED planar profile.");
+                return (Region)regions[0];
+            }
+        }
+        throw new ArgumentException(
+            "The " + what + " is a " + ent.GetRXClass().Name + "; a closed planar curve or a " +
+            "Region is needed.");
+    }
+
+    private static Task<ToolDispatchResult> SweepCurve(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.sweep_curve", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SweepArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.ProfileHandle) || string.IsNullOrWhiteSpace(a.PathHandle))
+                throw new ArgumentException(
+                    "profileHandle and pathHandle are both required: the shape being swept, and " +
+                    "the curve it is swept along.");
+            if (string.Equals(a.ProfileHandle, a.PathHandle, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "profileHandle and pathHandle are the same entity; a curve cannot be swept " +
+                    "along itself.");
+
+            var profileEnt = (Entity)tr.GetObject(
+                AcadEnv.ResolveHandle(db, a.ProfileHandle!), OpenMode.ForWrite);
+            var pathEnt = (Entity)tr.GetObject(
+                AcadEnv.ResolveHandle(db, a.PathHandle!), OpenMode.ForWrite);
+            if (pathEnt is not Curve pathCurve)
+                throw new ArgumentException(
+                    "The path is a " + pathEnt.GetRXClass().Name + ", not a curve. A sweep needs " +
+                    "something to travel along - a line, arc, polyline, spline or helix.");
+
+            var pathLength = pathCurve.GetDistanceAtParameter(pathCurve.EndParam) -
+                             pathCurve.GetDistanceAtParameter(pathCurve.StartParam);
+            using var region = RegionFrom(profileEnt, "profile");
+            var profileArea = region.Area;
+
+            var builder = new SweepOptionsBuilder
+            {
+                Align = (a.Align ?? "path").Trim().ToLowerInvariant() switch
+                {
+                    "path" => SweepOptionsAlignOption.AlignSweepEntityToPath,
+                    "none" => SweepOptionsAlignOption.NoAlignment,
+                    "translate" => SweepOptionsAlignOption.TranslateSweepEntityToPath,
+                    // Only three members exist - asked of the compiler, which rejected a fourth
+                    // named TranslateAndAlignSweepEntityToPath that the docs suggest.
+                    _ => throw new ArgumentException(
+                        "align must be path (the profile turns to stay square to the path, which " +
+                        "is what you want for a pipe), none, or translate."),
+                },
+                Bank = a.Bank ?? true,
+                TwistAngle = (a.TwistDeg ?? 0) * Math.PI / 180.0,
+                ScaleFactor = a.Scale ?? 1.0,
+            };
+            if (a.Scale is <= 0)
+                throw new ArgumentException("scale must be greater than zero.");
+
+            var solid = new Solid3d();
+            solid.CreateSweptSolid(region, pathCurve, builder.ToSweepOptions());
+
+            var handle = AcadEnv.Persist(db, tr, solid, a.Layer);
+            var volume = solid.MassProperties.Volume;
+            if (volume <= 0)
+                throw new InvalidOperationException(
+                    "The swept solid has no volume, so nothing usable was made. The profile area " +
+                    "was " + profileArea + " and the path " + pathLength + " long.");
+
+            if (a.EraseSources == true)
+            {
+                profileEnt.Erase();
+                pathEnt.Erase();
+            }
+
+            // Reported so the caller can check the result against arithmetic rather than trust
+            // it: a profile swept SQUARE along a straight path encloses area x length, and a
+            // number far off that means the profile turned, scaled or twisted on the way.
+            var expected = profileArea * pathLength;
+            return Wrap(new
+            {
+                entity = handle,
+                volume,
+                profileArea,
+                pathLength,
+                areaTimesLength = expected,
+                ratioToAreaTimesLength = expected > 0 ? volume / expected : (double?)null,
+                sourcesErased = a.EraseSources == true,
+                note = "areaTimesLength is what the volume WOULD be for a profile carried square " +
+                       "along a straight path - " + expected + " here against a measured " +
+                       volume + ". They agree on a straight path and diverge as the path bends, " +
+                       "which is the geometry doing its job rather than an error.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> LoftCurves(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.loft_curves", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<LoftArgsDto>(args);
+            if (a.ProfileHandles is null || a.ProfileHandles.Count < 2)
+                throw new ArgumentException(
+                    "profileHandles needs at least 2 cross sections: a loft runs a skin between " +
+                    "them, and one section has nothing to run to.");
+
+            var sections = new List<Entity>();
+            var opened = new List<Entity>();
+            var areas = new List<double>();
+            foreach (var h in a.ProfileHandles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+                opened.Add(ent);
+                var reg = RegionFrom(ent, "cross section " + h);
+                areas.Add(reg.Area);
+                sections.Add(reg);
+            }
+
+            var guides = new List<Entity>();
+            foreach (var h in a.GuideHandles ?? new List<string>())
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+                opened.Add(ent);
+                if (ent is not Curve gc)
+                    throw new ArgumentException(
+                        "Guide " + h + " is a " + ent.GetRXClass().Name + ", not a curve.");
+                guides.Add(gc);
+            }
+
+            Entity? path = null;
+            if (!string.IsNullOrWhiteSpace(a.PathHandle))
+            {
+                var ent = (Entity)tr.GetObject(
+                    AcadEnv.ResolveHandle(db, a.PathHandle!), OpenMode.ForWrite);
+                opened.Add(ent);
+                if (ent is not Curve pc)
+                    throw new ArgumentException(
+                        "The path is a " + ent.GetRXClass().Name + ", not a curve.");
+                path = pc;
+            }
+            if (guides.Count > 0 && path is not null)
+                throw new ArgumentException(
+                    "Give guides OR a path, not both - AutoCAD's LOFT offers them as alternatives " +
+                    "and cannot follow the two at once.");
+
+            var lob = new LoftOptionsBuilder
+            {
+                Closed = a.Closed ?? false,
+                Ruled = a.Ruled ?? false,
+            };
+
+            var solid = new Solid3d();
+            solid.CreateLoftedSolid(sections.ToArray(), guides.ToArray(), path,
+                                    lob.ToLoftOptions());
+
+            var handle = AcadEnv.Persist(db, tr, solid, a.Layer);
+            var volume = solid.MassProperties.Volume;
+            if (volume <= 0)
+                throw new InvalidOperationException(
+                    "The lofted solid has no volume. Cross-section areas were " +
+                    string.Join(", ", areas) + ".");
+
+            if (a.EraseSources == true) foreach (var e in opened) e.Erase();
+
+            return Wrap(new
+            {
+                entity = handle,
+                volume,
+                crossSections = sections.Count,
+                guides = guides.Count,
+                hasPath = path is not null,
+                sectionAreas = areas,
+                closed = lob.Closed,
+                ruled = lob.Ruled,
+                sourcesErased = a.EraseSources == true,
+                note = "sectionAreas are the areas the skin runs between, so a volume can be " +
+                       "checked against them: two equal sections a distance D apart make a prism " +
+                       "of area x D, and a taper makes less. ruled=true joins the sections with " +
+                       "straight sides instead of a smooth skin.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> DrawHelix(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.draw_helix", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<HelixArgsDto>(args);
+            if (a.Center is null)
+                throw new ArgumentException("center is required: the base centre of the helix.");
+            if (a.BaseRadius is null || a.BaseRadius <= 0)
+                throw new ArgumentException("baseRadius is required and must be greater than zero.");
+            if (a.Turns is null || a.Turns <= 0)
+                throw new ArgumentException(
+                    "turns is required and must be greater than zero: how many times it goes " +
+                    "round. Fractions are allowed.");
+            if (a.Height is null)
+                throw new ArgumentException(
+                    "height is required: how far it rises over all its turns. Pass 0 for a flat " +
+                    "spiral, which is what a helix of no height is.");
+            var top = a.TopRadius ?? a.BaseRadius.Value;
+            if (top <= 0) throw new ArgumentException("topRadius must be greater than zero.");
+
+            var centre = AcadEnv.ToPoint3d(a.Center);
+            var helix = new Helix();
+            helix.SetDatabaseDefaults(db);
+            helix.SetAxisPoint(centre, true);
+            helix.StartPoint = new Point3d(centre.X + a.BaseRadius.Value, centre.Y, centre.Z);
+            helix.BaseRadius = a.BaseRadius.Value;
+            helix.TopRadius = top;
+            // Height, Turns and TurnHeight are three views of one geometry, and TURN HEIGHT is
+            // the one that drives the other two. Measured, after two wrong orders:
+            //   Turns=5 then Height=300  ->  300 turns  (height / the default TurnHeight of 1)
+            //   Height=300 then Turns=5  ->  height 5   (turns x that same TurnHeight of 1)
+            // Setting the turn height first makes both of the others come out right, and the
+            // read-back below is what caught each wrong order rather than shipping it.
+            helix.TurnHeight = a.Turns.Value == 0 ? 0 : a.Height.Value / a.Turns.Value;
+            helix.Turns = a.Turns.Value;
+            helix.Twist = !(a.Clockwise ?? false);   // Twist true is counter-clockwise
+            helix.CreateHelix();
+
+            // Read back, because the interdependence above means an assignment can be quietly
+            // overruled by the next one.
+            if (Math.Abs(helix.Turns - a.Turns.Value) > 1e-6 ||
+                Math.Abs(helix.Height - a.Height.Value) > 1e-6)
+                throw new InvalidOperationException(
+                    "The helix came out with " + helix.Turns + " turns over a height of " +
+                    helix.Height + ", against the " + a.Turns + " and " + a.Height + " asked " +
+                    "for. Height, turns and turn height are interdependent and one has " +
+                    "overruled another, so this is not being reported as success.");
+
+            var handle = AcadEnv.Persist(db, tr, helix, a.Layer);
+
+            var length = helix.GetDistanceAtParameter(helix.EndParam) -
+                         helix.GetDistanceAtParameter(helix.StartParam);
+
+            // A constant-radius helix unrolls into a right triangle: the circumference walked
+            // (2 pi r n) against the height climbed. Reported so the caller can check the curve
+            // against that rather than against another call of this same code. It only holds
+            // when the two radii agree - a tapered helix is a cone's spiral and longer sums are
+            // needed - so the expectation is only offered when it applies.
+            double? expected = Math.Abs(top - a.BaseRadius.Value) < 1e-9
+                ? Math.Sqrt(Math.Pow(2 * Math.PI * a.BaseRadius.Value * a.Turns.Value, 2) +
+                            Math.Pow(a.Height.Value, 2))
+                : null;
+
+            return Wrap(new
+            {
+                entity = handle,
+                baseRadius = helix.BaseRadius,
+                topRadius = helix.TopRadius,
+                height = helix.Height,
+                turns = helix.Turns,
+                turnHeight = helix.TurnHeight,
+                clockwise = !helix.Twist,
+                length,
+                expectedLength = expected,
+                note = expected is not null
+                    ? "A constant-radius helix unrolls into a right triangle - the " +
+                      (2 * Math.PI * a.BaseRadius.Value * a.Turns.Value) + " walked round against " +
+                      "the " + a.Height + " climbed - so its length should be " + expected +
+                      " and measures " + length + ". Checkable arithmetic, not a second opinion " +
+                      "from the same code."
+                    : "expectedLength is only offered for a constant radius; this one tapers " +
+                      "from " + a.BaseRadius + " to " + top + ", where the unrolled triangle no " +
+                      "longer applies.",
             });
         });
 }

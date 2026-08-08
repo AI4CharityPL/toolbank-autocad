@@ -19,12 +19,15 @@
     "centroid",
     "cone",
     "curve",
+    "curves",
     "cylinder",
     "draw",
     "dwg",
     "extrude",
     "geometry-3d",
     "get",
+    "helix",
+    "loft",
     "mass",
     "planar",
     "properties",
@@ -32,6 +35,7 @@
     "revolve",
     "sphere",
     "surface",
+    "sweep",
     "torus",
     "volume",
     "wedge"
@@ -59,6 +63,7 @@
     "cylinder by base radius and height",
     "donut shape solid",
     "draw 3d box",
+    "draw a helix",
     "draw cone",
     "draw cylinder",
     "draw planar surface from boundary",
@@ -77,11 +82,17 @@
     "get inertia and centroid",
     "get total surface area",
     "get volume of solid",
+    "gwint sciezka",
     "ile wynosi objetosc",
+    "loft between cross sections",
+    "loft solid",
+    "make a pipe from a profile",
+    "make a transition piece",
     "make surface from closed curve",
     "measure 3d area",
     "measure 3d volume",
     "moment bezwladnosci",
+    "narysuj helise",
     "narysuj klin",
     "narysuj kule",
     "narysuj ostroslup",
@@ -91,14 +102,21 @@
     "narysuj torus",
     "narysuj walec",
     "obrot krzywej",
+    "polacz przekroje bryla",
     "policz objetosc",
     "policz pole powierzchni 3d",
+    "porecz wzdluz krzywej",
     "powierzchnia bryly",
+    "przeciagnij profil po sciezce",
+    "przejscie miedzy przekrojami",
     "revolve curve around axis",
     "revolve polilinie",
     "right angle prism",
     "sphere by center and radius",
     "spin curve to make solid",
+    "spiral path for a spring",
+    "spiral stair path",
+    "sprezyna spirala",
     "srodek ciezkosci",
     "stworz bryle prostopadloscienna",
     "stworz cylinder",
@@ -108,10 +126,14 @@
     "stworz pryzme prostokatna",
     "stworz sfere",
     "stworz stozek scinany",
+    "sweep a profile along a path",
+    "sweep solid",
     "where is centroid",
     "wlasciwosci masowe",
+    "wyciagniecie przez przekroje",
     "wyciagnij polilinie",
-    "wymiary bryly"
+    "wymiary bryly",
+    "zrob rure wzdluz linii"
   ],
   "tools_summary": [
     {
@@ -157,6 +179,22 @@
         "draw cylinder",
         "create cylinder solid",
         "cylinder by base radius and height"
+      ]
+    },
+    {
+      "name": "draw_helix",
+      "description": "Draw a helix - the usual path for a spring, a thread or a spiral stair, and the natural companion to sweep_curve. Give the base centre, a base radius, the height and the number of turns; topRadius makes it taper, and height 0 makes a flat spiral. The result carries expectedLength for a constant-radius helix, worked from the unrolled right triangle - the circumference walked against the height climbed - so the curve can be checked against arithmetic rather than against a second opinion from the same code.",
+      "tags": [
+        "draw",
+        "helix"
+      ],
+      "intent": [
+        "narysuj helise",
+        "sprezyna spirala",
+        "draw a helix",
+        "spiral path for a spring",
+        "gwint sciezka",
+        "spiral stair path"
       ]
     },
     {
@@ -331,6 +369,22 @@
       ]
     },
     {
+      "name": "loft_curves",
+      "description": "Run a solid skin between two or more cross sections - AutoCAD\u0027s LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section\u0027s area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less.",
+      "tags": [
+        "loft",
+        "curves"
+      ],
+      "intent": [
+        "przejscie miedzy przekrojami",
+        "polacz przekroje bryla",
+        "loft between cross sections",
+        "make a transition piece",
+        "wyciagniecie przez przekroje",
+        "loft solid"
+      ]
+    },
+    {
       "name": "revolve_curve",
       "description": "Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360).",
       "tags": [
@@ -344,11 +398,27 @@
         "create solid of revolution",
         "spin curve to make solid"
       ]
+    },
+    {
+      "name": "sweep_curve",
+      "description": "Sweep a closed profile along a path curve to make a 3D solid - AutoCAD\u0027s SWEEP. extrude_curve pushes a profile in a straight line; this carries it along a line, arc, polyline, spline or helix, which is how a pipe, a handrail or a moulding is modelled. align=\u0027path\u0027 keeps the profile square to the path as it turns, which is almost always what you want. The result reports the profile area, the path length and their product, so the volume can be checked against arithmetic: a profile carried square along a STRAIGHT path encloses exactly area times length, and the two diverge as the path bends.",
+      "tags": [
+        "sweep",
+        "curve"
+      ],
+      "intent": [
+        "przeciagnij profil po sciezce",
+        "zrob rure wzdluz linii",
+        "sweep a profile along a path",
+        "make a pipe from a profile",
+        "porecz wzdluz krzywej",
+        "sweep solid"
+      ]
     }
   ],
   "metadata": {
     "category": "geometry-3d",
-    "tool_count_target": 15,
+    "tool_count_target": 18,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -362,6 +432,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-05T13:09:28.6109899Z"
+    "last_regenerated_utc": "2026-08-08T18:10:18.2821244Z"
   }
 }

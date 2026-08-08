@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 546 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 549 tools total.
 
 ## Categories
 
@@ -17,7 +17,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
 - [acad-geometry-2d](#acad-geometry-2d) (60 tools)
-- [acad-geometry-3d](#acad-geometry-3d) (15 tools)
+- [acad-geometry-3d](#acad-geometry-3d) (18 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
@@ -357,6 +357,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_box` | Create a 3D solid box defined by two opposite corner points (axis-aligned in WCS). |
 | `draw_cone` | Create a 3D solid cone or frustum (set topRadius>0 for frustum). |
 | `draw_cylinder` | Create a 3D solid cylinder by base center, radius, and height (Z+). |
+| `draw_helix` | Draw a helix - the usual path for a spring, a thread or a spiral stair, and the natural companion to sweep_curve. Give the base centre, a base radius, the height and the number of turns; topRadius makes it taper, and height 0 makes a flat spiral. The result carries expectedLength for a constant-radius helix, worked from the unrolled right triangle - the circumference walked against the height climbed - so the curve can be checked against arithmetic rather than against a second opinion from the same code. |
 | `draw_planar_surface` | Create a planar surface entity from one or more closed planar boundary curves (handles). |
 | `draw_pyramid` | Create a 3D solid pyramid or frustum with N sides (3..32). Use topRadius>0 for frustum. |
 | `draw_sphere` | Create a 3D solid sphere by center point and radius. |
@@ -368,7 +369,9 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_mass_properties` | Return full mass properties of a 3D solid: volume, surface area, centroid, principal moments and radii of gyration. |
 | `get_surface_area` | Return total surface area of a 3D solid or surface. |
 | `get_volume` | Return the volume of a 3D solid (single value, current units). |
+| `loft_curves` | Run a solid skin between two or more cross sections - AutoCAD's LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section's area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less. |
 | `revolve_curve` | Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360). |
+| `sweep_curve` | Sweep a closed profile along a path curve to make a 3D solid - AutoCAD's SWEEP. extrude_curve pushes a profile in a straight line; this carries it along a line, arc, polyline, spline or helix, which is how a pipe, a handrail or a moulding is modelled. align='path' keeps the profile square to the path as it turns, which is almost always what you want. The result reports the profile area, the path length and their product, so the volume can be checked against arithmetic: a profile carried square along a STRAIGHT path encloses exactly area times length, and the two diverge as the path bends. |
 
 ## acad-grids
 

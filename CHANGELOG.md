@@ -37,6 +37,42 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, first tranche — sweep, loft and helix.** `acad-geometry-3d` 15 → 18, bank
+  546 → 549: `sweep_curve`, `loft_curves`, `draw_helix`. Verified live **50/50**.
+
+  `extrude_curve` pushes a profile in a straight line and `revolve_curve` spins it; these three
+  are the rest of how a solid is made from a curve — along an arbitrary **path**, between
+  **cross sections**, and the helix that is the usual path for a spring or a thread.
+
+  These are unusual in this project: they can be checked against **arithmetic** rather than
+  against another call of the same code, and that is what the verification does. Pappus gives the
+  swept volume as the profile area times the distance its centroid travels; two equal loft
+  sections a distance apart make a prism and a taper must match the frustum formula; a
+  constant-radius helix unrolls into a right triangle. None of those numbers come from AutoCAD.
+
+  It earned its keep immediately. **A helix asked for 5 turns came back with 300**, measuring
+  75364 against the 1291.95 the arithmetic called for — a factor of 58 that no "did a curve
+  appear" check would ever notice. `Height`, `Turns` and `TurnHeight` are three views of one
+  geometry and setting any one recomputes another:
+
+  | order | result |
+  |---|---|
+  | `Turns=5` then `Height=300` | **300 turns** — height ÷ the default turn height of 1 |
+  | `Height=300` then `Turns=5` | **height 5** — turns × that same turn height |
+  | `TurnHeight=60` then `Turns=5` | 5 turns over 300, correct |
+
+  The turn height is the one that drives the other two. A **read-back guard** now refuses to
+  report a helix that is not the one asked for, and it is what caught both wrong orders rather
+  than shipping either.
+
+  Two smaller findings. `Region.CreateFromCurves` **throws** on an open curve instead of
+  returning an empty collection, so a count check never ran and callers got a bare
+  `eInvalidInput` where a sentence about closed profiles belonged. And one verification
+  expectation was wrong rather than the tool: it demanded that a bent path give a volume
+  *differing* from area × length, when the profile rides the path and Pappus makes them equal —
+  measured 74021.917 against 74022.033, agreement to six figures. The check now asserts that
+  equality, which is the stronger test.
+
 - **Phase 3.3 COMPLETE — paragraph format and bullets.** `acad-annotations` 24 → 26, bank
   544 → 546: `set_paragraph_format`, `mtext_bullets_numbering`. Verified live **37/37**. The
   phase closes at **14 built, 3 blocked by the API, 1 struck as a duplicate**.

@@ -89,3 +89,67 @@ public sealed record MassPropertiesResult(
 
 public sealed record EntityResult3(
     [property: JsonPropertyName("entity")] EntityHandle Entity);
+
+// ─────────── roadmap 4.1, first tranche: sweep, loft, helix ───────────
+
+public sealed record SweepArgs(
+    [property: JsonPropertyName("profileHandle")] string ProfileHandle,
+    [property: JsonPropertyName("pathHandle")]    string PathHandle,
+    [property: JsonPropertyName("align")]         string? Align = null,
+    [property: JsonPropertyName("bank")]          bool? Bank = null,
+    [property: JsonPropertyName("twistDeg")]      double? TwistDeg = null,
+    [property: JsonPropertyName("scale")]         double? Scale = null,
+    [property: JsonPropertyName("eraseSources")]  bool? EraseSources = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+public sealed record SweepResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("volume")]        double Volume,
+    [property: JsonPropertyName("profileArea")]   double ProfileArea,
+    [property: JsonPropertyName("pathLength")]    double PathLength,
+    [property: JsonPropertyName("areaTimesLength")] double AreaTimesLength,
+    [property: JsonPropertyName("ratioToAreaTimesLength")] double? RatioToAreaTimesLength,
+    [property: JsonPropertyName("sourcesErased")] bool SourcesErased,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record LoftArgs(
+    [property: JsonPropertyName("profileHandles")] IReadOnlyList<string> ProfileHandles,
+    [property: JsonPropertyName("guideHandles")]   IReadOnlyList<string>? GuideHandles = null,
+    [property: JsonPropertyName("pathHandle")]     string? PathHandle = null,
+    [property: JsonPropertyName("closed")]         bool? Closed = null,
+    [property: JsonPropertyName("ruled")]          bool? Ruled = null,
+    [property: JsonPropertyName("eraseSources")]   bool? EraseSources = null,
+    [property: JsonPropertyName("layer")]          string? Layer = null);
+
+public sealed record LoftResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("volume")]        double Volume,
+    [property: JsonPropertyName("crossSections")] int CrossSections,
+    [property: JsonPropertyName("guides")]        int Guides,
+    [property: JsonPropertyName("hasPath")]       bool HasPath,
+    [property: JsonPropertyName("sectionAreas")]  IReadOnlyList<double> SectionAreas,
+    [property: JsonPropertyName("closed")]        bool Closed,
+    [property: JsonPropertyName("ruled")]         bool Ruled,
+    [property: JsonPropertyName("sourcesErased")] bool SourcesErased,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record HelixArgs(
+    [property: JsonPropertyName("center")]     Point3dDto? Center = null,
+    [property: JsonPropertyName("baseRadius")] double? BaseRadius = null,
+    [property: JsonPropertyName("topRadius")]  double? TopRadius = null,
+    [property: JsonPropertyName("height")]     double? Height = null,
+    [property: JsonPropertyName("turns")]      double? Turns = null,
+    [property: JsonPropertyName("clockwise")]  bool? Clockwise = null,
+    [property: JsonPropertyName("layer")]      string? Layer = null);
+
+public sealed record HelixResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("baseRadius")]     double BaseRadius,
+    [property: JsonPropertyName("topRadius")]      double TopRadius,
+    [property: JsonPropertyName("height")]         double Height,
+    [property: JsonPropertyName("turns")]          double Turns,
+    [property: JsonPropertyName("turnHeight")]     double TurnHeight,
+    [property: JsonPropertyName("clockwise")]      bool Clockwise,
+    [property: JsonPropertyName("length")]         double Length,
+    [property: JsonPropertyName("expectedLength")] double? ExpectedLength,
+    [property: JsonPropertyName("note")]           string Note);

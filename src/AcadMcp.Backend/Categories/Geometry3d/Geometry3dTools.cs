@@ -118,4 +118,29 @@ public static class Geometry3dTools
         ReadOnly = true)]
     public static Task<MassPropertiesResult> GetMassProperties(IPluginGateway gw, HandleArg3 args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<HandleArg3, MassPropertiesResult>(gw, "acad.geometry3d.get_mass_properties", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 4.1: the rest of how a solid is made from a curve ───────────
+
+    [McpTool("sweep_curve", "Sweep a closed profile along a path curve to make a 3D solid - AutoCAD's SWEEP. extrude_curve pushes a profile in a straight line; this carries it along a line, arc, polyline, spline or helix, which is how a pipe, a handrail or a moulding is modelled. align='path' keeps the profile square to the path as it turns, which is almost always what you want. The result reports the profile area, the path length and their product, so the volume can be checked against arithmetic: a profile carried square along a STRAIGHT path encloses exactly area times length, and the two diverge as the path bends.", "geometry-3d",
+        Intent = new[] { "przeciagnij profil po sciezce", "zrob rure wzdluz linii",
+                         "sweep a profile along a path", "make a pipe from a profile",
+                         "porecz wzdluz krzywej", "sweep solid" },
+        RequiresPlugin = true)]
+    public static Task<SweepResult> SweepCurve(IPluginGateway gw, SweepArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SweepArgs, SweepResult>(gw, "acad.geometry3d.sweep_curve", args, T_SLOW, ct);
+
+    [McpTool("loft_curves", "Run a solid skin between two or more cross sections - AutoCAD's LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section's area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less.", "geometry-3d",
+        Intent = new[] { "przejscie miedzy przekrojami", "polacz przekroje bryla",
+                         "loft between cross sections", "make a transition piece",
+                         "wyciagniecie przez przekroje", "loft solid" },
+        RequiresPlugin = true)]
+    public static Task<LoftResult> LoftCurves(IPluginGateway gw, LoftArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<LoftArgs, LoftResult>(gw, "acad.geometry3d.loft_curves", args, T_SLOW, ct);
+
+    [McpTool("draw_helix", "Draw a helix - the usual path for a spring, a thread or a spiral stair, and the natural companion to sweep_curve. Give the base centre, a base radius, the height and the number of turns; topRadius makes it taper, and height 0 makes a flat spiral. The result carries expectedLength for a constant-radius helix, worked from the unrolled right triangle - the circumference walked against the height climbed - so the curve can be checked against arithmetic rather than against a second opinion from the same code.", "geometry-3d",
+        Intent = new[] { "narysuj helise", "sprezyna spirala", "draw a helix",
+                         "spiral path for a spring", "gwint sciezka", "spiral stair path" },
+        RequiresPlugin = true)]
+    public static Task<HelixResult> DrawHelix(IPluginGateway gw, HelixArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<HelixArgs, HelixResult>(gw, "acad.geometry3d.draw_helix", args, T_NORMAL, ct);
 }

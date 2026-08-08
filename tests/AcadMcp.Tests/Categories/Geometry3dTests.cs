@@ -18,6 +18,12 @@ public class Geometry3dTests
         "extrude_curve", "revolve_curve", "draw_planar_surface",
         "get_volume", "get_surface_area", "get_3d_centroid",
         "get_3d_bounding_box", "get_mass_properties",
+
+        // Roadmap 4.1, first tranche: the rest of how a solid is made from a curve.
+        // extrude pushes a profile straight and revolve spins it; these carry it along an
+        // arbitrary path, run a skin between cross sections, and draw the helix that is the
+        // usual path for a spring or a thread.
+        "sweep_curve", "loft_curves", "draw_helix",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

@@ -326,3 +326,38 @@ public sealed record StackFractionResult(
     [property: JsonPropertyName("heightBefore")] double HeightBefore,
     [property: JsonPropertyName("drawnHeight")]  double DrawnHeight,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── roadmap 3.3, fifth tranche: converting between text and mtext ───────────
+
+public sealed record TextToMTextArgs(
+    [property: JsonPropertyName("handles")]      IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("width")]        double? Width = null,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record TextToMTextResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("combined")]      int Combined,
+    [property: JsonPropertyName("readingOrder")]  IReadOnlyList<string> ReadingOrder,
+    [property: JsonPropertyName("sourceHandles")] IReadOnlyList<string> SourceHandles,
+    [property: JsonPropertyName("contents")]      string Contents,
+    [property: JsonPropertyName("rendered")]      string Rendered,
+    [property: JsonPropertyName("originalsKept")] bool OriginalsKept,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record ExplodeMTextArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record ExplodedLineDto(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("type")]   string Type,
+    [property: JsonPropertyName("text")]   string Text);
+
+public sealed record ExplodeMTextResult(
+    [property: JsonPropertyName("entities")]     IReadOnlyList<ExplodedLineDto> Entities,
+    [property: JsonPropertyName("pieces")]       int Pieces,
+    [property: JsonPropertyName("before")]       string Before,
+    [property: JsonPropertyName("originalKept")] bool OriginalKept,
+    [property: JsonPropertyName("note")]         string Note);

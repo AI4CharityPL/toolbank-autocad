@@ -37,6 +37,26 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3, fifth tranche — converting between text and MText.** `acad-annotations` 22 → 24,
+  bank 542 → 544: `text_to_mtext`, `explode_mtext_to_text`. Verified live **38/38**.
+
+  These two are inverses, so the strongest available check is a **round trip**: three lines
+  become one MText, that MText becomes three lines again, and the words come back in the same
+  order. Either tool alone can be wrong in a way that looks fine; both wrong in exactly
+  compensating ways is a great deal less likely.
+
+  What the round trip alone would **not** catch is **order**. Combining lines in whatever order
+  the handles arrive gives a paragraph with its sentences shuffled, and every count stays
+  correct — three in, one out, all the words present. So the tool sorts into reading order, down
+  the page and then across, reports the order it used, and the verification creates its three
+  texts deliberately scrambled (middle, bottom, top) and asserts the MText reads top to bottom
+  anyway. Lines within half a text height of each other count as one line, or two labels side by
+  side would be split into separate paragraphs by a rounding error.
+
+  `explode_mtext_to_text` gives one piece per **line**, not per word, and says plainly what does
+  not survive: columns, a background mask and a stacked fraction have nowhere to go on a
+  single-line text.
+
 - **Phase 3.3, fourth tranche — symbols and stacked fractions.** `acad-annotations` 20 → 22, bank
   540 → 542: `insert_symbol`, `stack_fraction`. Verified live **59/59**.
 

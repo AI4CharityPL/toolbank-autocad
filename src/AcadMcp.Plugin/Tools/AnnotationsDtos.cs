@@ -153,3 +153,16 @@ internal sealed record StackFractionArgsDto(
     [property: JsonPropertyName("handle")]  string? Handle,
     [property: JsonPropertyName("style")]   string? Style,
     [property: JsonPropertyName("pattern")] string? Pattern);
+
+// ─────────── roadmap 3.3, fifth tranche: converting between text and mtext ───────────
+
+internal sealed record TextToMTextArgsDto(
+    [property: JsonPropertyName("handles")]      List<string>? Handles,
+    [property: JsonPropertyName("width")]        double? Width,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
+    [property: JsonPropertyName("layer")]        string? Layer);
+
+internal sealed record ExplodeMTextArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
+    [property: JsonPropertyName("layer")]        string? Layer);

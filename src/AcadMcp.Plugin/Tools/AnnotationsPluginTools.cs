@@ -62,6 +62,10 @@ internal static class AnnotationsPluginTools
         // roadmap 3.3 - symbols and stacked fractions
         host.Register("acad.annotations.insert_symbol",          InsertSymbol);
         host.Register("acad.annotations.stack_fraction",         StackFraction);
+
+        // roadmap 3.3 - converting between text and mtext
+        host.Register("acad.annotations.text_to_mtext",          TextToMText);
+        host.Register("acad.annotations.explode_mtext_to_text",  ExplodeMTextToText);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -1540,6 +1544,135 @@ internal static class AnnotationsPluginTools
                        "\"1/2\" either way - so the rendered text cannot tell you it worked. The " +
                        "drawn extent can, and does: " + h0 + " tall before, " + h1 + " after, " +
                        "because the halves are now on two levels.",
+            });
+        });
+
+    // ─────────── roadmap 3.3: converting between text and mtext ───────────
+    //
+    // The trap in text_to_mtext is ORDER. Combining lines in the order their handles happen to
+    // come in produces a paragraph whose sentences are shuffled, and every count in the result
+    // is still right: N in, one out, all the words present. So the lines are sorted into READING
+    // order - down the page, then across - and the order used is reported, because it is the one
+    // thing a caller cannot check from the count.
+
+    private static Task<ToolDispatchResult> TextToMText(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.text_to_mtext", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<TextToMTextArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException(
+                    "handles is required: the single-line texts to combine into one MText.");
+
+            var items = new List<(string Handle, DBText Text)>();
+            foreach (var h in a.Handles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+                if (ent is not DBText t)
+                    throw new ArgumentException(
+                        "Entity " + h + " is a " + ent.GetType().Name + ", not single-line text. " +
+                        "This combines DBText into one MText; an MText is already one.");
+                items.Add((h, t));
+            }
+
+            // Reading order, not handle order. Down the page first, then across - and lines
+            // within half a text height of each other count as the same line, or two labels
+            // side by side would be split across paragraphs by a rounding error.
+            var tol = items.Max(i => i.Text.Height) * 0.5;
+            var ordered = items
+                .OrderByDescending(i => Math.Round(i.Text.Position.Y / Math.Max(tol, 1e-9)))
+                .ThenBy(i => i.Text.Position.X)
+                .ToList();
+
+            var first = ordered[0].Text;
+            var minX = items.Min(i => i.Text.Position.X);
+            var maxY = items.Max(i => i.Text.Position.Y + i.Text.Height);
+
+            // \P is MText's paragraph break. Each source line becomes its own paragraph, which
+            // is what keeps them on separate lines however the MText is later re-wrapped.
+            var lines = ordered.Select(i => i.Text.TextString).ToList();
+            var contents = string.Join("\\P", lines);
+
+            var m = new MText
+            {
+                Location = new Point3d(minX, maxY, 0),
+                Contents = contents,
+                TextHeight = first.Height,
+                Width = a.Width ?? 0,
+                TextStyleId = first.TextStyleId,
+                Attachment = AttachmentPoint.TopLeft,
+            };
+            var handle = AcadEnv.Persist(db, tr, m, a.Layer ?? first.Layer);
+
+            // Every source line has to survive into what the MText renders. A join that dropped
+            // one, or mangled it on the way through the paragraph break, would still return a
+            // handle and a plausible count.
+            var renderedNow = m.Text;
+            foreach (var line in lines)
+                if (line.Length > 0 && !renderedNow.Contains(line, StringComparison.Ordinal))
+                    throw new InvalidOperationException(
+                        "The combined MText renders as \"" + renderedNow + "\", which does not " +
+                        "contain the source line \"" + line + "\", so this is not being reported " +
+                        "as a successful combine.");
+
+            var keep = a.KeepOriginal == true;
+            if (!keep) foreach (var i in items) i.Text.Erase();
+
+            return Wrap(new
+            {
+                entity = handle,
+                combined = items.Count,
+                readingOrder = lines,
+                sourceHandles = ordered.Select(o => o.Handle).ToList(),
+                contents = m.Contents,
+                rendered = renderedNow,
+                originalsKept = keep,
+                note = "The lines were sorted into READING order - down the page, then across - " +
+                       "not the order the handles arrived in, which would shuffle the sentences " +
+                       "while every count in this result stayed correct. readingOrder is what " +
+                       "was actually used. The originals are erased unless keepOriginal is true.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ExplodeMTextToText(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.explode_mtext_to_text", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ExplodeMTextArgsDto>(args);
+            var m = RequireMText(db, tr, a.Handle, OpenMode.ForWrite);
+            var before = m.Text;
+
+            var pieces = new DBObjectCollection();
+            m.Explode(pieces);
+            if (pieces.Count == 0)
+                throw new InvalidOperationException(
+                    "Exploding " + a.Handle + " produced nothing. Its text reads \"" + before +
+                    "\".");
+
+            var made = new List<object>();
+            foreach (DBObject o in pieces)
+            {
+                if (o is not Entity e) continue;
+                var h = AcadEnv.Persist(db, tr, e, a.Layer);
+                made.Add(new
+                {
+                    handle = h.Handle,
+                    type = e.GetType().Name,
+                    text = e is DBText dt ? dt.TextString : (e is MText mt ? mt.Text : null),
+                });
+            }
+
+            var keep = a.KeepOriginal == true;
+            if (!keep) m.Erase();
+
+            return Wrap(new
+            {
+                entities = made,
+                pieces = made.Count,
+                before,
+                originalKept = keep,
+                note = "One piece per LINE, not per word. Formatting that lived in the MText - " +
+                       "columns, a background mask, a stacked fraction - has nowhere to go on a " +
+                       "single-line text and does not survive; the words do. The original is " +
+                       "erased unless keepOriginal is true.",
             });
         });
 }

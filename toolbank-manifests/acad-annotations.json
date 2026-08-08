@@ -25,6 +25,7 @@
     "dbtext",
     "delete",
     "dwg",
+    "explode",
     "export",
     "find",
     "fit",
@@ -48,6 +49,7 @@
     "symbol",
     "table",
     "text",
+    "to",
     "update"
   ],
   "intent_examples": [
@@ -61,6 +63,7 @@
     "callout with block",
     "callout with text",
     "change text justification",
+    "combine single-line text into mtext",
     "create table from data",
     "create text style",
     "delete text style",
@@ -79,6 +82,7 @@
     "edit multiline text",
     "edit single line text",
     "edit table cell",
+    "explode mtext to text",
     "export all text",
     "extract text content",
     "find and replace text",
@@ -98,6 +102,7 @@
     "make textstyle current",
     "make ttf style",
     "maska tla pod tekstem",
+    "merge text entities",
     "mtext columns",
     "new text style",
     "opaque background behind text",
@@ -106,6 +111,7 @@
     "place mleader with text",
     "place mtext",
     "podziel tekst na kolumny",
+    "polacz teksty w jeden mtext",
     "popraw mtext",
     "popraw napis",
     "popraw nazwe wszedzie",
@@ -115,7 +121,9 @@
     "rename across the drawing",
     "replace text everywhere",
     "resize text without moving it",
+    "rozbij mtext na pojedyncze teksty",
     "rozciagnij napis do szerokosci",
+    "rozdziel akapit na linie",
     "scale text in place",
     "scaletext",
     "sciesnij tekst zeby sie zmiescil",
@@ -128,6 +136,7 @@
     "show all textstyles",
     "skasuj textstyle",
     "split a note into two columns",
+    "split mtext into lines",
     "stack a fraction",
     "stretch text to fit",
     "stworz styl tekstu",
@@ -139,6 +148,7 @@
     "textfit",
     "tlo pod tekstem",
     "tolerance stacking",
+    "txt2mtxt",
     "ulamek pietrowy w tekscie",
     "ulamek w mtext",
     "update dbtext content",
@@ -162,9 +172,12 @@
     "wyrownaj tekst do srodka bez przesuwania",
     "wyszukaj napisy",
     "zamiana napisow",
+    "zamien kilka napisow na akapit",
+    "zamien mtext na dbtext",
     "zamien tekst w calym rysunku",
     "zapisz wszystkie napisy do pliku",
     "zaslon kreskowanie pod napisem",
+    "zlacz notatki w blok tekstu",
     "zloz ulamek",
     "zmien justowanie tekstu",
     "zmien komorke",
@@ -300,6 +313,23 @@
         "skasuj textstyle",
         "remove text style",
         "drop textstyle"
+      ]
+    },
+    {
+      "name": "explode_mtext_to_text",
+      "description": "Break an MText into one single-line text per LINE - not per word. Formatting that lived in the MText has nowhere to go on a DBText and does not survive: columns, a background mask, a stacked fraction are all lost, while the words are kept. Use this when a downstream consumer only reads DBText, or when lines need moving independently. The original is erased unless keepOriginal is true; text_to_mtext puts them back together.",
+      "tags": [
+        "explode",
+        "mtext",
+        "to",
+        "text"
+      ],
+      "intent": [
+        "rozbij mtext na pojedyncze teksty",
+        "zamien mtext na dbtext",
+        "explode mtext to text",
+        "split mtext into lines",
+        "rozdziel akapit na linie"
       ]
     },
     {
@@ -507,6 +537,23 @@
       ]
     },
     {
+      "name": "text_to_mtext",
+      "description": "Combine several single-line texts into one MText - AutoCAD\u0027s TXT2MTXT. The lines are sorted into READING order, down the page and then across, rather than the order the handles arrived in: combining by handle order shuffles the sentences while every count in the result stays correct, so readingOrder reports what was actually used. Each source line becomes its own paragraph, and every one of them is checked to survive into what the MText renders. The originals are erased unless keepOriginal is true.",
+      "tags": [
+        "text",
+        "to",
+        "mtext"
+      ],
+      "intent": [
+        "polacz teksty w jeden mtext",
+        "zamien kilka napisow na akapit",
+        "combine single-line text into mtext",
+        "txt2mtxt",
+        "merge text entities",
+        "zlacz notatki w blok tekstu"
+      ]
+    },
+    {
       "name": "update_dbtext",
       "description": "Replace the contents of an existing DBText entity by handle.",
       "tags": [
@@ -539,7 +586,7 @@
   ],
   "metadata": {
     "category": "annotations",
-    "tool_count_target": 22,
+    "tool_count_target": 24,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -553,6 +600,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-08T10:58:36.3640209Z"
+    "last_regenerated_utc": "2026-08-08T12:59:56.0839229Z"
   }
 }

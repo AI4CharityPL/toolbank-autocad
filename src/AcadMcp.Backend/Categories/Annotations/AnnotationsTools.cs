@@ -187,4 +187,22 @@ public static class AnnotationsTools
         RequiresPlugin = true)]
     public static Task<StackFractionResult> StackFraction(IPluginGateway gw, StackFractionArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<StackFractionArgs, StackFractionResult>(gw, "acad.annotations.stack_fraction", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 3.3: converting between text and mtext ───────────
+
+    [McpTool("text_to_mtext", "Combine several single-line texts into one MText - AutoCAD's TXT2MTXT. The lines are sorted into READING order, down the page and then across, rather than the order the handles arrived in: combining by handle order shuffles the sentences while every count in the result stays correct, so readingOrder reports what was actually used. Each source line becomes its own paragraph, and every one of them is checked to survive into what the MText renders. The originals are erased unless keepOriginal is true.", "annotations",
+        Intent = new[] { "polacz teksty w jeden mtext", "zamien kilka napisow na akapit",
+                         "combine single-line text into mtext", "txt2mtxt",
+                         "merge text entities", "zlacz notatki w blok tekstu" },
+        RequiresPlugin = true)]
+    public static Task<TextToMTextResult> TextToMText(IPluginGateway gw, TextToMTextArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<TextToMTextArgs, TextToMTextResult>(gw, "acad.annotations.text_to_mtext", args, T_NORMAL, ct);
+
+    [McpTool("explode_mtext_to_text", "Break an MText into one single-line text per LINE - not per word. Formatting that lived in the MText has nowhere to go on a DBText and does not survive: columns, a background mask, a stacked fraction are all lost, while the words are kept. Use this when a downstream consumer only reads DBText, or when lines need moving independently. The original is erased unless keepOriginal is true; text_to_mtext puts them back together.", "annotations",
+        Intent = new[] { "rozbij mtext na pojedyncze teksty", "zamien mtext na dbtext",
+                         "explode mtext to text", "split mtext into lines",
+                         "rozdziel akapit na linie" },
+        RequiresPlugin = true)]
+    public static Task<ExplodeMTextResult> ExplodeMTextToText(IPluginGateway gw, ExplodeMTextArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<ExplodeMTextArgs, ExplodeMTextResult>(gw, "acad.annotations.explode_mtext_to_text", args, T_NORMAL, ct);
 }

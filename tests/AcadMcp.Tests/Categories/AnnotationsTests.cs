@@ -13,11 +13,11 @@ public class AnnotationsTests
     // category that grew from one that had been gutted. Named and counted, like every other
     // category's catalogue test.
     [Fact]
-    public void Catalog_contains_all_twentytwo_annotation_tools()
+    public void Catalog_contains_all_twentyfour_annotation_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("annotations");
-        Assert.Equal(22, tools.Count);
+        Assert.Equal(24, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         Assert.Contains("add_dbtext", names);
@@ -54,5 +54,10 @@ public class AnnotationsTests
         // unstacked one, so it is proved on the drawn extent.
         Assert.Contains("insert_symbol", names);
         Assert.Contains("stack_fraction", names);
+        // Fifth tranche. Inverses, so they are verified as a round trip - and the lines are
+        // created out of reading order, because combining by handle order shuffles the
+        // sentences while every count in the result stays correct.
+        Assert.Contains("text_to_mtext", names);
+        Assert.Contains("explode_mtext_to_text", names);
     }
 }

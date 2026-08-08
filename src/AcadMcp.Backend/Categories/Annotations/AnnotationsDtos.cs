@@ -1,4 +1,4 @@
-// Typed DTOs for the acad-annotations category.
+﻿// Typed DTOs for the acad-annotations category.
 // Mirrors the wire shape consumed by the plugin under "acad.annotations.<verb>".
 // See rule 19-tool-implementation-pattern.md, rule 27-acad-text-and-table-traps.md.
 
@@ -31,7 +31,10 @@ public sealed record AddMTextArgs(
     [property: JsonPropertyName("position")]       Point3dDto Position,
     [property: JsonPropertyName("contents")]       string Contents,
     [property: JsonPropertyName("textHeight")]     double TextHeight = 2.5,
+    // The WRAP width in drawing units. "widthFactor" is a misnomer kept for compatibility - in
+    // AutoCAD a width FACTOR is horizontal letter compression, not a wrap width. Prefer "width".
     [property: JsonPropertyName("widthFactor")]    double Width = 0.0,
+    [property: JsonPropertyName("width")]          double? WrapWidth = null,
     [property: JsonPropertyName("rotationDeg")]    double RotationDeg = 0.0,
     [property: JsonPropertyName("attachmentPoint")] string? AttachmentPoint = null,
     [property: JsonPropertyName("textStyle")]      string? TextStyle = null,
@@ -235,3 +238,49 @@ public sealed record ScaleTextResult(
     [property: JsonPropertyName("newHeight")] double? NewHeight,
     [property: JsonPropertyName("items")]     IReadOnlyList<ScaledTextDto> Items,
     [property: JsonPropertyName("note")]      string Note);
+
+// ─────────── roadmap 3.3, third tranche: how an MText presents itself ───────────
+
+public sealed record BackgroundMaskArgs(
+    [property: JsonPropertyName("handles")]              IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("enabled")]              bool? Enabled = null,
+    [property: JsonPropertyName("useDrawingBackground")] bool? UseDrawingBackground = null,
+    [property: JsonPropertyName("color")]                ColorDto? Color = null,
+    [property: JsonPropertyName("scaleFactor")]          double? ScaleFactor = null);
+
+public sealed record MaskedMTextDto(
+    [property: JsonPropertyName("handle")]               string Handle,
+    [property: JsonPropertyName("enabledBefore")]        bool EnabledBefore,
+    [property: JsonPropertyName("enabled")]              bool Enabled,
+    [property: JsonPropertyName("usesDrawingBackground")] bool UsesDrawingBackground,
+    [property: JsonPropertyName("scaleFactor")]          double? ScaleFactor);
+
+public sealed record BackgroundMaskResult(
+    [property: JsonPropertyName("affected")] int Affected,
+    [property: JsonPropertyName("enabled")]  bool Enabled,
+    [property: JsonPropertyName("items")]    IReadOnlyList<MaskedMTextDto> Items,
+    [property: JsonPropertyName("note")]     string Note);
+
+public sealed record MTextColumnArgs(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("mode")]       string? Mode = null,
+    [property: JsonPropertyName("count")]      int? Count = null,
+    [property: JsonPropertyName("width")]      double? Width = null,
+    [property: JsonPropertyName("gutter")]     double? Gutter = null,
+    [property: JsonPropertyName("autoHeight")] bool? AutoHeight = null);
+
+public sealed record MTextColumnResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("modeBefore")]   string ModeBefore,
+    [property: JsonPropertyName("mode")]         string Mode,
+    [property: JsonPropertyName("countBefore")]  int? CountBefore,
+    [property: JsonPropertyName("count")]        int? Count,
+    [property: JsonPropertyName("width")]        double? Width,
+    [property: JsonPropertyName("gutter")]       double? Gutter,
+    [property: JsonPropertyName("widthBefore")]  double WidthBefore,
+    [property: JsonPropertyName("drawnWidth")]   double DrawnWidth,
+    [property: JsonPropertyName("heightBefore")] double HeightBefore,
+    [property: JsonPropertyName("drawnHeight")]  double DrawnHeight,
+    [property: JsonPropertyName("mtextWidthBefore")] double MTextWidthBefore,
+    [property: JsonPropertyName("mtextWidth")]   double MTextWidth,
+    [property: JsonPropertyName("note")]         string Note);

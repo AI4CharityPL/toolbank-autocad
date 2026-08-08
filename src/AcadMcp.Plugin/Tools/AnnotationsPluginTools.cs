@@ -15,8 +15,11 @@ using System.Threading.Tasks;
 using AcadMcp.Plugin.Threading;
 using AcadMcp.Shared;
 using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using AcadColor = Autodesk.AutoCAD.Colors.Color;
+using AcadRt = Autodesk.AutoCAD.Runtime;
 
 namespace AcadMcp.Plugin.Tools;
 
@@ -51,6 +54,10 @@ internal static class AnnotationsPluginTools
         host.Register("acad.annotations.set_text_justification", SetTextJustification);
         host.Register("acad.annotations.text_fit",               TextFit);
         host.Register("acad.annotations.scale_text_in_place",    ScaleTextInPlace);
+
+        // roadmap 3.3 - how an MText presents itself
+        host.Register("acad.annotations.background_mask_mtext",  BackgroundMaskMText);
+        host.Register("acad.annotations.mtext_column_settings",  MTextColumnSettings);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -143,7 +150,7 @@ internal static class AnnotationsPluginTools
                 Location        = AcadEnv.ToPoint3d(a.Position),
                 Contents        = a.Contents ?? "",
                 TextHeight      = a.TextHeight,
-                Width           = a.Width,                       // 0 = auto-width (rule 27 trap #2)
+                Width           = a.WrapWidth ?? a.Width,      // 0 = auto-width (rule 27 trap #2)
                 Rotation        = a.RotationDeg * Math.PI / 180.0,
                 Attachment      = ParseAttachment(a.AttachmentPoint),
                 TextStyleId     = AcadEnv.ResolveTextStyleOrStandard(db, tr, a.TextStyle),
@@ -1042,6 +1049,227 @@ internal static class AnnotationsPluginTools
                 note = "Each text was resized about its OWN anchor and movedBy proves none of " +
                        "them drifted. modify.scale is the other thing: it scales distances too, " +
                        "so a row of tags would bunch towards the base point as well as growing.",
+            });
+        });
+
+    // ─────────── roadmap 3.3: how an MText presents itself ───────────
+
+    /// <summary>A column property, or null when the MText has no columns to have one.</summary>
+    /// <remarks>
+    /// ColumnCount, ColumnWidth and ColumnGutterWidth all THROW eNotApplicable when ColumnType
+    /// is NoColumns - they are unanswerable, not merely unset, exactly like Polyline.ConstantWidth
+    /// on a polyline whose segments differ. Reading one while building the RESULT is what made
+    /// this tool fail with a bare eNotApplicable that appeared to come from the edit; the edit
+    /// had not been reached.
+    /// </remarks>
+    private static T? SafeColumn<T>(Func<T> read) where T : struct
+    {
+        try { return read(); }
+        catch (AcadRt.Exception) { return null; }
+    }
+
+    private static MText RequireMText(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException("handle is required: the MText to change.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), mode);
+        if (ent is MText m) return m;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetType().Name + ", not an MText. Single-line " +
+            "text has no background mask and no columns - those belong to MText.");
+    }
+
+    private static Task<ToolDispatchResult> BackgroundMaskMText(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.background_mask_mtext", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BackgroundMaskArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which MText to mask.");
+
+            var on = a.Enabled ?? true;
+            var useDrawing = a.UseDrawingBackground == true;
+
+            if (on && useDrawing && a.Color is not null)
+                throw new ArgumentException(
+                    "useDrawingBackground and color contradict each other: one takes whatever " +
+                    "the drawing background happens to be, the other paints a fixed colour. " +
+                    "Give one.");
+            if (on && !useDrawing && a.Color is null)
+                throw new ArgumentException(
+                    "A mask needs a colour. Pass color, or useDrawingBackground: true to follow " +
+                    "the drawing background - which is what you want on a sheet that may be " +
+                    "plotted on white and viewed on black.");
+
+            // AutoCAD's own limits. Below 1 the mask would be smaller than the text it is meant
+            // to protect, which reads as a mask that does not work rather than one that is off.
+            var scale = a.ScaleFactor ?? 1.5;
+            if (on && (scale < 1.0 || scale > 5.0))
+                throw new ArgumentException(
+                    "scaleFactor must be between 1 and 5; AutoCAD's own range. 1 hugs the text " +
+                    "exactly and anything below it would leave the text poking out of its own " +
+                    "mask. 1.5 is the default.");
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var m = RequireMText(db, tr, h, OpenMode.ForWrite);
+                var wasOn = m.BackgroundFill;
+
+                m.BackgroundFill = on;
+                if (on)
+                {
+                    m.UseBackgroundColor = useDrawing;
+                    if (!useDrawing && a.Color is not null)
+                        m.BackgroundFillColor = a.Color.AciIndex is int aci && aci >= 0
+                            ? AcadColor.FromColorIndex(ColorMethod.ByAci, (short)aci)
+                            : AcadColor.FromRgb((byte)a.Color.R, (byte)a.Color.G, (byte)a.Color.B);
+                    m.BackgroundScaleFactor = scale;
+                }
+
+                // Read back. BackgroundFill is one of those properties that accepts an
+                // assignment and can be overruled by the entity's own state, and a mask that
+                // did not take looks exactly like one that was never asked for.
+                if (m.BackgroundFill != on)
+                    throw new InvalidOperationException(
+                        "The mask on " + h + " reads back as " + m.BackgroundFill + " after " +
+                        "being set to " + on + ", so the change did not take.");
+
+                changed.Add(new
+                {
+                    handle = h,
+                    enabledBefore = wasOn,
+                    enabled = m.BackgroundFill,
+                    usesDrawingBackground = m.BackgroundFill && m.UseBackgroundColor,
+                    scaleFactor = m.BackgroundFill ? m.BackgroundScaleFactor : (double?)null,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                enabled = on,
+                items = changed,
+                note = on
+                    ? "The mask is drawn BEHIND the text and hides whatever it covers - the " +
+                      "point of it on a busy plan. It does not change the MText's extents, so " +
+                      "the entity measures the same as it did; look at the drawing to see it."
+                    : "The mask is off. Anything behind the text shows through again.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> MTextColumnSettings(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.mtext_column_settings", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MTextColumnArgsDto>(args);
+            var m = RequireMText(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var mode = (a.Mode ?? "static").Trim().ToLowerInvariant();
+            if (mode is not ("none" or "static" or "dynamic"))
+                throw new ArgumentException(
+                    "mode must be none, static or dynamic. 'static' is a fixed number of columns " +
+                    "you choose; 'dynamic' lets AutoCAD flow the text into as many as the height " +
+                    "allows; 'none' puts it back to a single block of text.");
+
+            var beforeType = m.ColumnType.ToString();
+            var beforeCount = SafeColumn(() => m.ColumnCount);
+            // The MText's OWN wrap width, which columns overwrite with the total. Captured so
+            // the caller can see it change and put it back.
+            var mtextWidthBefore = m.Width;
+            var e0 = m.GeometricExtents;
+            var w0 = e0.MaxPoint.X - e0.MinPoint.X;
+            var h0 = e0.MaxPoint.Y - e0.MinPoint.Y;
+
+            // Each assignment is attributed, because "eNotApplicable" on its own does not say
+            // WHICH property AutoCAD objected to - and the column properties have to be set in
+            // an order the API does not document.
+            void Set(string what, Action act)
+            {
+                try { act(); }
+                catch (AcadRt.Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        "Setting " + what + " on " + a.Handle + " threw " + ex.ErrorStatus +
+                        ". The MText is " + (m.Width > 0 ? m.Width + " wide" : "auto-width") +
+                        " and currently " + m.ColumnType + ".");
+                }
+            }
+
+            if (mode == "none")
+            {
+                Set("ColumnType=NoColumns", () => m.ColumnType = ColumnType.NoColumns);
+            }
+            else
+            {
+                if (a.Width is null || a.Width <= 0)
+                    throw new ArgumentException(
+                        "width is required and must be greater than zero: how wide ONE column " +
+                        "is. The MText's overall width becomes count*width plus the gutters, " +
+                        "which is why it is given per column rather than in total.");
+                var gutter = a.Gutter ?? a.Width.Value * 0.1;
+                if (gutter < 0)
+                    throw new ArgumentException("gutter cannot be negative.");
+
+                // Order matters and is not documented. MEASURED, after an attributed failure
+                // said which assignment AutoCAD objected to: ColumnWidth throws NotApplicable
+                // while the MText is still NoColumns, so the type has to be set FIRST and the
+                // column geometry after it. An earlier attempt at the reverse order was a guess,
+                // made because a bare eNotApplicable looked like it came from the type - it came
+                // from reading ColumnCount to build the result, before any of this ran.
+                if (mode == "static")
+                {
+                    var count = a.Count ?? 2;
+                    if (count < 2)
+                        throw new ArgumentException(
+                            "count must be at least 2 for static columns; one column is mode " +
+                            "'none'.");
+                    Set("ColumnType=StaticColumns", () => m.ColumnType = ColumnType.StaticColumns);
+                    Set("ColumnCount", () => m.ColumnCount = count);
+                }
+                else
+                {
+                    Set("ColumnType=DynamicColumns",
+                        () => m.ColumnType = ColumnType.DynamicColumns);
+                    Set("ColumnAutoHeight", () => m.ColumnAutoHeight = a.AutoHeight ?? true);
+                }
+                Set("ColumnWidth", () => m.ColumnWidth = a.Width!.Value);
+                Set("ColumnGutterWidth", () => m.ColumnGutterWidth = gutter);
+            }
+
+            var e1 = m.GeometricExtents;
+            var w1 = e1.MaxPoint.X - e1.MinPoint.X;
+            var h1 = e1.MaxPoint.Y - e1.MinPoint.Y;
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                modeBefore = beforeType,
+                mode = m.ColumnType.ToString(),
+                countBefore = beforeCount,
+                count = SafeColumn(() => m.ColumnCount),
+                width = SafeColumn(() => m.ColumnWidth),
+                gutter = SafeColumn(() => m.ColumnGutterWidth),
+                // The measurement that separates "the property was set" from "the text reflowed".
+                // Columns are a LAYOUT change, so the drawn extent has to move; a count that
+                // reads 3 over an unchanged block of text is a property nobody applied.
+                widthBefore = w0,
+                drawnWidth = w1,
+                heightBefore = h0,
+                drawnHeight = h1,
+                mtextWidthBefore,
+                mtextWidth = m.Width,
+                note = "widthBefore/drawnWidth and heightBefore/drawnHeight are how you tell the " +
+                       "text actually REFLOWED from a column count that was merely stored - " +
+                       "splitting a block into columns widens it and shortens it. " +
+                       (mode == "none"
+                            ? "Measured, and worth knowing: mode='none' removes the columns but " +
+                              "does NOT restore the MText's original wrap width - it keeps " +
+                              "whatever the columns made it (" + m.Width + ", against " +
+                              mtextWidthBefore + " before this call), so the text comes back as " +
+                              "one WIDE block rather than the narrow one you started with. Set " +
+                              "the width back yourself if that matters."
+                            : "Note that this overwrites the MText's own wrap width with the " +
+                              "total across the columns: it was " + mtextWidthBefore +
+                              " and is now " + m.Width + "."),
             });
         });
 }

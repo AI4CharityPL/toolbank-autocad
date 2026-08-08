@@ -151,4 +151,22 @@ public static class AnnotationsTools
         RequiresPlugin = true)]
     public static Task<ScaleTextResult> ScaleTextInPlace(IPluginGateway gw, ScaleTextArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<ScaleTextArgs, ScaleTextResult>(gw, "acad.annotations.scale_text_in_place", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 3.3: how an MText presents itself ───────────
+
+    [McpTool("background_mask_mtext", "Put an opaque mask behind MText so it stays readable over hatching, an xref or a busy plan - AutoCAD's background mask. Give either color for a fixed colour, or useDrawingBackground true to follow whatever the drawing background is, which is what survives being plotted on white and viewed on black; the two contradict each other and passing both is refused. scaleFactor is AutoCAD's 1 to 5, where 1 hugs the text exactly, and anything below it would leave the text poking out of its own mask. The mask does not change the MText's extents, so the entity still measures the same - look at the drawing to see it.", "annotations",
+        Intent = new[] { "maska tla pod tekstem", "zaslon kreskowanie pod napisem",
+                         "background mask on mtext", "make text readable over a hatch",
+                         "opaque background behind text", "tlo pod tekstem" },
+        RequiresPlugin = true)]
+    public static Task<BackgroundMaskResult> BackgroundMaskMText(IPluginGateway gw, BackgroundMaskArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<BackgroundMaskArgs, BackgroundMaskResult>(gw, "acad.annotations.background_mask_mtext", args, T_NORMAL, ct);
+
+    [McpTool("mtext_column_settings", "Flow an MText into columns. mode 'static' is a fixed number you choose, 'dynamic' lets AutoCAD use as many as the height allows, 'none' puts it back to one block. width is the width of ONE column, not the total, because the overall width becomes count times width plus the gutters. The result reports the drawn extent before and after, which is how you tell the text actually REFLOWED from a column count that was merely stored: splitting a block into columns makes it wider and shorter, and putting it back does the reverse.", "annotations",
+        Intent = new[] { "podziel tekst na kolumny", "kolumny w mtext",
+                         "mtext columns", "split a note into two columns",
+                         "ustaw szerokosc kolumny", "flow text into columns" },
+        RequiresPlugin = true)]
+    public static Task<MTextColumnResult> MTextColumnSettings(IPluginGateway gw, MTextColumnArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<MTextColumnArgs, MTextColumnResult>(gw, "acad.annotations.mtext_column_settings", args, T_NORMAL, ct);
 }

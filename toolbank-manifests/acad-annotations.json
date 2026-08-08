@@ -13,10 +13,12 @@
     "add",
     "annotations",
     "autocad",
+    "background",
     "block",
     "by",
     "cad",
     "cell",
+    "column",
     "content",
     "create",
     "current",
@@ -29,6 +31,7 @@
     "in",
     "justification",
     "list",
+    "mask",
     "mleader",
     "mtext",
     "pattern",
@@ -36,6 +39,7 @@
     "replace",
     "scale",
     "set",
+    "settings",
     "style",
     "styles",
     "table",
@@ -48,6 +52,7 @@
     "add multiline text",
     "add single line text",
     "add table",
+    "background mask on mtext",
     "callout with block",
     "callout with text",
     "change text justification",
@@ -73,18 +78,25 @@
     "find and replace text",
     "find text in the drawing",
     "fit text between two points",
+    "flow text into columns",
     "gdzie jest ten tekst",
     "justifytext",
+    "kolumny w mtext",
     "list text matching a pattern",
     "list text styles",
     "lista tekstow do pliku",
+    "make text readable over a hatch",
     "make textstyle current",
     "make ttf style",
+    "maska tla pod tekstem",
+    "mtext columns",
     "new text style",
+    "opaque background behind text",
     "place dbtext",
     "place mleader block",
     "place mleader with text",
     "place mtext",
+    "podziel tekst na kolumny",
     "popraw mtext",
     "popraw napis",
     "popraw nazwe wszedzie",
@@ -106,6 +118,7 @@
     "set text anchor point",
     "show all textstyles",
     "skasuj textstyle",
+    "split a note into two columns",
     "stretch text to fit",
     "stworz styl tekstu",
     "switch active textstyle",
@@ -113,10 +126,12 @@
     "tabela rxc",
     "table cell update",
     "textfit",
+    "tlo pod tekstem",
     "update dbtext content",
     "update mtext content",
     "ustaw aktualny styl tekstu",
     "ustaw komorke tabeli",
+    "ustaw szerokosc kolumny",
     "ustaw wysokosc wszystkich napisow",
     "usun styl tekstu",
     "what text styles exist",
@@ -134,6 +149,7 @@
     "zamiana napisow",
     "zamien tekst w calym rysunku",
     "zapisz wszystkie napisy do pliku",
+    "zaslon kreskowanie pod napisem",
     "zmien justowanie tekstu",
     "zmien komorke",
     "zmien mtext",
@@ -218,6 +234,23 @@
         "add table",
         "create table from data",
         "tabela rxc"
+      ]
+    },
+    {
+      "name": "background_mask_mtext",
+      "description": "Put an opaque mask behind MText so it stays readable over hatching, an xref or a busy plan - AutoCAD\u0027s background mask. Give either color for a fixed colour, or useDrawingBackground true to follow whatever the drawing background is, which is what survives being plotted on white and viewed on black; the two contradict each other and passing both is refused. scaleFactor is AutoCAD\u0027s 1 to 5, where 1 hugs the text exactly, and anything below it would leave the text poking out of its own mask. The mask does not change the MText\u0027s extents, so the entity still measures the same - look at the drawing to see it.",
+      "tags": [
+        "background",
+        "mask",
+        "mtext"
+      ],
+      "intent": [
+        "maska tla pod tekstem",
+        "zaslon kreskowanie pod napisem",
+        "background mask on mtext",
+        "make text readable over a hatch",
+        "opaque background behind text",
+        "tlo pod tekstem"
       ]
     },
     {
@@ -320,6 +353,23 @@
         "show all textstyles",
         "wszystkie style tekstu",
         "what text styles exist"
+      ]
+    },
+    {
+      "name": "mtext_column_settings",
+      "description": "Flow an MText into columns. mode \u0027static\u0027 is a fixed number you choose, \u0027dynamic\u0027 lets AutoCAD use as many as the height allows, \u0027none\u0027 puts it back to one block. width is the width of ONE column, not the total, because the overall width becomes count times width plus the gutters. The result reports the drawn extent before and after, which is how you tell the text actually REFLOWED from a column count that was merely stored: splitting a block into columns makes it wider and shorter, and putting it back does the reverse.",
+      "tags": [
+        "mtext",
+        "column",
+        "settings"
+      ],
+      "intent": [
+        "podziel tekst na kolumny",
+        "kolumny w mtext",
+        "mtext columns",
+        "split a note into two columns",
+        "ustaw szerokosc kolumny",
+        "flow text into columns"
       ]
     },
     {
@@ -439,7 +489,7 @@
   ],
   "metadata": {
     "category": "annotations",
-    "tool_count_target": 18,
+    "tool_count_target": 20,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -453,6 +503,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-07T18:27:19.8226374Z"
+    "last_regenerated_utc": "2026-08-08T10:53:47.9747989Z"
   }
 }

@@ -1,4 +1,4 @@
-// Plugin-side DTOs for the acad-annotations category.
+﻿// Plugin-side DTOs for the acad-annotations category.
 // Mirror Backend/Categories/Annotations/AnnotationsDtos.cs.
 
 using System.Collections.Generic;
@@ -26,7 +26,12 @@ internal sealed record AddMTextArgsDto(
     [property: JsonPropertyName("position")]        Point3dDto Position,
     [property: JsonPropertyName("contents")]        string Contents,
     [property: JsonPropertyName("textHeight")]      double TextHeight = 2.5,
+    // The WRAP width, in drawing units. It was exposed only as "widthFactor", which in AutoCAD
+    // means horizontal letter compression - so a caller asking for widthFactor 0.8 expecting
+    // condensed text got an MText 0.8 units wide and a plausible-looking mess. "width" is the
+    // right name and wins when both are given; the old one still works so nothing breaks.
     [property: JsonPropertyName("widthFactor")]     double Width = 0.0,
+    [property: JsonPropertyName("width")]           double? WrapWidth = null,
     [property: JsonPropertyName("rotationDeg")]     double RotationDeg = 0.0,
     [property: JsonPropertyName("attachmentPoint")] string? AttachmentPoint = null,
     [property: JsonPropertyName("textStyle")]       string? TextStyle = null,
@@ -118,3 +123,20 @@ internal sealed record ScaleTextArgsDto(
     [property: JsonPropertyName("handles")]   List<string>? Handles,
     [property: JsonPropertyName("factor")]    double? Factor,
     [property: JsonPropertyName("newHeight")] double? NewHeight);
+
+// ─────────── roadmap 3.3, third tranche: how an MText presents itself ───────────
+
+internal sealed record BackgroundMaskArgsDto(
+    [property: JsonPropertyName("handles")]            List<string>? Handles,
+    [property: JsonPropertyName("enabled")]            bool? Enabled,
+    [property: JsonPropertyName("useDrawingBackground")] bool? UseDrawingBackground,
+    [property: JsonPropertyName("color")]              ColorDto? Color,
+    [property: JsonPropertyName("scaleFactor")]        double? ScaleFactor);
+
+internal sealed record MTextColumnArgsDto(
+    [property: JsonPropertyName("handle")]      string? Handle,
+    [property: JsonPropertyName("mode")]        string? Mode,
+    [property: JsonPropertyName("count")]       int? Count,
+    [property: JsonPropertyName("width")]       double? Width,
+    [property: JsonPropertyName("gutter")]      double? Gutter,
+    [property: JsonPropertyName("autoHeight")]  bool? AutoHeight);

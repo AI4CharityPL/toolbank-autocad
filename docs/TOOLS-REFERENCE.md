@@ -1,10 +1,10 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 538 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 540 tools total.
 
 ## Categories
 
-- [acad-annotations](#acad-annotations) (18 tools)
+- [acad-annotations](#acad-annotations) (20 tools)
 - [acad-annotative](#acad-annotative) (15 tools)
 - [acad-architecture](#acad-architecture) (16 tools)
 - [acad-blocks](#acad-blocks) (16 tools)
@@ -55,12 +55,14 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `add_mleader_text` | Add a multi-leader (MLeader) with MText content. Single segment from arrowTip to textPosition; the dogleg between the leader and the text block is enabled by default. |
 | `add_mtext` | Add a multi-line text (MText) entity at the given position. widthFactor=0 disables word-wrap (auto width); attachmentPoint is e.g. TopLeft / MiddleCenter / BottomRight (defaults to TopLeft). Inline MText formatting codes are passed through (\\Pnewline, \\Lunderline, \\C2red). |
 | `add_table` | Insert an AutoCAD Table at the given position with rows × cols cells. Optional 2D data array fills cell text top-to-bottom, left-to-right. rowHeight/colWidth are in current units. |
+| `background_mask_mtext` | Put an opaque mask behind MText so it stays readable over hatching, an xref or a busy plan - AutoCAD's background mask. Give either color for a fixed colour, or useDrawingBackground true to follow whatever the drawing background is, which is what survives being plotted on white and viewed on black; the two contradict each other and passing both is refused. scaleFactor is AutoCAD's 1 to 5, where 1 hugs the text exactly, and anything below it would leave the text poking out of its own mask. The mask does not change the MText's extents, so the entity still measures the same - look at the drawing to see it. |
 | `create_text_style` | Create a new text style (TextStyleTableRecord) by name with the given font (.shx or TTF face name). height=0 makes the style annotative-friendly (text height set per-entity). |
 | `delete_text_style` | Delete a text style by name. Standard cannot be deleted; the style must be unused (no DBText/MText/Dim references). |
 | `export_text_content` | Write every piece of text in the drawing to a file - single-line text, MText, MLeaders, block attributes, table cells and dimension overrides. format csv carries handle, type, layer and text; txt is the text alone, one item per line. The text column is what a reader sees, with MText formatting codes already resolved. Written UTF-8 with a byte order mark so a spreadsheet opens accented characters intact rather than as mojibake, and the file is checked to be non-empty before this reports success. |
 | `find_replace_text` | Find and replace text across the whole drawing - AutoCAD's FIND. Covers single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides. Every write is READ BACK and anything that did not take is listed as skipped rather than counted. Text carrying MText formatting codes is only changed when the pattern matches the same number of times in the stored string as in the rendered one; otherwise the replacement would be landing inside a code - changing a font rather than the words - and it is skipped with that reason. Pass dryRun true to see exactly what would change without writing anything. |
 | `list_text_by_pattern` | Find every piece of text in the drawing matching a pattern, WITHOUT changing anything. Reads all six places text lives - single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides - and reports scannedByType, so 'no matches' in a drawing full of text can be told from 'no matches in the two types a lesser search bothered to look at'. Matching runs against the RENDERED text, not the stored string: a search over MText contents would hit words inside formatting codes and report matches nobody can see on the sheet. Set regex, matchCase or wholeWord as needed. |
 | `list_text_styles` | List every text style defined in the active drawing plus the current style name. |
+| `mtext_column_settings` | Flow an MText into columns. mode 'static' is a fixed number you choose, 'dynamic' lets AutoCAD use as many as the height allows, 'none' puts it back to one block. width is the width of ONE column, not the total, because the overall width becomes count times width plus the gutters. The result reports the drawn extent before and after, which is how you tell the text actually REFLOWED from a column count that was merely stored: splitting a block into columns makes it wider and shorter, and putting it back does the reverse. |
 | `scale_text_in_place` | Resize text about its OWN anchor point - AutoCAD's SCALETEXT. Every item holds still while it grows, which is what modify.scale cannot do: that one scales distances too, so a row of tags would bunch towards the base point as well as get bigger. Give either factor, which multiplies each text's own height and so keeps a mixed selection's relative sizes, or newHeight, which makes every one of them that height. The anchor is measured before and after and any drift is reported as a failure. |
 | `set_current_text_style` | Set the active text style for new DBText / MText entities; subsequent text creation defaults to it. |
 | `set_table_cell` | Set the text content of a single Table cell by (row, col), 0-based. |

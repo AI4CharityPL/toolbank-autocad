@@ -37,6 +37,37 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3, third tranche — how an MText presents itself.** `acad-annotations` 18 → 20, bank
+  538 → 540: `background_mask_mtext`, `mtext_column_settings`. Verified live **49/49**.
+
+  These two differ in **what can be proved about them at all**. A background mask is drawn behind
+  the text and changes no extent, so there is nothing geometric to measure — saying so is better
+  than inventing a number, and the verification asserts the extent is *unchanged* so the claim in
+  the tool's own note stays true. The mask is proved on an exported image instead: a hatch behind
+  the text, and the hatching is visibly interrupted around the letters and unbroken everywhere
+  else. Columns are the opposite: they must **reflow** the text, so the drawn extent is read
+  before and after — one 200-wide block becomes 640 across three columns of 200 plus two gutters
+  of 20.
+
+  Getting columns working took three wrong turns, and the shape of the mistake is worth keeping:
+
+  - The first `eNotApplicable` came from **reading `ColumnCount` to build the result**, before any
+    edit ran. Those getters throw when the MText has no columns — they are *unanswerable*, not
+    unset, exactly like `Polyline.ConstantWidth` on a polyline whose segments differ.
+  - Reading that error as "AutoCAD rejects `ColumnType`", I **reordered the assignments on a
+    guess**. That fixed nothing and added a second, real failure.
+  - Only after making each assignment report *which property* was refused did the answer appear:
+    `ColumnWidth throws NotApplicable while the MText is still NoColumns`. The original order was
+    right; the type must be set first and the column geometry after it.
+
+  A `SafeColumn<T>()` helper and the per-assignment attribution both stay, so the next
+  `eNotApplicable` in this family says where it came from.
+
+  Also measured and reported rather than hidden: **`mode='none'` does not restore the MText's
+  original wrap width.** It keeps whatever the columns made it — 640, not the 200 it was created
+  with — so the text returns as one *wide* block. The result carries `mtextWidthBefore` and
+  `mtextWidth` and the note says this outright.
+
 - **Phase 3.3, second tranche — where text sits and how big it is.** `acad-annotations` 15 → 18,
   bank 535 → 538: `set_text_justification`, `text_fit`, `scale_text_in_place`. Verified live
   **60/60**. `justify_text` from the roadmap list is struck as a second name for
@@ -277,6 +308,13 @@ All notable changes to this project will be documented in this file. Format: [Ke
     from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
 
 ### Fixed
+
+- **`annotations.add_mtext` exposed its wrap width under the name `widthFactor`.** In AutoCAD a
+  width *factor* is horizontal letter compression; this argument is the width in drawing units at
+  which the text wraps. A caller passing `widthFactor: 0.8` expecting condensed text got an MText
+  0.8 units wide — narrow, wrong, and entirely plausible-looking. The tool now accepts **`width`**,
+  which wins when both are given; `widthFactor` still works so nothing breaks. Found while writing
+  a verification that passed `width` and got an unwrapped 2728-unit line.
 
 - **Verification scripts could silently measure two different drawings.** Every MCP category runs
   in its **own backend process**, and when more than one drawing is open those processes can bind

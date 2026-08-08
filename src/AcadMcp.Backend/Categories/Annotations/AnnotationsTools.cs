@@ -205,4 +205,36 @@ public static class AnnotationsTools
         RequiresPlugin = true)]
     public static Task<ExplodeMTextResult> ExplodeMTextToText(IPluginGateway gw, ExplodeMTextArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<ExplodeMTextArgs, ExplodeMTextResult>(gw, "acad.annotations.explode_mtext_to_text", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 3.3: paragraphs, bullets, frame ───────────
+
+    [McpTool("set_paragraph_format", "Set alignment, indents and line spacing on an MText's paragraphs. The code goes on EVERY paragraph, not just the first - formatting one and leaving the rest reads as a tool that half worked - and any code already there is replaced rather than stacked. align needs a WIDTH to align within: a zero-width MText is exactly as wide as its longest line, so ranging it right would move nothing, and that case is refused with the reason instead. The result reports the drawn left and right edges before and after, which is how you tell an indent that moved the text from a code that was merely stored.", "annotations",
+        Intent = new[] { "wciecie akapitu w mtext", "wyrownaj akapit do prawej",
+                         "set paragraph indent", "mtext paragraph alignment",
+                         "interlinia w mtext", "justify mtext paragraphs" },
+        RequiresPlugin = true)]
+    public static Task<ParagraphFormatResult> SetParagraphFormat(IPluginGateway gw, ParagraphFormatArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<ParagraphFormatArgs, ParagraphFormatResult>(gw, "acad.annotations.set_paragraph_format", args, T_NORMAL, ct);
+
+    [McpTool("mtext_bullets_numbering", "Put bullets, numbers or letters in front of an MText's paragraphs, or take them off with style='none'. Each item gets a HANGING INDENT as well as its marker, so a wrapped line lines up under the words rather than under the bullet - without that a two-line item reads as two items. Any marker already at the front is stripped before the new one goes on, so switching from bullets to numbers does not leave '1.  * ITEM'. Every item's own words are checked to survive into what the MText renders.", "annotations",
+        Intent = new[] { "punktory w mtext", "numeruj akapity", "lista wypunktowana",
+                         "add bullets to mtext", "number the paragraphs",
+                         "bulleted list in text" },
+        RequiresPlugin = true)]
+    public static Task<BulletsResult> MTextBulletsNumbering(IPluginGateway gw, BulletsArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<BulletsArgs, BulletsResult>(gw, "acad.annotations.mtext_bullets_numbering", args, T_NORMAL, ct);
+
+    // WITHDRAWN 2026-08-08, measured rather than assumed. MText.ShowBorders is the only frame
+    // property the 2025 managed API exposes - TextFrame and DrawFrame do not exist - and it
+    // accepts the assignment, reads back true, and DRAWS NOTHING. Measured twice, agreeing: the
+    // entity's extents stayed 300 x 10 across the change, and the exported image shows FRAMED
+    // TEXT with no border around it.
+    //
+    // A tool that sets a property and changes the drawing not at all is worse than a missing
+    // one: it reports success. The [McpTool] attribute is removed so it is no longer advertised,
+    // following the same course as modify.undo/redo; the handler and this proxy stay, so
+    // restoring one attribute brings it back if a later AutoCAD makes ShowBorders mean what its
+    // name suggests. Recorded in KNOWN-GAPS section B.
+    public static Task<MTextFrameResult> SetMTextFrame(IPluginGateway gw, MTextFrameArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<MTextFrameArgs, MTextFrameResult>(gw, "acad.annotations.set_mtext_frame", args, T_NORMAL, ct);
 }

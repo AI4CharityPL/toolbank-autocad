@@ -361,3 +361,58 @@ public sealed record ExplodeMTextResult(
     [property: JsonPropertyName("before")]       string Before,
     [property: JsonPropertyName("originalKept")] bool OriginalKept,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── roadmap 3.3, sixth tranche: paragraphs, bullets, frame ───────────
+
+public sealed record ParagraphFormatArgs(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("align")]       string? Align = null,
+    [property: JsonPropertyName("indentFirst")] double? IndentFirst = null,
+    [property: JsonPropertyName("indentLeft")]  double? IndentLeft = null,
+    [property: JsonPropertyName("indentRight")] double? IndentRight = null,
+    [property: JsonPropertyName("lineSpacing")] double? LineSpacing = null);
+
+public sealed record ParagraphFormatResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("code")]         string Code,
+    [property: JsonPropertyName("align")]        string? Align,
+    [property: JsonPropertyName("paragraphs")]   int Paragraphs,
+    [property: JsonPropertyName("stored")]       string Stored,
+    [property: JsonPropertyName("rendered")]     string Rendered,
+    [property: JsonPropertyName("leftBefore")]   double LeftBefore,
+    [property: JsonPropertyName("drawnLeft")]    double DrawnLeft,
+    [property: JsonPropertyName("rightBefore")]  double RightBefore,
+    [property: JsonPropertyName("drawnRight")]   double DrawnRight,
+    [property: JsonPropertyName("note")]         string Note);
+
+public sealed record BulletsArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("style")]  string? Style = null);
+
+public sealed record BulletsResult(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("style")]      string Style,
+    [property: JsonPropertyName("paragraphs")] int Paragraphs,
+    [property: JsonPropertyName("markers")]    IReadOnlyList<string> Markers,
+    [property: JsonPropertyName("before")]     string Before,
+    [property: JsonPropertyName("rendered")]   string Rendered,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record MTextFrameArgs(
+    [property: JsonPropertyName("handles")] IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("enabled")] bool? Enabled = null);
+
+public sealed record FramedMTextDto(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("enabled")]       bool Enabled,
+    [property: JsonPropertyName("widthBefore")]   double WidthBefore,
+    [property: JsonPropertyName("drawnWidth")]    double DrawnWidth,
+    [property: JsonPropertyName("heightBefore")]  double HeightBefore,
+    [property: JsonPropertyName("drawnHeight")]   double DrawnHeight,
+    [property: JsonPropertyName("extentChanged")] bool ExtentChanged);
+
+public sealed record MTextFrameResult(
+    [property: JsonPropertyName("affected")] int Affected,
+    [property: JsonPropertyName("enabled")]  bool Enabled,
+    [property: JsonPropertyName("items")]    IReadOnlyList<FramedMTextDto> Items,
+    [property: JsonPropertyName("note")]     string Note);

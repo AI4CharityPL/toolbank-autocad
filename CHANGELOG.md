@@ -37,6 +37,28 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3 COMPLETE — paragraph format and bullets.** `acad-annotations` 24 → 26, bank
+  544 → 546: `set_paragraph_format`, `mtext_bullets_numbering`. Verified live **37/37**. The
+  phase closes at **14 built, 3 blocked by the API, 1 struck as a duplicate**.
+
+  `set_paragraph_format` writes its code onto **every** paragraph, not just the first —
+  formatting one and leaving the rest reads as a tool that half worked — and replaces any code
+  already there rather than stacking them. Alignment needs a **width** to align within: a
+  zero-width MText is exactly as wide as its longest line, so ranging it right would move
+  nothing, and that case is refused with the reason instead of quietly doing nothing.
+
+  `mtext_bullets_numbering` gives each item a **hanging indent** as well as its marker, so a
+  wrapped line lines up under the words and a two-line item does not read as two items. Any
+  marker already present is stripped first — the check a count cannot make, since
+  `1.  • ALPHA ITEM` is one paragraph with one marker as far as any tally is concerned.
+
+  **The measurement was wrong before the tools were.** An indent was checked against the MText's
+  own extents, which read `0 → 0`. Those extents are the **width box**, not the ink: an MText 400
+  wide at x=0 measures 0..400 whether the text inside is flush left, indented or ranged right.
+  The exported image plainly showed the indent working. The verification now explodes a copy with
+  `explode_mtext_to_text` — built in the previous tranche — and reads where the lines actually
+  land.
+
 - **Phase 3.3, fifth tranche — converting between text and MText.** `acad-annotations` 22 → 24,
   bank 542 → 544: `text_to_mtext`, `explode_mtext_to_text`. Verified live **38/38**.
 
@@ -351,6 +373,20 @@ All notable changes to this project will be documented in this file. Format: [Ke
     from the start but never enforced, and had drifted to 26 errors. Tracked as KNOWN-GAPS C5.
 
 ### Fixed
+
+- **`annotations.set_mtext_frame` was built, measured and withdrawn.** The 2025 managed API has
+  no `TextFrame` or `DrawFrame` on `MText` — both fail `CS0246` — and the only frame-ish property
+  it does expose, `ShowBorders`, accepts the assignment, reads back `true`, and **draws nothing**.
+  Measured two ways that agree: the entity's extents were 300 × 10 before and 300 × 10 after (and
+  400 × 43.3 unchanged on a second MText), and the exported image shows `FRAMED TEXT` with no
+  border around it. A frame is drawn *around* text, so it would have to push the extents out.
+
+  A tool that sets a property and changes the drawing not at all is worse than a missing one,
+  because it reports success. The `[McpTool]` attribute is removed so it is not advertised — the
+  same course taken with `modify.undo`/`redo` — while the handler and proxy stay, so restoring one
+  attribute brings it back if a later AutoCAD makes `ShowBorders` mean what its name suggests. The
+  catalogue test now asserts it **absent**, so it cannot return unnoticed. Recorded in
+  [KNOWN-GAPS](docs/KNOWN-GAPS.md) §B.
 
 - **`annotations.add_mtext` exposed its wrap width under the name `widthFactor`.** In AutoCAD a
   width *factor* is horizontal letter compression; this argument is the width in drawing units at

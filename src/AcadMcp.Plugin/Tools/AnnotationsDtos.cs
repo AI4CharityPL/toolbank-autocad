@@ -166,3 +166,21 @@ internal sealed record ExplodeMTextArgsDto(
     [property: JsonPropertyName("handle")]       string? Handle,
     [property: JsonPropertyName("keepOriginal")] bool? KeepOriginal,
     [property: JsonPropertyName("layer")]        string? Layer);
+
+// ─────────── roadmap 3.3, sixth tranche: paragraphs, bullets, frame ───────────
+
+internal sealed record ParagraphFormatArgsDto(
+    [property: JsonPropertyName("handle")]      string? Handle,
+    [property: JsonPropertyName("align")]       string? Align,
+    [property: JsonPropertyName("indentFirst")] double? IndentFirst,
+    [property: JsonPropertyName("indentLeft")]  double? IndentLeft,
+    [property: JsonPropertyName("indentRight")] double? IndentRight,
+    [property: JsonPropertyName("lineSpacing")] double? LineSpacing);
+
+internal sealed record BulletsArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle,
+    [property: JsonPropertyName("style")]  string? Style);
+
+internal sealed record MTextFrameArgsDto(
+    [property: JsonPropertyName("handles")] List<string>? Handles,
+    [property: JsonPropertyName("enabled")] bool? Enabled);

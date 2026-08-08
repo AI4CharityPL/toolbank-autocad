@@ -15,6 +15,7 @@
     "autocad",
     "background",
     "block",
+    "bullets",
     "by",
     "cad",
     "cell",
@@ -29,7 +30,9 @@
     "export",
     "find",
     "fit",
+    "format",
     "fraction",
+    "frame",
     "in",
     "insert",
     "justification",
@@ -37,6 +40,8 @@
     "mask",
     "mleader",
     "mtext",
+    "numbering",
+    "paragraph",
     "pattern",
     "place",
     "replace",
@@ -54,12 +59,14 @@
   ],
   "intent_examples": [
     "add a degree sign",
+    "add bullets to mtext",
     "add multileader text",
     "add multileader with block",
     "add multiline text",
     "add single line text",
     "add table",
     "background mask on mtext",
+    "bulleted list in text",
     "callout with block",
     "callout with text",
     "change text justification",
@@ -77,6 +84,7 @@
     "dodaj textstyle",
     "dodaj wynos",
     "dopasuj tekst miedzy dwa punkty",
+    "draw a border on text",
     "drop textstyle",
     "dump drawing text to csv",
     "edit multiline text",
@@ -89,14 +97,18 @@
     "find text in the drawing",
     "fit text between two points",
     "flow text into columns",
+    "frame around mtext",
     "gdzie jest ten tekst",
     "insert a diameter symbol",
     "insert special character into text",
+    "interlinia w mtext",
+    "justify mtext paragraphs",
     "justifytext",
     "kolumny w mtext",
     "list text matching a pattern",
     "list text styles",
     "lista tekstow do pliku",
+    "lista wypunktowana",
     "make 1/2 a stacked fraction",
     "make text readable over a hatch",
     "make textstyle current",
@@ -104,7 +116,12 @@
     "maska tla pod tekstem",
     "merge text entities",
     "mtext columns",
+    "mtext paragraph alignment",
     "new text style",
+    "number the paragraphs",
+    "numeruj akapity",
+    "obramuj mtext",
+    "obwodka tekstu",
     "opaque background behind text",
     "place dbtext",
     "place mleader block",
@@ -117,6 +134,8 @@
     "popraw nazwe wszedzie",
     "powieksz napisy bez przesuwania",
     "przypnij tekst do innego rogu",
+    "punktory w mtext",
+    "ramka wokol tekstu",
     "remove text style",
     "rename across the drawing",
     "replace text everywhere",
@@ -131,6 +150,7 @@
     "set current text style",
     "set dbtext text",
     "set mtext text",
+    "set paragraph indent",
     "set table cell text",
     "set text anchor point",
     "show all textstyles",
@@ -145,6 +165,7 @@
     "szukaj po wzorcu",
     "tabela rxc",
     "table cell update",
+    "text frame",
     "textfit",
     "tlo pod tekstem",
     "tolerance stacking",
@@ -158,6 +179,7 @@
     "ustaw szerokosc kolumny",
     "ustaw wysokosc wszystkich napisow",
     "usun styl tekstu",
+    "wciecie akapitu w mtext",
     "what text styles exist",
     "wrapped text block",
     "wstaw napis dtext",
@@ -169,6 +191,7 @@
     "wyeksportuj teksty z rysunku",
     "wylistuj style tekstu",
     "wynos z blokiem",
+    "wyrownaj akapit do prawej",
     "wyrownaj tekst do srodka bez przesuwania",
     "wyszukaj napisy",
     "zamiana napisow",
@@ -420,6 +443,23 @@
       ]
     },
     {
+      "name": "mtext_bullets_numbering",
+      "description": "Put bullets, numbers or letters in front of an MText\u0027s paragraphs, or take them off with style=\u0027none\u0027. Each item gets a HANGING INDENT as well as its marker, so a wrapped line lines up under the words rather than under the bullet - without that a two-line item reads as two items. Any marker already at the front is stripped before the new one goes on, so switching from bullets to numbers does not leave \u00271.  * ITEM\u0027. Every item\u0027s own words are checked to survive into what the MText renders.",
+      "tags": [
+        "mtext",
+        "bullets",
+        "numbering"
+      ],
+      "intent": [
+        "punktory w mtext",
+        "numeruj akapity",
+        "lista wypunktowana",
+        "add bullets to mtext",
+        "number the paragraphs",
+        "bulleted list in text"
+      ]
+    },
+    {
       "name": "mtext_column_settings",
       "description": "Flow an MText into columns. mode \u0027static\u0027 is a fixed number you choose, \u0027dynamic\u0027 lets AutoCAD use as many as the height allows, \u0027none\u0027 puts it back to one block. width is the width of ONE column, not the total, because the overall width becomes count times width plus the gutters. The result reports the drawn extent before and after, which is how you tell the text actually REFLOWED from a column count that was merely stored: splitting a block into columns makes it wider and shorter, and putting it back does the reverse.",
       "tags": [
@@ -469,6 +509,23 @@
         "switch active textstyle",
         "make textstyle current",
         "wybierz styl tekstu"
+      ]
+    },
+    {
+      "name": "set_paragraph_format",
+      "description": "Set alignment, indents and line spacing on an MText\u0027s paragraphs. The code goes on EVERY paragraph, not just the first - formatting one and leaving the rest reads as a tool that half worked - and any code already there is replaced rather than stacked. align needs a WIDTH to align within: a zero-width MText is exactly as wide as its longest line, so ranging it right would move nothing, and that case is refused with the reason instead. The result reports the drawn left and right edges before and after, which is how you tell an indent that moved the text from a code that was merely stored.",
+      "tags": [
+        "set",
+        "paragraph",
+        "format"
+      ],
+      "intent": [
+        "wciecie akapitu w mtext",
+        "wyrownaj akapit do prawej",
+        "set paragraph indent",
+        "mtext paragraph alignment",
+        "interlinia w mtext",
+        "justify mtext paragraphs"
       ]
     },
     {
@@ -586,7 +643,7 @@
   ],
   "metadata": {
     "category": "annotations",
-    "tool_count_target": 24,
+    "tool_count_target": 26,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -600,6 +657,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-08T12:59:56.0839229Z"
+    "last_regenerated_utc": "2026-08-08T13:33:30.6330180Z"
   }
 }

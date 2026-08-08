@@ -66,6 +66,11 @@ internal static class AnnotationsPluginTools
         // roadmap 3.3 - converting between text and mtext
         host.Register("acad.annotations.text_to_mtext",          TextToMText);
         host.Register("acad.annotations.explode_mtext_to_text",  ExplodeMTextToText);
+
+        // roadmap 3.3 - paragraphs, bullets, frame
+        host.Register("acad.annotations.set_paragraph_format",   SetParagraphFormat);
+        host.Register("acad.annotations.mtext_bullets_numbering", MTextBullets);
+        host.Register("acad.annotations.set_mtext_frame",        SetMTextFrame);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -1673,6 +1678,238 @@ internal static class AnnotationsPluginTools
                        "columns, a background mask, a stacked fraction - has nowhere to go on a " +
                        "single-line text and does not survive; the words do. The original is " +
                        "erased unless keepOriginal is true.",
+            });
+        });
+
+    // ─────────── roadmap 3.3: paragraphs, bullets, frame ───────────
+    //
+    // Alignment and indents are paragraph codes written into the contents, so they can be "set"
+    // without moving anything. What moves is the drawn EXTENT - text pushed right by an indent,
+    // or ranged right inside its own width - and that is what gets measured. It only moves at
+    // all if the MText HAS a width to align within, so a zero-width one is refused rather than
+    // silently doing nothing.
+
+    private static Task<ToolDispatchResult> SetParagraphFormat(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.set_paragraph_format", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ParagraphFormatArgsDto>(args);
+            var m = RequireMText(db, tr, a.Handle, OpenMode.ForWrite);
+
+            string? q = null;
+            if (!string.IsNullOrWhiteSpace(a.Align))
+            {
+                q = a.Align!.Trim().ToLowerInvariant() switch
+                {
+                    "left" => "l",
+                    "center" or "centre" => "c",
+                    "right" => "r",
+                    "justify" or "justified" => "j",
+                    _ => throw new ArgumentException(
+                        "align must be left, center, right or justify."),
+                };
+            }
+
+            if (q is null && a.IndentFirst is null && a.IndentLeft is null &&
+                a.IndentRight is null && a.LineSpacing is null)
+                throw new ArgumentException(
+                    "Nothing to change. Give align, indentFirst, indentLeft, indentRight or " +
+                    "lineSpacing.");
+
+            // Alignment inside a paragraph means nothing without a width to align WITHIN: a
+            // zero-width MText is exactly as wide as its longest line, so ranging it right moves
+            // it nowhere. Refused rather than quietly doing nothing.
+            if (q is not null && q != "l" && m.Width <= 0)
+                throw new ArgumentException(
+                    "This MText has no width, so it is exactly as wide as its longest line and " +
+                    "there is nothing for align='" + a.Align + "' to move the text within. Give " +
+                    "it a width first - add_mtext takes one - or use align='left'.");
+
+            var parts = new List<string>();
+            if (a.IndentFirst is not null) parts.Add("i" + Fmt(a.IndentFirst.Value));
+            if (a.IndentLeft is not null) parts.Add("l" + Fmt(a.IndentLeft.Value));
+            if (a.IndentRight is not null) parts.Add("r" + Fmt(a.IndentRight.Value));
+            if (q is not null) parts.Add("q" + q);
+            var code = parts.Count > 0 ? "\\p" + string.Join(",", parts) + ";" : "";
+
+            var e0 = m.GeometricExtents;
+            var l0 = e0.MinPoint.X;
+            var r0 = e0.MaxPoint.X;
+            var beforeStored = m.Contents;
+            var beforeRendered = m.Text;
+
+            if (code.Length > 0)
+            {
+                // One code per paragraph. Putting it only at the front formats the first and
+                // leaves the rest, which reads as a tool that half worked.
+                var paras = beforeStored.Split(new[] { "\\P" }, StringSplitOptions.None);
+                m.Contents = string.Join("\\P", paras.Select(p => code + StripParagraphCode(p)));
+            }
+            if (a.LineSpacing is not null)
+            {
+                if (a.LineSpacing < 0.25 || a.LineSpacing > 4.0)
+                    throw new ArgumentException(
+                        "lineSpacing must be between 0.25 and 4; AutoCAD's own range.");
+                m.LineSpacingStyle = LineSpacingStyle.Exactly;
+                m.LineSpacingFactor = a.LineSpacing.Value;
+            }
+
+            // The words must survive the codes. A malformed paragraph code eats the text after
+            // it, and the entity still reads back as a valid MText.
+            var renderedNow = m.Text;
+            if (beforeRendered.Length > 0 && renderedNow.Length == 0)
+                throw new InvalidOperationException(
+                    "The MText renders as nothing after formatting. It read \"" + beforeRendered +
+                    "\" before, and its contents are now \"" + m.Contents + "\" - the paragraph " +
+                    "code has swallowed the text.");
+
+            var e1 = m.GeometricExtents;
+            return Wrap(new
+            {
+                handle = a.Handle,
+                code,
+                align = a.Align,
+                paragraphs = beforeStored.Split(new[] { "\\P" }, StringSplitOptions.None).Length,
+                stored = m.Contents,
+                rendered = renderedNow,
+                leftBefore = l0,
+                drawnLeft = e1.MinPoint.X,
+                rightBefore = r0,
+                drawnRight = e1.MaxPoint.X,
+                note = "The code went on EVERY paragraph, not just the first - formatting one " +
+                       "and leaving the rest reads as a tool that half worked. leftBefore and " +
+                       "drawnLeft are how you tell an indent that moved the text from a code " +
+                       "that was merely stored.",
+            });
+        });
+
+    /// <summary>Drop any paragraph code already at the front, so codes do not accumulate.</summary>
+    private static string StripParagraphCode(string paragraph)
+    {
+        var m = Regex.Match(paragraph, @"^\\p[^;]*;");
+        return m.Success ? paragraph.Substring(m.Length) : paragraph;
+    }
+
+    private static string Fmt(double v) =>
+        v.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static Task<ToolDispatchResult> MTextBullets(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.mtext_bullets_numbering", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<BulletsArgsDto>(args);
+            var m = RequireMText(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var style = (a.Style ?? "bullet").Trim().ToLowerInvariant();
+            if (style is not ("bullet" or "numbered" or "lettered" or "none"))
+                throw new ArgumentException(
+                    "style must be bullet, numbered, lettered or none.");
+
+            var before = m.Text;
+            var paras = m.Contents.Split(new[] { "\\P" }, StringSplitOptions.None);
+
+            // Strip whatever marker is there before adding one, or switching from bullets to
+            // numbers leaves "1. * ITEM" and every count still reads right.
+            var stripped = paras.Select(p =>
+            {
+                var body = StripParagraphCode(p);
+                return Regex.Replace(body, @"^\s*(?:[•\-\*]|\d+[.)]|[a-zA-Z][.)])\s+", "");
+            }).ToList();
+
+            var markers = new List<string>();
+            var outParas = new List<string>();
+            for (int i = 0; i < stripped.Count; i++)
+            {
+                string marker = style switch
+                {
+                    "bullet" => "•  ",
+                    "numbered" => (i + 1) + ".  ",
+                    "lettered" => (char)('a' + (i % 26)) + ".  ",
+                    _ => "",
+                };
+                markers.Add(marker.TrimEnd());
+                // A hanging indent, so a wrapped line lines up under the words and not under
+                // the bullet. Without it a two-line item looks like two items.
+                var code = style == "none" ? "" : "\\pi-4,l4;";
+                outParas.Add(code + marker + stripped[i]);
+            }
+            m.Contents = string.Join("\\P", outParas);
+
+            var renderedNow = m.Text;
+            foreach (var body in stripped)
+                if (body.Length > 0 && !renderedNow.Contains(body, StringComparison.Ordinal))
+                    throw new InvalidOperationException(
+                        "The item \"" + body + "\" is missing from what the MText now renders " +
+                        "(\"" + renderedNow + "\"), so the markers were written over the text " +
+                        "rather than in front of it.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                style,
+                paragraphs = outParas.Count,
+                markers = markers.Where(x => x.Length > 0).ToList(),
+                before,
+                rendered = renderedNow,
+                note = style == "none"
+                    ? "Markers removed. Any bullet, number or letter already at the front of a " +
+                      "paragraph was stripped, so this undoes whichever of the three was there."
+                    : "Each item gets a hanging indent as well as its marker, so a wrapped line " +
+                      "lines up under the words rather than under the bullet - without that a " +
+                      "two-line item reads as two items. An existing marker is stripped first, " +
+                      "so switching from bullets to numbers does not leave \"1.  * ITEM\".",
+            });
+        });
+
+    private static Task<ToolDispatchResult> SetMTextFrame(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.set_mtext_frame", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MTextFrameArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which MText to frame.");
+            var on = a.Enabled ?? true;
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var m = RequireMText(db, tr, h, OpenMode.ForWrite);
+                var e0 = m.GeometricExtents;
+                var w0 = e0.MaxPoint.X - e0.MinPoint.X;
+                var h0 = e0.MaxPoint.Y - e0.MinPoint.Y;
+
+                m.ShowBorders = on;
+
+                if (m.ShowBorders != on)
+                    throw new InvalidOperationException(
+                        "The frame on " + h + " reads back as " + m.ShowBorders + " after being " +
+                        "set to " + on + ", so the change did not take.");
+
+                var e1 = m.GeometricExtents;
+                var w1 = e1.MaxPoint.X - e1.MinPoint.X;
+                var h1 = e1.MaxPoint.Y - e1.MinPoint.Y;
+
+                changed.Add(new
+                {
+                    handle = h,
+                    enabled = m.ShowBorders,
+                    widthBefore = w0,
+                    drawnWidth = w1,
+                    heightBefore = h0,
+                    drawnHeight = h1,
+                    // A frame is drawn AROUND the text, so it should push the extents out. If it
+                    // does not, the property took and nothing is being drawn - reported rather
+                    // than presented as a success.
+                    extentChanged = Math.Abs(w1 - w0) > 1e-9 || Math.Abs(h1 - h0) > 1e-9,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                enabled = on,
+                items = changed,
+                note = "extentChanged is the honest part of this result. A frame is drawn around " +
+                       "the text and should push the entity's extents out; if it reads false the " +
+                       "property was accepted and nothing changed on the drawing, which is worth " +
+                       "knowing before you rely on it.",
             });
         });
 }

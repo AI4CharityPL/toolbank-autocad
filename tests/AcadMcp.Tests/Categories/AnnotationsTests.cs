@@ -13,11 +13,11 @@ public class AnnotationsTests
     // category that grew from one that had been gutted. Named and counted, like every other
     // category's catalogue test.
     [Fact]
-    public void Catalog_contains_all_twentyfour_annotation_tools()
+    public void Catalog_contains_all_twentysix_annotation_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("annotations");
-        Assert.Equal(24, tools.Count);
+        Assert.Equal(26, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         Assert.Contains("add_dbtext", names);
@@ -59,5 +59,11 @@ public class AnnotationsTests
         // sentences while every count in the result stays correct.
         Assert.Contains("text_to_mtext", names);
         Assert.Contains("explode_mtext_to_text", names);
+        // Sixth tranche. set_mtext_frame was built alongside these two and WITHDRAWN: the only
+        // frame property the API has accepts the assignment and draws nothing, so it is asserted
+        // absent rather than present.
+        Assert.Contains("set_paragraph_format", names);
+        Assert.Contains("mtext_bullets_numbering", names);
+        Assert.DoesNotContain("set_mtext_frame", names);
     }
 }

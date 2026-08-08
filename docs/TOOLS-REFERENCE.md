@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 549 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 551 tools total.
 
 ## Categories
 
@@ -17,7 +17,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
 - [acad-geometry-2d](#acad-geometry-2d) (60 tools)
-- [acad-geometry-3d](#acad-geometry-3d) (18 tools)
+- [acad-geometry-3d](#acad-geometry-3d) (20 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
@@ -369,8 +369,10 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_mass_properties` | Return full mass properties of a 3D solid: volume, surface area, centroid, principal moments and radii of gyration. |
 | `get_surface_area` | Return total surface area of a 3D solid or surface. |
 | `get_volume` | Return the volume of a 3D solid (single value, current units). |
+| `interfere_solids` | Find where two 3D solids clash, and hand the overlap back as a THIRD solid - AutoCAD's INTERFERE. Both originals are left untouched, which is the difference from boolean_ops.intersect_solids: that one replaces the target with the common volume, so it answers the question by destroying the thing you asked about. This is the services-coordination check. Pass createSolid false to get only the yes/no and the volumes. Both solids are measured before and after and any change to either is reported as a failure. |
 | `loft_curves` | Run a solid skin between two or more cross sections - AutoCAD's LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section's area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less. |
 | `revolve_curve` | Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360). |
+| `slice_solid` | Cut a 3D solid with a plane - AutoCAD's SLICE. Give a point the plane passes through and the direction it faces; the half the normal points TOWARDS is the one kept, and keepBoth returns the other as a second solid instead of discarding it. Cutting conserves volume, so with keepBoth the two halves are checked to add back up to what went in and a cut that lost or duplicated material is reported as a failure - it would otherwise leave two perfectly good-looking solids. |
 | `sweep_curve` | Sweep a closed profile along a path curve to make a 3D solid - AutoCAD's SWEEP. extrude_curve pushes a profile in a straight line; this carries it along a line, arc, polyline, spline or helix, which is how a pipe, a handrail or a moulding is modelled. align='path' keeps the profile square to the path as it turns, which is almost always what you want. The result reports the profile area, the path length and their product, so the volume can be checked against arithmetic: a profile carried square along a STRAIGHT path encloses exactly area times length, and the two diverge as the path bends. |
 
 ## acad-grids

@@ -24,6 +24,12 @@ public class Geometry3dTests
         // arbitrary path, run a skin between cross sections, and draw the helix that is the
         // usual path for a spring or a thread.
         "sweep_curve", "loft_curves", "draw_helix",
+
+        // Roadmap 4.1, second tranche. Both are checkable against arithmetic: cutting conserves
+        // volume, and the overlap of two known boxes is computable on paper. interfere_solids is
+        // NOT boolean_ops.intersect_solids - that one replaces the target with the common
+        // volume, this one leaves both parties standing and hands back a third solid.
+        "slice_solid", "interfere_solids",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

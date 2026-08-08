@@ -153,3 +153,37 @@ public sealed record HelixResult(
     [property: JsonPropertyName("length")]         double Length,
     [property: JsonPropertyName("expectedLength")] double? ExpectedLength,
     [property: JsonPropertyName("note")]           string Note);
+
+// ─────────── roadmap 4.1, second tranche: slicing and interference ───────────
+
+public sealed record SliceSolidArgs(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("planePoint")]  Point3dDto? PlanePoint = null,
+    [property: JsonPropertyName("planeNormal")] Point3dDto? PlaneNormal = null,
+    [property: JsonPropertyName("keepBoth")]    bool? KeepBoth = null,
+    [property: JsonPropertyName("layer")]       string? Layer = null);
+
+public sealed record SliceSolidResult(
+    [property: JsonPropertyName("handle")]          string Handle,
+    [property: JsonPropertyName("otherHalf")]       EntityHandle? OtherHalf,
+    [property: JsonPropertyName("volumeBefore")]    double VolumeBefore,
+    [property: JsonPropertyName("keptVolume")]      double KeptVolume,
+    [property: JsonPropertyName("otherVolume")]     double? OtherVolume,
+    [property: JsonPropertyName("volumesSum")]      double? VolumesSum,
+    [property: JsonPropertyName("keptBoth")]        bool KeptBoth,
+    [property: JsonPropertyName("note")]            string Note);
+
+public sealed record InterfereArgs(
+    [property: JsonPropertyName("handle1")]     string Handle1,
+    [property: JsonPropertyName("handle2")]     string Handle2,
+    [property: JsonPropertyName("createSolid")] bool? CreateSolid = null,
+    [property: JsonPropertyName("layer")]       string? Layer = null);
+
+public sealed record InterfereResult(
+    [property: JsonPropertyName("interferes")]       bool Interferes,
+    [property: JsonPropertyName("entity")]           EntityHandle? Entity,
+    [property: JsonPropertyName("interferenceVolume")] double? InterferenceVolume,
+    [property: JsonPropertyName("volume1")]          double Volume1,
+    [property: JsonPropertyName("volume2")]          double Volume2,
+    [property: JsonPropertyName("originalsIntact")]  bool OriginalsIntact,
+    [property: JsonPropertyName("note")]             string Note);

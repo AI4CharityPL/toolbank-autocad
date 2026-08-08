@@ -48,6 +48,10 @@ internal static class Geometry3dPluginTools
         host.Register("acad.geometry3d.sweep_curve",         SweepCurve);
         host.Register("acad.geometry3d.loft_curves",         LoftCurves);
         host.Register("acad.geometry3d.draw_helix",          DrawHelix);
+
+        // roadmap 4.1 - cutting a solid, and finding where two overlap
+        host.Register("acad.geometry3d.slice_solid",         SliceSolid);
+        host.Register("acad.geometry3d.interfere_solids",    InterfereSolids);
     }
 
     // ─────────── helpers ───────────
@@ -680,6 +684,179 @@ internal static class Geometry3dPluginTools
                     : "expectedLength is only offered for a constant radius; this one tapers " +
                       "from " + a.BaseRadius + " to " + top + ", where the unrolled triangle no " +
                       "longer applies.",
+            });
+        });
+
+    // ─────────── roadmap 4.1: cutting a solid, and finding where two overlap ───────────
+    //
+    // Both are checkable against arithmetic, which is why they are together. Cutting CONSERVES
+    // volume: the two halves must add back up to what went in, and a slice that lost material or
+    // double-counted it says so in that sum and nowhere else - both halves are perfectly good
+    // solids either way. Interference between two boxes overlapping in a known region has a
+    // volume you can work out on paper.
+
+    /// <summary>A point as (x, y, z), for messages that have to name one.</summary>
+    private static string Fmt3(Point3d p) =>
+        "(" + p.X.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ", " +
+        p.Y.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ", " +
+        p.Z.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ")";
+
+    private static Task<ToolDispatchResult> SliceSolid(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.slice_solid", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SliceSolidArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException("handle is required: the solid to cut.");
+            if (a.PlanePoint is null || a.PlaneNormal is null)
+                throw new ArgumentException(
+                    "planePoint and planeNormal are both required: a point the cutting plane " +
+                    "passes through, and the direction it faces. The half the normal points " +
+                    "TOWARDS is the one kept.");
+
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            if (ent is not Solid3d solid)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetRXClass().Name + ", not a 3D solid.");
+
+            var n = AcadEnv.ToPoint3d(a.PlaneNormal) - Point3d.Origin;
+            if (n.Length < 1e-12)
+                throw new ArgumentException(
+                    "planeNormal is a zero vector, so it names no direction to cut along.");
+
+            var volumeBefore = solid.MassProperties.Volume;
+            var plane = new Plane(AcadEnv.ToPoint3d(a.PlanePoint), n.GetNormal());
+            var keepBoth = a.KeepBoth ?? false;
+
+            Solid3d? other = solid.Slice(plane, keepBoth);
+
+            var kept = solid.MassProperties.Volume;
+            if (kept <= 0)
+                throw new InvalidOperationException(
+                    "The kept half has no volume, so the plane lies beyond the solid on the far " +
+                    "side of its normal. It measured " + volumeBefore + " before the cut.");
+
+            // A plane that MISSES leaves the solid whole and returns no second half - and every
+            // number in the result is then perfectly honest and completely useless: 125000
+            // before, 125000 kept, and a note claiming the other half is gone when there never
+            // was one. Caught here rather than reported as a cut, with the solid's own extents
+            // so the caller can see where their plane should have been.
+            if (other is null && Math.Abs(kept - volumeBefore) <= volumeBefore * 1e-9)
+            {
+                var ext = solid.GeometricExtents;
+                throw new ArgumentException(
+                    "The plane through " + Fmt3(AcadEnv.ToPoint3d(a.PlanePoint)) + " facing " +
+                    Fmt3(new Point3d(n.X, n.Y, n.Z)) + " does not pass through the solid, so " +
+                    "nothing was cut - it still measures " + volumeBefore + ". The solid spans " +
+                    Fmt3(ext.MinPoint) + " to " + Fmt3(ext.MaxPoint) + ".");
+            }
+
+            EntityHandle? otherHandle = null;
+            double? otherVolume = null;
+            if (other is not null)
+            {
+                otherVolume = other.MassProperties.Volume;
+                otherHandle = AcadEnv.Persist(db, tr, other, a.Layer ?? solid.Layer);
+            }
+
+            double? sum = otherVolume is null ? null : kept + otherVolume;
+            if (sum is not null && Math.Abs(sum.Value - volumeBefore) > volumeBefore * 1e-6)
+                throw new InvalidOperationException(
+                    "The two halves add up to " + sum + " where the solid measured " +
+                    volumeBefore + " before the cut. Slicing conserves volume, so this is not " +
+                    "being reported as a successful cut.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                otherHalf = otherHandle,
+                volumeBefore,
+                keptVolume = kept,
+                otherVolume,
+                volumesSum = sum,
+                keptBoth = keepBoth,
+                note = keepBoth
+                    ? "Both halves kept: the original handle is the side the normal points " +
+                      "towards, otherHalf is the rest. They sum to " + sum + " against the " +
+                      volumeBefore + " that went in, which is the check that the cut neither " +
+                      "lost nor duplicated material."
+                    : "Only the half the normal points towards was kept; the other is gone. Pass " +
+                      "keepBoth to get it as a second solid, which also makes the volume sum " +
+                      "checkable.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> InterfereSolids(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.interfere_solids", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<InterfereArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Handle1) || string.IsNullOrWhiteSpace(a.Handle2))
+                throw new ArgumentException("handle1 and handle2 are both required.");
+            if (string.Equals(a.Handle1, a.Handle2, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "handle1 and handle2 are the same solid, which interferes with itself " +
+                    "everywhere and tells you nothing.");
+
+            var e1 = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle1!), OpenMode.ForRead);
+            var e2 = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle2!), OpenMode.ForRead);
+            if (e1 is not Solid3d s1)
+                throw new ArgumentException(
+                    "Entity " + a.Handle1 + " is a " + e1.GetRXClass().Name + ", not a 3D solid.");
+            if (e2 is not Solid3d s2)
+                throw new ArgumentException(
+                    "Entity " + a.Handle2 + " is a " + e2.GetRXClass().Name + ", not a 3D solid.");
+
+            var v1 = s1.MassProperties.Volume;
+            var v2 = s2.MassProperties.Volume;
+            var interferes = s1.CheckInterference(s2);
+
+            EntityHandle? made = null;
+            double? overlap = null;
+            if (interferes && a.CreateSolid != false)
+            {
+                // Cloned first, and that is the whole difference from
+                // boolean_ops.intersect_solids: THAT one replaces the target with the common
+                // volume, while a clash check has to leave both parties standing and hand back
+                // a third solid describing the overlap.
+                var clone1 = (Solid3d)s1.Clone();
+                using var clone2 = (Solid3d)s2.Clone();
+                clone1.BooleanOperation(BooleanOperationType.BoolIntersect, clone2);
+                overlap = clone1.MassProperties.Volume;
+                if (overlap <= 0)
+                {
+                    clone1.Dispose();
+                    overlap = null;
+                }
+                else
+                {
+                    made = AcadEnv.Persist(db, tr, clone1, a.Layer);
+                }
+            }
+
+            // Read back. A clash check that consumed the geometry it was asked about would be
+            // worse than useless, and a boolean on the wrong object would do exactly that.
+            var after1 = s1.MassProperties.Volume;
+            var after2 = s2.MassProperties.Volume;
+            var intact = Math.Abs(after1 - v1) < 1e-9 && Math.Abs(after2 - v2) < 1e-9;
+            if (!intact)
+                throw new InvalidOperationException(
+                    "The solids changed while being checked - " + v1 + " became " + after1 +
+                    " and " + v2 + " became " + after2 + ". An interference check must leave " +
+                    "both of them alone.");
+
+            return Wrap(new
+            {
+                interferes,
+                entity = made,
+                interferenceVolume = overlap,
+                volume1 = v1,
+                volume2 = v2,
+                originalsIntact = intact,
+                note = interferes
+                    ? "They clash, and BOTH originals are untouched - the difference from " +
+                      "boolean_ops.intersect_solids, which replaces the target with the common " +
+                      "volume. The clash comes back as a third solid of " + overlap + "."
+                    : "They do not clash, so no interference solid was made. Both originals are " +
+                      "untouched.",
             });
         });
 }

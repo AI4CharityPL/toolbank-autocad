@@ -99,3 +99,18 @@ internal sealed record HelixArgsDto(
     [property: JsonPropertyName("turns")]      double? Turns,
     [property: JsonPropertyName("clockwise")]  bool? Clockwise,
     [property: JsonPropertyName("layer")]      string? Layer);
+
+// ─────────── roadmap 4.1, second tranche: slicing and interference ───────────
+
+internal sealed record SliceSolidArgsDto(
+    [property: JsonPropertyName("handle")]      string? Handle,
+    [property: JsonPropertyName("planePoint")]  Point3dDto? PlanePoint,
+    [property: JsonPropertyName("planeNormal")] Point3dDto? PlaneNormal,
+    [property: JsonPropertyName("keepBoth")]    bool? KeepBoth,
+    [property: JsonPropertyName("layer")]       string? Layer);
+
+internal sealed record InterfereArgsDto(
+    [property: JsonPropertyName("handle1")]       string? Handle1,
+    [property: JsonPropertyName("handle2")]       string? Handle2,
+    [property: JsonPropertyName("createSolid")]   bool? CreateSolid,
+    [property: JsonPropertyName("layer")]         string? Layer);

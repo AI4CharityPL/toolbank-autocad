@@ -27,12 +27,16 @@
     "geometry-3d",
     "get",
     "helix",
+    "interfere",
     "loft",
     "mass",
     "planar",
     "properties",
     "pyramid",
     "revolve",
+    "slice",
+    "solid",
+    "solids",
     "sphere",
     "surface",
     "sweep",
@@ -45,6 +49,7 @@
     "bounding box 3d",
     "box from two corners",
     "centroid bryly",
+    "check clash between solids",
     "compute extents 3d",
     "compute mass properties",
     "compute solid centroid",
@@ -60,6 +65,7 @@
     "create sphere solid",
     "create torus solid",
     "create wedge solid",
+    "cut a 3d solid in half",
     "cylinder by base radius and height",
     "donut shape solid",
     "draw 3d box",
@@ -74,6 +80,7 @@
     "extrude polyline",
     "extrude with taper",
     "extruduj krzywa",
+    "find overlap volume",
     "frustum cone",
     "frustum pyramid n sides",
     "full mass props of solid",
@@ -84,6 +91,9 @@
     "get volume of solid",
     "gwint sciezka",
     "ile wynosi objetosc",
+    "interfere solids",
+    "kolizja miedzy bry\u0142ami",
+    "koordynacja miedzybranzowa kolizje",
     "loft between cross sections",
     "loft solid",
     "make a pipe from a profile",
@@ -102,6 +112,7 @@
     "narysuj torus",
     "narysuj walec",
     "obrot krzywej",
+    "podziel solid na pol",
     "polacz przekroje bryla",
     "policz objetosc",
     "policz pole powierzchni 3d",
@@ -109,13 +120,18 @@
     "powierzchnia bryly",
     "przeciagnij profil po sciezce",
     "przejscie miedzy przekrojami",
+    "przekroj bryly",
+    "przetnij bryle plaszczyzna",
     "revolve curve around axis",
     "revolve polilinie",
     "right angle prism",
+    "slice a solid with a plane",
     "sphere by center and radius",
     "spin curve to make solid",
     "spiral path for a spring",
     "spiral stair path",
+    "split solid by plane",
+    "sprawdz przenikanie solidow",
     "sprezyna spirala",
     "srodek ciezkosci",
     "stworz bryle prostopadloscienna",
@@ -369,6 +385,22 @@
       ]
     },
     {
+      "name": "interfere_solids",
+      "description": "Find where two 3D solids clash, and hand the overlap back as a THIRD solid - AutoCAD\u0027s INTERFERE. Both originals are left untouched, which is the difference from boolean_ops.intersect_solids: that one replaces the target with the common volume, so it answers the question by destroying the thing you asked about. This is the services-coordination check. Pass createSolid false to get only the yes/no and the volumes. Both solids are measured before and after and any change to either is reported as a failure.",
+      "tags": [
+        "interfere",
+        "solids"
+      ],
+      "intent": [
+        "kolizja miedzy bry\u0142ami",
+        "sprawdz przenikanie solidow",
+        "check clash between solids",
+        "interfere solids",
+        "koordynacja miedzybranzowa kolizje",
+        "find overlap volume"
+      ]
+    },
+    {
       "name": "loft_curves",
       "description": "Run a solid skin between two or more cross sections - AutoCAD\u0027s LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section\u0027s area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less.",
       "tags": [
@@ -400,6 +432,22 @@
       ]
     },
     {
+      "name": "slice_solid",
+      "description": "Cut a 3D solid with a plane - AutoCAD\u0027s SLICE. Give a point the plane passes through and the direction it faces; the half the normal points TOWARDS is the one kept, and keepBoth returns the other as a second solid instead of discarding it. Cutting conserves volume, so with keepBoth the two halves are checked to add back up to what went in and a cut that lost or duplicated material is reported as a failure - it would otherwise leave two perfectly good-looking solids.",
+      "tags": [
+        "slice",
+        "solid"
+      ],
+      "intent": [
+        "przetnij bryle plaszczyzna",
+        "podziel solid na pol",
+        "slice a solid with a plane",
+        "cut a 3d solid in half",
+        "przekroj bryly",
+        "split solid by plane"
+      ]
+    },
+    {
       "name": "sweep_curve",
       "description": "Sweep a closed profile along a path curve to make a 3D solid - AutoCAD\u0027s SWEEP. extrude_curve pushes a profile in a straight line; this carries it along a line, arc, polyline, spline or helix, which is how a pipe, a handrail or a moulding is modelled. align=\u0027path\u0027 keeps the profile square to the path as it turns, which is almost always what you want. The result reports the profile area, the path length and their product, so the volume can be checked against arithmetic: a profile carried square along a STRAIGHT path encloses exactly area times length, and the two diverge as the path bends.",
       "tags": [
@@ -418,7 +466,7 @@
   ],
   "metadata": {
     "category": "geometry-3d",
-    "tool_count_target": 18,
+    "tool_count_target": 20,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -432,6 +480,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-08T18:10:18.2821244Z"
+    "last_regenerated_utc": "2026-08-08T18:30:49.7153763Z"
   }
 }

@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**549 tools across 39 categories** (updated 2026-08-08; this document was written at 337 across
+**551 tools across 39 categories** (updated 2026-08-08; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -584,14 +584,14 @@ bind_underlay
 Today: 7 primitives, extrude, revolve, one planar surface, 6 booleans, 5 queries. That is the
 beginning of 3D, not 3D.
 
-### 4.1 `acad-solids-advanced` (≈34 → **3 built, 6 struck as duplicates**)
+### 4.1 `acad-solids-advanced` (≈34 → **5 built, 9 struck**)
 
 ```
 sweep_curve ✔               loft_curves ✔              loft_with_guides ✔
 loft_with_path ✔            draw_helix ✔               draw_polysolid ..
-presspull ..                slice_solid ..             separate_solids ✘
+presspull ..                slice_solid ✔              separate_solids ✘
 shell_solid ✘               clean_solid ..             check_solid ..
-imprint_edges ..            extract_edges ✘            interfere_solids ..
+imprint_edges ..            extract_edges ✘            interfere_solids ✔
 fillet_edge ..              chamfer_edge ..
 extrude_face ..             move_face ..               rotate_face ..
 offset_face ..              taper_face ..              delete_face ..

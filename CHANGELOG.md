@@ -37,6 +37,31 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, second tranche — slicing and interference.** `acad-geometry-3d` 18 → 20, bank
+  549 → 551: `slice_solid`, `interfere_solids`. Verified live **39/39**.
+
+  Together because both are checkable against **arithmetic**. Cutting conserves volume: a 100
+  cube cut at z=30 must give 700000 and 300000 and they must sum back to the million that went
+  in — the only place a cut that lost or duplicated material shows up, since both halves are
+  perfectly good-looking solids either way. The tool refuses to report a cut whose halves do not
+  add up, and a diagonal plane is checked too, where the halves are wedges and a mistake is more
+  likely than on a square cut. Interference between boxes spanning 0..100 and 40..140 has an
+  overlap of exactly 60³ = 216000.
+
+  `interfere_solids` is **not** `boolean_ops.intersect_solids`. That one *replaces* the target
+  with the common volume — it answers the question by destroying the thing you asked about.
+  This leaves both parties standing and hands the clash back as a third solid, which is what a
+  services-coordination check needs. Proved with a **control**: the same pair of boxes put
+  through `intersect_solids` afterwards, showing the target really is consumed. Without that arm,
+  "the originals survived" could just mean nothing in this drawing ever gets consumed.
+
+  One defect found and fixed: **a cutting plane that misses the solid entirely reported success.**
+  `Slice` leaves the solid whole and returns no second half, so the result read `volumeBefore:
+  125000, keptVolume: 125000` with a note saying the other half was gone — every number honest,
+  the whole useless, and that sentence simply false. The guard checked for a *zero* kept volume,
+  which a miss never produces. It now refuses, naming the plane and the solid's own extents so
+  the caller can see where the plane should have been.
+
 - **Phase 4.1, first tranche — sweep, loft and helix.** `acad-geometry-3d` 15 → 18, bank
   546 → 549: `sweep_curve`, `loft_curves`, `draw_helix`. Verified live **50/50**.
 

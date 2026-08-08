@@ -143,4 +143,22 @@ public static class Geometry3dTools
         RequiresPlugin = true)]
     public static Task<HelixResult> DrawHelix(IPluginGateway gw, HelixArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<HelixArgs, HelixResult>(gw, "acad.geometry3d.draw_helix", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 4.1: cutting a solid, and finding where two overlap ───────────
+
+    [McpTool("slice_solid", "Cut a 3D solid with a plane - AutoCAD's SLICE. Give a point the plane passes through and the direction it faces; the half the normal points TOWARDS is the one kept, and keepBoth returns the other as a second solid instead of discarding it. Cutting conserves volume, so with keepBoth the two halves are checked to add back up to what went in and a cut that lost or duplicated material is reported as a failure - it would otherwise leave two perfectly good-looking solids.", "geometry-3d",
+        Intent = new[] { "przetnij bryle plaszczyzna", "podziel solid na pol",
+                         "slice a solid with a plane", "cut a 3d solid in half",
+                         "przekroj bryly", "split solid by plane" },
+        RequiresPlugin = true)]
+    public static Task<SliceSolidResult> SliceSolid(IPluginGateway gw, SliceSolidArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SliceSolidArgs, SliceSolidResult>(gw, "acad.geometry3d.slice_solid", args, T_SLOW, ct);
+
+    [McpTool("interfere_solids", "Find where two 3D solids clash, and hand the overlap back as a THIRD solid - AutoCAD's INTERFERE. Both originals are left untouched, which is the difference from boolean_ops.intersect_solids: that one replaces the target with the common volume, so it answers the question by destroying the thing you asked about. This is the services-coordination check. Pass createSolid false to get only the yes/no and the volumes. Both solids are measured before and after and any change to either is reported as a failure.", "geometry-3d",
+        Intent = new[] { "kolizja miedzy bryłami", "sprawdz przenikanie solidow",
+                         "check clash between solids", "interfere solids",
+                         "koordynacja miedzybranzowa kolizje", "find overlap volume" },
+        RequiresPlugin = true)]
+    public static Task<InterfereResult> InterfereSolids(IPluginGateway gw, InterfereArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<InterfereArgs, InterfereResult>(gw, "acad.geometry3d.interfere_solids", args, T_SLOW, ct);
 }

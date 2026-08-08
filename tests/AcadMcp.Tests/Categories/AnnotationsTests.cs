@@ -13,11 +13,11 @@ public class AnnotationsTests
     // category that grew from one that had been gutted. Named and counted, like every other
     // category's catalogue test.
     [Fact]
-    public void Catalog_contains_all_twenty_annotation_tools()
+    public void Catalog_contains_all_twentytwo_annotation_tools()
     {
         var registry = new ToolRegistry();
         var tools = registry.ToolsFor("annotations");
-        Assert.Equal(20, tools.Count);
+        Assert.Equal(22, tools.Count);
 
         var names = tools.Select(t => t.Name).ToHashSet();
         Assert.Contains("add_dbtext", names);
@@ -48,5 +48,11 @@ public class AnnotationsTests
         // columns one is proved by the text reflowing wider and shorter.
         Assert.Contains("background_mask_mtext", names);
         Assert.Contains("mtext_column_settings", names);
+        // Fourth tranche. Both write control codes, and they need different proofs: a symbol
+        // inserted as a CHARACTER can be read back off the entity, one inserted as a %% code
+        // cannot - DBText hands back the code. A stacked fraction renders identically to an
+        // unstacked one, so it is proved on the drawn extent.
+        Assert.Contains("insert_symbol", names);
+        Assert.Contains("stack_fraction", names);
     }
 }

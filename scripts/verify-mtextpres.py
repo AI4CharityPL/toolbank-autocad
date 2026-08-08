@@ -68,7 +68,12 @@ def fresh_drawing():
     """A new drawing, and ONLY that drawing open — see verify-textgeom.py for why."""
     do("files", "new_document", {})
     ok, r = S["files"].call("list_documents", {})
-    docs = (r or {}).get("documents") or []
+    # A failed call returns the error STRING, not a dict. Reaching into it with .get crashes
+    # with an AttributeError that says nothing about the real problem - usually that AutoCAD is
+    # not running at all.
+    if not ok or not isinstance(r, dict):
+        raise SystemExit(f"cannot list documents - is AutoCAD running with the plugin loaded?\n  {r}")
+    docs = r.get("documents") or []
     for d in docs[:-1]:
         S["files"].call("close_document", {"path": d.get("path") or d.get("name"), "save": False})
     ok, r = S["files"].call("list_documents", {})

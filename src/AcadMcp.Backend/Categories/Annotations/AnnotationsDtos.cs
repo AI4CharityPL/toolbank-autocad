@@ -284,3 +284,45 @@ public sealed record MTextColumnResult(
     [property: JsonPropertyName("mtextWidthBefore")] double MTextWidthBefore,
     [property: JsonPropertyName("mtextWidth")]   double MTextWidth,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── roadmap 3.3, fourth tranche: symbols and stacked fractions ───────────
+
+public sealed record InsertSymbolArgs(
+    [property: JsonPropertyName("handles")] IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("symbol")]  string? Symbol = null,
+    [property: JsonPropertyName("where")]   string? Where = null,
+    [property: JsonPropertyName("replace")] string? Replace = null);
+
+public sealed record SymbolTextDto(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("type")]         string Type,
+    [property: JsonPropertyName("before")]       string Before,
+    [property: JsonPropertyName("rendered")]     string Rendered,
+    [property: JsonPropertyName("stored")]       string Stored,
+    [property: JsonPropertyName("insertions")]   int Insertions,
+    [property: JsonPropertyName("viaControlCode")] bool ViaControlCode);
+
+public sealed record InsertSymbolResult(
+    [property: JsonPropertyName("affected")]  int Affected,
+    [property: JsonPropertyName("symbol")]    string Symbol,
+    [property: JsonPropertyName("character")] string Character,
+    [property: JsonPropertyName("items")]     IReadOnlyList<SymbolTextDto> Items,
+    [property: JsonPropertyName("note")]      string Note);
+
+public sealed record StackFractionArgs(
+    [property: JsonPropertyName("handle")]  string Handle,
+    [property: JsonPropertyName("style")]   string? Style = null,
+    [property: JsonPropertyName("pattern")] string? Pattern = null);
+
+public sealed record StackFractionResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("style")]        string Style,
+    [property: JsonPropertyName("stacked")]      int Stacked,
+    [property: JsonPropertyName("fractions")]    IReadOnlyList<string> Fractions,
+    [property: JsonPropertyName("before")]       string Before,
+    [property: JsonPropertyName("stored")]       string Stored,
+    [property: JsonPropertyName("widthBefore")]  double WidthBefore,
+    [property: JsonPropertyName("drawnWidth")]   double DrawnWidth,
+    [property: JsonPropertyName("heightBefore")] double HeightBefore,
+    [property: JsonPropertyName("drawnHeight")]  double DrawnHeight,
+    [property: JsonPropertyName("note")]         string Note);

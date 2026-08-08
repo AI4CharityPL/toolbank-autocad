@@ -37,6 +37,29 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.3, fourth tranche — symbols and stacked fractions.** `acad-annotations` 20 → 22, bank
+  540 → 542: `insert_symbol`, `stack_fraction`. Verified live **59/59**.
+
+  Both write **control codes** into a string, so both can succeed at writing and fail at meaning
+  — and each needs a different proof. Getting that right took one wrong assumption first.
+
+  `insert_symbol` splits into two cases that can be proved to different depths. Where the symbol
+  goes in as the **character** — every MText, and single-line text for anything outside
+  `%%c`/`%%d`/`%%p` — the entity is read back and the glyph has to be there. Where it goes in as
+  a **control code** there is nothing to read: `DBText.TextString` returns what is *stored*, so
+  `%%c` stays `"%%c"` and becomes a diameter sign only when AutoCAD draws it. The first version
+  demanded the glyph back from DBText and failed six checks on a tool that was working correctly.
+  The result now reports `viaControlCode`, and those cases are confirmed on the exported image —
+  the same honest limit as the background mask.
+
+  `stack_fraction` cannot be proved on text at all: a stacked `1/2` renders as the same three
+  characters as an unstacked one. It is proved on the drawn **extent**, against an identical
+  MText left unstacked as a control, and the tool refuses to report success unless the text got
+  taller — which is what putting the halves on two levels does.
+
+  DBText and MText do **not** take the same codes, and the tool keeps them apart: writing the
+  MText form into a DBText would leave a literal `\U+2205` on the sheet.
+
 - **Phase 3.3, third tranche — how an MText presents itself.** `acad-annotations` 18 → 20, bank
   538 → 540: `background_mask_mtext`, `mtext_column_settings`. Verified live **49/49**.
 

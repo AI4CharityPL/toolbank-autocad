@@ -110,7 +110,12 @@ def fresh_drawing():
     """
     do("files", "new_document", {})
     ok, r = S["files"].call("list_documents", {})
-    docs = (r or {}).get("documents") or []
+    # A failed call returns the error STRING, not a dict. Reaching into it with .get crashes
+    # with an AttributeError that says nothing about the real problem - usually that AutoCAD is
+    # not running at all.
+    if not ok or not isinstance(r, dict):
+        raise SystemExit(f"cannot list documents - is AutoCAD running with the plugin loaded?\n  {r}")
+    docs = r.get("documents") or []
     # The new one is the last created; close the rest. They are unsaved scratch drawings from
     # earlier runs, which is the only reason this is safe to do unasked.
     for d in docs[:-1]:

@@ -169,4 +169,22 @@ public static class AnnotationsTools
         RequiresPlugin = true)]
     public static Task<MTextColumnResult> MTextColumnSettings(IPluginGateway gw, MTextColumnArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<MTextColumnArgs, MTextColumnResult>(gw, "acad.annotations.mtext_column_settings", args, T_NORMAL, ct);
+
+    // ─────────── roadmap 3.3: symbols and stacked fractions ───────────
+
+    [McpTool("insert_symbol", "Put a drafting symbol into existing text - diameter, degrees, plusminus, centreline, delta, phi, omega, almostEqual, notEqual, angle, squared, cubed - by name, or any character as U+XXXX. Judged on the RENDERED text rather than on what was written, because a tool that inserted the code and not the character would report success and leave a literal '%%c' on the sheet. Single-line text understands only %%c, %%d and %%p as control codes; every other symbol goes in as the character and needs a text style whose font has that glyph. MText takes the character directly. Appends by default; pass where='start', or replace='<TOKEN>' to substitute a placeholder wherever it appears.", "annotations",
+        Intent = new[] { "wstaw symbol srednicy", "dodaj stopnie do tekstu", "symbol plus minus",
+                         "insert a diameter symbol", "add a degree sign",
+                         "insert special character into text", "znak specjalny w tekscie" },
+        RequiresPlugin = true)]
+    public static Task<InsertSymbolResult> InsertSymbol(IPluginGateway gw, InsertSymbolArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<InsertSymbolArgs, InsertSymbolResult>(gw, "acad.annotations.insert_symbol", args, T_NORMAL, ct);
+
+    [McpTool("stack_fraction", "Stack the fractions in an MText, the way AutoCAD's stacking button does. style='horizontal' puts a bar between the halves, 'diagonal' a slash, 'tolerance' no bar at all - which is how an upper and lower limit are written. A stacked fraction RENDERS as the same characters as an unstacked one, so the rendered text cannot show it worked; the drawn extent can, and this tool refuses to report success unless the text got taller, which is what putting the halves on two levels does. Finds digits either side of a slash by default; pass your own regular expression as pattern for anything else.", "annotations",
+        Intent = new[] { "ulamek pietrowy w tekscie", "zloz ulamek", "stack a fraction",
+                         "make 1/2 a stacked fraction", "tolerance stacking",
+                         "ulamek w mtext" },
+        RequiresPlugin = true)]
+    public static Task<StackFractionResult> StackFraction(IPluginGateway gw, StackFractionArgs args, CancellationToken ct)
+        => AnnotationsProxy.CallAsync<StackFractionArgs, StackFractionResult>(gw, "acad.annotations.stack_fraction", args, T_NORMAL, ct);
 }

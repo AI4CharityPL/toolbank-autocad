@@ -58,6 +58,10 @@ internal static class AnnotationsPluginTools
         // roadmap 3.3 - how an MText presents itself
         host.Register("acad.annotations.background_mask_mtext",  BackgroundMaskMText);
         host.Register("acad.annotations.mtext_column_settings",  MTextColumnSettings);
+
+        // roadmap 3.3 - symbols and stacked fractions
+        host.Register("acad.annotations.insert_symbol",          InsertSymbol);
+        host.Register("acad.annotations.stack_fraction",         StackFraction);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -1270,6 +1274,272 @@ internal static class AnnotationsPluginTools
                             : "Note that this overwrites the MText's own wrap width with the " +
                               "total across the columns: it was " + mtextWidthBefore +
                               " and is now " + m.Width + "."),
+            });
+        });
+
+    // ─────────── roadmap 3.3: symbols and stacked fractions ───────────
+    //
+    // Both of these write CONTROL CODES into a text string, and both can therefore succeed at
+    // writing while failing at meaning: a diameter symbol that comes out as the literal "%%c",
+    // or a fraction that stays inline while the entity dutifully reports a \S in its contents.
+    //
+    // So neither is judged on what was written. insert_symbol is judged on the RENDERED text -
+    // the character has to be there, not the code for it. stack_fraction cannot be judged that
+    // way, because a stacked "1/2" renders as the same three characters as an unstacked one, so
+    // it is judged on the drawn EXTENT: stacking puts the halves on two levels, which makes the
+    // text taller and narrower.
+
+    /// <summary>The symbols a draughtsman actually reaches for, and the character each is.</summary>
+    /// <remarks>
+    /// DBText and MText do NOT take the same codes. Single-line text uses AutoCAD's %% codes and
+    /// understands only three of them; MText takes \U+ escapes and the whole of Unicode. Writing
+    /// the MText form into a DBText leaves the literal text "\U+2205" on the sheet, which is the
+    /// failure this table exists to prevent.
+    /// </remarks>
+    private static readonly Dictionary<string, (string Char, string? DbTextCode)> Symbols =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["diameter"]    = ("∅", "%%c"),
+            ["degrees"]     = ("°", "%%d"),
+            ["plusminus"]   = ("±", "%%p"),
+            ["centreline"]  = ("℄", null),
+            ["centerline"]  = ("℄", null),
+            ["delta"]       = ("Δ", null),
+            ["phi"]         = ("Φ", null),
+            ["omega"]       = ("Ω", null),
+            ["ohm"]         = ("Ω", null),
+            ["almostequal"] = ("≈", null),
+            ["notequal"]    = ("≠", null),
+            ["angle"]       = ("∠", null),
+            ["squared"]     = ("²", null),
+            ["cubed"]       = ("³", null),
+            ["property"]    = ("⅊", null),
+            ["monument"]    = ("∅", null),
+        };
+
+    private static Task<ToolDispatchResult> InsertSymbol(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.insert_symbol", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<InsertSymbolArgsDto>(args);
+            if (a.Handles is null || a.Handles.Count == 0)
+                throw new ArgumentException("handles is required: which text to insert into.");
+            if (string.IsNullOrWhiteSpace(a.Symbol))
+                throw new ArgumentException(
+                    "symbol is required. Use a name - " + string.Join(", ", Symbols.Keys) +
+                    " - or a Unicode code point written as U+00B0, or the character itself.");
+
+            var name = a.Symbol!.Trim();
+            string ch;
+            string? dbCode = null;
+            if (Symbols.TryGetValue(name, out var known))
+            {
+                ch = known.Char;
+                dbCode = known.DbTextCode;
+            }
+            else if (name.StartsWith("U+", StringComparison.OrdinalIgnoreCase) &&
+                     int.TryParse(name.Substring(2), System.Globalization.NumberStyles.HexNumber,
+                                  System.Globalization.CultureInfo.InvariantCulture, out var cp))
+            {
+                ch = char.ConvertFromUtf32(cp);
+            }
+            else if (name.Length <= 2)
+            {
+                ch = name;   // the character itself
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "'" + name + "' is not a known symbol name, a U+XXXX code point, or a single " +
+                    "character. Known names: " + string.Join(", ", Symbols.Keys) + ".");
+            }
+
+            var where = (a.Where ?? "end").Trim().ToLowerInvariant();
+            if (where is not ("end" or "start"))
+                throw new ArgumentException("where must be 'end' or 'start'.");
+
+            var changed = new List<object>();
+            foreach (var h in a.Handles)
+            {
+                var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, h), OpenMode.ForWrite);
+
+                string kind, before, stored, rendered;
+                int inserted;
+                // Whether the symbol went in as a CONTROL CODE (which only becomes a glyph when
+                // AutoCAD draws it) or as the character itself. The two can be verified in
+                // different ways and only one of them can be verified here at all.
+                var viaCode = false;
+
+                switch (ent)
+                {
+                    case DBText t:
+                    {
+                        kind = "DBText";
+                        before = t.TextString;
+                        // Single-line text renders only the three %% codes. Anything else has to
+                        // go in as the character itself, which works when the style's font has
+                        // the glyph and shows a box when it does not - said in the note rather
+                        // than discovered on a plot.
+                        var token = dbCode ?? ch;
+                        viaCode = dbCode is not null;
+                        (stored, inserted) = Splice(before, token, where, a.Replace);
+                        t.TextString = stored;
+                        // NOT a rendering. DBText.TextString gives back what is STORED, control
+                        // codes and all - %%c stays "%%c" here and becomes a diameter sign only
+                        // when AutoCAD draws it. Asking this string for the glyph is asking a
+                        // question it cannot answer.
+                        rendered = t.TextString;
+                        break;
+                    }
+                    case MText m:
+                    {
+                        kind = "MText";
+                        before = m.Text;
+                        // MText takes the character directly; \U+ escapes are equivalent and
+                        // uglier to read back.
+                        (stored, inserted) = Splice(m.Contents, ch, where, a.Replace);
+                        m.Contents = stored;
+                        rendered = m.Text;
+                        break;
+                    }
+                    default:
+                        throw new ArgumentException(
+                            "Entity " + h + " is a " + ent.GetType().Name + ". Symbols go into " +
+                            "single-line text and MText.");
+                }
+
+                if (inserted == 0)
+                    throw new ArgumentException(
+                        "Nothing was inserted into " + h + ": the placeholder '" + a.Replace +
+                        "' does not appear in its text, which reads \"" + before + "\".");
+
+                // Checked only where checking means something. When the symbol went in as the
+                // CHARACTER, it has to be in what the entity reads back - a tool that wrote a
+                // code instead would pass every other assertion and put a literal "%%c" on the
+                // sheet. When it went in as a control code there is nothing to check here:
+                // DBText hands back the code, and whether it becomes a glyph is a question only
+                // the drawing can answer. Saying so beats a check that always passes.
+                if (!viaCode && !rendered.Contains(ch, StringComparison.Ordinal))
+                    throw new InvalidOperationException(
+                        "The text on " + h + " reads back as \"" + rendered + "\", which does " +
+                        "not contain the symbol that was asked for, so the insertion did not " +
+                        "take.");
+
+                changed.Add(new
+                {
+                    handle = h, type = kind, before, rendered, stored, insertions = inserted,
+                    viaControlCode = viaCode,
+                });
+            }
+
+            return Wrap(new
+            {
+                affected = changed.Count,
+                symbol = name,
+                character = ch,
+                items = changed,
+                note = "Where the symbol went in as the CHARACTER - which is every MText, and " +
+                       "single-line text for anything outside %%c, %%d and %%p - the entity is " +
+                       "read back and the glyph has to be there. Where it went in as a CONTROL " +
+                       "CODE, viaControlCode says so and nothing here can confirm the glyph: " +
+                       "DBText hands back \"%%c\", and it becomes a diameter sign only when " +
+                       "AutoCAD draws it. Look at a plot for those. A symbol inserted as a " +
+                       "character also needs a text style whose font HAS that glyph, or it " +
+                       "draws as a box - see KNOWN-GAPS A8, where m2 came out as m?.",
+            });
+        });
+
+    /// <summary>Insert a token at one end, or in place of a placeholder. Returns the count.</summary>
+    private static (string Result, int Count) Splice(string text, string token, string where,
+                                                     string? placeholder)
+    {
+        if (!string.IsNullOrEmpty(placeholder))
+        {
+            var n = 0;
+            var idx = 0;
+            var sb = new System.Text.StringBuilder();
+            while (true)
+            {
+                var at = text.IndexOf(placeholder!, idx, StringComparison.Ordinal);
+                if (at < 0) break;
+                sb.Append(text, idx, at - idx).Append(token);
+                idx = at + placeholder!.Length;
+                n++;
+            }
+            sb.Append(text, idx, text.Length - idx);
+            return (sb.ToString(), n);
+        }
+        return where == "start" ? (token + text, 1) : (text + token, 1);
+    }
+
+    private static Task<ToolDispatchResult> StackFraction(JsonObject args, CancellationToken ct) =>
+        Run("acad.annotations.stack_fraction", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<StackFractionArgsDto>(args);
+            var m = RequireMText(db, tr, a.Handle, OpenMode.ForWrite);
+
+            var style = (a.Style ?? "horizontal").Trim().ToLowerInvariant();
+            var sep = style switch
+            {
+                "horizontal" => "/",   // a bar between them
+                "diagonal"   => "#",   // a slash between them
+                "tolerance"  => "^",   // no bar at all - upper and lower limits
+                _ => throw new ArgumentException(
+                    "style must be horizontal (a bar between the halves), diagonal (a slash), or " +
+                    "tolerance (no bar, which is how an upper and lower limit are written)."),
+            };
+
+            // Numbers either side of a slash, not already inside a \S...; group.
+            var rx = new Regex(a.Pattern ?? @"(?<!\\S[^;]{0,40})\b(\d+)/(\d+)\b");
+            var before = m.Text;
+            var beforeStored = m.Contents;
+            var e0 = m.GeometricExtents;
+            var w0 = e0.MaxPoint.X - e0.MinPoint.X;
+            var h0 = e0.MaxPoint.Y - e0.MinPoint.Y;
+
+            var found = new List<string>();
+            var stored = rx.Replace(beforeStored, mm =>
+            {
+                found.Add(mm.Value);
+                return "\\S" + mm.Groups[1].Value + sep + mm.Groups[2].Value + ";";
+            });
+
+            if (found.Count == 0)
+                throw new ArgumentException(
+                    "No fraction to stack in \"" + before + "\". This looks for digits either " +
+                    "side of a slash, such as 1/2. Pass your own regular expression as pattern " +
+                    "if the text is written differently.");
+
+            m.Contents = stored;
+
+            var e1 = m.GeometricExtents;
+            var w1 = e1.MaxPoint.X - e1.MinPoint.X;
+            var h1 = e1.MaxPoint.Y - e1.MinPoint.Y;
+
+            // A stacked fraction renders as the SAME characters as an unstacked one, so the
+            // rendered text cannot tell you whether it worked. The drawn extent can: two levels
+            // of digits are taller than one. Checked here rather than left to the caller.
+            if (h1 <= h0)
+                throw new InvalidOperationException(
+                    "The text is " + h1 + " tall against " + h0 + " before stacking, so the " +
+                    "halves did not go onto two levels and this is not being reported as a " +
+                    "stacked fraction. The contents now read \"" + m.Contents + "\".");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                style,
+                stacked = found.Count,
+                fractions = found,
+                before,
+                stored = m.Contents,
+                widthBefore = w0,
+                drawnWidth = w1,
+                heightBefore = h0,
+                drawnHeight = h1,
+                note = "A stacked fraction RENDERS as the same characters as an unstacked one - " +
+                       "\"1/2\" either way - so the rendered text cannot tell you it worked. The " +
+                       "drawn extent can, and does: " + h0 + " tall before, " + h1 + " after, " +
+                       "because the halves are now on two levels.",
             });
         });
 }

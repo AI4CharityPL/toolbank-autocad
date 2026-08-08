@@ -28,7 +28,9 @@
     "export",
     "find",
     "fit",
+    "fraction",
     "in",
+    "insert",
     "justification",
     "list",
     "mask",
@@ -40,13 +42,16 @@
     "scale",
     "set",
     "settings",
+    "stack",
     "style",
     "styles",
+    "symbol",
     "table",
     "text",
     "update"
   ],
   "intent_examples": [
+    "add a degree sign",
     "add multileader text",
     "add multileader with block",
     "add multiline text",
@@ -63,6 +68,7 @@
     "dodaj mleader z blokiem",
     "dodaj mleader z tekstem",
     "dodaj mtext",
+    "dodaj stopnie do tekstu",
     "dodaj tabele",
     "dodaj tekst",
     "dodaj textstyle",
@@ -80,11 +86,14 @@
     "fit text between two points",
     "flow text into columns",
     "gdzie jest ten tekst",
+    "insert a diameter symbol",
+    "insert special character into text",
     "justifytext",
     "kolumny w mtext",
     "list text matching a pattern",
     "list text styles",
     "lista tekstow do pliku",
+    "make 1/2 a stacked fraction",
     "make text readable over a hatch",
     "make textstyle current",
     "make ttf style",
@@ -119,14 +128,19 @@
     "show all textstyles",
     "skasuj textstyle",
     "split a note into two columns",
+    "stack a fraction",
     "stretch text to fit",
     "stworz styl tekstu",
     "switch active textstyle",
+    "symbol plus minus",
     "szukaj po wzorcu",
     "tabela rxc",
     "table cell update",
     "textfit",
     "tlo pod tekstem",
+    "tolerance stacking",
+    "ulamek pietrowy w tekscie",
+    "ulamek w mtext",
     "update dbtext content",
     "update mtext content",
     "ustaw aktualny styl tekstu",
@@ -137,6 +151,7 @@
     "what text styles exist",
     "wrapped text block",
     "wstaw napis dtext",
+    "wstaw symbol srednicy",
     "wstaw tabele",
     "wstaw tekst wieloliniowy",
     "wszystkie style tekstu",
@@ -150,13 +165,15 @@
     "zamien tekst w calym rysunku",
     "zapisz wszystkie napisy do pliku",
     "zaslon kreskowanie pod napisem",
+    "zloz ulamek",
     "zmien justowanie tekstu",
     "zmien komorke",
     "zmien mtext",
     "zmien tekst dtext",
     "zmien wysokosc tekstu w miejscu",
     "znajdz i zamien",
-    "znajdz tekst w rysunku"
+    "znajdz tekst w rysunku",
+    "znak specjalny w tekscie"
   ],
   "tools_summary": [
     {
@@ -321,6 +338,23 @@
       ]
     },
     {
+      "name": "insert_symbol",
+      "description": "Put a drafting symbol into existing text - diameter, degrees, plusminus, centreline, delta, phi, omega, almostEqual, notEqual, angle, squared, cubed - by name, or any character as U\u002BXXXX. Judged on the RENDERED text rather than on what was written, because a tool that inserted the code and not the character would report success and leave a literal \u0027%%c\u0027 on the sheet. Single-line text understands only %%c, %%d and %%p as control codes; every other symbol goes in as the character and needs a text style whose font has that glyph. MText takes the character directly. Appends by default; pass where=\u0027start\u0027, or replace=\u0027\u003CTOKEN\u003E\u0027 to substitute a placeholder wherever it appears.",
+      "tags": [
+        "insert",
+        "symbol"
+      ],
+      "intent": [
+        "wstaw symbol srednicy",
+        "dodaj stopnie do tekstu",
+        "symbol plus minus",
+        "insert a diameter symbol",
+        "add a degree sign",
+        "insert special character into text",
+        "znak specjalny w tekscie"
+      ]
+    },
+    {
       "name": "list_text_by_pattern",
       "description": "Find every piece of text in the drawing matching a pattern, WITHOUT changing anything. Reads all six places text lives - single-line text, MText, MLeaders, block attributes, table cells and dimension text overrides - and reports scannedByType, so \u0027no matches\u0027 in a drawing full of text can be told from \u0027no matches in the two types a lesser search bothered to look at\u0027. Matching runs against the RENDERED text, not the stored string: a search over MText contents would hit words inside formatting codes and report matches nobody can see on the sheet. Set regex, matchCase or wholeWord as needed.",
       "tags": [
@@ -441,6 +475,22 @@
       ]
     },
     {
+      "name": "stack_fraction",
+      "description": "Stack the fractions in an MText, the way AutoCAD\u0027s stacking button does. style=\u0027horizontal\u0027 puts a bar between the halves, \u0027diagonal\u0027 a slash, \u0027tolerance\u0027 no bar at all - which is how an upper and lower limit are written. A stacked fraction RENDERS as the same characters as an unstacked one, so the rendered text cannot show it worked; the drawn extent can, and this tool refuses to report success unless the text got taller, which is what putting the halves on two levels does. Finds digits either side of a slash by default; pass your own regular expression as pattern for anything else.",
+      "tags": [
+        "stack",
+        "fraction"
+      ],
+      "intent": [
+        "ulamek pietrowy w tekscie",
+        "zloz ulamek",
+        "stack a fraction",
+        "make 1/2 a stacked fraction",
+        "tolerance stacking",
+        "ulamek w mtext"
+      ]
+    },
+    {
       "name": "text_fit",
       "description": "Stretch a single-line text to run exactly between two points - AutoCAD\u0027s TEXTFIT. The text is widened or narrowed while its HEIGHT stays put, which is the whole difference from scaling it, and the height is checked before and after. The text is left on AutoCAD\u0027s Fit alignment, so later edits to its contents re-stretch it between the same two points instead of overflowing them. MText is refused by name: it has a width of its own and wraps rather than stretching.",
       "tags": [
@@ -489,7 +539,7 @@
   ],
   "metadata": {
     "category": "annotations",
-    "tool_count_target": 20,
+    "tool_count_target": 22,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -503,6 +553,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-08T10:53:47.9747989Z"
+    "last_regenerated_utc": "2026-08-08T10:58:36.3640209Z"
   }
 }

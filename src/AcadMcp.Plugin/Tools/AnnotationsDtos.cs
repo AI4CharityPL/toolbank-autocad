@@ -140,3 +140,16 @@ internal sealed record MTextColumnArgsDto(
     [property: JsonPropertyName("width")]       double? Width,
     [property: JsonPropertyName("gutter")]      double? Gutter,
     [property: JsonPropertyName("autoHeight")]  bool? AutoHeight);
+
+// ─────────── roadmap 3.3, fourth tranche: symbols and stacked fractions ───────────
+
+internal sealed record InsertSymbolArgsDto(
+    [property: JsonPropertyName("handles")] List<string>? Handles,
+    [property: JsonPropertyName("symbol")]  string? Symbol,
+    [property: JsonPropertyName("where")]   string? Where,
+    [property: JsonPropertyName("replace")] string? Replace);
+
+internal sealed record StackFractionArgsDto(
+    [property: JsonPropertyName("handle")]  string? Handle,
+    [property: JsonPropertyName("style")]   string? Style,
+    [property: JsonPropertyName("pattern")] string? Pattern);

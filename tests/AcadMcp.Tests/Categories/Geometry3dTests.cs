@@ -30,6 +30,11 @@ public class Geometry3dTests
         // NOT boolean_ops.intersect_solids - that one replaces the target with the common
         // volume, this one leaves both parties standing and hands back a third solid.
         "slice_solid", "interfere_solids",
+
+        // Roadmap 4.1, third tranche. An imprint adds EDGES, not material - which is why
+        // the tool reports the volume before and after and refuses to call it an imprint
+        // if that changed. A tool that cut instead would also report more faces.
+        "imprint_edges",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

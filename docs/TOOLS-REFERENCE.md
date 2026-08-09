@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 551 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 553 tools total.
 
 ## Categories
 
@@ -17,14 +17,14 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
 - [acad-geometry-2d](#acad-geometry-2d) (60 tools)
-- [acad-geometry-3d](#acad-geometry-3d) (20 tools)
+- [acad-geometry-3d](#acad-geometry-3d) (21 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
-- [acad-modify](#acad-modify) (18 tools)
+- [acad-modify](#acad-modify) (19 tools)
 - [acad-openings](#acad-openings) (10 tools)
 - [acad-parametric](#acad-parametric) (5 tools)
 - [acad-plotstyles](#acad-plotstyles) (3 tools)
@@ -369,6 +369,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_mass_properties` | Return full mass properties of a 3D solid: volume, surface area, centroid, principal moments and radii of gyration. |
 | `get_surface_area` | Return total surface area of a 3D solid or surface. |
 | `get_volume` | Return the volume of a 3D solid (single value, current units). |
+| `imprint_edges` | Press a curve that LIES ON a face of a 3D solid into that face, splitting it into separate faces - AutoCAD's IMPRINT. This adds edges, not material: it is how you mark out a bolt pattern, a recess outline or a weld line before pushing or pulling it, and how you get a face you can select on its own. The curve has to sit on a face; one floating above it or crossing into the interior has nothing to be pressed into and is refused. The face and edge counts are reported before and after, and so is the volume, which must not change - a tool that cut instead of imprinting would also report more faces, and only the volume would give it away. Use boolean_ops.subtract_solids to actually remove material. |
 | `interfere_solids` | Find where two 3D solids clash, and hand the overlap back as a THIRD solid - AutoCAD's INTERFERE. Both originals are left untouched, which is the difference from boolean_ops.intersect_solids: that one replaces the target with the common volume, so it answers the question by destroying the thing you asked about. This is the services-coordination check. Pass createSolid false to get only the yes/no and the volumes. Both solids are measured before and after and any change to either is reported as a failure. |
 | `loft_curves` | Run a solid skin between two or more cross sections - AutoCAD's LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section's area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less. |
 | `revolve_curve` | Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360). |
@@ -469,6 +470,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | Tool | Description |
 |---|---|
 | `align` | Move and turn entities so that source point pair (A,B) maps onto target point pair (A,B) - AutoCAD's ALIGN. Without scale, A lands on its target and B only POINTS at its own; scale=true additionally resizes the selection so B lands exactly on it, which is the whole of that flag. The result reports where B actually ended up and how far that is from the target, so the difference is checkable rather than taken on trust. Use modify.move, rotate or scale when the displacement, angle or factor is already known. |
+| `array_path` | Copy entities along a PATH curve - a line, arc, polyline, spline or circle - spacing them by distance measured ALONG the curve, which is AutoCAD's ARRAYPATH. On a bend that is a different number from the straight-line gap between neighbours, and spacing by the wrong one bunches the copies on the outside of every turn while still producing the count that was asked for. With alignToPath the copies also turn to follow the local tangent, which is what fence posts, bollards or a row of trees along a road need. The result reports the path length, the spacing and the distance of every copy so the placement can be checked rather than trusted. Use array_rectangular for a grid and array_polar for a circle around a centre. |
 | `array_polar` | Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path. |
 | `array_rectangular` | Rectangular array (rows × cols × levels) by row, column and optional Z level spacing. |
 | `copy` | Copy entities by translation from→to. Set count > 1 for an evenly stepped chain of copies. |

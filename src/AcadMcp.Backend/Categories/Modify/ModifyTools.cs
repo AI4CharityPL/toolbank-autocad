@@ -176,4 +176,12 @@ public static class ModifyTools
     public static Task<ReferenceRotateResult> RotateByReference(IPluginGateway gw, ReferenceRotateArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<ReferenceRotateArgs, ReferenceRotateResult>(gw, "acad.modify.rotate_by_reference", args, T_NORMAL, ct);
 
+    [McpTool("array_path", "Copy entities along a PATH curve - a line, arc, polyline, spline or circle - spacing them by distance measured ALONG the curve, which is AutoCAD's ARRAYPATH. On a bend that is a different number from the straight-line gap between neighbours, and spacing by the wrong one bunches the copies on the outside of every turn while still producing the count that was asked for. With alignToPath (on by default) the copies also turn to follow the curve, each by how much the path has turned since its start, so the first copy keeps the source's own orientation - that is what fence posts, bollards or a row of trees along a road need. The result reports the path length, the spacing and the distance of every copy so the placement can be checked rather than trusted. Use array_rectangular for a grid and array_polar for a circle around a centre.", "modify",
+        Intent = new[] { "macierz wzdluz sciezki", "rozstaw obiekty po krzywej",
+                         "array along path", "distribute objects along a curve",
+                         "slupki wzdluz drogi co ile metrow", "place trees along a road",
+                         "arraypath" },
+        RequiresPlugin = true)]
+    public static Task<ArrayPathResult> ArrayPath(IPluginGateway gw, ArrayPathArgs args, CancellationToken ct)
+        => ModifyProxy.CallAsync<ArrayPathArgs, ArrayPathResult>(gw, "acad.modify.array_path", args, T_SLOW, ct);
 }

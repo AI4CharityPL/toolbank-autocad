@@ -52,6 +52,7 @@ internal static class Geometry3dPluginTools
         // roadmap 4.1 - cutting a solid, and finding where two overlap
         host.Register("acad.geometry3d.slice_solid",         SliceSolid);
         host.Register("acad.geometry3d.interfere_solids",    InterfereSolids);
+        host.Register("acad.geometry3d.imprint_edges",       ImprintEdges);
     }
 
     // ─────────── helpers ───────────
@@ -857,6 +858,83 @@ internal static class Geometry3dPluginTools
                       "volume. The clash comes back as a third solid of " + overlap + "."
                     : "They do not clash, so no interference solid was made. Both originals are " +
                       "untouched.",
+            });
+        });
+
+    /// <summary>How many faces and edges a solid has, read off its boundary representation.</summary>
+    private static (int Faces, int Edges) Topology(Solid3d solid)
+    {
+        using var brep = new Brep(solid);
+        int f = 0, e = 0;
+        foreach (var _ in brep.Faces) f++;
+        foreach (var _ in brep.Edges) e++;
+        return (f, e);
+    }
+
+    private static Task<ToolDispatchResult> ImprintEdges(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.imprint_edges", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ImprintArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.SolidHandle) || string.IsNullOrWhiteSpace(a.CurveHandle))
+                throw new ArgumentException(
+                    "solidHandle and curveHandle are both required: the solid to imprint on, and " +
+                    "the curve to press into its face.");
+
+            var se = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.SolidHandle!), OpenMode.ForWrite);
+            if (se is not Solid3d solid)
+                throw new ArgumentException(
+                    "Entity " + a.SolidHandle + " is a " + se.GetRXClass().Name + ", not a 3D solid.");
+            var ce = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.CurveHandle!), OpenMode.ForWrite);
+
+            var (f0, e0) = Topology(solid);
+            var v0 = solid.MassProperties.Volume;
+
+            try
+            {
+                solid.ImprintEntity(ce);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused the imprint with " + ex.ErrorStatus + ". The curve has to " +
+                    "LIE ON a face of the solid - imprinting is pressing a line into a surface, " +
+                    "not cutting through the shape. A curve floating above the face, or crossing " +
+                    "into the interior, has no face to be pressed into.");
+            }
+
+            var (f1, e1) = Topology(solid);
+            var v1 = solid.MassProperties.Volume;
+
+            // THE claim, and the one thing that separates an imprint from a cut: it adds edges,
+            // not material. A tool that quietly subtracted the curve's swept area would report
+            // more faces too, and only the volume would say so.
+            if (Math.Abs(v1 - v0) > Math.Abs(v0) * 1e-9)
+                throw new InvalidOperationException(
+                    "The solid measured " + v0 + " before the imprint and " + v1 + " after. " +
+                    "Imprinting divides a face; it never adds or removes material, so this is " +
+                    "not being reported as an imprint.");
+
+            if (f1 == f0 && e1 == e0)
+                throw new ArgumentException(
+                    "Nothing was imprinted: the solid still has " + f0 + " faces and " + e0 +
+                    " edges. The curve did not meet any face - it has to lie ON one.");
+
+            if (a.EraseSource == true) ce.Erase();
+
+            return Wrap(new
+            {
+                handle = a.SolidHandle,
+                facesBefore = f0,
+                faces = f1,
+                edgesBefore = e0,
+                edges = e1,
+                volumeBefore = v0,
+                volume = v1,
+                sourceErased = a.EraseSource == true,
+                note = "An imprint divides a FACE and adds edges - " + f0 + " faces became " + f1 +
+                       " and " + e0 + " edges became " + e1 + " - while the volume stays at " +
+                       v1 + ". That last part is the check: a tool that cut instead of imprinting " +
+                       "would also report more faces, and only the volume would give it away.",
             });
         });
 }

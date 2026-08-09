@@ -187,3 +187,19 @@ public sealed record InterfereResult(
     [property: JsonPropertyName("volume2")]          double Volume2,
     [property: JsonPropertyName("originalsIntact")]  bool OriginalsIntact,
     [property: JsonPropertyName("note")]             string Note);
+
+public sealed record ImprintArgs(
+    [property: JsonPropertyName("solidHandle")] string SolidHandle,
+    [property: JsonPropertyName("curveHandle")] string CurveHandle,
+    [property: JsonPropertyName("eraseSource")] bool? EraseSource = null);
+
+public sealed record ImprintResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("facesBefore")]  int FacesBefore,
+    [property: JsonPropertyName("faces")]        int Faces,
+    [property: JsonPropertyName("edgesBefore")]  int EdgesBefore,
+    [property: JsonPropertyName("edges")]        int Edges,
+    [property: JsonPropertyName("volumeBefore")] double VolumeBefore,
+    [property: JsonPropertyName("volume")]       double Volume,
+    [property: JsonPropertyName("sourceErased")] bool SourceErased,
+    [property: JsonPropertyName("note")]         string Note);

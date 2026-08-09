@@ -162,3 +162,23 @@ public sealed record AlignResult(
     [property: JsonPropertyName("sourceBLandedAt")]   IReadOnlyList<double> SourceBLandedAt,
     [property: JsonPropertyName("distanceToTargetB")] double DistanceToTargetB,
     [property: JsonPropertyName("note")]              string Note);
+
+// ─────────── roadmap 4.1: the third array ───────────
+
+public sealed record ArrayPathArgs(
+    [property: JsonPropertyName("handles")]     IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("pathHandle")]  string PathHandle,
+    [property: JsonPropertyName("count")]       int? Count = null,
+    [property: JsonPropertyName("alignToPath")] bool? AlignToPath = null,
+    [property: JsonPropertyName("basePoint")]   Point3dDto? BasePoint = null,
+    [property: JsonPropertyName("eraseSource")] bool? EraseSource = null);
+
+public sealed record ArrayPathResult(
+    [property: JsonPropertyName("entities")]      IReadOnlyList<EntityHandle> Entities,
+    [property: JsonPropertyName("count")]         int Count,
+    [property: JsonPropertyName("pathLength")]    double PathLength,
+    [property: JsonPropertyName("spacing")]       double Spacing,
+    [property: JsonPropertyName("distances")]     IReadOnlyList<double> Distances,
+    [property: JsonPropertyName("alignedToPath")] bool AlignedToPath,
+    [property: JsonPropertyName("sourceErased")]  bool SourceErased,
+    [property: JsonPropertyName("note")]          string Note);

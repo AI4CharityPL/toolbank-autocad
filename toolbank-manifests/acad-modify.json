@@ -28,6 +28,7 @@
     "mirror",
     "modify",
     "move",
+    "path",
     "polar",
     "properties",
     "rectangular",
@@ -42,7 +43,9 @@
   "intent_examples": [
     "align entities",
     "apply properties to targets",
+    "array along path",
     "array entities by rows and cols",
+    "arraypath",
     "build grid array",
     "change color of entities",
     "change entity layer",
@@ -58,6 +61,7 @@
     "delete group",
     "displace selected",
     "distribute around point",
+    "distribute objects along a curve",
     "dopasuj obiekty",
     "dopasuj skale rysunku do wymiaru",
     "duplicate selection",
@@ -74,6 +78,7 @@
     "macierz biegunowa",
     "macierz kolowa",
     "macierz prostokatna",
+    "macierz wzdluz sciezki",
     "make copies",
     "make group from entities",
     "match properties",
@@ -86,6 +91,7 @@
     "obroc obiekty",
     "obroc wedlug referencji",
     "obrot referencyjny",
+    "place trees along a road",
     "polar array",
     "ponow akcje",
     "ponow operacje",
@@ -107,6 +113,7 @@
     "rotate selection",
     "rotate so this edge becomes horizontal",
     "rozgrupuj",
+    "rozstaw obiekty po krzywej",
     "scale by reference",
     "scale entities",
     "scale so this measures that",
@@ -120,6 +127,7 @@
     "skalowanie referencyjne",
     "skaluj obiekty",
     "skasuj zaznaczone",
+    "slupki wzdluz drogi co ile metrow",
     "spin selection by degrees",
     "straighten a skewed drawing",
     "stworz grupe",
@@ -156,6 +164,23 @@
         "two point alignment",
         "fit entities to two points",
         "wyrownanie do dwoch punktow"
+      ]
+    },
+    {
+      "name": "array_path",
+      "description": "Copy entities along a PATH curve - a line, arc, polyline, spline or circle - spacing them by distance measured ALONG the curve, which is AutoCAD\u0027s ARRAYPATH. On a bend that is a different number from the straight-line gap between neighbours, and spacing by the wrong one bunches the copies on the outside of every turn while still producing the count that was asked for. With alignToPath the copies also turn to follow the local tangent, which is what fence posts, bollards or a row of trees along a road need. The result reports the path length, the spacing and the distance of every copy so the placement can be checked rather than trusted. Use array_rectangular for a grid and array_polar for a circle around a centre.",
+      "tags": [
+        "array",
+        "path"
+      ],
+      "intent": [
+        "macierz wzdluz sciezki",
+        "rozstaw obiekty po krzywej",
+        "array along path",
+        "distribute objects along a curve",
+        "slupki wzdluz drogi co ile metrow",
+        "place trees along a road",
+        "arraypath"
       ]
     },
     {
@@ -413,7 +438,7 @@
   ],
   "metadata": {
     "category": "modify",
-    "tool_count_target": 18,
+    "tool_count_target": 19,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -427,6 +452,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-07T10:18:53.5765977Z"
+    "last_regenerated_utc": "2026-08-08T18:46:54.3731032Z"
   }
 }

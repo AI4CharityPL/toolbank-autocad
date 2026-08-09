@@ -161,4 +161,13 @@ public static class Geometry3dTools
         RequiresPlugin = true)]
     public static Task<InterfereResult> InterfereSolids(IPluginGateway gw, InterfereArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<InterfereArgs, InterfereResult>(gw, "acad.geometry3d.interfere_solids", args, T_SLOW, ct);
+
+    [McpTool("imprint_edges", "Press a curve that LIES ON a face of a 3D solid into that face, splitting it into separate faces - AutoCAD's IMPRINT. This adds edges, not material: it is how you mark out a bolt pattern, a recess outline or a weld line before pushing or pulling it, and how you get a face you can select on its own. The curve has to sit on a face; one floating above it or crossing into the interior has nothing to be pressed into and is refused. The face and edge counts are reported before and after, and so is the volume, which must not change - a tool that cut instead of imprinting would also report more faces, and only the volume would give it away. Use boolean_ops.subtract_solids to actually remove material.", "geometry-3d",
+        Intent = new[] { "odcisnij krzywa na bryle", "podziel sciane bryly linia",
+                         "imprint curve onto solid", "imprint edges on a face",
+                         "zaznacz obrys na scianie bryly", "split a face of a solid",
+                         "mark bolt pattern on a face" },
+        RequiresPlugin = true)]
+    public static Task<ImprintResult> ImprintEdges(IPluginGateway gw, ImprintArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<ImprintArgs, ImprintResult>(gw, "acad.geometry3d.imprint_edges", args, T_SLOW, ct);
 }

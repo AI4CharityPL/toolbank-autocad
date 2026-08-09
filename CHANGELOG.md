@@ -37,6 +37,46 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, third tranche — the third array, and imprinting.** `acad-modify` 18 → 19 and
+  `acad-geometry-3d` 20 → 21, bank 551 → 553: `array_path`, `imprint_edges`. Verified live
+  **60/60**, and confirmed on an exported PNG.
+
+  `array_path` completes the array family — `array_rectangular` and `array_polar` have been
+  here since the start and the path one simply was not. Its whole difficulty is that copies
+  must be spaced by distance measured **along the curve**, not by the straight-line gap between
+  neighbours. On a bend those are different numbers, and a tool that used the wrong one still
+  returns the count that was asked for, still puts every copy on the curve, and still looks
+  right in a JSON result — it just bunches the copies round the outside of every turn. So the
+  check is arithmetic: on a quarter circle of radius 200 the arc length is π·200/2 = 314.1593
+  and every gap between neighbours must be that over four, 78.5398. Measured from the drawing
+  rather than from the tool's own report, and read a second way through
+  `get_distance_to_entity`. The **control** that gives that number meaning: on this bend the
+  chord between neighbours is measurably shorter than the arc, so the two answers really are
+  distinguishable here — and on a straight path, where they must agree, the copies land at
+  0, 100, 200, 300, 400.
+
+  Alignment is **relative** to the tangent where the path starts, not absolute. Rotating each
+  copy by its own tangent angle is the obvious implementation and it is wrong: array a post
+  along a road drawn leaving at 45° and every post comes out lying on its side, including the
+  one sitting exactly where the source was. Relative means the first copy keeps the source's
+  orientation and the rest turn only by how much the path has turned since. Visible in the
+  export: the bar at the arc's start is still horizontal, the one at the far end has turned the
+  90° the quarter circle turns, and the middle one sits at 45°, spanning 21.2132 each way.
+  `alignToPath: false` is the control — all four copies stay horizontal.
+
+  `imprint_edges` presses a curve lying on a face into that face, dividing it. The claim that
+  separates it from a cut is that it adds **edges, not material** — and a tool that quietly cut
+  would report more faces too, so face counts alone prove nothing. The volume is what gives it
+  away, so the handler reads the boundary representation and the mass properties before and
+  after and refuses to report an imprint if the volume moved, or if the face and edge counts did
+  not. A box's six faces become seven; the volume stays at 4000000. Confirmed on the image with
+  the source curve **erased**: the second box's top face is still divided, and that edge can
+  only have come from the imprint.
+
+  `array_path` lives in `acad-modify`, not in a 3D category — the same reasoning that struck the
+  six 3D transforms in the 4.1 review. A router choosing between three arrays should find all
+  three in one place, and the path can be a 3D polyline or a helix as easily as a 2D arc.
+
 - **Phase 4.1, second tranche — slicing and interference.** `acad-geometry-3d` 18 → 20, bank
   549 → 551: `slice_solid`, `interfere_solids`. Verified live **39/39**.
 

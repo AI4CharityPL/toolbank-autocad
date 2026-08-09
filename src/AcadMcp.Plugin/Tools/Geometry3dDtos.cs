@@ -114,3 +114,8 @@ internal sealed record InterfereArgsDto(
     [property: JsonPropertyName("handle2")]       string? Handle2,
     [property: JsonPropertyName("createSolid")]   bool? CreateSolid,
     [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record ImprintArgsDto(
+    [property: JsonPropertyName("solidHandle")]  string? SolidHandle,
+    [property: JsonPropertyName("curveHandle")]  string? CurveHandle,
+    [property: JsonPropertyName("eraseSource")]  bool? EraseSource);

@@ -107,3 +107,13 @@ internal sealed record ReferenceRotateArgsDto(
     [property: JsonPropertyName("referenceStart")]    Point3dDto? ReferenceStart,
     [property: JsonPropertyName("referenceEnd")]      Point3dDto? ReferenceEnd,
     [property: JsonPropertyName("newAngleDeg")]       double? NewAngleDeg);
+
+// ─────────── roadmap 4.1: the third array ───────────
+
+internal sealed record ArrayPathArgsDto(
+    [property: JsonPropertyName("handles")]     List<string>? Handles,
+    [property: JsonPropertyName("pathHandle")]  string? PathHandle,
+    [property: JsonPropertyName("count")]       int? Count,
+    [property: JsonPropertyName("alignToPath")] bool? AlignToPath,
+    [property: JsonPropertyName("basePoint")]   Point3dDto? BasePoint,
+    [property: JsonPropertyName("eraseSource")] bool? EraseSource);

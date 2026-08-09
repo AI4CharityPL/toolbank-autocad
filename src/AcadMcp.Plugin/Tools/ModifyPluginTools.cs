@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -51,6 +52,7 @@ internal static class ModifyPluginTools
         // roadmap 3.1 - transform by a measurement rather than a factor
         host.Register("acad.modify.scale_by_reference",  ScaleByReference);
         host.Register("acad.modify.rotate_by_reference", RotateByReference);
+        host.Register("acad.modify.array_path",          ArrayPath);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -626,6 +628,127 @@ internal static class ModifyPluginTools
                 note = "Rotated by " + deltaDeg.ToString("0.######") + " degrees, which is the " +
                        "difference between the two - not the angle given. Use modify.rotate if " +
                        "you already know how far to turn.",
+            });
+        });
+
+    // ─────────── roadmap 4.1: the third array ───────────
+    //
+    // array_rectangular and array_polar have been here since the start; this is the one that was
+    // missing. Copies are spaced by DISTANCE ALONG THE CURVE, not by straight-line distance
+    // between them - on a bend those are different numbers, and spacing by the wrong one bunches
+    // the copies on the outside of every turn while still producing the count that was asked for.
+
+    private static Task<ToolDispatchResult> ArrayPath(JsonObject args, CancellationToken ct) =>
+        Run("acad.modify.array_path", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ArrayPathArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.PathHandle))
+                throw new ArgumentException("pathHandle is required: the curve to array along.");
+            if (a.Count is null || a.Count < 2)
+                throw new ArgumentException(
+                    "count is required and must be at least 2 - one copy is the thing you " +
+                    "already have. The copies are spread evenly from one end of the path to the " +
+                    "other, both ends included.");
+
+            var pathEnt = (Entity)tr.GetObject(
+                AcadEnv.ResolveHandle(db, a.PathHandle!), OpenMode.ForRead);
+            if (pathEnt is not Curve path)
+                throw new ArgumentException(
+                    "The path is a " + pathEnt.GetRXClass().Name + ", not a curve.");
+            if (a.Handles is not null &&
+                a.Handles.Contains(a.PathHandle!, StringComparer.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "The path is also in handles, so it would be copied along itself.");
+
+            var sources = ResolveAll(db, tr, RequireHandles(a.Handles), OpenMode.ForWrite);
+
+            var startDist = path.GetDistanceAtParameter(path.StartParam);
+            var endDist = path.GetDistanceAtParameter(path.EndParam);
+            var pathLength = endDist - startDist;
+            if (pathLength <= 1e-9)
+                throw new ArgumentException("The path has no length to array along.");
+
+            // The base point is what lands ON the path. Default to the middle of what is being
+            // copied, which is what a draughtsman means by "put this along that".
+            Point3d basePt;
+            if (a.BasePoint is not null) basePt = AcadEnv.ToPoint3d(a.BasePoint);
+            else
+            {
+                var ext = sources[0].GeometricExtents;
+                foreach (var e in sources.Skip(1)) ext.AddExtents(e.GeometricExtents);
+                basePt = new Point3d((ext.MinPoint.X + ext.MaxPoint.X) / 2,
+                                     (ext.MinPoint.Y + ext.MaxPoint.Y) / 2,
+                                     (ext.MinPoint.Z + ext.MaxPoint.Z) / 2);
+            }
+
+            var count = a.Count.Value;
+            var spacing = pathLength / (count - 1);
+            var align = a.AlignToPath ?? true;
+            var ms = OpenModelSpace(db, tr);
+
+            // Alignment is RELATIVE to the tangent where the path starts, not absolute. Rotating
+            // every copy by its own tangent angle would turn the very first copy by whatever
+            // angle the path happens to leave at - array a post along a road drawn at 45 degrees
+            // and every post comes out lying on its side, including the one sitting exactly where
+            // the source was. Relative means the first copy keeps the source's orientation and the
+            // rest turn only by how much the path has turned since.
+            var startTangent = path.GetFirstDerivative(path.StartParam);
+            var baseAngle = startTangent.Length > 1e-12
+                ? Math.Atan2(startTangent.Y, startTangent.X) : 0.0;
+
+            var made = new List<EntityHandle>();
+            var distances = new List<double>();
+            for (int i = 0; i < count; i++)
+            {
+                var d = startDist + spacing * i;
+                distances.Add(d - startDist);
+                var at = path.GetPointAtDist(d);
+
+                var m = Matrix3d.Displacement(at - basePt);
+                if (align)
+                {
+                    // Turn each copy to face along the path at ITS OWN point, not at the start -
+                    // the whole difference between a handrail that follows a curve and one that
+                    // stays parallel to itself all the way round.
+                    var tangent = path.GetFirstDerivative(path.GetParameterAtDistance(d));
+                    if (tangent.Length > 1e-12)
+                    {
+                        var ang = Math.Atan2(tangent.Y, tangent.X) - baseAngle;
+                        if (Math.Abs(ang) > 1e-12)
+                            m = Matrix3d.Rotation(ang, Vector3d.ZAxis, at) * m;
+                    }
+                }
+
+                foreach (var src in sources)
+                {
+                    var clone = (Entity)src.Clone();
+                    clone.TransformBy(m);
+                    ms.AppendEntity(clone);
+                    tr.AddNewlyCreatedDBObject(clone, true);
+                    made.Add(AcadEnv.ToHandle(clone));
+                }
+            }
+
+            if (a.EraseSource == true) foreach (var e in sources) e.Erase();
+
+            return Wrap(new
+            {
+                entities = made,
+                count,
+                pathLength,
+                spacing,
+                distances,
+                alignedToPath = align,
+                sourceErased = a.EraseSource == true,
+                note = "distances are measured ALONG THE CURVE from its start, which is what " +
+                       "makes the spacing even on a bend - straight-line spacing would bunch the " +
+                       "copies round the outside of every turn and still give the right count. " +
+                       "Both ends of the path carry a copy, so " + count + " copies leave " +
+                       (count - 1) + " gaps of " + spacing + "." +
+                       (align
+                           ? " Each copy is turned by how much the path has turned since its " +
+                             "start, so the first copy keeps the source's own orientation."
+                           : " alignToPath is off, so every copy keeps the source's orientation."),
             });
         });
 }

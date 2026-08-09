@@ -222,6 +222,59 @@ rendered), not the outer boundary. `Outer` = only outermost loop is
 hatched, `Ignore` = everything outside outer is hatched (inverse),
 `Normal` = alternating fill. If you genuinely need to clip, see 11f.
 
+### 12. `new Brep(entity)` gives sub-objects that cannot be addressed
+
+`Brep` has two constructors and they are not interchangeable. Built from an
+`Entity`, its faces and edges enumerate fine and can be counted — but ask any of
+them for `SubentityPath` and you get `MissingSubentity`:
+
+```csharp
+using var brep = new Brep(solid);          // enumerates happily
+foreach (Edge e in brep.Edges)
+    var id = e.SubentityPath.SubentId;     // throws: MissingSubentity
+```
+
+Since **every** SOLIDEDIT operation in the managed API takes `SubentityId[]` —
+`FilletEdges`, `ChamferEdges`, `ExtrudeFaces`, `TaperFaces`, `OffsetFaces`,
+`RemoveFaces`, `TransformFaces`, `ShellBody` — the entity constructor is useless
+for anything except counting. Root the Brep on the solid's `ObjectId` instead:
+
+```csharp
+var root = new SubentityId(SubentityType.Null, IntPtr.Zero);
+using var brep = new Brep(new FullSubentityPath(new[] { solid.ObjectId }, root));
+```
+
+`imprint_edges` never hit this because it only counts faces and edges. The
+failure surfaces as a bare `Autodesk.AutoCAD.BoundaryRepresentation.Exception`
+with an empty message, which names neither the step nor the status — wrap each
+step of a Brep walk in a labelled helper that rethrows with the label and
+`ex.ErrorStatus` and six candidate causes become one deploy instead of six.
+
+### 12a. An oversized `FilletEdges` / `ChamferEdges` destroys faces and returns success
+
+AutoCAD does **not** refuse a radius too large for the geometry. Measured on a
+pristine 100 cube: `FilletEdges` with radius 300 on a 100-wide face was accepted,
+swallowed a whole face — six faces down to five — and left a volume a third
+smaller, with no error of any kind. `ChamferEdges` does the same at distance 100
+exactly; above about 120 it does refuse, with `eGeneralModelingFailure` (20062).
+
+Compare the face count before and after and treat a **drop** as a failure. The
+handler runs inside `RunWriteAsync`'s transaction, so throwing skips
+`tr.Commit()` and the aborted transaction restores the solid — but assert that in
+a live check rather than assuming it. The related arithmetic identity
+`L·r²·(1 − π/4)` for the removed volume only holds while the fillet fits inside
+both faces meeting at the edge.
+
+### 12b. `ShellSolid` does not exist; `ShellBody` does
+
+A probe that asked the compiler for `Solid3d.ShellSolid` came back CS1061 and
+`shell_solid` was struck from the roadmap as unbuildable. The method is
+`ShellBody(SubentityId[], double)` and it is there. When a probe reports absent,
+check the name against the SDK before striking the row — a struck row is a
+decision never to revisit something, so a typo in a probe is expensive in a way
+a compile error is not. Confirmed genuinely absent in the same sweep:
+`Solid3d.Separate`, `Solid3d.CopyFaces`, `Body.ConvertFrom`, `SubDMesh.CreateBox`.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

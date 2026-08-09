@@ -244,6 +244,50 @@ public sealed record EdgeOpArgs(
     [property: JsonPropertyName("baseFaceIndex")] int? BaseFaceIndex = null,
     [property: JsonPropertyName("allowFaceLoss")] bool? AllowFaceLoss = null);
 
+public sealed record FaceOpArgs(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("faceIndexes")]   IReadOnlyList<int>? FaceIndexes = null,
+    [property: JsonPropertyName("nearPoints")]    IReadOnlyList<Point3dDto>? NearPoints = null,
+    [property: JsonPropertyName("facing")]        Point3dDto? Facing = null,
+    [property: JsonPropertyName("distance")]      double? Distance = null,
+    [property: JsonPropertyName("taperAngleDeg")] double? TaperAngleDeg = null,
+    [property: JsonPropertyName("pathHandle")]    string? PathHandle = null,
+    [property: JsonPropertyName("from")]          Point3dDto? From = null,
+    [property: JsonPropertyName("to")]            Point3dDto? To = null,
+    [property: JsonPropertyName("axisStart")]     Point3dDto? AxisStart = null,
+    [property: JsonPropertyName("axisEnd")]       Point3dDto? AxisEnd = null,
+    [property: JsonPropertyName("angleDeg")]      double? AngleDeg = null,
+    [property: JsonPropertyName("basePoint")]     Point3dDto? BasePoint = null,
+    [property: JsonPropertyName("direction")]     Point3dDto? Direction = null,
+    [property: JsonPropertyName("thickness")]     double? Thickness = null);
+
+public sealed record FaceOpResult(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("facesAffected")]  int FacesAffected,
+    [property: JsonPropertyName("faces")]          IReadOnlyList<SolidFaceInfo> Faces,
+    [property: JsonPropertyName("facesBefore")]    int FacesBefore,
+    [property: JsonPropertyName("faceCount")]      int FaceCount,
+    [property: JsonPropertyName("volumeBefore")]   double VolumeBefore,
+    [property: JsonPropertyName("volume")]         double Volume,
+    [property: JsonPropertyName("volumeChange")]   double VolumeChange,
+    [property: JsonPropertyName("distance")]       double? Distance,
+    [property: JsonPropertyName("angleDeg")]       double? AngleDeg,
+    [property: JsonPropertyName("taperAngleDeg")]  double? TaperAngleDeg,
+    [property: JsonPropertyName("alongPath")]      string? AlongPath,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record ShellResult(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("thickness")]     double Thickness,
+    [property: JsonPropertyName("openFaces")]     int OpenFaces,
+    [property: JsonPropertyName("faces")]         IReadOnlyList<SolidFaceInfo> Faces,
+    [property: JsonPropertyName("facesBefore")]   int FacesBefore,
+    [property: JsonPropertyName("faceCount")]     int FaceCount,
+    [property: JsonPropertyName("volumeBefore")]  double VolumeBefore,
+    [property: JsonPropertyName("volume")]        double Volume,
+    [property: JsonPropertyName("volumeRemoved")] double VolumeRemoved,
+    [property: JsonPropertyName("note")]          string Note);
+
 public sealed record FilletEdgeResult(
     [property: JsonPropertyName("handle")]        string Handle,
     [property: JsonPropertyName("edgesFilleted")] int EdgesFilleted,

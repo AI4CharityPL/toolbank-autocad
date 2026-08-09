@@ -19,6 +19,7 @@ using AcadRt = Autodesk.AutoCAD.Runtime;
 using Brep = Autodesk.AutoCAD.BoundaryRepresentation.Brep;
 using BrepEdge = Autodesk.AutoCAD.BoundaryRepresentation.Edge;
 using BrepFace = Autodesk.AutoCAD.BoundaryRepresentation.Face;
+using LoopType = Autodesk.AutoCAD.BoundaryRepresentation.LoopType;
 
 namespace AcadMcp.Plugin.Tools;
 
@@ -64,6 +65,15 @@ internal static class Geometry3dPluginTools
         host.Register("acad.geometry3d.list_solid_faces",    ListSolidFaces);
         host.Register("acad.geometry3d.fillet_edge",         FilletEdge);
         host.Register("acad.geometry3d.chamfer_edge",        ChamferEdge);
+
+        // roadmap 4.1 - the rest of SOLIDEDIT, all reachable now that a face can be named
+        host.Register("acad.geometry3d.extrude_face",        ExtrudeFace);
+        host.Register("acad.geometry3d.offset_face",         OffsetFace);
+        host.Register("acad.geometry3d.move_face",           MoveFace);
+        host.Register("acad.geometry3d.rotate_face",         RotateFace);
+        host.Register("acad.geometry3d.taper_face",          TaperFace);
+        host.Register("acad.geometry3d.delete_face",         DeleteFace);
+        host.Register("acad.geometry3d.shell_solid",         ShellSolid);
     }
 
     // ─────────── helpers ───────────
@@ -1047,17 +1057,36 @@ internal static class Geometry3dPluginTools
         foreach (BrepFace f in Step("brep.Faces", () => brep.Faces))
         {
             var fi = i;
-            // The normal is computed from three sampled boundary points rather than read off
-            // Face.Surface: a planar face is not guaranteed to come back as a Plane, and a cast
-            // that sometimes works is worse than arithmetic that always does.
+            // The normal comes from NEWELL'S METHOD over the ordered vertices of the face's
+            // exterior loop, and the ordering is the whole point. Three arbitrary sampled points
+            // give a plane but not a side: measured on a filleted box, that approach reported
+            // (0,0,-1) twice and (0,0,1) never - the sign was noise. A Brep traverses a face's
+            // exterior loop so that the material is on one consistent side, so the winding
+            // carries the outward direction and Newell reads it off.
+            //
+            // The normal is then reported ONLY if the boundary is genuinely flat, checked by
+            // sampling along every edge rather than at the corners: a fillet's quarter-cylinder
+            // has corners that can be coplanar while the face between them is not. A curved face
+            // has no single normal, and reporting a plausible one is worse than reporting none -
+            // `facing` refuses when it cannot tell, instead of picking the wrong side.
             var pts = new List<Point3d>();
+            var outer = new List<Point3d>();
             int edges = 0;
             foreach (var loop in Step($"face[{fi}].Loops", () => f.Loops))
+            {
+                var isOuter = Step($"face[{fi}] loop.LoopType",
+                                   () => loop.LoopType) == LoopType.LoopExterior;
+                foreach (var lv in Step($"face[{fi}] loop.Vertices", () => loop.Vertices))
+                {
+                    var vp = Step($"face[{fi}] loop vertex point", () => lv.Point);
+                    if (isOuter) outer.Add(vp);
+                }
                 foreach (var le in Step($"face[{fi}] loop.Edges", () => loop.Edges))
                 {
                     edges++;
                     pts.AddRange(Step($"face[{fi}] loop edge sampling", () => SampleCurve(le.Curve, 5)));
                 }
+            }
 
             var centroid = Point3d.Origin;
             if (pts.Count > 0)
@@ -1069,13 +1098,30 @@ internal static class Geometry3dPluginTools
 
             var normal = Vector3d.ZAxis;
             var known = false;
-            for (int a = 0; a < pts.Count && !known; a++)
-                for (int b = a + 1; b < pts.Count && !known; b++)
-                    for (int c = b + 1; c < pts.Count && !known; c++)
+            if (outer.Count >= 3)
+            {
+                double nx = 0, ny = 0, nz = 0;
+                for (int k = 0; k < outer.Count; k++)
+                {
+                    var p = outer[k];
+                    var q = outer[(k + 1) % outer.Count];
+                    nx += (p.Y - q.Y) * (p.Z + q.Z);
+                    ny += (p.Z - q.Z) * (p.X + q.X);
+                    nz += (p.X - q.X) * (p.Y + q.Y);
+                }
+                var n = new Vector3d(nx, ny, nz);
+                if (n.Length > 1e-9)
+                {
+                    var cand = n.GetNormal();
+                    // Flat only if EVERY sampled boundary point sits in the plane.
+                    var scale = Math.Max(1.0, pts.Max(q => q.DistanceTo(centroid)));
+                    if (pts.All(q => Math.Abs((q - centroid).DotProduct(cand)) <= scale * 1e-6))
                     {
-                        var n = (pts[b] - pts[a]).CrossProduct(pts[c] - pts[a]);
-                        if (n.Length > 1e-6) { normal = n.GetNormal(); known = true; }
+                        normal = cand;
+                        known = true;
                     }
+                }
+            }
 
             var fsid = Step($"face[{fi}].SubentityPath.SubentId", () => f.SubentityPath.SubentId);
             list.Add(new FaceSlot(i++, fsid, centroid, normal, known, edges));
@@ -1131,6 +1177,131 @@ internal static class Geometry3dPluginTools
         var unique = new List<EdgeSlot>();
         foreach (var e in picked) if (seen.Add(e.Index)) unique.Add(e);
         return unique;
+    }
+
+    /// <summary>Turn indexes, points and/or a direction into face slots, refusing the ambiguous.</summary>
+    private static List<FaceSlot> PickFaces(List<FaceSlot> all, IReadOnlyList<int>? indexes,
+                                            IReadOnlyList<Point3dDto>? nearPoints,
+                                            Point3dDto? facing)
+    {
+        var picked = new List<FaceSlot>();
+        if (indexes is not null)
+            foreach (var ix in indexes)
+            {
+                if (ix < 0 || ix >= all.Count)
+                    throw new ArgumentException(
+                        "Face index " + ix + " is out of range: this solid has " + all.Count +
+                        " faces, numbered 0 to " + (all.Count - 1) +
+                        ". Call list_solid_faces to see them with their centroids and normals.");
+                picked.Add(all[ix]);
+            }
+
+        if (nearPoints is not null)
+            foreach (var dto in nearPoints)
+            {
+                var p = AcadEnv.ToPoint3d(dto);
+                var ordered = all.OrderBy(f => f.Centroid.DistanceTo(p)).ToList();
+                var d0 = ordered[0].Centroid.DistanceTo(p);
+                if (ordered.Count > 1 && Math.Abs(ordered[1].Centroid.DistanceTo(p) - d0) < 1e-9)
+                    throw new ArgumentException(
+                        "The point " + Fmt3(p) + " is the same distance (" + d0 + ") from face " +
+                        ordered[0].Index + " and face " + ordered[1].Index + ", so it names " +
+                        "neither. Give faceIndexes, or a point clearly nearer the one you mean.");
+                picked.Add(ordered[0]);
+            }
+
+        if (facing is not null)
+        {
+            // "The top face" without a list call first. A cube has exactly one face pointing at
+            // +Z; a cylinder standing on end has one too. Where two tie - facing the corner of a
+            // cube, say - the direction names neither and is refused rather than resolved.
+            var v = AcadEnv.ToVector3d(facing);
+            if (v.Length < 1e-12)
+                throw new ArgumentException("facing cannot be the zero vector: it names no direction.");
+            var n = v.GetNormal();
+            var withNormals = all.Where(f => f.NormalKnown).ToList();
+            if (withNormals.Count == 0)
+                throw new ArgumentException(
+                    "None of this solid's faces has a usable normal, so facing cannot pick one. " +
+                    "Use faceIndexes from list_solid_faces.");
+            var ordered = withNormals.OrderByDescending(f => f.Normal.DotProduct(n)).ToList();
+            var best = ordered[0].Normal.DotProduct(n);
+            if (ordered.Count > 1 && Math.Abs(ordered[1].Normal.DotProduct(n) - best) < 1e-9)
+                throw new ArgumentException(
+                    "The direction " + Fmt3(new Point3d(n.X, n.Y, n.Z)) + " points equally at " +
+                    "face " + ordered[0].Index + " and face " + ordered[1].Index + ", so it names " +
+                    "neither. Aim it squarely at the one you mean, or give faceIndexes.");
+            picked.Add(ordered[0]);
+        }
+
+        if (picked.Count == 0)
+            throw new ArgumentException(
+                "Name the faces to work on: faceIndexes from list_solid_faces, nearPoints which " +
+                "snap to the nearest face, or facing which picks the face pointing that way.");
+
+        var seen = new HashSet<int>();
+        var unique = new List<FaceSlot>();
+        foreach (var f in picked) if (seen.Add(f.Index)) unique.Add(f);
+        return unique;
+    }
+
+    private static object Describe(in FaceSlot f) => new
+    {
+        index = f.Index,
+        centroid = AcadEnv.FromPoint3d(f.Centroid),
+        normal = f.NormalKnown
+            ? AcadEnv.FromPoint3d(new Point3d(f.Normal.X, f.Normal.Y, f.Normal.Z)) : null,
+        edgeCount = f.EdgeCount,
+    };
+
+    /// <summary>
+    /// Shared tail for every face operation: apply, measure, and refuse to call it a success when
+    /// nothing moved. Each of these can be handed a value that AutoCAD accepts and quietly
+    /// ignores, and every one of them then returns a healthy result over an unchanged solid.
+    /// </summary>
+    private static JsonObject FaceOp(
+        Database db, Transaction tr, FaceOpArgsDto a, string verb, string what,
+        Func<Solid3d, SubentityId[], JsonObject?> apply)
+    {
+        var solid = RequireSolid(db, tr, a.Handle, "handle");
+        var picked = PickFaces(FaceSlots(solid), a.FaceIndexes, a.NearPoints, a.Facing);
+        var v0 = solid.MassProperties.Volume;
+        var (f0, e0) = Topology(solid);
+
+        JsonObject? extra;
+        try
+        {
+            extra = apply(solid, picked.Select(p => p.Id).ToArray());
+        }
+        catch (AcadRt.Exception ex)
+        {
+            throw new ArgumentException(
+                "AutoCAD refused to " + verb + " with " + ex.ErrorStatus + ". " + what);
+        }
+
+        var v1 = solid.MassProperties.Volume;
+        var (f1, e1) = Topology(solid);
+
+        if (f1 == f0 && e1 == e0 && Math.Abs(v1 - v0) <= Math.Abs(v0) * 1e-12)
+            throw new InvalidOperationException(
+                "Nothing changed: the solid still has " + f0 + " faces, " + e0 + " edges and the " +
+                "same volume, " + v0 + ". The faces named were accepted but the operation had no " +
+                "effect, which AutoCAD reports as success.");
+
+        var result = new JsonObject
+        {
+            ["handle"] = a.Handle,
+            ["facesAffected"] = picked.Count,
+            ["faces"] = JsonSerializer.SerializeToNode(picked.Select(f => Describe(f)).ToArray(), Opts),
+            ["facesBefore"] = f0,
+            ["faceCount"] = f1,
+            ["volumeBefore"] = v0,
+            ["volume"] = v1,
+            ["volumeChange"] = v1 - v0,
+        };
+        if (extra is not null)
+            foreach (var kv in extra) result[kv.Key] = kv.Value?.DeepClone();
+        return result;
     }
 
     private static object Describe(in EdgeSlot e) => new
@@ -1271,6 +1442,243 @@ internal static class Geometry3dPluginTools
                        "normal comes from three sampled boundary points and is omitted when the " +
                        "boundary is degenerate. Indexes are stable only while the solid is " +
                        "unedited.",
+            });
+        });
+
+    // ─────────── the face operations ───────────
+
+    private static Task<ToolDispatchResult> ExtrudeFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.extrude_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            if (a.Distance is null && a.PathHandle is null)
+                throw new ArgumentException(
+                    "Give either distance - how far to push the face along its own normal - or " +
+                    "pathHandle, a curve to push it along.");
+            if (a.Distance is not null && a.PathHandle is not null)
+                throw new ArgumentException(
+                    "distance and pathHandle are alternatives: one pushes the face straight along " +
+                    "its normal, the other follows a curve. Give one.");
+
+            var r = FaceOp(db, tr, a, "extrude those faces",
+                "A face cannot be pushed so far that the solid turns inside out, and a taper " +
+                "steep enough to close the extrusion off is refused too.",
+                (solid, ids) =>
+                {
+                    if (a.PathHandle is not null)
+                    {
+                        var pe = (Entity)tr.GetObject(
+                            AcadEnv.ResolveHandle(db, a.PathHandle), OpenMode.ForRead);
+                        if (pe is not Curve path)
+                            throw new ArgumentException(
+                                "The path is a " + pe.GetRXClass().Name + ", not a curve.");
+                        solid.ExtrudeFacesAlongPath(ids, path);
+                        return new JsonObject { ["alongPath"] = a.PathHandle };
+                    }
+                    solid.ExtrudeFaces(ids, a.Distance!.Value, (a.TaperAngleDeg ?? 0) * Math.PI / 180.0);
+                    return new JsonObject
+                    {
+                        ["distance"] = a.Distance.Value,
+                        ["taperAngleDeg"] = a.TaperAngleDeg ?? 0,
+                    };
+                });
+            r["note"] = "Pushing a flat face of area A straight out by d adds exactly A*d of " +
+                        "material, so the volume change is checkable on paper whenever the face " +
+                        "is planar and the taper is zero. A negative distance pushes INWARD and " +
+                        "hollows the solid out instead. The face and edge indexes have now " +
+                        "changed; list them again before the next edit.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> OffsetFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.offset_face", args, ct, (doc, db, tr) =>
+        {
+            if (Read<FaceOpArgsDto>(args).Distance is null)
+                throw new ArgumentException(
+                    "distance is required: how far to move each face along its own normal. " +
+                    "Positive grows the solid, negative shrinks it.");
+            var a = Read<FaceOpArgsDto>(args);
+            var r = FaceOp(db, tr, a, "offset those faces",
+                "Offsetting inward by more than the solid is thick would turn it inside out.",
+                (solid, ids) =>
+                {
+                    solid.OffsetFaces(ids, a.Distance!.Value);
+                    return new JsonObject { ["distance"] = a.Distance.Value };
+                });
+            r["note"] = "Offset moves each face along its OWN normal, so offsetting all six faces " +
+                        "of a 100 cube by 10 gives a 120 cube, not a 110 one - the growth happens " +
+                        "on both sides of every axis. This is the difference from move_face, " +
+                        "which moves faces in one direction you choose. The face and edge indexes " +
+                        "have now changed; list them again before the next edit.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> MoveFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.move_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            if (a.From is null || a.To is null)
+                throw new ArgumentException(
+                    "from and to are required: the displacement to move the faces by, given as " +
+                    "two points exactly like modify.move.");
+            var v = AcadEnv.ToPoint3d(a.To) - AcadEnv.ToPoint3d(a.From);
+            if (v.Length < 1e-12)
+                throw new ArgumentException("from and to are the same point, so nothing would move.");
+
+            var r = FaceOp(db, tr, a, "move those faces",
+                "A face cannot be moved through the far side of the solid.",
+                (solid, ids) =>
+                {
+                    solid.TransformFaces(ids, Matrix3d.Displacement(v));
+                    return new JsonObject { ["distance"] = v.Length };
+                });
+            r["note"] = "Moving one flat face of a box straight out by d adds exactly (its area)*d, " +
+                        "the same arithmetic as extrude_face. The difference is direction: move " +
+                        "takes a displacement you choose, offset_face always follows each face's " +
+                        "own normal. The face and edge indexes have now changed.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> RotateFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.rotate_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            if (a.AngleDeg is null)
+                throw new ArgumentException("angleDeg is required: how far to turn the faces.");
+            if (a.AxisStart is null || a.AxisEnd is null)
+                throw new ArgumentException(
+                    "axisStart and axisEnd are required: the line the faces turn about. Unlike a " +
+                    "2D rotation there is no default axis in 3D - a point does not name one.");
+            var p0 = AcadEnv.ToPoint3d(a.AxisStart);
+            var axis = AcadEnv.ToPoint3d(a.AxisEnd) - p0;
+            if (axis.Length < 1e-12)
+                throw new ArgumentException(
+                    "axisStart and axisEnd are the same point, so they name no axis.");
+
+            var r = FaceOp(db, tr, a, "rotate those faces",
+                "A face cannot be turned so far that it passes through the rest of the solid.",
+                (solid, ids) =>
+                {
+                    solid.TransformFaces(ids,
+                        Matrix3d.Rotation(a.AngleDeg!.Value * Math.PI / 180.0, axis.GetNormal(), p0));
+                    return new JsonObject { ["angleDeg"] = a.AngleDeg.Value };
+                });
+            r["note"] = "Angles are degrees, counter-clockwise looking down the axis from " +
+                        "axisEnd towards axisStart. Tilting a face is how a wedge or a sloping " +
+                        "roof is made from a box. The face and edge indexes have now changed.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> TaperFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.taper_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            if (a.AngleDeg is null)
+                throw new ArgumentException(
+                    "angleDeg is required: the draft angle. This is the taper a moulded or cast " +
+                    "part needs so it can be pulled from its mould.");
+            if (a.BasePoint is null || a.Direction is null)
+                throw new ArgumentException(
+                    "basePoint and direction are required. The taper pivots about the base point " +
+                    "and leans along the direction - the face stays put where it crosses that " +
+                    "point and swings further the further from it you go, so those two together " +
+                    "decide which end grows and which shrinks.");
+            var dir = AcadEnv.ToVector3d(a.Direction);
+            if (dir.Length < 1e-12)
+                throw new ArgumentException("direction cannot be the zero vector.");
+
+            var r = FaceOp(db, tr, a, "taper those faces",
+                "A draft angle steep enough to fold the face through itself is refused.",
+                (solid, ids) =>
+                {
+                    solid.TaperFaces(ids, AcadEnv.ToPoint3d(a.BasePoint), dir.GetNormal(),
+                                     a.AngleDeg!.Value * Math.PI / 180.0);
+                    return new JsonObject { ["angleDeg"] = a.AngleDeg.Value };
+                });
+            r["note"] = "Draft angle in degrees. Tapering the four sides of a box about its base " +
+                        "turns it into a frustum, which is the usual reason to reach for this. " +
+                        "The face and edge indexes have now changed.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> DeleteFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.delete_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            var r = FaceOp(db, tr, a, "delete those faces",
+                "A face can only go if the faces around it can be grown back together to close " +
+                "the gap. That works for a feature added to a shape - a fillet, a chamfer, a " +
+                "boss - and not for a face of the shape itself: deleting one side of a box would " +
+                "leave it open, and a solid cannot be open.",
+                (solid, ids) => { solid.RemoveFaces(ids); return null; });
+            r["note"] = "This is how a FEATURE is removed rather than a shape edited: delete the " +
+                        "curved face a fillet added and the sharp edge comes back, and the volume " +
+                        "returns to exactly what it was before the fillet - which is the check " +
+                        "worth making, since a partial removal still leaves a valid solid.";
+            return r;
+        });
+
+    private static Task<ToolDispatchResult> ShellSolid(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.shell_solid", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<FaceOpArgsDto>(args);
+            if (a.Thickness is null || a.Thickness == 0)
+                throw new ArgumentException(
+                    "thickness is required and cannot be 0. NEGATIVE keeps the wall inside the " +
+                    "original surface, so the part stays the size it was; POSITIVE grows the wall " +
+                    "outward and the part gets bigger in every direction. Measured on a 100 cube " +
+                    "open at the top: -10 gives 424000, +10 gives 584000.");
+
+            var solid = RequireSolid(db, tr, a.Handle, "handle");
+            var all = FaceSlots(solid);
+            // MEASURED: ShellBody throws IndexOutOfRangeException on an empty SubentityId[]. The
+            // first version of this tool advertised "name no faces and the void is sealed inside",
+            // which read well and does not work - AutoCAD will not shell without an opening.
+            var opened = PickFaces(all, a.FaceIndexes, a.NearPoints, a.Facing);
+
+            var v0 = solid.MassProperties.Volume;
+            var (f0, _) = Topology(solid);
+            try
+            {
+                solid.ShellBody(opened.Select(f => f.Id).ToArray(), a.Thickness.Value);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused the shell with " + ex.ErrorStatus + ". A wall thicker than " +
+                    "half the narrowest part of the solid has nowhere to go - the inner surface " +
+                    "would pass through itself. The thickness asked for was " + a.Thickness.Value + ".");
+            }
+            var v1 = solid.MassProperties.Volume;
+            var (f1, _) = Topology(solid);
+
+            if (Math.Abs(v1 - v0) <= Math.Abs(v0) * 1e-12)
+                throw new InvalidOperationException(
+                    "Nothing was hollowed: the solid still measures " + v0 + ". A shell always " +
+                    "removes material, so an unchanged volume means it did not happen.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                thickness = a.Thickness.Value,
+                openFaces = opened.Count,
+                faces = opened.Select(f => Describe(f)).ToArray(),
+                facesBefore = f0,
+                faceCount = f1,
+                volumeBefore = v0,
+                volume = v1,
+                volumeRemoved = v0 - v1,
+                note = "Shelling hollows the solid out to a wall of the given thickness. The faces " +
+                       "named are the ones LEFT OPEN - name the top of a box and you get a box " +
+                       "with no lid. At least one face is required: AutoCAD will not shell a " +
+                       "solid with no opening at all, so a sealed void has to be made by " +
+                       "subtracting an inner solid with boolean_ops.subtract_solids. The SIGN of the thickness is the thing to get " +
+                       "right: negative hollows INWARD and leaves the part the size it was, " +
+                       "positive grows the wall OUTWARD and makes it bigger. On a 100 cube open " +
+                       "at the top, -10 leaves a cavity of 80 x 80 x 90 and comes to 424000, " +
+                       "while +10 grows the outside to 120 x 120 x 110 and comes to 584000. Both " +
+                       "are valid shells and only the sign tells them apart, so check the volume " +
+                       "against the one that was wanted.",
             });
         });
 

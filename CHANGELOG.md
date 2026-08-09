@@ -37,6 +37,55 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, fifth tranche — the rest of SOLIDEDIT.** `acad-geometry-3d` 25 → 32, bank
+  557 → 564: `extrude_face`, `offset_face`, `move_face`, `rotate_face`, `taper_face`,
+  `delete_face`, `shell_solid`. Verified live **57/57**, and confirmed on an exported PNG.
+
+  All seven name their faces the same way — `faceIndexes` from `list_solid_faces`, `nearPoints`
+  which snap to the closest face, or **`facing`**, which picks the face pointing a given way so
+  that "extrude the top face by 50" needs no list call first. A direction aimed equally at two
+  faces is refused, exactly as a point equidistant from two edges is.
+
+  Every one of these can be handed a value AutoCAD accepts and quietly ignores, and every one
+  then returns a healthy result over an unchanged solid, so a shared tail measures volume and
+  topology before and after and refuses to call it a success when nothing moved. Each is checked
+  against a volume worked out on paper from a 100 cube: extrude the top face by 50 → 1500000;
+  offset all six faces by 10 → a **120** cube, not a 110 one, because each face follows its own
+  normal; rotate the top face 45° about its near edge → the wedge 500000, and −45° → 1500000;
+  taper one side 45° → the same pair. The sharpest is `delete_face`: fillet an edge, then delete
+  the face the fillet made, and the volume must come back to **exactly** 1000000 — a partial
+  removal leaves a perfectly valid solid and only that return says the feature really came off.
+
+  **Three defects, two of them in work already committed:**
+
+  - **`list_solid_faces` was reporting normals with an arbitrary sign, and the check that should
+    have caught it compared `abs()` of each component** — so a normal pointing *into* the solid
+    passed exactly as well as one pointing out. It surfaced on a filleted box: seven faces, with
+    `(0,0,-1)` twice and `(0,0,1)` never. Three arbitrary sampled points give a plane but not a
+    side. Normals now come from **Newell's method over the ordered vertices of the exterior
+    loop** — a Brep traverses that loop with the material on one consistent side, so the winding
+    carries the outward direction. This mattered beyond the report: `facing` picks by normal, so
+    "the top face" could have acted on the bottom one.
+  - A normal is now reported **only when the boundary is genuinely flat**, checked by sampling
+    along every edge rather than at the corners, because a fillet's quarter-cylinder can have
+    coplanar corners with a curved face between them. A curved face has no single normal and gets
+    `null`; `facing` then refuses rather than picking a side. The verification uses this to find
+    the fillet face — by the absence of a normal, not by a guessed index.
+  - **`shell_solid` promised something that does not work.** It advertised "name no faces and the
+    void is sealed inside"; `ShellBody` throws `IndexOutOfRange` on an empty selection. The claim
+    was withdrawn rather than the failure papered over, and the description now points at
+    `boolean_ops.subtract_solids` for that shape.
+
+  And one documentation defect caught by measuring the sign conventions before writing them down:
+  **shell thickness is positive OUTWARD**, the opposite of what the description first said. On a
+  100 cube open at the top, −10 leaves a cavity of 80×80×90 and comes to 424000 while +10 grows
+  the outside to 120×120×110 and comes to 584000. Both are valid shells and only the sign tells
+  them apart, so someone asking for a 10 mm wall would have got a part 20 mm bigger in every
+  direction with no error. The verification now checks **both** numbers.
+
+  `shell_solid` ships here after being wrongly struck as unbuildable — see the previous entry.
+  `copy_face` is struck for real: `Solid3d.CopyFaces` does not exist.
+
 - **Phase 4.1, fourth tranche — the face/edge family, and the addressing scheme it was blocked
   on.** `acad-geometry-3d` 21 → 25, bank 553 → 557: `list_solid_edges`, `list_solid_faces`,
   `fillet_edge`, `chamfer_edge`. Verified live **65/65**, and confirmed on an exported PNG.

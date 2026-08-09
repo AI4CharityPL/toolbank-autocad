@@ -41,6 +41,12 @@ public class Geometry3dTests
         // the managed API takes SubentityId[], which a caller cannot spell, so an index plus
         // the geometry behind it is how an edge gets named.
         "list_solid_edges", "list_solid_faces", "fillet_edge", "chamfer_edge",
+
+        // Roadmap 4.1, fifth tranche: the rest of SOLIDEDIT, all reachable once a face
+        // could be named. shell_solid is here after being wrongly struck - the probe that
+        // condemned it asked for ShellSolid; the method is ShellBody.
+        "extrude_face", "offset_face", "move_face", "rotate_face", "taper_face",
+        "delete_face", "shell_solid",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

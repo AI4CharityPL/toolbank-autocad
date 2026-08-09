@@ -22,11 +22,13 @@
     "curve",
     "curves",
     "cylinder",
+    "delete",
     "draw",
     "dwg",
     "edge",
     "edges",
     "extrude",
+    "face",
     "faces",
     "fillet",
     "geometry-3d",
@@ -37,21 +39,28 @@
     "list",
     "loft",
     "mass",
+    "move",
+    "offset",
     "planar",
     "properties",
     "pyramid",
     "revolve",
+    "rotate",
+    "shell",
     "slice",
     "solid",
     "solids",
     "sphere",
     "surface",
     "sweep",
+    "taper",
     "torus",
     "volume",
     "wedge"
   ],
   "intent_examples": [
+    "add a boss to a part",
+    "apply a draft angle",
     "axis aligned bbox",
     "bevel solid edge",
     "bevel the edge of a 3d box",
@@ -61,6 +70,7 @@
     "chamfer an edge of a solid",
     "chamferedge",
     "check clash between solids",
+    "cofnij faze na krawedzi",
     "compute extents 3d",
     "compute mass properties",
     "compute solid centroid",
@@ -78,6 +88,8 @@
     "create wedge solid",
     "cut a 3d solid in half",
     "cylinder by base radius and height",
+    "delete a face of a solid",
+    "dodaj nadlew na scianie",
     "donut shape solid",
     "draw 3d box",
     "draw a helix",
@@ -90,6 +102,7 @@
     "draw wedge",
     "enumerate solid edges",
     "enumerate solid faces",
+    "extrude a face of a solid",
     "extrude polyline",
     "extrude with taper",
     "extruduj krzywa",
@@ -106,13 +119,16 @@
     "get inertia and centroid",
     "get total surface area",
     "get volume of solid",
+    "grow or shrink a solid by a wall thickness",
     "gwint sciezka",
+    "hollow out a solid to a wall thickness",
     "ile scian ma bryla",
     "ile wynosi objetosc",
     "imprint curve onto solid",
     "imprint edges on a face",
     "interfere solids",
     "jakie krawedzie ma ta bryla",
+    "kat pochylenia formy odlewniczej",
     "kolizja miedzy bry\u0142ami",
     "koordynacja miedzybranzowa kolizje",
     "ktora krawedz zaokraglic",
@@ -121,6 +137,9 @@
     "list faces of a solid",
     "loft between cross sections",
     "loft solid",
+    "make a box into a container",
+    "make a box into a frustum",
+    "make a hole smaller",
     "make a pipe from a profile",
     "make a transition piece",
     "make surface from closed curve",
@@ -128,6 +147,7 @@
     "measure 3d area",
     "measure 3d volume",
     "moment bezwladnosci",
+    "move a face of a solid",
     "narysuj helise",
     "narysuj klin",
     "narysuj kule",
@@ -137,10 +157,18 @@
     "narysuj stozek",
     "narysuj torus",
     "narysuj walec",
+    "obroc sciane bryly",
     "obrot krzywej",
     "odcisnij krzywa na bryle",
+    "odsun sciane bryly",
+    "offset faces of a solid",
+    "pochyl sciane bryly",
+    "pochyl sciane o 15 stopni",
+    "podnies gorna sciane o 50",
     "podziel sciane bryly linia",
     "podziel solid na pol",
+    "pogrub bryle o 10",
+    "pojemnik bez pokrywy z bryly",
     "polacz przekroje bryla",
     "policz objetosc",
     "policz pole powierzchni 3d",
@@ -149,17 +177,33 @@
     "przeciagnij profil po sciezce",
     "przejscie miedzy przekrojami",
     "przekroj bryly",
+    "przesun gorna sciane w gore",
+    "przesun otwor w bryle",
+    "przesun sciane bryly",
     "przetnij bryle plaszczyzna",
+    "push a face outward",
+    "remove a boss from a part",
+    "remove a fillet feature",
+    "reposition a hole in a part",
     "revolve curve around axis",
     "revolve polilinie",
     "right angle prism",
+    "rotate a face of a solid",
     "round solid edge",
     "round the edges of a 3d box",
     "sciecie naroza bryly",
     "sfazuj krawedz bryly",
+    "shell a solid",
     "show solid edges with indexes",
     "show solid faces with normals",
     "slice a solid with a plane",
+    "solidedit delete face",
+    "solidedit extrude",
+    "solidedit move face",
+    "solidedit offset",
+    "solidedit rotate face",
+    "solidedit shell",
+    "solidedit taper",
     "sphere by center and radius",
     "spin curve to make solid",
     "spiral path for a spring",
@@ -179,19 +223,29 @@
     "stworz stozek scinany",
     "sweep a profile along a path",
     "sweep solid",
+    "taper a face of a solid",
+    "tilt a face to make a slope",
+    "usun sciane bryly",
+    "usun zaokraglenie z bryly",
     "where is centroid",
     "which edge do I fillet",
     "which face is the top one",
     "wlasciwosci masowe",
     "wyciagniecie przez przekroje",
     "wyciagnij polilinie",
+    "wyciagnij sciane bryly",
+    "wydraz bryle",
     "wymiary bryly",
     "wypisz krawedzie bryly",
     "wypisz sciany bryly",
     "zaokraglenie naroza bryly",
     "zaokraglij krawedz bryly",
     "zaznacz obrys na scianie bryly",
-    "zrob rure wzdluz linii"
+    "zmniejsz otwor w bryle",
+    "zrob rure wzdluz linii",
+    "zrob skorupe o grubosci 10",
+    "zrob spadek na plaskim dachu",
+    "zwez bryle ku gorze"
   ],
   "tools_summary": [
     {
@@ -209,6 +263,23 @@
         "sciecie naroza bryly",
         "chamferedge",
         "bevel solid edge"
+      ]
+    },
+    {
+      "name": "delete_face",
+      "description": "Remove faces from a 3D solid, closing the gap by growing the surrounding faces back together - AutoCAD\u0027s SOLIDEDIT Delete. This removes a FEATURE rather than editing a shape: delete the curved face a fillet added and the sharp edge comes back, with the volume returning to exactly what it was before the fillet. It cannot delete a face of the shape itself - removing one side of a box would leave it open, and a solid cannot be open, so that is refused.",
+      "tags": [
+        "delete",
+        "face"
+      ],
+      "intent": [
+        "usun sciane bryly",
+        "usun zaokraglenie z bryly",
+        "delete a face of a solid",
+        "remove a fillet feature",
+        "cofnij faze na krawedzi",
+        "remove a boss from a part",
+        "solidedit delete face"
       ]
     },
     {
@@ -361,6 +432,23 @@
         "extrude polyline",
         "create solid by extrusion",
         "extrude with taper"
+      ]
+    },
+    {
+      "name": "extrude_face",
+      "description": "Push one or more faces of a 3D solid out along their own normal by a distance, or along a curve given as pathHandle - AutoCAD\u0027s SOLIDEDIT Extrude. This is how a boss, a rib or a raised pad is added to a part without drawing a second solid and unioning it. Pushing a flat face of area A out by d adds exactly A*d of material, so the volume change is checkable on paper. A negative distance pushes inward and hollows the solid out. An optional taperAngleDeg narrows the extrusion as it goes, which is what a moulded part needs. Name the faces by faceIndexes, nearPoints or facing.",
+      "tags": [
+        "extrude",
+        "face"
+      ],
+      "intent": [
+        "wyciagnij sciane bryly",
+        "dodaj nadlew na scianie",
+        "extrude a face of a solid",
+        "push a face outward",
+        "podnies gorna sciane o 50",
+        "add a boss to a part",
+        "solidedit extrude"
       ]
     },
     {
@@ -546,6 +634,39 @@
       ]
     },
     {
+      "name": "move_face",
+      "description": "Move faces of a 3D solid by a displacement given as two points, exactly like modify.move - AutoCAD\u0027s SOLIDEDIT Move. Moving one flat face of a box straight out by d adds exactly (its area)*d, the same arithmetic as extrude_face; the difference is that move takes a direction you choose while offset_face always follows each face\u0027s own normal. Use it to reposition a hole or a pocket inside a part without rebuilding it.",
+      "tags": [
+        "move",
+        "face"
+      ],
+      "intent": [
+        "przesun sciane bryly",
+        "przesun otwor w bryle",
+        "move a face of a solid",
+        "reposition a hole in a part",
+        "przesun gorna sciane w gore",
+        "solidedit move face"
+      ]
+    },
+    {
+      "name": "offset_face",
+      "description": "Move faces along their OWN normals by a distance, growing or shrinking the solid - AutoCAD\u0027s SOLIDEDIT Offset. Positive grows, negative shrinks. Because each face follows its own normal, offsetting all six faces of a 100 cube by 10 gives a 120 cube and not a 110 one: the growth happens on both sides of every axis. That is the difference from move_face, which moves faces in one direction you choose. Offsetting the wall of a hole makes the hole smaller, which is the usual reason to reach for it.",
+      "tags": [
+        "offset",
+        "face"
+      ],
+      "intent": [
+        "odsun sciane bryly",
+        "pogrub bryle o 10",
+        "offset faces of a solid",
+        "grow or shrink a solid by a wall thickness",
+        "zmniejsz otwor w bryle",
+        "make a hole smaller",
+        "solidedit offset"
+      ]
+    },
+    {
       "name": "revolve_curve",
       "description": "Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360).",
       "tags": [
@@ -558,6 +679,39 @@
         "revolve curve around axis",
         "create solid of revolution",
         "spin curve to make solid"
+      ]
+    },
+    {
+      "name": "rotate_face",
+      "description": "Turn faces of a 3D solid about an axis given as two points - AutoCAD\u0027s SOLIDEDIT Rotate. Angles are degrees counter-clockwise looking down the axis from axisEnd towards axisStart. Unlike a 2D rotation there is no default axis: a point does not name one in 3D, so both ends are required. Tilting a face is how a box becomes a wedge or a flat roof becomes a pitched one.",
+      "tags": [
+        "rotate",
+        "face"
+      ],
+      "intent": [
+        "obroc sciane bryly",
+        "pochyl sciane o 15 stopni",
+        "rotate a face of a solid",
+        "tilt a face to make a slope",
+        "zrob spadek na plaskim dachu",
+        "solidedit rotate face"
+      ]
+    },
+    {
+      "name": "shell_solid",
+      "description": "Hollow a 3D solid out to a wall of the given thickness - AutoCAD\u0027s SOLIDEDIT Shell. The faces you name are the ones LEFT OPEN: name the top of a box and you get a box with no lid; name none and the void is sealed inside, which is a real shape and not an error. Positive thickness keeps the wall inside the original surface, negative grows it outward. A 100 cube open at the top with a wall of 10 leaves a cavity of 80 x 80 x 90 and must come to 424000 - worth checking, because a shell that quietly did nothing still returns a perfectly good solid.",
+      "tags": [
+        "shell",
+        "solid"
+      ],
+      "intent": [
+        "wydraz bryle",
+        "zrob skorupe o grubosci 10",
+        "shell a solid",
+        "hollow out a solid to a wall thickness",
+        "pojemnik bez pokrywy z bryly",
+        "make a box into a container",
+        "solidedit shell"
       ]
     },
     {
@@ -591,11 +745,28 @@
         "porecz wzdluz krzywej",
         "sweep solid"
       ]
+    },
+    {
+      "name": "taper_face",
+      "description": "Apply a draft angle to faces of a 3D solid - AutoCAD\u0027s SOLIDEDIT Taper. The taper pivots about basePoint and leans along direction: the face stays put where it crosses that point and swings further the further from it you go, so those two together decide which end grows and which shrinks. This is the draft a moulded or cast part needs so it can be pulled from its mould, and tapering the four sides of a box about its base is how it becomes a frustum.",
+      "tags": [
+        "taper",
+        "face"
+      ],
+      "intent": [
+        "pochyl sciane bryly",
+        "kat pochylenia formy odlewniczej",
+        "taper a face of a solid",
+        "apply a draft angle",
+        "zwez bryle ku gorze",
+        "make a box into a frustum",
+        "solidedit taper"
+      ]
     }
   ],
   "metadata": {
     "category": "geometry-3d",
-    "tool_count_target": 25,
+    "tool_count_target": 32,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -609,6 +780,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-09T11:22:30.1253641Z"
+    "last_regenerated_utc": "2026-08-09T11:38:58.4916887Z"
   }
 }

@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**557 tools across 39 categories** (updated 2026-08-09; this document was written at 337 across
+**564 tools across 39 categories** (updated 2026-08-09; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -584,18 +584,18 @@ bind_underlay
 Today: 7 primitives, extrude, revolve, one planar surface, 6 booleans, 5 queries. That is the
 beginning of 3D, not 3D.
 
-### 4.1 `acad-solids-advanced` (≈34 → **9 built + 2 added, 8 struck**)
+### 4.1 `acad-solids-advanced` (≈34 → **16 built + 2 added, 7 struck**)
 
 ```
 sweep_curve ✔               loft_curves ✔              loft_with_guides ✔
 loft_with_path ✔            draw_helix ✔               draw_polysolid ..
 presspull ..                slice_solid ✔              separate_solids ✘
-shell_solid ..              clean_solid ..             check_solid ..
+shell_solid ✔               clean_solid ..             check_solid ..
 imprint_edges ✔             extract_edges ✘            interfere_solids ✔
 fillet_edge ✔               chamfer_edge ✔
-extrude_face ..             move_face ..               rotate_face ..
-offset_face ..              taper_face ..              delete_face ..
-copy_face ..                color_face ..
+extrude_face ✔              move_face ✔                rotate_face ✔
+offset_face ✔               taper_face ✔               delete_face ✔
+copy_face ✘                 color_face ..
 align_3d ✘                  move_3d ✘                  rotate_3d ✘
 mirror_3d ✘                 array_3d_rectangular ✘     array_3d_polar ✘
 array_path ✔                convert_to_solid ..        convert_to_surface ..
@@ -872,17 +872,22 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **11** | 5 already exist in `acad-modify`, which shipped 3D-capable |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **18** | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **557** | **69 %** |
+| | **Total** | **813** | **564** | **69 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 545 (337 + 75 + 71 + 51 + 11)
-while the bank measures **557**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 552 (337 + 75 + 71 + 51 + 18)
+while the bank measures **564**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which
 `scripts/check-manifests.ps1` holds to the code.
+
+`copy_face` is struck: `Solid3d.CopyFaces` does not exist. Everything else left in 4.1 —
+`draw_polysolid`, `presspull`, `clean_solid`, `check_solid`, `color_face`,
+`convert_to_solid`/`convert_to_surface` — is a shape or a property question rather than a
+boundary-representation one, so none of it is blocked any more.
 
 **Roughly 200 tools remain**: ≈34 in Phase 3 (selection, images/underlays), ≈74 in Phase 4
 (16 left in 4.1, then surfaces, mesh, 3D sections, point clouds), ≈61 in Phase 5 and ≈26 in

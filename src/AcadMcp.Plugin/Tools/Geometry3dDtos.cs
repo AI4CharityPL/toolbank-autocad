@@ -135,3 +135,21 @@ internal sealed record EdgeOpArgsDto(
     [property: JsonPropertyName("distance2")]     double? Distance2,
     [property: JsonPropertyName("baseFaceIndex")] int? BaseFaceIndex,
     [property: JsonPropertyName("allowFaceLoss")] bool? AllowFaceLoss);
+
+/// <summary>Shared by every SOLIDEDIT face operation: which faces, and what to do to them.</summary>
+internal sealed record FaceOpArgsDto(
+    [property: JsonPropertyName("handle")]        string? Handle,
+    [property: JsonPropertyName("faceIndexes")]   List<int>? FaceIndexes,
+    [property: JsonPropertyName("nearPoints")]    List<Point3dDto>? NearPoints,
+    [property: JsonPropertyName("facing")]        Point3dDto? Facing,
+    [property: JsonPropertyName("distance")]      double? Distance,
+    [property: JsonPropertyName("taperAngleDeg")] double? TaperAngleDeg,
+    [property: JsonPropertyName("pathHandle")]    string? PathHandle,
+    [property: JsonPropertyName("from")]          Point3dDto? From,
+    [property: JsonPropertyName("to")]            Point3dDto? To,
+    [property: JsonPropertyName("axisStart")]     Point3dDto? AxisStart,
+    [property: JsonPropertyName("axisEnd")]       Point3dDto? AxisEnd,
+    [property: JsonPropertyName("angleDeg")]      double? AngleDeg,
+    [property: JsonPropertyName("basePoint")]     Point3dDto? BasePoint,
+    [property: JsonPropertyName("direction")]     Point3dDto? Direction,
+    [property: JsonPropertyName("thickness")]     double? Thickness);

@@ -204,4 +204,66 @@ public static class Geometry3dTools
         RequiresPlugin = true)]
     public static Task<ChamferEdgeResult> ChamferEdge(IPluginGateway gw, EdgeOpArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<EdgeOpArgs, ChamferEdgeResult>(gw, "acad.geometry3d.chamfer_edge", args, T_SLOW, ct);
+
+    // ───────────────────────── SOLIDEDIT on faces ─────────────────────────
+    // All five name their faces the same way: faceIndexes from list_solid_faces, nearPoints which
+    // snap to the closest face, or facing, which picks the face pointing a given way - "the top
+    // face" without a list call first. Anything ambiguous is refused rather than resolved.
+
+    [McpTool("extrude_face", "Push one or more faces of a 3D solid out along their own normal by a distance, or along a curve given as pathHandle - AutoCAD's SOLIDEDIT Extrude. This is how a boss, a rib or a raised pad is added to a part without drawing a second solid and unioning it. Pushing a flat face of area A out by d adds exactly A*d of material, so the volume change is checkable on paper. A negative distance pushes inward and hollows the solid out. An optional taperAngleDeg narrows the extrusion as it goes, which is what a moulded part needs. Name the faces by faceIndexes, nearPoints or facing.", "geometry-3d",
+        Intent = new[] { "wyciagnij sciane bryly", "dodaj nadlew na scianie",
+                         "extrude a face of a solid", "push a face outward",
+                         "podnies gorna sciane o 50", "add a boss to a part", "solidedit extrude" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> ExtrudeFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.extrude_face", args, T_SLOW, ct);
+
+    [McpTool("offset_face", "Move faces along their OWN normals by a distance, growing or shrinking the solid - AutoCAD's SOLIDEDIT Offset. Positive grows, negative shrinks. Because each face follows its own normal, offsetting all six faces of a 100 cube by 10 gives a 120 cube and not a 110 one: the growth happens on both sides of every axis. That is the difference from move_face, which moves faces in one direction you choose. Offsetting the wall of a hole makes the hole smaller, which is the usual reason to reach for it.", "geometry-3d",
+        Intent = new[] { "odsun sciane bryly", "pogrub bryle o 10",
+                         "offset faces of a solid", "grow or shrink a solid by a wall thickness",
+                         "zmniejsz otwor w bryle", "make a hole smaller", "solidedit offset" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> OffsetFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.offset_face", args, T_SLOW, ct);
+
+    [McpTool("move_face", "Move faces of a 3D solid by a displacement given as two points, exactly like modify.move - AutoCAD's SOLIDEDIT Move. Moving one flat face of a box straight out by d adds exactly (its area)*d, the same arithmetic as extrude_face; the difference is that move takes a direction you choose while offset_face always follows each face's own normal. Use it to reposition a hole or a pocket inside a part without rebuilding it.", "geometry-3d",
+        Intent = new[] { "przesun sciane bryly", "przesun otwor w bryle",
+                         "move a face of a solid", "reposition a hole in a part",
+                         "przesun gorna sciane w gore", "solidedit move face" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> MoveFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.move_face", args, T_SLOW, ct);
+
+    [McpTool("rotate_face", "Turn faces of a 3D solid about an axis given as two points - AutoCAD's SOLIDEDIT Rotate. Angles are degrees counter-clockwise looking down the axis from axisEnd towards axisStart. Unlike a 2D rotation there is no default axis: a point does not name one in 3D, so both ends are required. Tilting a face is how a box becomes a wedge or a flat roof becomes a pitched one.", "geometry-3d",
+        Intent = new[] { "obroc sciane bryly", "pochyl sciane o 15 stopni",
+                         "rotate a face of a solid", "tilt a face to make a slope",
+                         "zrob spadek na plaskim dachu", "solidedit rotate face" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> RotateFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.rotate_face", args, T_SLOW, ct);
+
+    [McpTool("taper_face", "Apply a draft angle to faces of a 3D solid - AutoCAD's SOLIDEDIT Taper. The taper pivots about basePoint and leans along direction: the face stays put where it crosses that point and swings further the further from it you go, so those two together decide which end grows and which shrinks. This is the draft a moulded or cast part needs so it can be pulled from its mould, and tapering the four sides of a box about its base is how it becomes a frustum.", "geometry-3d",
+        Intent = new[] { "pochyl sciane bryly", "kat pochylenia formy odlewniczej",
+                         "taper a face of a solid", "apply a draft angle",
+                         "zwez bryle ku gorze", "make a box into a frustum", "solidedit taper" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> TaperFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.taper_face", args, T_SLOW, ct);
+
+    [McpTool("delete_face", "Remove faces from a 3D solid, closing the gap by growing the surrounding faces back together - AutoCAD's SOLIDEDIT Delete. This removes a FEATURE rather than editing a shape: delete the curved face a fillet added and the sharp edge comes back, with the volume returning to exactly what it was before the fillet. It cannot delete a face of the shape itself - removing one side of a box would leave it open, and a solid cannot be open, so that is refused.", "geometry-3d",
+        Intent = new[] { "usun sciane bryly", "usun zaokraglenie z bryly",
+                         "delete a face of a solid", "remove a fillet feature",
+                         "cofnij faze na krawedzi", "remove a boss from a part", "solidedit delete face" },
+        RequiresPlugin = true)]
+    public static Task<FaceOpResult> DeleteFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.delete_face", args, T_SLOW, ct);
+
+    [McpTool("shell_solid", "Hollow a 3D solid out to a wall of the given thickness - AutoCAD's SOLIDEDIT Shell. The faces you name are the ones LEFT OPEN: name the top of a box and you get a box with no lid; name none and the void is sealed inside, which is a real shape and not an error. The SIGN of the thickness is the thing to get right, and it is the opposite of what most people guess: NEGATIVE hollows inward and leaves the part the size it was, POSITIVE grows the wall outward and makes the part bigger in every direction. Measured on a 100 cube open at the top: -10 leaves a cavity of 80 x 80 x 90 and comes to 424000, while +10 grows the outside to 120 x 120 x 110 and comes to 584000. Both are valid shells and only the sign tells them apart, so check the volume against the one that was wanted - a shell that quietly did the other thing still returns a perfectly good solid.", "geometry-3d",
+        Intent = new[] { "wydraz bryle", "zrob skorupe o grubosci 10",
+                         "shell a solid", "hollow out a solid to a wall thickness",
+                         "pojemnik bez pokrywy z bryly", "make a box into a container",
+                         "solidedit shell" },
+        RequiresPlugin = true)]
+    public static Task<ShellResult> ShellSolid(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<FaceOpArgs, ShellResult>(gw, "acad.geometry3d.shell_solid", args, T_SLOW, ct);
 }

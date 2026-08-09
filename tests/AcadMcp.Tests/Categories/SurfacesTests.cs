@@ -19,6 +19,13 @@ public class SurfacesTests
         // them had nowhere to live.
         "extrude_surface", "revolve_surface", "sweep_surface", "offset_surface",
         "convert_to_surface", "convert_to_solid", "get_surface_info",
+
+        // Second tranche: joining, projecting, and the NURBS control cage. surface_trim
+        // is NOT here and never will be - Surface.Trim does not exist in the managed API,
+        // and the probe that seemed to say otherwise was resolving against
+        // MemoryExtensions.Trim for strings.
+        "blend_surfaces", "project_to_surface", "convert_to_nurbs", "get_nurbs_info",
+        "edit_nurbs_point",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

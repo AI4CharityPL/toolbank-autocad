@@ -81,3 +81,74 @@ public sealed record SurfaceInfoResult(
     [property: JsonPropertyName("isPlanar")] bool IsPlanar,
     [property: JsonPropertyName("bbox")]     BoundingBoxDto Bbox,
     [property: JsonPropertyName("note")]     string Note);
+
+// ─────────── roadmap 4.2, second tranche ───────────
+
+public sealed record SurfaceBlendArgs(
+    [property: JsonPropertyName("handle1")] string Handle1,
+    [property: JsonPropertyName("handle2")] string Handle2,
+    [property: JsonPropertyName("layer")]   string? Layer = null);
+
+public sealed record SurfaceProjectArgs(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("surfaceHandle")] string SurfaceHandle,
+    [property: JsonPropertyName("direction")]     Point3dDto? Direction = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+public sealed record NurbsEditArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("u")]      int? U = null,
+    [property: JsonPropertyName("v")]      int? V = null,
+    [property: JsonPropertyName("to")]     Point3dDto? To = null,
+    [property: JsonPropertyName("by")]     Point3dDto? By = null);
+
+public sealed record BlendResult(
+    [property: JsonPropertyName("entity")]  EntityHandle Entity,
+    [property: JsonPropertyName("area")]    double Area,
+    [property: JsonPropertyName("type")]    string Type,
+    [property: JsonPropertyName("length1")] double Length1,
+    [property: JsonPropertyName("length2")] double Length2,
+    [property: JsonPropertyName("note")]    string Note);
+
+public sealed record ProjectResult(
+    [property: JsonPropertyName("entities")]         IReadOnlyList<EntityHandle> Entities,
+    [property: JsonPropertyName("count")]            int Count,
+    [property: JsonPropertyName("projectedLength")]  double ProjectedLength,
+    [property: JsonPropertyName("sourceLength")]     double? SourceLength,
+    [property: JsonPropertyName("note")]             string Note);
+
+public sealed record ToNurbsResult(
+    [property: JsonPropertyName("entities")]     IReadOnlyList<EntityHandle> Entities,
+    [property: JsonPropertyName("count")]        int Count,
+    [property: JsonPropertyName("wasType")]      string WasType,
+    [property: JsonPropertyName("area")]         double Area,
+    [property: JsonPropertyName("areaBefore")]   double AreaBefore,
+    [property: JsonPropertyName("sourceErased")] bool SourceErased,
+    [property: JsonPropertyName("note")]         string Note);
+
+public sealed record NurbsControlPoint(
+    [property: JsonPropertyName("u")]     int U,
+    [property: JsonPropertyName("v")]     int V,
+    [property: JsonPropertyName("point")] Point3dDto Point);
+
+public sealed record NurbsInfoResult(
+    [property: JsonPropertyName("handle")]          string Handle,
+    [property: JsonPropertyName("degreeU")]         int DegreeU,
+    [property: JsonPropertyName("degreeV")]         int DegreeV,
+    [property: JsonPropertyName("controlPointsU")]  int ControlPointsU,
+    [property: JsonPropertyName("controlPointsV")]  int ControlPointsV,
+    [property: JsonPropertyName("area")]            double Area,
+    [property: JsonPropertyName("controlPoints")]   IReadOnlyList<NurbsControlPoint> ControlPoints,
+    [property: JsonPropertyName("note")]            string Note);
+
+public sealed record NurbsEditResult(
+    [property: JsonPropertyName("handle")]     string Handle,
+    [property: JsonPropertyName("u")]          int U,
+    [property: JsonPropertyName("v")]          int V,
+    [property: JsonPropertyName("from")]       Point3dDto From,
+    [property: JsonPropertyName("to")]         Point3dDto To,
+    [property: JsonPropertyName("moved")]      double Moved,
+    [property: JsonPropertyName("areaBefore")] double AreaBefore,
+    [property: JsonPropertyName("area")]       double Area,
+    [property: JsonPropertyName("areaChange")] double AreaChange,
+    [property: JsonPropertyName("note")]       string Note);

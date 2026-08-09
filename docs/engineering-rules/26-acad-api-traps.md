@@ -292,9 +292,17 @@ plausible argument type, not an implausible one.**
 is a decision never to look again, so a typo in a probe is expensive in a way a compile error
 never is.
 
+**A CS1501 about a method name says nothing about which TYPE owns it.** Probing `srf.Trim(a, b, c)`
+answers *"no overload of Trim takes 3 arguments"*, which reads as `Surface.Trim` existing with a
+different arity. It does not exist at all: the compiler was resolving against
+`MemoryExtensions.Trim`, the string extension, which is in scope in every file. Asking with one
+argument produced CS1929 and named the extension method outright. Extension methods on
+`ReadOnlySpan<char>` will happily answer for any name they share.
+
 Practical rule: when a probe says a capability is absent, spend one more round confirming it
 before striking anything. When it says a type is unconstructible, try the constructor you would
-actually want before believing it.
+actually want before believing it. When it reports an arity mismatch, check the error names the
+type you asked about — one argument is usually enough to force the compiler to say.
 
 ---
 

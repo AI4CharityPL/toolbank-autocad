@@ -76,4 +76,51 @@ public static class SurfacesTools
         RequiresPlugin = true, ReadOnly = true)]
     public static Task<SurfaceInfoResult> GetSurfaceInfo(IPluginGateway gw, SurfaceConvertArgs args, CancellationToken ct)
         => SurfacesProxy.CallAsync<SurfaceConvertArgs, SurfaceInfoResult>(gw, "acad.surfaces.get_surface_info", args, T_NORMAL, ct);
+
+    // ───────────────────────── joining, projecting, NURBS ─────────────────────────
+
+    [McpTool("blend_surfaces", "Bridge two edges with a new surface that runs smoothly between them - AutoCAD's SURFBLEND. Give the two curves to span; a blend needs edges that FACE each other across a gap, so curves that cross, or that lie end to end rather than side by side, leave nothing to bridge and are refused. Between two parallel straight curves the blend is a flat ruled sheet whose area is the average of the two lengths times the gap, which makes it checkable on paper; curved or non-parallel edges give a larger area, never a smaller one. Use loft_curves in geometry_3d when what you want is a solid through several cross-sections rather than a skin between two.", "surfaces",
+        Intent = new[] { "blend between two edges", "surfblend",
+                         "bridge two curves with a surface", "polacz dwie krawedzie powierzchnia",
+                         "make a smooth transition between two edges", "przejscie miedzy krzywymi",
+                         "skin between two curves" },
+        RequiresPlugin = true)]
+    public static Task<BlendResult> BlendSurfaces(IPluginGateway gw, SurfaceBlendArgs args, CancellationToken ct)
+        => SurfacesProxy.CallAsync<SurfaceBlendArgs, BlendResult>(gw, "acad.surfaces.blend_surfaces", args, T_SLOW, ct);
+
+    [McpTool("project_to_surface", "Cast geometry onto a surface along a direction and draw where it lands - AutoCAD's PROJECTGEOMETRY. The direction defaults to straight down, which is what draping a site boundary or a road centreline onto a terrain needs. Onto a surface square to the direction the projected length equals the original; onto a tilted one it comes out longer by one over the cosine of the tilt, and the tool reports both lengths so that is checkable. A projection that misses the surface is refused, with the likely cause named: measured, AutoCAD answers that case with GeneralModelingFailure rather than with an empty result.", "surfaces",
+        Intent = new[] { "project a curve onto a surface", "projectgeometry",
+                         "rzutuj krzywa na powierzchnie", "drape a boundary over a terrain",
+                         "cast geometry onto a surface", "rzut geometrii na teren",
+                         "project a road centreline onto ground" },
+        RequiresPlugin = true)]
+    public static Task<ProjectResult> ProjectToSurface(IPluginGateway gw, SurfaceProjectArgs args, CancellationToken ct)
+        => SurfacesProxy.CallAsync<SurfaceProjectArgs, ProjectResult>(gw, "acad.surfaces.project_to_surface", args, T_SLOW, ct);
+
+    [McpTool("convert_to_nurbs", "Re-describe a surface as NURBS - AutoCAD's CONVTONURBS. NURBS is the general form: it carries a grid of control points that can be pushed about with edit_nurbs_point, which an ExtrudedSurface or a RevolvedSurface cannot. Re-describing a shape must not RESHAPE it, so the tool measures the area before and after and refuses to call it a conversion if they differ - a badly approximated conversion would still hand back a perfectly valid NURBS surface. One surface can convert into several.", "surfaces",
+        Intent = new[] { "convert a surface to nurbs", "convtonurbs",
+                         "zamien powierzchnie na nurbs", "make this surface editable by control points",
+                         "turn a surface into a nurbs surface", "konwersja na nurbs",
+                         "get control points on this surface" },
+        RequiresPlugin = true)]
+    public static Task<ToNurbsResult> ConvertToNurbs(IPluginGateway gw, SurfaceConvertArgs args, CancellationToken ct)
+        => SurfacesProxy.CallAsync<SurfaceConvertArgs, ToNurbsResult>(gw, "acad.surfaces.convert_to_nurbs", args, T_SLOW, ct);
+
+    [McpTool("get_nurbs_info", "List the control-point CAGE of a NURBS surface: its degree in u and v, how many points there are each way, and where every one of them sits. This is what you read before calling edit_nurbs_point, which addresses a point by its (u, v) index. The points steer the surface without lying on it - moving one pulls the shape towards it rather than placing the surface there. Read-only. Only a NurbSurface has a cage; run convert_to_nurbs first on anything else.", "surfaces",
+        Intent = new[] { "list the control points of a nurbs surface", "get nurbs info",
+                         "wypisz punkty kontrolne powierzchni", "show cv",
+                         "what degree is this nurbs surface", "siatka punktow kontrolnych",
+                         "how many control points does this surface have" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<NurbsInfoResult> GetNurbsInfo(IPluginGateway gw, SurfaceConvertArgs args, CancellationToken ct)
+        => SurfacesProxy.CallAsync<SurfaceConvertArgs, NurbsInfoResult>(gw, "acad.surfaces.get_nurbs_info", args, T_NORMAL, ct);
+
+    [McpTool("edit_nurbs_point", "Move one control point of a NURBS surface, addressed by its (u, v) index from get_nurbs_info - AutoCAD's control-vertex editing. Give either `to`, an absolute position, or `by`, a displacement. The surface is PULLED towards a control point rather than passing through it, so the shape changes by less than the point did; the tool reports the area before and after and refuses when the area did not change at all, because a cage point that steers nothing means the wrong index was addressed and AutoCAD reports that move as a success. This is how a flat panel becomes a curved one without rebuilding it.", "surfaces",
+        Intent = new[] { "move a control point of a nurbs surface", "edit cv",
+                         "przesun punkt kontrolny powierzchni", "bend a nurbs surface by a control point",
+                         "pull a surface into a curve", "edycja punktow kontrolnych",
+                         "warp a panel with control vertices" },
+        RequiresPlugin = true)]
+    public static Task<NurbsEditResult> EditNurbsPoint(IPluginGateway gw, NurbsEditArgs args, CancellationToken ct)
+        => SurfacesProxy.CallAsync<NurbsEditArgs, NurbsEditResult>(gw, "acad.surfaces.edit_nurbs_point", args, T_SLOW, ct);
 }

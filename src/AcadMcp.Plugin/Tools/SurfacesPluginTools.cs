@@ -23,6 +23,9 @@ using Autodesk.AutoCAD.Geometry;
 using AcadRt = Autodesk.AutoCAD.Runtime;
 using Brep = Autodesk.AutoCAD.BoundaryRepresentation.Brep;
 using DbSurface = Autodesk.AutoCAD.DatabaseServices.Surface;
+// Aliased because Autodesk.AutoCAD.Geometry has a NurbSurface too, and both
+// namespaces are imported here.
+using DbNurbSurface = Autodesk.AutoCAD.DatabaseServices.NurbSurface;
 
 namespace AcadMcp.Plugin.Tools;
 
@@ -42,6 +45,13 @@ internal static class SurfacesPluginTools
         host.Register("acad.surfaces.convert_to_surface", ConvertToSurface);
         host.Register("acad.surfaces.convert_to_solid",   ConvertToSolid);
         host.Register("acad.surfaces.get_surface_info",   GetSurfaceInfo);
+
+        // roadmap 4.2, second tranche - joining, projecting, and the NURBS cage
+        host.Register("acad.surfaces.blend_surfaces",     BlendSurfaces);
+        host.Register("acad.surfaces.project_to_surface", ProjectToSurface);
+        host.Register("acad.surfaces.convert_to_nurbs",   ConvertToNurbs);
+        host.Register("acad.surfaces.get_nurbs_info",     GetNurbsInfo);
+        host.Register("acad.surfaces.edit_nurbs_point",   EditNurbsPoint);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -478,6 +488,295 @@ internal static class SurfacesPluginTools
                        "different edits, and asking for one the surface does not support is the " +
                        "commonest failure in this category. isPlanar says whether the whole " +
                        "surface lies in one plane, which a flat trimmed NURBS also can.",
+            });
+        });
+
+    // ─────────── roadmap 4.2, second tranche ───────────
+
+    private static string Fmt3(Point3d p) =>
+        "(" + Math.Round(p.X, 4) + ", " + Math.Round(p.Y, 4) + ", " + Math.Round(p.Z, 4) + ")";
+
+    private static Task<ToolDispatchResult> BlendSurfaces(JsonObject args, CancellationToken ct) =>
+        Run("acad.surfaces.blend_surfaces", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SurfaceBlendArgsDto>(args);
+            if (string.Equals(a.Handle1, a.Handle2, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    "handle1 and handle2 are the same entity - a blend bridges between two edges, " +
+                    "and one cannot bridge to itself.");
+            var e1 = Resolve(db, tr, a.Handle1, "handle1");
+            var e2 = Resolve(db, tr, a.Handle2, "handle2");
+            if (e1 is not Curve c1 || e2 is not Curve c2)
+                throw new ArgumentException(
+                    "A blend runs between two CURVES: " + a.Handle1 + " is a " +
+                    e1.GetRXClass().Name + " and " + a.Handle2 + " is a " + e2.GetRXClass().Name +
+                    ".");
+
+            var l1 = CurveLength(c1);
+            var l2 = CurveLength(c2);
+            DbSurface srf;
+            try
+            {
+                srf = DbSurface.CreateBlendSurface(new LoftProfile(c1), new LoftProfile(c2),
+                                                   new BlendOptions());
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused the blend with " + ex.ErrorStatus + ". The two curves have to " +
+                    "face each other across a gap; ones that cross, or that lie end to end rather " +
+                    "than side by side, leave nothing to bridge.");
+            }
+
+            return Finish(db, tr, srf, a.Layer, "blend surface", new
+            {
+                length1 = l1,
+                length2 = l2,
+                note = "A skin bridging two edges. Between two PARALLEL straight curves the blend " +
+                       "is a flat ruled sheet: its area is the average of the two lengths - here " +
+                       ((l1 + l2) / 2.0) + " - times the gap between them, which makes it " +
+                       "checkable on paper. Curved or non-parallel edges give a curved blend, and " +
+                       "then the area is larger than that product, never smaller.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ProjectToSurface(JsonObject args, CancellationToken ct) =>
+        Run("acad.surfaces.project_to_surface", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SurfaceProjectArgsDto>(args);
+            var what = Resolve(db, tr, a.Handle, "handle");
+            var onto = Resolve(db, tr, a.SurfaceHandle, "surfaceHandle");
+            if (onto is not DbSurface target)
+                throw new ArgumentException(
+                    "surfaceHandle is a " + onto.GetRXClass().Name + ", not a surface.");
+
+            var dir = a.Direction is null ? new Vector3d(0, 0, -1) : AcadEnv.ToVector3d(a.Direction);
+            if (dir.Length < 1e-12)
+                throw new ArgumentException("direction cannot be the zero vector.");
+
+            Entity[] made;
+            try
+            {
+                made = target.ProjectOnToSurface(what, dir.GetNormal()) ?? Array.Empty<Entity>();
+            }
+            catch (AcadRt.Exception ex)
+            {
+                // MEASURED: a projection that misses the surface comes back as
+                // GeneralModelingFailure, not as an empty result. The tool first claimed the
+                // opposite - that AutoCAD returned an empty list there - which was invented
+                // rather than observed, and the live check caught it.
+                throw new ArgumentException(
+                    "AutoCAD refused the projection with " + ex.ErrorStatus + ". The usual cause " +
+                    "is that the geometry MISSES the surface along that direction: a projection " +
+                    "landing off the edge has nowhere to go. Check that the thing being projected " +
+                    "lies over the surface, and that the direction points from one to the other.");
+            }
+
+            // Kept as a backstop rather than as the expected path. It has not been observed to
+            // fire - every miss tried so far threw instead - but a success over no geometry is
+            // exactly the shape of failure this project keeps finding, so it stays guarded.
+            if (made.Length == 0)
+                throw new InvalidOperationException(
+                    "The projection reported success but produced no geometry.");
+
+            var handles = new List<EntityHandle>();
+            double total = 0;
+            foreach (var m in made)
+            {
+                handles.Add(AcadEnv.Persist(db, tr, m, a.Layer));
+                if (m is Curve mc) total += CurveLength(mc);
+            }
+
+            var sourceLen = what is Curve sc ? CurveLength(sc) : (double?)null;
+            return Wrap(new
+            {
+                entities = handles,
+                count = handles.Count,
+                projectedLength = total,
+                sourceLength = sourceLen,
+                note = "The shadow the geometry casts on the surface along the given direction, " +
+                       "which defaults to straight down. Onto a surface square to that direction " +
+                       "the projected length equals the original" +
+                       (sourceLen is null ? "" : " - " + sourceLen + " against " + total + " here") +
+                       "; onto a tilted one it comes out longer, by one over the cosine of the " +
+                       "tilt, and that is the arithmetic worth checking.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ConvertToNurbs(JsonObject args, CancellationToken ct) =>
+        Run("acad.surfaces.convert_to_nurbs", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ConvertArgsDto>(args);
+            var ent = Resolve(db, tr, a.Handle, "handle", OpenMode.ForWrite);
+            if (ent is not DbSurface srf)
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetRXClass().Name + ", not a surface.");
+            var wasType = srf.GetRXClass().Name;
+            var areaBefore = AreaOf(srf);
+
+            Entity[] made;
+            try
+            {
+                made = srf.ConvertToNurbSurface() ?? Array.Empty<Entity>();
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused the conversion with " + ex.ErrorStatus + ".");
+            }
+            if (made.Length == 0)
+                throw new InvalidOperationException(
+                    "The conversion produced nothing, though it reported no error.");
+
+            var handles = new List<EntityHandle>();
+            double areaAfter = 0;
+            foreach (var m in made)
+            {
+                handles.Add(AcadEnv.Persist(db, tr, m, a.Layer));
+                areaAfter += AreaOf(m);
+            }
+            if (a.EraseSource == true && !srf.IsErased) srf.Erase();
+
+            // Changing how a shape is DESCRIBED must not change the shape. A conversion that
+            // approximated the surface badly would still hand back a perfectly valid NurbSurface.
+            if (areaBefore > 1e-9 && Math.Abs(areaAfter - areaBefore) > areaBefore * 1e-6)
+                throw new InvalidOperationException(
+                    "The surface measured " + areaBefore + " before the conversion and " +
+                    areaAfter + " after. Re-describing a shape as NURBS must not reshape it, so " +
+                    "this is not being reported as a conversion.");
+
+            return Wrap(new
+            {
+                entities = handles,
+                count = handles.Count,
+                wasType,
+                area = areaAfter,
+                areaBefore,
+                sourceErased = a.EraseSource == true,
+                note = "NURBS is the general form: it carries a grid of control points that can be " +
+                       "pushed about with edit_nurbs_point, which an ExtrudedSurface or a " +
+                       "RevolvedSurface cannot. The area is unchanged at " + areaAfter + " - " +
+                       "re-describing a shape must not reshape it, and that is checked rather " +
+                       "than assumed. One surface can convert into several.",
+            });
+        });
+
+    private static DbNurbSurface RequireNurbs(Database db, Transaction tr, string? handle, OpenMode mode)
+    {
+        var ent = Resolve(db, tr, handle, "handle", mode);
+        if (ent is DbNurbSurface n) return n;
+        throw new ArgumentException(
+            "Entity " + handle + " is a " + ent.GetRXClass().Name + ", not a NURBS surface. Only " +
+            "a NurbSurface carries a control-point cage; run convert_to_nurbs on it first.");
+    }
+
+    private static Task<ToolDispatchResult> GetNurbsInfo(JsonObject args, CancellationToken ct) =>
+        Run("acad.surfaces.get_nurbs_info", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ConvertArgsDto>(args);
+            var n = RequireNurbs(db, tr, a.Handle, OpenMode.ForRead);
+            var cu = n.NumberOfControlPointsInU;
+            var cv = n.NumberOfControlPointsInV;
+
+            var pts = new List<object>();
+            for (int u = 0; u < cu; u++)
+                for (int v = 0; v < cv; v++)
+                {
+                    try
+                    {
+                        pts.Add(new { u, v, point = AcadEnv.FromPoint3d(n.GetControlPointAt(u, v)) });
+                    }
+                    catch { /* a cage can report a size larger than it will index */ }
+                }
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                degreeU = n.DegreeInU,
+                degreeV = n.DegreeInV,
+                controlPointsU = cu,
+                controlPointsV = cv,
+                area = AreaOf(n),
+                controlPoints = pts,
+                note = "The control-point CAGE, addressed by (u, v). The points steer the surface " +
+                       "without lying on it: moving one pulls the shape towards it rather than " +
+                       "placing the surface there, which is why the shape changes by less than " +
+                       "the point did. " + cu + " by " + cv + " points, degree " + n.DegreeInU +
+                       " by " + n.DegreeInV + ".",
+            });
+        });
+
+    private static Task<ToolDispatchResult> EditNurbsPoint(JsonObject args, CancellationToken ct) =>
+        Run("acad.surfaces.edit_nurbs_point", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<NurbsEditArgsDto>(args);
+            if (a.U is null || a.V is null)
+                throw new ArgumentException(
+                    "u and v are required: which control point to move. get_nurbs_info lists them " +
+                    "with their current positions.");
+            if (a.To is null && a.By is null)
+                throw new ArgumentException(
+                    "Give either to - where to move the control point to - or by, a displacement " +
+                    "to shift it by.");
+            if (a.To is not null && a.By is not null)
+                throw new ArgumentException("to and by are alternatives; give one.");
+
+            var n = RequireNurbs(db, tr, a.Handle, OpenMode.ForWrite);
+            var cu = n.NumberOfControlPointsInU;
+            var cv = n.NumberOfControlPointsInV;
+            if (a.U < 0 || a.U >= cu || a.V < 0 || a.V >= cv)
+                throw new ArgumentException(
+                    "(" + a.U + ", " + a.V + ") is outside the cage, which is " + cu + " by " + cv +
+                    " - u runs 0 to " + (cu - 1) + " and v runs 0 to " + (cv - 1) + ".");
+
+            var before = n.GetControlPointAt(a.U.Value, a.V.Value);
+            var areaBefore = AreaOf(n);
+            var target = a.To is not null
+                ? AcadEnv.ToPoint3d(a.To)
+                : before + AcadEnv.ToVector3d(a.By!);
+            if (before.DistanceTo(target) < 1e-12)
+                throw new ArgumentException(
+                    "The control point is already at " + Fmt3(before) + ", so nothing would move.");
+
+            try
+            {
+                n.SetControlPointAt(a.U.Value, a.V.Value, target);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused to move the control point with " + ex.ErrorStatus + ".");
+            }
+
+            var landed = n.GetControlPointAt(a.U.Value, a.V.Value);
+            if (landed.DistanceTo(target) > 1e-9)
+                throw new InvalidOperationException(
+                    "The control point was set to " + Fmt3(target) + " but reads back at " +
+                    Fmt3(landed) + ".");
+
+            var areaAfter = AreaOf(n);
+            if (Math.Abs(areaAfter - areaBefore) <= areaBefore * 1e-12)
+                throw new InvalidOperationException(
+                    "The control point moved but the surface did not: the area is still " +
+                    areaBefore + ". A cage point that steers nothing is the sign of an index that " +
+                    "addresses a degenerate corner, and AutoCAD reports the move as a success.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                u = a.U.Value,
+                v = a.V.Value,
+                from = AcadEnv.FromPoint3d(before),
+                to = AcadEnv.FromPoint3d(landed),
+                moved = before.DistanceTo(landed),
+                areaBefore,
+                area = areaAfter,
+                areaChange = areaAfter - areaBefore,
+                note = "The point moved " + before.DistanceTo(landed) + " and the area went from " +
+                       areaBefore + " to " + areaAfter + ". The surface is PULLED towards a " +
+                       "control point rather than passing through it, so the shape changes by " +
+                       "less than the point did - and it does change, which is checked, because " +
+                       "a cage point that steers nothing means the wrong index was addressed.",
             });
         });
 }

@@ -11,13 +11,18 @@
   "lazy_mode": true,
   "tags": [
     "autocad",
+    "blend",
     "cad",
     "convert",
     "dwg",
+    "edit",
     "extrude",
     "get",
     "info",
+    "nurbs",
     "offset",
+    "point",
+    "project",
     "revolve",
     "solid",
     "surface",
@@ -26,23 +31,140 @@
     "to"
   ],
   "intent_examples": [
-    "make a surface out of this line",
-    "extrude a curve into a sheet",
-    "revolve a profile into a surface of revolution",
-    "sweep a shape along a path as a surface",
-    "offset a surface 50 away",
-    "convert this solid to a surface",
+    "area of a surface",
+    "bend a nurbs surface by a control point",
+    "blend between two edges",
+    "bridge two curves with a surface",
+    "cast geometry onto a surface",
+    "close a shell into a solid",
+    "convert a solid to a surface",
+    "convert a surface to a solid",
+    "convert a surface to nurbs",
     "convert these surfaces back into a solid",
-    "what kind of surface is this and how big is it",
-    "zamien bryle na powierzchnie",
-    "wyciagnij krzywa w powierzchnie",
+    "convert this solid to a surface",
+    "convtonurbs",
+    "convtosolid",
+    "convtosurface",
+    "copy a surface 50 away",
+    "create a sheet from a polyline",
+    "describe a surface entity",
+    "drape a boundary over a terrain",
+    "edit cv",
+    "edycja punktow kontrolnych",
+    "extrude a curve into a sheet",
+    "extrude a curve into a surface",
+    "extrude to a sheet",
+    "get control points on this surface",
+    "get nurbs info",
+    "get surface info",
+    "how many control points does this surface have",
+    "informacje o powierzchni",
+    "is this surface flat",
+    "jaka to jest powierzchnia",
+    "jaka to jest powierzchnia i jakie ma pole",
+    "konwersja na bryle",
+    "konwersja na nurbs",
+    "konwersja na powierzchnie",
+    "lathe a shell",
+    "list the control points of a nurbs surface",
+    "make a handrail surface",
+    "make a parallel surface at a distance",
+    "make a shell out of a solid",
+    "make a smooth transition between two edges",
+    "make a solid from closed surfaces",
+    "make a surface by extruding a line",
+    "make a surface of revolution",
+    "make a surface out of this line",
+    "make this surface editable by control points",
+    "move a control point of a nurbs surface",
+    "obroc krzywa w powierzchnie",
+    "odsun powierzchnie",
+    "offset a surface",
+    "offset a surface 50 away",
+    "parallel shell",
+    "polacz dwie krawedzie powierzchnia",
+    "powierzchnia obrotowa",
     "powierzchnia obrotowa z profilu",
-    "jaka to jest powierzchnia i jakie ma pole"
+    "powierzchnia przeciagniecia",
+    "powierzchnia rownolegla",
+    "powierzchnia z linii",
+    "project a curve onto a surface",
+    "project a road centreline onto ground",
+    "projectgeometry",
+    "przeciagnij profil wzdluz sciezki jako powierzchnie",
+    "przejscie miedzy krzywymi",
+    "przesun punkt kontrolny powierzchni",
+    "pull a surface into a curve",
+    "revolve a curve into a surface",
+    "revolve a profile into a surface of revolution",
+    "rzut geometrii na teren",
+    "rzutuj krzywa na powierzchnie",
+    "show cv",
+    "siatka punktow kontrolnych",
+    "skin between two curves",
+    "spin a profile around an axis",
+    "strip the volume from a solid",
+    "surfblend",
+    "surfextrude",
+    "surfoffset",
+    "surfrevolve",
+    "surfsweep",
+    "sweep a profile along a path as a surface",
+    "sweep a shape along a path as a surface",
+    "sweep a shape down a road",
+    "swept shell along a curve",
+    "turn a region into a surface",
+    "turn a surface into a nurbs surface",
+    "turn a watertight shell into a solid",
+    "warp a panel with control vertices",
+    "what degree is this nurbs surface",
+    "what kind of surface is this",
+    "what kind of surface is this and how big is it",
+    "wyciagnij krzywa w powierzchnie",
+    "wypisz punkty kontrolne powierzchni",
+    "zamien bryle na powierzchnie",
+    "zamien powierzchnie na bryle",
+    "zamien powierzchnie na nurbs"
   ],
   "tools_summary": [
     {
+      "name": "blend_surfaces",
+      "description": "Bridge two edges with a new surface that runs smoothly between them - AutoCAD\u0027s SURFBLEND. Give the two curves to span; a blend needs edges that FACE each other across a gap, so curves that cross, or that lie end to end rather than side by side, leave nothing to bridge and are refused. Between two parallel straight curves the blend is a flat ruled sheet whose area is the average of the two lengths times the gap, which makes it checkable on paper; curved or non-parallel edges give a larger area, never a smaller one. Use loft_curves in geometry_3d when what you want is a solid through several cross-sections rather than a skin between two.",
+      "tags": [
+        "blend",
+        "surfaces"
+      ],
+      "intent": [
+        "blend between two edges",
+        "surfblend",
+        "bridge two curves with a surface",
+        "polacz dwie krawedzie powierzchnia",
+        "make a smooth transition between two edges",
+        "przejscie miedzy krzywymi",
+        "skin between two curves"
+      ]
+    },
+    {
+      "name": "convert_to_nurbs",
+      "description": "Re-describe a surface as NURBS - AutoCAD\u0027s CONVTONURBS. NURBS is the general form: it carries a grid of control points that can be pushed about with edit_nurbs_point, which an ExtrudedSurface or a RevolvedSurface cannot. Re-describing a shape must not RESHAPE it, so the tool measures the area before and after and refuses to call it a conversion if they differ - a badly approximated conversion would still hand back a perfectly valid NURBS surface. One surface can convert into several.",
+      "tags": [
+        "convert",
+        "to",
+        "nurbs"
+      ],
+      "intent": [
+        "convert a surface to nurbs",
+        "convtonurbs",
+        "zamien powierzchnie na nurbs",
+        "make this surface editable by control points",
+        "turn a surface into a nurbs surface",
+        "konwersja na nurbs",
+        "get control points on this surface"
+      ]
+    },
+    {
       "name": "convert_to_solid",
-      "description": "Turn a watertight set of surfaces, a closed mesh or a thickened region into a SOLID - AutoCAD's CONVTOSOLID. This only works on something that ENCLOSES a space: an open sheet has no inside and cannot become a solid, which is a fact about the geometry rather than a limitation of the tool. The volume of the result is reported and must be greater than zero - that is the whole proof the source really was closed, since a conversion that quietly produced an empty solid would hand back just as valid a handle. convert_to_surface goes the other way and always works.",
+      "description": "Turn a watertight set of surfaces, a closed mesh or a thickened region into a SOLID - AutoCAD\u0027s CONVTOSOLID. This only works on something that ENCLOSES a space: an open sheet has no inside and cannot become a solid, which is a fact about the geometry rather than a limitation of the tool. The volume of the result is reported and must be greater than zero - that is the whole proof the source really was closed, since a conversion that quietly produced an empty solid would hand back just as valid a handle. convert_to_surface goes the other way and always works.",
       "tags": [
         "convert",
         "to",
@@ -60,7 +182,7 @@
     },
     {
       "name": "convert_to_surface",
-      "description": "Turn a solid, a region or a closed planar curve into a SURFACE - AutoCAD's CONVTOSURFACE. A surface is a shell with no inside, so converting a solid keeps its skin and throws the volume away; the area of the result should match the solid's surface area, which is the check the tool reports. This always works, because discarding the inside needs nothing of the shape. convert_to_solid goes the other way and does not always work.",
+      "description": "Turn a solid, a region or a closed planar curve into a SURFACE - AutoCAD\u0027s CONVTOSURFACE. A surface is a shell with no inside, so converting a solid keeps its skin and throws the volume away; the area of the result should match the solid\u0027s surface area, which is the check the tool reports. This always works, because discarding the inside needs nothing of the shape. convert_to_solid goes the other way and does not always work.",
       "tags": [
         "convert",
         "to",
@@ -77,8 +199,26 @@
       ]
     },
     {
+      "name": "edit_nurbs_point",
+      "description": "Move one control point of a NURBS surface, addressed by its (u, v) index from get_nurbs_info - AutoCAD\u0027s control-vertex editing. Give either \u0060to\u0060, an absolute position, or \u0060by\u0060, a displacement. The surface is PULLED towards a control point rather than passing through it, so the shape changes by less than the point did; the tool reports the area before and after and refuses when the area did not change at all, because a cage point that steers nothing means the wrong index was addressed and AutoCAD reports that move as a success. This is how a flat panel becomes a curved one without rebuilding it.",
+      "tags": [
+        "edit",
+        "nurbs",
+        "point"
+      ],
+      "intent": [
+        "move a control point of a nurbs surface",
+        "edit cv",
+        "przesun punkt kontrolny powierzchni",
+        "bend a nurbs surface by a control point",
+        "pull a surface into a curve",
+        "edycja punktow kontrolnych",
+        "warp a panel with control vertices"
+      ]
+    },
+    {
       "name": "extrude_surface",
-      "description": "Sweep a curve in a straight line to make a SURFACE - AutoCAD's SURFEXTRUDE. An open curve gives an open sheet and a closed one gives a tube; either way the result has area and no volume, which is the whole difference from geometry_3d.extrude_curve, the one that turns a closed profile into a solid. Sweeping a curve of length L through a height h makes exactly L*h of surface when the taper is zero, so the answer is checkable on paper, and the tool reports both numbers. Use this for a wall face, a road surface or a terrain strip - anything you need the shape of but not the substance.",
+      "description": "Sweep a curve in a straight line to make a SURFACE - AutoCAD\u0027s SURFEXTRUDE. An open curve gives an open sheet and a closed one gives a tube; either way the result has area and no volume, which is the whole difference from geometry_3d.extrude_curve, the one that turns a closed profile into a solid. Sweeping a curve of length L through a height h makes exactly L*h of surface when the taper is zero, so the answer is checkable on paper, and the tool reports both numbers. Use this for a wall face, a road surface or a terrain strip - anything you need the shape of but not the substance.",
       "tags": [
         "extrude",
         "surface"
@@ -91,6 +231,24 @@
         "create a sheet from a polyline",
         "powierzchnia z linii",
         "extrude to a sheet"
+      ]
+    },
+    {
+      "name": "get_nurbs_info",
+      "description": "List the control-point CAGE of a NURBS surface: its degree in u and v, how many points there are each way, and where every one of them sits. This is what you read before calling edit_nurbs_point, which addresses a point by its (u, v) index. The points steer the surface without lying on it - moving one pulls the shape towards it rather than placing the surface there. Read-only. Only a NurbSurface has a cage; run convert_to_nurbs first on anything else.",
+      "tags": [
+        "get",
+        "nurbs",
+        "info"
+      ],
+      "intent": [
+        "list the control points of a nurbs surface",
+        "get nurbs info",
+        "wypisz punkty kontrolne powierzchni",
+        "show cv",
+        "what degree is this nurbs surface",
+        "siatka punktow kontrolnych",
+        "how many control points does this surface have"
       ]
     },
     {
@@ -113,7 +271,7 @@
     },
     {
       "name": "offset_surface",
-      "description": "Make a NEW surface parallel to an existing one at a given distance - AutoCAD's SURFOFFSET. The original is left alone; the sign of the distance chooses which side the copy sits on. On a flat surface this is a translation and the area is unchanged, which is the check; on a curved one the area grows on the convex side and shrinks on the concave. Offsetting further than the tightest radius of curvature folds the surface through itself and is refused. To offset a flat CURVE use geometry_2d.offset_curve, and to move the faces of a SOLID use geometry_3d.offset_face.",
+      "description": "Make a NEW surface parallel to an existing one at a given distance - AutoCAD\u0027s SURFOFFSET. The original is left alone; the sign of the distance chooses which side the copy sits on. On a flat surface this is a translation and the area is unchanged, which is the check; on a curved one the area grows on the convex side and shrinks on the concave. Offsetting further than the tightest radius of curvature folds the surface through itself and is refused. To offset a flat CURVE use geometry_2d.offset_curve, and to move the faces of a SOLID use geometry_3d.offset_face.",
       "tags": [
         "offset",
         "surface"
@@ -129,8 +287,26 @@
       ]
     },
     {
+      "name": "project_to_surface",
+      "description": "Cast geometry onto a surface along a direction and draw where it lands - AutoCAD\u0027s PROJECTGEOMETRY. The direction defaults to straight down, which is what draping a site boundary or a road centreline onto a terrain needs. Onto a surface square to the direction the projected length equals the original; onto a tilted one it comes out longer by one over the cosine of the tilt, and the tool reports both lengths so that is checkable. Where the projection misses the surface nothing is drawn, and the tool refuses rather than reporting a success over no geometry - AutoCAD returns an empty result there rather than an error.",
+      "tags": [
+        "project",
+        "to",
+        "surface"
+      ],
+      "intent": [
+        "project a curve onto a surface",
+        "projectgeometry",
+        "rzutuj krzywa na powierzchnie",
+        "drape a boundary over a terrain",
+        "cast geometry onto a surface",
+        "rzut geometrii na teren",
+        "project a road centreline onto ground"
+      ]
+    },
+    {
       "name": "revolve_surface",
-      "description": "Spin a curve about an axis to make a SURFACE of revolution - AutoCAD's SURFREVOLVE. Both ends of the axis are required: a point does not name an axis in 3D. The result is a shell, not a solid, so a revolved arc gives a dish rather than a lump; use geometry_3d.revolve_curve when what you want is filled. The area follows Pappus - a curve of length L swept a full turn at distance R covers 2*pi*R*L - and the tool reports that figure beside the measured one, exact for a curve that keeps a constant distance from the axis and an approximation otherwise. A curve crossing its own axis sweeps through itself and is refused.",
+      "description": "Spin a curve about an axis to make a SURFACE of revolution - AutoCAD\u0027s SURFREVOLVE. Both ends of the axis are required: a point does not name an axis in 3D. The result is a shell, not a solid, so a revolved arc gives a dish rather than a lump; use geometry_3d.revolve_curve when what you want is filled. The area follows Pappus - a curve of length L swept a full turn at distance R covers 2*pi*R*L - and the tool reports that figure beside the measured one, exact for a curve that keeps a constant distance from the axis and an approximation otherwise. A curve crossing its own axis sweeps through itself and is refused.",
       "tags": [
         "revolve",
         "surface"
@@ -147,7 +323,7 @@
     },
     {
       "name": "sweep_surface",
-      "description": "Sweep a profile curve along a path curve to make a SURFACE - AutoCAD's SURFSWEEP. The profile turns to stay square to the path as it goes, which is what a handrail, a gutter or a road edge needs. On a straight path the area is exactly the profile length times the path length; round a bend it differs by what the inside of the turn loses against the outside, so the tool reports both. geometry_3d.sweep_curve is the same idea for a solid, and draw_polysolid the special case of a rectangular wall section.",
+      "description": "Sweep a profile curve along a path curve to make a SURFACE - AutoCAD\u0027s SURFSWEEP. The profile turns to stay square to the path as it goes, which is what a handrail, a gutter or a road edge needs. On a straight path the area is exactly the profile length times the path length; round a bend it differs by what the inside of the turn loses against the outside, so the tool reports both. geometry_3d.sweep_curve is the same idea for a solid, and draw_polysolid the special case of a rectangular wall section.",
       "tags": [
         "sweep",
         "surface"
@@ -165,7 +341,7 @@
   ],
   "metadata": {
     "category": "surfaces",
-    "tool_count_target": 7,
+    "tool_count_target": 12,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -179,6 +355,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-09T15:42:46.5971629Z"
+    "last_regenerated_utc": "2026-08-09T15:59:02.3235505Z"
   }
 }

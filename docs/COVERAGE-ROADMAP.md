@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**575 tools across 40 categories** (updated 2026-08-09; this document was written at 337 across
+**580 tools across 40 categories** (updated 2026-08-09; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -637,15 +637,15 @@ the point is equidistant from two candidates. One further trap, measured: `new B
 faces and edges that throw `MissingSubentity` when asked for `SubentityPath`, so the Brep must be
 built from a `FullSubentityPath` rooted on the solid's `ObjectId`.
 
-### 4.2 `acad-surfaces` (≈18+2 → **7 built, 13 reachable, 5 struck**)
+### 4.2 `acad-surfaces` (≈18+2 → **12 built, 6 struck**)
 
 ```
-create_nurbs_surface ..     surface_blend ..           surface_patch ..
-surface_network ..          surface_trim ..            surface_untrim ..
+create_nurbs_surface ..     surface_blend ✔           surface_patch ..
+surface_network ..          surface_trim ✘            surface_untrim ..
 surface_extend ✘            surface_fillet ..          surface_offset ✔
-surface_sculpt ✘            project_geometry_to_surface .. set_surface_associativity ✘
-convert_to_nurbs ..         rebuild_nurbs ✘            show_cv ..
-edit_cv ..                  surface_curvature_analysis ? surface_draft_analysis ?
+surface_sculpt ✘            project_geometry_to_surface ✔ set_surface_associativity ✘
+convert_to_nurbs ✔         rebuild_nurbs ✘            show_cv ✔
+edit_cv ✔                  surface_curvature_analysis ? surface_draft_analysis ?
 convert_to_solid ✔          convert_to_surface ✔
 extrude_surface ✔           revolve_surface ✔          sweep_surface ✔
 get_surface_info ✔          (the three above and get_surface_info were added to this
@@ -660,6 +660,12 @@ Present and callable: `Surface.CreateExtrudedSurface`, `CreateRevolvedSurface` (
 `ProjectOnToSurface`, `ConvertToNurbSurface()`, `Surface.CreateFrom(Entity)`,
 `Solid3d.CreateFrom(Entity)`, `GetArea()`, `GetPlane()`, and `NurbSurface`'s
 `GetControlPointAt` / `SetControlPointAt` / `Rebuild`.
+
+**`surface_trim` struck 2026-08-09: `Surface.Trim` does not exist.** The probe that seemed to say otherwise - "no overload takes 3 arguments" - was resolving against
+`MemoryExtensions.Trim` for strings, which is in scope everywhere. A CS1501 naming a
+method says nothing about which TYPE that method belongs to; asking with one argument
+produced CS1929 and named the extension method outright. Third variant of the rule 26
+§12c trap in two days.
 
 **Struck, confirmed absent:** `Surface.Extend`, `Surface.Sculpt`, `Surface.RebuildNurbSurface`,
 `Surface.ConvertToSolid` (the conversion goes the other way, through `Solid3d.CreateFrom`),
@@ -900,13 +906,13 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **29** | 5 already exist in `acad-modify`, which shipped 3D-capable |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **34** | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **575** | **71 %** |
+| | **Total** | **813** | **580** | **71 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 563 (337 + 75 + 71 + 51 + 29)
-while the bank measures **575**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 568 (337 + 75 + 71 + 51 + 34)
+while the bank measures **580**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

@@ -37,6 +37,39 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.2, second tranche — joining, projecting, and the NURBS cage.** `acad-surfaces`
+  7 → 12, bank 575 → 580: `blend_surfaces`, `project_to_surface`, `convert_to_nurbs`,
+  `get_nurbs_info`, `edit_nurbs_point`. Verified live **44/44** and confirmed on an exported PNG.
+
+  The arithmetic: blending two parallel 100 curves across a 60 gap gives a flat ruled sheet of
+  exactly 6000; a 100 line projected straight down onto a flat horizontal surface stays 100 long,
+  because a shadow cast square onto a plane is the size of the thing casting it.
+
+  **Two checks here exist because the tool would otherwise return something valid and wrong.**
+  Converting a surface to NURBS must leave the AREA alone — re-describing a shape must not
+  reshape it, and a badly approximated conversion still hands back a perfectly valid
+  `NurbSurface`, so the area equality is the only thing that says it was faithful. And moving a
+  control point that steers nothing is reported by AutoCAD as a **successful move**, so
+  `edit_nurbs_point` refuses when the area did not change — proved non-vacuous by first showing a
+  move that does change it, then a **round trip**: move the point out, move it straight back, and
+  the area must return to exactly what it was. Both halves have to be real for that to hold, which
+  neither half alone can show.
+
+  **A claim in a tool description turned out to be invented rather than measured.**
+  `project_to_surface` said that when the projection misses the surface AutoCAD returns an empty
+  result rather than an error, and that the tool guards that case. It does not: it throws
+  `GeneralModelingFailure`, and the empty-result guard has never been observed to fire. The
+  description now says what was measured, the refusal names the likely cause instead of only the
+  status code, and the guard stays as a backstop with a comment saying so — a success over no
+  geometry is exactly the shape of failure this project keeps finding, even if this is not the
+  path that produces it.
+
+  **`surface_trim` is struck: `Surface.Trim` does not exist.** The probe that seemed to say
+  otherwise — *"no overload takes 3 arguments"* — was resolving against `MemoryExtensions.Trim`,
+  the string extension that is in scope in every file. A CS1501 naming a method says nothing
+  about which type owns it. This is the third variant in two days of the same mistake: a probe
+  answered against something other than what was asked. Rule 26 §12c now covers all three.
+
 - **Phase 4.2 opens: the `acad-surfaces` category.** Seven tools, bank 568 → 575, and the
   fortieth category: `extrude_surface`, `revolve_surface`, `sweep_surface`, `offset_surface`,
   `convert_to_surface`, `convert_to_solid`, `get_surface_info`. Verified live **58/58** and

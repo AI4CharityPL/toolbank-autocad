@@ -35,6 +35,29 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Changed
+
+- **Phase 4.2 reconnaissance: the surface API asked of the compiler before the category exists.**
+  Thirteen of the eighteen planned tools are reachable; five are struck. Present and callable:
+  `CreateExtrudedSurface`, `CreateRevolvedSurface` (six arguments), `CreateSweptSurface`,
+  `CreateLoftedSurface`, `CreateNetworkSurface`, `CreateBlendSurface`, `CreatePatchSurface`,
+  `CreateOffsetSurface`, `CreateSectionObjects`, `Trim`, `ProjectOnToSurface`,
+  `ConvertToNurbSurface`, `Surface.CreateFrom(Entity)`, `Solid3d.CreateFrom(Entity)`, and
+  `NurbSurface`'s control-point accessors. Absent, and struck: `Surface.Extend`,
+  `Surface.Sculpt`, `Surface.RebuildNurbSurface`, `Surface.ConvertToSolid` — the conversion runs
+  the other way, through `Solid3d.CreateFrom` — and `Surface.Associativity`/`IsAssociative`.
+
+  **A probe-reading trap that would have struck six buildable tools, and the second of its kind.**
+  `new Profile3d("x")` answers *"cannot convert from string to Profile3d"*, which reads as a type
+  with nothing but a copy constructor — and six of the surface constructors want a `Profile3d` or
+  a `LoftProfile`, so that reading condemns all six. It is wrong: `new Profile3d(entity)` and
+  `new LoftProfile(curve)` both compile. When several overloads exist the compiler reports
+  against the one it picked, so a CS1503 naming a type says *that overload wants this*, never
+  *this is the only overload*. The mirror of the `ShellSolid`/`ShellBody` mistake in 4.1: there a
+  probe with the wrong NAME struck a buildable tool, here a probe with an implausible ARGUMENT
+  nearly struck six. Written up as rule 26 §12c, with the practical rule — when a probe says
+  absent, spend one more round before striking anything.
+
 ### Fixed
 
 - **Tool descriptions a routing agent can actually choose on.** A tool the router never reaches

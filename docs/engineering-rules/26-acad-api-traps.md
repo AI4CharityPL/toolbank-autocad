@@ -275,6 +275,27 @@ decision never to revisit something, so a typo in a probe is expensive in a way
 a compile error is not. Confirmed genuinely absent in the same sweep:
 `Solid3d.Separate`, `Solid3d.CopyFaces`, `Body.ConvertFrom`, `SubDMesh.CreateBox`.
 
+### 12c. Reading the compiler-probe wrong, in both directions
+
+The compiler is the only reliable oracle for this SDK, but its answers have to be read carefully,
+and this has now gone wrong twice in opposite ways.
+
+**A CS1503 naming a type does not mean that is the only overload.** Probing
+`new Profile3d("x")` gives *"cannot convert from string to Profile3d"*, which reads as a
+copy-constructor-only type — and six surface constructors want a `Profile3d`, so that reading
+would have struck all six. But `new Profile3d(entity)` compiles perfectly well. With several
+overloads the compiler reports against whichever one it picked as closest. **Probe with a
+plausible argument type, not an implausible one.**
+
+**A CS1061 means absent only if the name is right.** `Solid3d.ShellSolid` came back CS1061 and
+`shell_solid` was struck from the roadmap as unbuildable. The method is `ShellBody`. A struck row
+is a decision never to look again, so a typo in a probe is expensive in a way a compile error
+never is.
+
+Practical rule: when a probe says a capability is absent, spend one more round confirming it
+before striking anything. When it says a type is unconstructible, try the constructor you would
+actually want before believing it.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

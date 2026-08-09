@@ -637,16 +637,39 @@ the point is equidistant from two candidates. One further trap, measured: `new B
 faces and edges that throw `MissingSubentity` when asked for `SubentityPath`, so the Brep must be
 built from a `FullSubentityPath` rooted on the solid's `ObjectId`.
 
-### 4.2 `acad-surfaces` (≈18)
+### 4.2 `acad-surfaces` (≈18 → **13 reachable, 5 struck**) — asked of the compiler 2026-08-09
 
 ```
-create_nurbs_surface        surface_blend              surface_patch
-surface_network             surface_trim               surface_untrim
-surface_extend              surface_fillet             surface_offset
-surface_sculpt              project_geometry_to_surface set_surface_associativity
-convert_to_nurbs            rebuild_nurbs              show_cv
-edit_cv                     surface_curvature_analysis surface_draft_analysis
+create_nurbs_surface ..     surface_blend ..           surface_patch ..
+surface_network ..          surface_trim ..            surface_untrim ..
+surface_extend ✘            surface_fillet ..          surface_offset ..
+surface_sculpt ✘            project_geometry_to_surface .. set_surface_associativity ✘
+convert_to_nurbs ..         rebuild_nurbs ✘            show_cv ..
+edit_cv ..                  surface_curvature_analysis ? surface_draft_analysis ?
+convert_to_solid ..         convert_to_surface ..
 ```
+
+Present and callable: `Surface.CreateExtrudedSurface`, `CreateRevolvedSurface` (six arguments),
+`CreateSweptSurface`, `CreateLoftedSurface`, `CreateNetworkSurface`, `CreateBlendSurface`,
+`CreatePatchSurface`, `CreateOffsetSurface`, `CreateSectionObjects`, `Trim`,
+`ProjectOnToSurface`, `ConvertToNurbSurface()`, `Surface.CreateFrom(Entity)`,
+`Solid3d.CreateFrom(Entity)`, `GetArea()`, `GetPlane()`, and `NurbSurface`'s
+`GetControlPointAt` / `SetControlPointAt` / `Rebuild`.
+
+**Struck, confirmed absent:** `Surface.Extend`, `Surface.Sculpt`, `Surface.RebuildNurbSurface`,
+`Surface.ConvertToSolid` (the conversion goes the other way, through `Solid3d.CreateFrom`),
+`Surface.Associativity` / `IsAssociative`, `CreateInterferenceSurface`,
+`NurbSurface.NumControlPointsInU`. The two analyses are marked `?` because they are AutoCAD
+*display* modes rather than API calls, and need their own look.
+
+**The trap this reconnaissance nearly fell into, for the second time.** Probing
+`new Profile3d("x")` returns *"cannot convert from string to Profile3d"*, which reads as though
+the only constructor takes another `Profile3d` — and since six of the surface constructors want
+a `Profile3d` or a `LoftProfile`, that reading would have struck all six as unreachable. It is
+wrong: `new Profile3d(entity)` and `new LoftProfile(curve)` both compile. When several overloads
+exist the compiler reports against the one it picked, so a CS1503 naming a type says *that
+overload wants this*, never *this is the only overload*. Probe with a plausible argument, not an
+implausible one — the first sweep of 4.1 struck `shell_solid` on the same mistake in reverse.
 
 ### 4.3 `acad-mesh` (≈16)
 

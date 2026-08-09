@@ -35,6 +35,53 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Fixed
+
+- **Tool descriptions a routing agent can actually choose on.** A tool the router never reaches
+  is as unavailable as one that was never built, and nothing in the build caught it: a stub
+  description compiles, satisfies the manifest check and passes its unit test. A sweep of all
+  568 tools found, and this fixes:
+
+  - **15 tools whose entire description was one short sentence** — `modify.move` said "Translate
+    one or more entities by the vector from-to (WCS)", which does not tell an agent that the two
+    points are a direction and a distance rather than a destination. Also `draw_circle`,
+    `draw_point`, `select_by_color`, the layer-state pair and nine others. All rewritten to say
+    what the tool is for, what it is NOT, and which tool to use instead.
+  - **8 intent phrases claimed by two tools at once.** "stworz pierscien" was offered by both
+    `draw_donut` (flat) and `draw_torus` (a solid); "usun obiekty" by both `delete_entities` and
+    `erase`. The router had nothing to choose on. This is the failure that gets worse as the bank
+    grows, so each phrase now says which of the two it means.
+  - **5 tool names living in two categories with neither description mentioning the other** —
+    `draw_hatch`, `insert_door`, `insert_window`. Each now names its twin and the difference:
+    `openings.insert_door` places a numbered block a schedule can read, `architecture.insert_door`
+    draws primitives on the layer standard.
+  - **11 confusable sibling pairs cross-referenced**, the sharpest being 2D against 3D:
+    `fillet_corner`/`fillet_edge`, `chamfer_corner`/`chamfer_edge`, `offset_curve`/`offset_face`,
+    `extrude_curve`/`extrude_face`, and the three arrays, which now say they are three.
+
+  **The audit itself had to be corrected twice before its output was worth anything**, which is
+  the more useful half of this entry:
+
+  - Its language check reported **170 tools as having no Polish intent**, including ones whose
+    intents read `maska tla pod tekstem`. The detector demanded diacritics or a short list of
+    function words. A check that fires on healthy tools buries the real ones, so it was replaced
+    with a classifier bootstrapped from the corpus: seed on tokens that can only be one language,
+    learn the rest, and abstain rather than guess. It now prints a labelled sample so the
+    classifier can be checked by eye before its verdicts are believed. After the fix: 0.
+  - Its collision check reported `layer state to file` and `layer state from file` as the same
+    phrase — export and import collapsed into one — because the normaliser stripped directional
+    prepositions. It stripped the very words that told them apart.
+  - It reported **10 router tools as having no intents**. They are exposed straight to the agent
+    as MCP tools with their own descriptions and are never reached by intent matching, so an
+    empty list is correct. Excluded, with the reason written down.
+  - A sixth check, "does the description say what the tool is for", flagged **305 tools**, nearly
+    all well described. It was **deleted rather than tuned**: there was no version of it that
+    measured the thing it claimed to.
+
+  The audit is now step 9 of the pre-commit gate, and was checked the only way a gate can be —
+  by breaking a description on purpose and confirming it fails, then restoring it and confirming
+  it passes.
+
 ### Added
 
 - **Phase 4.1, last tranche — shape and health. 4.1 is complete.** `acad-geometry-3d` 32 → 36,

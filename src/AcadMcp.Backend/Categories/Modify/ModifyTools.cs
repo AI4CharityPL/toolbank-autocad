@@ -19,7 +19,7 @@ public static class ModifyTools
 
     // ─────────────── transforms ───────────────
 
-    [McpTool("move", "Translate one or more entities by the vector from→to (WCS).", "modify",
+    [McpTool("move", "Move entities by a displacement given as two points: everything shifts by the vector from the first to the second, exactly like AutoCAD MOVE. The points are a DIRECTION AND DISTANCE, not a destination - the entities do not land on the second point unless they started on the first. Coordinates are WCS and the vector may have a Z, so this moves in 3D as readily as in plan. Use copy to leave the original behind.", "modify",
         Intent = new[] { "przesun obiekty", "move entities", "translate selection", "shift entities by vector", "displace selected" },
         RequiresPlugin = true)]
     public static Task<AffectedCount> Move(IPluginGateway gw, MoveArgs args, CancellationToken ct)
@@ -49,13 +49,13 @@ public static class ModifyTools
     public static Task<CopiedEntities> Copy(IPluginGateway gw, CopyArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<CopyArgs, CopiedEntities>(gw, "acad.modify.copy", args, T_NORMAL, ct);
 
-    [McpTool("array_rectangular", "Rectangular array (rows × cols × levels) by row, column and optional Z level spacing.", "modify",
+    [McpTool("array_rectangular", "ONE OF THREE ARRAYS - this is the GRID: rows, columns and optional Z levels. array_polar goes round a centre and array_path follows a curve. Rectangular array (rows × cols × levels) by row, column and optional Z level spacing.", "modify",
         Intent = new[] { "macierz prostokatna", "siatka kopii", "rectangular array", "build grid array", "array entities by rows and cols" },
         RequiresPlugin = true)]
     public static Task<CopiedEntities> ArrayRectangular(IPluginGateway gw, ArrayRectArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<ArrayRectArgs, CopiedEntities>(gw, "acad.modify.array_rectangular", args, T_SLOW, ct);
 
-    [McpTool("array_polar", "Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path.", "modify",
+    [McpTool("array_polar", "ONE OF THREE ARRAYS - this is the CIRCLE, round a centre point. array_rectangular makes a grid and array_path follows a curve. Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path.", "modify",
         Intent = new[] { "macierz biegunowa", "macierz kolowa", "polar array", "circular array", "distribute around point" },
         RequiresPlugin = true)]
     public static Task<CopiedEntities> ArrayPolar(IPluginGateway gw, ArrayPolarArgs args, CancellationToken ct)
@@ -102,7 +102,7 @@ public static class ModifyTools
     // ─────────────── lifecycle ───────────────
 
     [McpTool("erase", "Erase entities (soft delete – AutoCAD keeps them in the undo stack until purged).", "modify",
-        Intent = new[] { "usun obiekty", "skasuj zaznaczone", "erase entities", "delete entities", "remove from drawing" },
+        Intent = new[] { "wymaz obiekty z rysunku", "skasuj zaznaczone", "erase entities", "erase the current selection", "delete entities permanently" },
         RequiresPlugin = true)]
     public static Task<AffectedCount> Erase(IPluginGateway gw, HandlesArgs args, CancellationToken ct)
         => ModifyProxy.CallAsync<HandlesArgs, AffectedCount>(gw, "acad.modify.erase", args, T_NORMAL, ct);

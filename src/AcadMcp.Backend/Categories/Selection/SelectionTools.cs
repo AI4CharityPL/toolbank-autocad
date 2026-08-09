@@ -30,7 +30,7 @@ public static class SelectionTools
     public static Task<SelectionResult> SelectByLayer(IPluginGateway gw, ByLayerArgs args, CancellationToken ct)
         => SelectionProxy.CallAsync<ByLayerArgs, SelectionResult>(gw, "acad.selection.select_by_layer", args, T_NORMAL, ct);
 
-    [McpTool("select_by_color", "Select all entities by color (true RGB or ACI index).", "selection",
+    [McpTool("select_by_color", "Select every entity whose colour matches, given either as true RGB or an ACI index from 1 to 255. This matches the colour as SET ON THE ENTITY, so anything drawn ByLayer will not match a search for the layer colour it appears in - which is the usual surprise here. To gather everything on a layer, use select_by_layer instead.", "selection",
         Intent = new[] { "zaznacz po kolorze", "select by color", "all entities of color", "filter entities by color", "select red entities" },
         RequiresPlugin = true,
         ReadOnly = true)]
@@ -52,7 +52,7 @@ public static class SelectionTools
         => SelectionProxy.CallAsync<ByHandleArgs, SelectionResult>(gw, "acad.selection.select_by_handle", args, T_FAST, ct);
 
     [McpTool("select_window", "Select entities fully inside (or, with crossing=true, intersecting) the WCS axis-aligned window from min to max.", "selection",
-        Intent = new[] { "zaznacz oknem", "select by window", "window selection", "crossing selection", "select inside box" },
+        Intent = new[] { "zaznacz oknem", "select by window", "window selection", "crossing selection", "make a window selection active" },
         RequiresPlugin = true,
         ReadOnly = true)]
     public static Task<SelectionResult> SelectWindow(IPluginGateway gw, WindowArgs args, CancellationToken ct)

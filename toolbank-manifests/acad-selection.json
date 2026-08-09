@@ -53,6 +53,7 @@
     "ile obiektow",
     "load selection set",
     "lookup by handles",
+    "make a window selection active",
     "narrow selection by criteria",
     "obiekty na warstwie",
     "policz obiekty",
@@ -173,7 +174,7 @@
     },
     {
       "name": "select_by_color",
-      "description": "Select all entities by color (true RGB or ACI index).",
+      "description": "Select every entity whose colour matches, given either as true RGB or an ACI index from 1 to 255. This matches the colour as SET ON THE ENTITY, so anything drawn ByLayer will not match a search for the layer colour it appears in - which is the usual surprise here. To gather everything on a layer, use select_by_layer instead.",
       "tags": [
         "select",
         "by",
@@ -277,7 +278,7 @@
         "select by window",
         "window selection",
         "crossing selection",
-        "select inside box"
+        "make a window selection active"
       ]
     }
   ],
@@ -297,6 +298,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-05T13:09:33.2143600Z"
+    "last_regenerated_utc": "2026-08-09T12:45:49.3587350Z"
   }
 }

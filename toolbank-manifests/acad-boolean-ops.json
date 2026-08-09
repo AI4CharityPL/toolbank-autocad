@@ -69,7 +69,7 @@
   "tools_summary": [
     {
       "name": "check_intersection",
-      "description": "Check whether two entities (solids, regions or curves) intersect, and report a coarse spatial relation tag.",
+      "description": "Asks whether TWO OBJECTS touch. geometry_3d.check_solid asks instead whether one solid is internally sound, and validators.check_overlaps audits a whole drawing. Check whether two entities (solids, regions or curves) intersect, and report a coarse spatial relation tag.",
       "tags": [
         "check",
         "intersection"
@@ -99,7 +99,7 @@
     },
     {
       "name": "intersect_regions",
-      "description": "Boolean intersect for 2D regions (common area of target and tools).",
+      "description": "THE FLAT ONE, for 2D regions; intersect_solids is the same operation on 3D solids. Boolean intersect for 2D regions (common area of target and tools).",
       "tags": [
         "intersect",
         "regions"
@@ -114,7 +114,7 @@
     },
     {
       "name": "intersect_solids",
-      "description": "Boolean intersect: replace target with the common volume of target and every tool 3D solid.",
+      "description": "THE 3D ONE; intersect_regions is the same operation on flat regions. Note this REPLACES the target with the common volume - to ask whether two solids clash while leaving both of them standing, use geometry_3d.interfere_solids. Boolean intersect: replace target with the common volume of target and every tool 3D solid.",
       "tags": [
         "intersect",
         "solids"
@@ -129,7 +129,7 @@
     },
     {
       "name": "subtract_regions",
-      "description": "Boolean subtract for 2D regions (target \u2212 tools).",
+      "description": "Cut one or more 2D regions out of another - the flat equivalent of subtract_solids. The target is modified in place and keeps its handle; the tool regions are consumed. Regions are made from closed curves with geometry_2d.region_from_boundary, so this is the way to punch an opening in a flat shape before extruding it. Use subtract_solids when the things involved are 3D solids rather than flat regions.",
       "tags": [
         "subtract",
         "regions"
@@ -144,7 +144,7 @@
     },
     {
       "name": "subtract_solids",
-      "description": "Boolean subtract: remove every tool 3D solid from the target solid. Tool solids are erased by default.",
+      "description": "THE 3D ONE; subtract_regions is the same operation on flat regions. Boolean subtract: remove every tool 3D solid from the target solid. Tool solids are erased by default.",
       "tags": [
         "subtract",
         "solids"
@@ -159,7 +159,7 @@
     },
     {
       "name": "union_regions",
-      "description": "Boolean union of 2D regions (target \u002B tools).",
+      "description": "Merge 2D regions into one - the flat equivalent of union_solids. The target is modified in place and keeps its handle; the tool regions are consumed. Overlapping area is counted once, which is the point: two regions that share ground do not add up to the sum of their areas. Use union_solids when the things involved are 3D solids rather than flat regions.",
       "tags": [
         "union",
         "regions"
@@ -174,7 +174,7 @@
     },
     {
       "name": "union_solids",
-      "description": "Boolean union: merge one or more tool 3D solids into the target solid. Tool solids are erased by default.",
+      "description": "THE 3D ONE; union_regions is the same operation on flat regions. Boolean union: merge one or more tool 3D solids into the target solid. Tool solids are erased by default.",
       "tags": [
         "union",
         "solids"
@@ -204,6 +204,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-05T13:09:26.0487415Z"
+    "last_regenerated_utc": "2026-08-09T12:47:02.4329774Z"
   }
 }

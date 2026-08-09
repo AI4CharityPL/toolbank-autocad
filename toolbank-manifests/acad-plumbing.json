@@ -243,7 +243,7 @@
     },
     {
       "name": "populate_bathroom",
-      "description": "Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: \u0027wc-public\u0027 (WC \u002B basin, single cubicle), \u0027wc-accessible\u0027 (PN-EN 17210 accessible WC \u002B accessible basin \u002B grab-bar markers, min 1500x1800), \u0027bathroom-residential\u0027 (WC \u002B basin \u002B bathtub OR shower), \u0027bathroom-hospital-patient\u0027 (wall-hung WC \u002B basin \u002B walk-in shower \u002B grab bars), \u0027shower-room\u0027 (shower \u002B basin), \u0027wc-block-staff\u0027 (2x WC \u002B 2x basin \u002B urinal). accessible=true overrides with accessible variants.",
+      "description": "Places SANITARY FITTINGS and their clearances. For ordinary furniture in an ordinary room, that is furniture.populate_room. Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: \u0027wc-public\u0027 (WC \u002B basin, single cubicle), \u0027wc-accessible\u0027 (PN-EN 17210 accessible WC \u002B accessible basin \u002B grab-bar markers, min 1500x1800), \u0027bathroom-residential\u0027 (WC \u002B basin \u002B bathtub OR shower), \u0027bathroom-hospital-patient\u0027 (wall-hung WC \u002B basin \u002B walk-in shower \u002B grab bars), \u0027shower-room\u0027 (shower \u002B basin), \u0027wc-block-staff\u0027 (2x WC \u002B 2x basin \u002B urinal). accessible=true overrides with accessible variants.",
       "tags": [
         "populate",
         "bathroom"
@@ -277,6 +277,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:31.7576346Z"
+    "last_regenerated_utc": "2026-08-09T12:47:03.4092677Z"
   }
 }

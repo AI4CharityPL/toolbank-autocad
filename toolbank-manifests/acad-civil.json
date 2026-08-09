@@ -48,6 +48,7 @@
     "contour line topograficzna",
     "create civil layer standard",
     "diagnostyka kategorii civil",
+    "draw a surveyed north arrow",
     "draw alignment circular curve",
     "draw alignment tangent segment",
     "draw major contour line with label",
@@ -62,6 +63,7 @@
     "euler spiral road curve",
     "geodetic point with elevation",
     "kompas N",
+    "kompas z poprawka na polnoc geograficzna",
     "krawedzie jezdni offset",
     "krzywa przejsciowa drogi",
     "list civil layer key",
@@ -75,6 +77,7 @@
     "narysuj profil podluzny drogi",
     "narysuj warstwice glowna",
     "niweleta drogi",
+    "north arrow for a site plan",
     "north indicator",
     "parcel closure check",
     "place spot elevation cross \u002B text",
@@ -90,6 +93,7 @@
     "setup C-* layer key",
     "spot elevation marker",
     "station labels every 20m",
+    "strzalka polnocy na mapie",
     "stworz wszystkie warstwy civil",
     "tangenta osi drogi",
     "topographic contour line",
@@ -188,11 +192,11 @@
         "arrow"
       ],
       "intent": [
-        "wstaw strzalke polnocy",
-        "draw north arrow",
+        "strzalka polnocy na mapie",
+        "draw a surveyed north arrow",
         "true north arrow with rotation",
-        "kompas N",
-        "north indicator"
+        "kompas z poprawka na polnoc geograficzna",
+        "north arrow for a site plan"
       ]
     },
     {
@@ -320,6 +324,6 @@
       "draw_road_corridor mitres internal vertices using the average-normal method without acute-corner self-intersection check; this is fine for v1 alignments, sharper corners arrive with the spiral support in Phase 7.",
       "draw_north_arrow synthesises a basic triangle inline; the COMPASS variant ships with the Phase-7 block library under blocks/civil/."
     ],
-    "last_regenerated_utc": "2026-08-05T13:09:26.6175005Z"
+    "last_regenerated_utc": "2026-08-09T12:45:49.6511700Z"
   }
 }

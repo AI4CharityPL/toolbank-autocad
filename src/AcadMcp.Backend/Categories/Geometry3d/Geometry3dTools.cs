@@ -26,7 +26,7 @@ public static class Geometry3dTools
     public static Task<EntityResult3> DrawBox(IPluginGateway gw, DrawBoxArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<DrawBoxArgs, EntityResult3>(gw, "acad.geometry3d.draw_box", args, T_NORMAL, ct);
 
-    [McpTool("draw_sphere", "Create a 3D solid sphere by center point and radius.", "geometry-3d",
+    [McpTool("draw_sphere", "Create a solid sphere from a centre point and a radius. Give the RADIUS, not the diameter. The volume is 4/3*pi*r^3, so the result is checkable with get_volume. For a ring rather than a ball use draw_torus, and for a dome cut a sphere with slice_solid.", "geometry-3d",
         Intent = new[] { "narysuj kule", "stworz sfere", "draw sphere", "create sphere solid", "sphere by center and radius" },
         RequiresPlugin = true)]
     public static Task<EntityResult3> DrawSphere(IPluginGateway gw, DrawSphereArgs args, CancellationToken ct)
@@ -64,7 +64,7 @@ public static class Geometry3dTools
 
     // ───────────────────────── extrude / revolve / surface ─────────────────────────
 
-    [McpTool("extrude_curve", "Extrude a closed planar curve (Polyline / Region / Circle) into a 3D solid by given height with optional taper angle in degrees.", "geometry-3d",
+    [McpTool("extrude_curve", "Turns a closed CURVE into a new solid. To push a face of a solid that already exists, use extrude_face - that one grows the part it is given rather than making a second one beside it. Extrude a closed planar curve (Polyline / Region / Circle) into a 3D solid by given height with optional taper angle in degrees.", "geometry-3d",
         Intent = new[] { "wyciagnij polilinie", "extruduj krzywa", "extrude polyline", "create solid by extrusion", "extrude with taper" },
         RequiresPlugin = true)]
     public static Task<EntityResult3> ExtrudeCurve(IPluginGateway gw, ExtrudeCurveArgs args, CancellationToken ct)
@@ -91,7 +91,7 @@ public static class Geometry3dTools
     public static Task<VolumeResult> GetVolume(IPluginGateway gw, HandleArg3 args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<HandleArg3, VolumeResult>(gw, "acad.geometry3d.get_volume", args, T_FAST, ct);
 
-    [McpTool("get_surface_area", "Return total surface area of a 3D solid or surface.", "geometry-3d",
+    [McpTool("get_surface_area", "Return the total area of every face of a 3D solid, or the area of a region or surface. This is the outside of the thing - what you would paint - and it counts the walls of a hole as well, so a drilled block has MORE surface area than a plain one while having less volume. Use get_volume for how much material there is, get_area for a flat closed curve, and list_solid_faces to see the faces one at a time.", "geometry-3d",
         Intent = new[] { "policz pole powierzchni 3d", "powierzchnia bryly", "compute surface area", "get total surface area", "measure 3d area" },
         RequiresPlugin = true,
         ReadOnly = true)]
@@ -189,7 +189,7 @@ public static class Geometry3dTools
     public static Task<SolidFacesResult> ListSolidFaces(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<SolidQueryArgs, SolidFacesResult>(gw, "acad.geometry3d.list_solid_faces", args, T_NORMAL, ct);
 
-    [McpTool("fillet_edge", "Round one or more edges of a 3D solid to a given radius - AutoCAD's FILLETEDGE. Name the edges either as edgeIndexes from list_solid_edges or as nearPoints, each snapping to the edge closest to it; a point equidistant from two edges is refused rather than snapped to whichever sorted first. Rounding a convex edge removes material and replaces the edge with a curved face, and the amount removed on a straight edge of length L is exactly L*r*r*(1-pi/4), so the result is checkable on paper. A radius large enough to DESTROY a face is refused and the solid is left exactly as it was: AutoCAD itself accepts an oversized radius without complaint - asked for 300 on a 100 face it swallows a whole face and returns success - so the refusal reports the largest radius that does fit, found by bisection. Pass allowFaceLoss to reshape the part deliberately. The tool also refuses to report success when the face count and the volume both came back unchanged. This is the 3D operation; geometry_2d.fillet_corner is the flat one.", "geometry-3d",
+    [McpTool("fillet_edge", "THE 3D ONE, on a solid; geometry_2d.fillet_corner is the flat one, on two curves meeting in a plane. Round one or more edges of a 3D solid to a given radius - AutoCAD's FILLETEDGE. Name the edges either as edgeIndexes from list_solid_edges or as nearPoints, each snapping to the edge closest to it; a point equidistant from two edges is refused rather than snapped to whichever sorted first. Rounding a convex edge removes material and replaces the edge with a curved face, and the amount removed on a straight edge of length L is exactly L*r*r*(1-pi/4), so the result is checkable on paper. A radius large enough to DESTROY a face is refused and the solid is left exactly as it was: AutoCAD itself accepts an oversized radius without complaint - asked for 300 on a 100 face it swallows a whole face and returns success - so the refusal reports the largest radius that does fit, found by bisection. Pass allowFaceLoss to reshape the part deliberately. The tool also refuses to report success when the face count and the volume both came back unchanged. This is the 3D operation; geometry_2d.fillet_corner is the flat one.", "geometry-3d",
         Intent = new[] { "zaokraglij krawedz bryly", "filet na krawedzi 3d",
                          "fillet an edge of a solid", "round the edges of a 3d box",
                          "zaokraglenie naroza bryly", "filletedge", "round solid edge" },
@@ -197,7 +197,7 @@ public static class Geometry3dTools
     public static Task<FilletEdgeResult> FilletEdge(IPluginGateway gw, EdgeOpArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<EdgeOpArgs, FilletEdgeResult>(gw, "acad.geometry3d.fillet_edge", args, T_SLOW, ct);
 
-    [McpTool("chamfer_edge", "Cut a flat bevel along one or more edges of a 3D solid - AutoCAD's CHAMFEREDGE. Name the edges as edgeIndexes from list_solid_edges or as nearPoints. The two distances are measured from the edge across each of the two faces meeting there; with equal distances the bevel is symmetric and no more is needed, but if they differ you must give baseFaceIndex, because which face the first distance belongs to decides which way the bevel leans - guessing it would silently produce the mirror image. On a straight edge of length L with equal distances d the amount removed is exactly L*d*d/2, which is more than a fillet of radius d takes. A distance large enough to destroy a face is refused the same way fillet_edge refuses one, with the largest distance that fits reported back and allowFaceLoss to override. Use fillet_edge to round instead of bevel.", "geometry-3d",
+    [McpTool("chamfer_edge", "THE 3D ONE, on a solid; geometry_2d.chamfer_corner is the flat one, on two curves meeting in a plane. Cut a flat bevel along one or more edges of a 3D solid - AutoCAD's CHAMFEREDGE. Name the edges as edgeIndexes from list_solid_edges or as nearPoints. The two distances are measured from the edge across each of the two faces meeting there; with equal distances the bevel is symmetric and no more is needed, but if they differ you must give baseFaceIndex, because which face the first distance belongs to decides which way the bevel leans - guessing it would silently produce the mirror image. On a straight edge of length L with equal distances d the amount removed is exactly L*d*d/2, which is more than a fillet of radius d takes. A distance large enough to destroy a face is refused the same way fillet_edge refuses one, with the largest distance that fits reported back and allowFaceLoss to override. Use fillet_edge to round instead of bevel.", "geometry-3d",
         Intent = new[] { "sfazuj krawedz bryly", "faza na krawedzi 3d",
                          "chamfer an edge of a solid", "bevel the edge of a 3d box",
                          "sciecie naroza bryly", "chamferedge", "bevel solid edge" },
@@ -210,7 +210,7 @@ public static class Geometry3dTools
     // snap to the closest face, or facing, which picks the face pointing a given way - "the top
     // face" without a list call first. Anything ambiguous is refused rather than resolved.
 
-    [McpTool("extrude_face", "Push one or more faces of a 3D solid out along their own normal by a distance, or along a curve given as pathHandle - AutoCAD's SOLIDEDIT Extrude. This is how a boss, a rib or a raised pad is added to a part without drawing a second solid and unioning it. Pushing a flat face of area A out by d adds exactly A*d of material, so the volume change is checkable on paper. A negative distance pushes inward and hollows the solid out. An optional taperAngleDeg narrows the extrusion as it goes, which is what a moulded part needs. Name the faces by faceIndexes, nearPoints or facing.", "geometry-3d",
+    [McpTool("extrude_face", "Grows a solid that ALREADY EXISTS by pushing one of its faces; extrude_curve is the other one, which turns a closed curve into a new solid. Push one or more faces of a 3D solid out along their own normal by a distance, or along a curve given as pathHandle - AutoCAD's SOLIDEDIT Extrude. This is how a boss, a rib or a raised pad is added to a part without drawing a second solid and unioning it. Pushing a flat face of area A out by d adds exactly A*d of material, so the volume change is checkable on paper. A negative distance pushes inward and hollows the solid out. An optional taperAngleDeg narrows the extrusion as it goes, which is what a moulded part needs. Name the faces by faceIndexes, nearPoints or facing.", "geometry-3d",
         Intent = new[] { "wyciagnij sciane bryly", "dodaj nadlew na scianie",
                          "extrude a face of a solid", "push a face outward",
                          "podnies gorna sciane o 50", "add a boss to a part", "solidedit extrude" },
@@ -218,7 +218,7 @@ public static class Geometry3dTools
     public static Task<FaceOpResult> ExtrudeFace(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<FaceOpArgs, FaceOpResult>(gw, "acad.geometry3d.extrude_face", args, T_SLOW, ct);
 
-    [McpTool("offset_face", "Move faces along their OWN normals by a distance, growing or shrinking the solid - AutoCAD's SOLIDEDIT Offset. Positive grows, negative shrinks. Because each face follows its own normal, offsetting all six faces of a 100 cube by 10 gives a 120 cube and not a 110 one: the growth happens on both sides of every axis. That is the difference from move_face, which moves faces in one direction you choose. Offsetting the wall of a hole makes the hole smaller, which is the usual reason to reach for it.", "geometry-3d",
+    [McpTool("offset_face", "Reshapes an EXISTING SOLID by moving its faces; geometry_2d.offset_curve is the flat one and draws a new parallel curve instead. Move faces along their OWN normals by a distance, growing or shrinking the solid - AutoCAD's SOLIDEDIT Offset. Positive grows, negative shrinks. Because each face follows its own normal, offsetting all six faces of a 100 cube by 10 gives a 120 cube and not a 110 one: the growth happens on both sides of every axis. That is the difference from move_face, which moves faces in one direction you choose. Offsetting the wall of a hole makes the hole smaller, which is the usual reason to reach for it.", "geometry-3d",
         Intent = new[] { "odsun sciane bryly", "pogrub bryle o 10",
                          "offset faces of a solid", "grow or shrink a solid by a wall thickness",
                          "zmniejsz otwor w bryle", "make a hole smaller", "solidedit offset" },
@@ -293,7 +293,7 @@ public static class Geometry3dTools
     public static Task<CleanSolidResult> CleanSolid(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<SolidQueryArgs, CleanSolidResult>(gw, "acad.geometry3d.clean_solid", args, T_NORMAL, ct);
 
-    [McpTool("check_solid", "Check that a 3D solid is sound, by arithmetic on its boundary rather than by opinion - AutoCAD's CHECK. Walks the boundary representation, counts faces, edges, vertices and shells, and tests Euler-Poincare: for a closed solid V - E + F = 2*(shells - genus), where the genus is the number of holes running right through it. A box gives 8 - 12 + 6 = 2; drill a hole through it and the same arithmetic gives 0. Anything that does not land on a whole-number genus has a boundary that does not close, and no amount of a healthy-looking volume will say so. Also reports the volume, the surface area and a plain list of what is wrong when something is.", "geometry-3d",
+    [McpTool("check_solid", "Checks ONE SOLID against itself - is its boundary sound. Two other tools share the verb and answer different questions: boolean_ops.check_intersection asks whether two objects touch, and validators.check_overlaps audits a whole drawing for things sitting on top of each other. Check that a 3D solid is sound, by arithmetic on its boundary rather than by opinion - AutoCAD's CHECK. Walks the boundary representation, counts faces, edges, vertices and shells, and tests Euler-Poincare: for a closed solid V - E + F = 2*(shells - genus), where the genus is the number of holes running right through it. A box gives 8 - 12 + 6 = 2; drill a hole through it and the same arithmetic gives 0. Anything that does not land on a whole-number genus has a boundary that does not close, and no amount of a healthy-looking volume will say so. Also reports the volume, the surface area and a plain list of what is wrong when something is.", "geometry-3d",
         Intent = new[] { "sprawdz poprawnosc bryly", "czy ta bryla jest poprawna",
                          "check a solid for validity", "validate a 3d solid",
                          "ile dziur ma ta bryla", "is this solid watertight", "solid genus" },

@@ -131,7 +131,7 @@
     },
     {
       "name": "get_layout",
-      "description": "Return descriptor of a single paper-space layout by name.",
+      "description": "Return everything about one paper-space layout: its sheet size, plot device, plot style table, orientation, scale and tab order. Use it to check a sheet is set up before plotting from it. list_layouts is the one to use when the name is not known yet, and the viewports ON a layout are a separate question - see the viewports category.",
       "tags": [
         "get",
         "layout"
@@ -225,6 +225,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-05T13:09:29.7236204Z"
+    "last_regenerated_utc": "2026-08-09T12:45:48.7381933Z"
   }
 }

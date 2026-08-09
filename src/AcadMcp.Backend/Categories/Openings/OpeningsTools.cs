@@ -1,4 +1,4 @@
-// AutoCAD acad-openings category. 10 tools covering professional door and window
+﻿// AutoCAD acad-openings category. 10 tools covering professional door and window
 // placement with fire (REI), acoustic, burglary (RC) and lead-shield ratings,
 // plus automatic numbering D-001 / W-001 and schedule export to CSV/JSON.
 //
@@ -32,7 +32,7 @@ public static class OpeningsTools
         => OpeningsProxy.CallAsync<ListOpeningCatalogArgs, ListOpeningCatalogResult>(gw, "acad.openings.list_opening_catalog", args, T_FAST, ct);
 
     [McpTool("insert_door",
-        "Insert a door block at a wall opening. Types: 'single' (900x2100 hinged), 'double' (1600x2100 two-leaf), 'sliding' (1000x2100), 'fire' (REI 30/60/90/120 EI marker), 'hospital' (double-swing with trajectory arrows), 'lead' (radiological Pb-marker). Auto-assigns number D-001, D-002... (skipped by number= or autoNumber=false). Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, REI, LEAF_DIR, SWING_DIR, ROOM_FROM, ROOM_TO, ACOUSTIC_DB, LEAD. Layer defaults to A-DOOR (or A-DOOR-FIRE / A-DOOR-LEAD depending on type).",
+        "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes a door schedule reads. architecture.insert_door is the other one, which draws the door as plain primitives on the layer standard and carries no schedule data. Insert a door block at a wall opening. Types: 'single' (900x2100 hinged), 'double' (1600x2100 two-leaf), 'sliding' (1000x2100), 'fire' (REI 30/60/90/120 EI marker), 'hospital' (double-swing with trajectory arrows), 'lead' (radiological Pb-marker). Auto-assigns number D-001, D-002... (skipped by number= or autoNumber=false). Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, REI, LEAF_DIR, SWING_DIR, ROOM_FROM, ROOM_TO, ACOUSTIC_DB, LEAD. Layer defaults to A-DOOR (or A-DOOR-FIRE / A-DOOR-LEAD depending on type).",
         "openings",
         Intent = new[]
         {
@@ -45,7 +45,7 @@ public static class OpeningsTools
         => OpeningsProxy.CallAsync<InsertDoorArgs, OpeningInsertResult>(gw, "acad.openings.insert_door", args, T_NORMAL, ct);
 
     [McpTool("insert_window",
-        "Insert a window block at a wall opening. Types: 'fixed' (non-opening), 'casement' (side-hung), 'tilt' (tilt & turn), 'hospital' (fire-rated E/EI30/EI60), 'fire' (EI30/EI60/EI120). Burglary rating (RC 1..6 per PN-EN 1627) and fire class supported per type. Auto-assigns W-001, W-002... Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, SILL_MM, RC, FIRE_CLASS, ROOM. Layer defaults to A-GLAZ.",
+        "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes a window schedule reads. architecture.insert_window is the other one, which draws the window as plain primitives on the layer standard and carries no schedule data. Insert a window block at a wall opening. Types: 'fixed' (non-opening), 'casement' (side-hung), 'tilt' (tilt & turn), 'hospital' (fire-rated E/EI30/EI60), 'fire' (EI30/EI60/EI120). Burglary rating (RC 1..6 per PN-EN 1627) and fire class supported per type. Auto-assigns W-001, W-002... Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, SILL_MM, RC, FIRE_CLASS, ROOM. Layer defaults to A-GLAZ.",
         "openings",
         Intent = new[]
         {

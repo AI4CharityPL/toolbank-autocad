@@ -23,7 +23,7 @@ public static class LayersTools
     public static Task<LayerListResult> ListLayers(IPluginGateway gw, EmptyArgs args, CancellationToken ct)
         => LayersProxy.CallAsync<EmptyArgs, LayerListResult>(gw, "acad.layers.list_layers", args, T_FAST, ct);
 
-    [McpTool("get_layer", "Get full descriptor of one layer by name.", "layers",
+    [McpTool("get_layer", "Return everything about a single layer: colour, linetype, lineweight, plot style, and whether it is on, frozen, locked or plottable. Use this to check a layer before drawing on it; use list_layers when you do not know the name yet, and create_layer when it may not exist. Asking for a layer that is not there is an error rather than an empty answer.", "layers",
         Intent = new[] { "pokaz warstwe", "get layer info", "describe layer", "info o warstwie", "show layer details" },
         RequiresPlugin = true,
         ReadOnly = true)]
@@ -42,7 +42,7 @@ public static class LayersTools
     public static Task<LayerResult> SetCurrentLayer(IPluginGateway gw, LayerNameArg args, CancellationToken ct)
         => LayersProxy.CallAsync<LayerNameArg, LayerResult>(gw, "acad.layers.set_current_layer", args, T_FAST, ct);
 
-    [McpTool("set_layer_color", "Set a layer's color (true RGB or ACI 1..255).", "layers",
+    [McpTool("set_layer_color", "Set the colour of a LAYER, which changes every entity drawn on it with colour ByLayer - the normal way colour is controlled in a CAD drawing. Takes either true RGB or an ACI index from 1 to 255. Use modify.set_color to override the colour on individual entities instead, which breaks them away from their layer and is usually not what a drawing standard wants.", "layers",
         Intent = new[] { "zmien kolor warstwy", "set layer color", "color of layer", "ustaw kolor warstwy", "kolor warstwy rgb" },
         RequiresPlugin = true)]
     public static Task<LayerResult> SetLayerColor(IPluginGateway gw, SetLayerColorArgs args, CancellationToken ct)
@@ -90,13 +90,13 @@ public static class LayersTools
     public static Task<AffectedCount> SaveLayerState(IPluginGateway gw, SaveLayerStateArgs args, CancellationToken ct)
         => LayersProxy.CallAsync<SaveLayerStateArgs, AffectedCount>(gw, "acad.layers.save_layer_state", args, T_NORMAL, ct);
 
-    [McpTool("restore_layer_state", "Restore a previously saved named layer state.", "layers",
+    [McpTool("restore_layer_state", "Put back a saved named layer state, returning every layer to the on/off, frozen, locked and colour settings recorded under that name. This overwrites the current layer settings across the whole drawing, so save the present state first if it matters. Use list_layer_states to see what has been saved, and save_layer_state to record one.", "layers",
         Intent = new[] { "przywroc stan warstw", "restore layer state", "load las", "wczytaj zapisany stan warstw", "apply layer state" },
         RequiresPlugin = true)]
     public static Task<AffectedCount> RestoreLayerState(IPluginGateway gw, LayerNameArg args, CancellationToken ct)
         => LayersProxy.CallAsync<LayerNameArg, AffectedCount>(gw, "acad.layers.restore_layer_state", args, T_NORMAL, ct);
 
-    [McpTool("list_layer_states", "List every saved named layer state in the active drawing.", "layers",
+    [McpTool("list_layer_states", "List the named layer states saved in this drawing - the stored on/off, frozen, locked and colour settings of every layer, kept under a name so a view can be restored later. This lists what exists; save_layer_state records the current settings under a new name and restore_layer_state puts one back. Layer STATES are not layers: list_layers is the other question.", "layers",
         Intent = new[] { "wylistuj stany warstw", "list layer states", "list las", "show saved layer states", "wszystkie zapisane stany warstw" },
         RequiresPlugin = true,
         ReadOnly = true)]

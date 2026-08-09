@@ -251,7 +251,7 @@
     },
     {
       "name": "insert_door",
-      "description": "Insert a door at a hinge point. Draws the door panel (rectangle width \u00D7 frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection=\u0027left\u0027 (default) hinges on the LEFT side of the wall axis; \u0027right\u0027 hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door\u0027s jambs (hinge -\u003E hinge \u002B widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
+      "description": "THE ARCHITECTURE ONE: draws the door as primitives on this layer standard, and optionally cuts the wall. The openings category has its own insert_door which places a numbered BLOCK with schedule attributes instead - use that one when the door has to appear in a door schedule. Insert a door at a hinge point. Draws the door panel (rectangle width \u00D7 frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection=\u0027left\u0027 (default) hinges on the LEFT side of the wall axis; \u0027right\u0027 hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door\u0027s jambs (hinge -\u003E hinge \u002B widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
       "tags": [
         "insert",
         "door"
@@ -343,7 +343,7 @@
     },
     {
       "name": "insert_window",
-      "description": "Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window\u0027s own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall\u0027s heading in degrees (0 = horizontal, \u002B90 = vertical going up).",
+      "description": "THE ARCHITECTURE ONE: draws the window as primitives on this layer standard. The openings category has its own insert_window which places a numbered BLOCK with schedule attributes instead. Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window\u0027s own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall\u0027s heading in degrees (0 = horizontal, \u002B90 = vertical going up).",
       "tags": [
         "insert",
         "window"
@@ -402,6 +402,6 @@
       "draw_walls_chain mitres at vertices but does not auto-clean wall T-junctions.",
       "Block library under blocks/architectural/ ships with Phase 7; v1 tools synthesise geometry inline."
     ],
-    "last_regenerated_utc": "2026-08-05T13:09:25.5010405Z"
+    "last_regenerated_utc": "2026-08-09T12:45:49.9606194Z"
   }
 }

@@ -1,4 +1,4 @@
-// AutoCAD acad-architecture domain category. 10 high-level plan-view tools that
+﻿// AutoCAD acad-architecture domain category. 10 high-level plan-view tools that
 // compose primitives from acad-geometry2d, acad-layers, acad-annotations and
 // acad-dimensions per rule 35 §2. Implements rule 36 (architecture domain
 // traps) one trap at a time.
@@ -159,7 +159,7 @@ public static class ArchitectureTools
     // ─────────── doors and windows ───────────
 
     [McpTool("insert_door",
-        "Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs (hinge -> hinge + widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
+        "THE ARCHITECTURE ONE: draws the door as primitives on this layer standard, and optionally cuts the wall. The openings category has its own insert_door which places a numbered BLOCK with schedule attributes instead - use that one when the door has to appear in a door schedule. Insert a door at a hinge point. Draws the door panel (rectangle width × frameThicknessMm on A-DOOR) at the requested opening angle plus a swing arc (default quarter-circle, on A-DOOR-SWING). swingDirection='left' (default) hinges on the LEFT side of the wall axis; 'right' hinges on the RIGHT. Pass wallHandle to also cut the host wall at the door's jambs (hinge -> hinge + widthMm along hingeAngleDeg) before drawing the panel -- omit it to only draw the door primitives without touching any wall (e.g. when the wall was already cut separately via split_wall_at_opening).",
         "architecture",
         Intent = new[]
         {
@@ -226,7 +226,7 @@ public static class ArchitectureTools
     }
 
     [McpTool("insert_window",
-        "Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window's own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up).",
+        "THE ARCHITECTURE ONE: draws the window as primitives on this layer standard. The openings category has its own insert_window which places a numbered BLOCK with schedule attributes instead. Insert a window centred at a point along a wall axis. Draws 5 entities on A-GLAZ: the sill line (wall side closer to exterior), the glass line (in the middle of the wall), the header line (wall side closer to interior), and two perpendicular jamb lines closing the opening. Pass wallHandle to also cut the host wall at the window's own axis span before drawing -- omit it to only draw the window primitives without touching any wall. rotationDeg is the wall's heading in degrees (0 = horizontal, +90 = vertical going up).",
         "architecture",
         Intent = new[]
         {

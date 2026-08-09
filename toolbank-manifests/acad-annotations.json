@@ -612,7 +612,7 @@
     },
     {
       "name": "update_dbtext",
-      "description": "Replace the contents of an existing DBText entity by handle.",
+      "description": "For SINGLE-LINE text (DBText/DTEXT). Wrapped paragraph text is a different entity - use update_mtext for that; list_text_by_pattern will say which kind a given handle is. Replace the contents of an existing DBText entity by handle.",
       "tags": [
         "update",
         "dbtext"
@@ -627,7 +627,7 @@
     },
     {
       "name": "update_mtext",
-      "description": "Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written.",
+      "description": "For WRAPPED paragraph text (MText). Single-line text is a different entity - use update_dbtext for that. Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written.",
       "tags": [
         "update",
         "mtext"
@@ -657,6 +657,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-08T13:33:30.6330180Z"
+    "last_regenerated_utc": "2026-08-09T12:47:03.7201765Z"
   }
 }

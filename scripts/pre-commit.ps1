@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Fast local gate run before every commit. Must complete in <60s on a warm cache.
     Enforces rules 40-pre-commit-gates.md.
@@ -134,7 +134,7 @@ Write-Host ("Mode: {0}, Files: {1}" -f ($(if ($All) { 'ALL' } else { 'staged' })
 Write-Host ""
 
 # 1. Engineering rules well-formed
-Write-Host "[1/8] Engineering rules" -ForegroundColor Cyan
+Write-Host "[1/9] Engineering rules" -ForegroundColor Cyan
 $ruleFiles = Get-ChildItem -Path (Join-Path $RepoRoot "docs\engineering-rules") -Filter "*.md" -ErrorAction SilentlyContinue
 foreach ($rf in $ruleFiles) {
     $text = Get-Content $rf.FullName -Raw
@@ -151,7 +151,7 @@ foreach ($rf in $ruleFiles) {
 
 # 2. Manifests valid
 Write-Host ""
-Write-Host "[2/8] ToolBank manifests" -ForegroundColor Cyan
+Write-Host "[2/9] ToolBank manifests" -ForegroundColor Cyan
 $required = @("id", "name", "description", "transport", "tags", "intent_examples", "tools_summary")
 $mfFiles = Get-ChildItem -Path (Join-Path $RepoRoot "toolbank-manifests") -Filter "acad-*.json" -ErrorAction SilentlyContinue
 foreach ($mf in $mfFiles) {
@@ -213,7 +213,7 @@ foreach ($mf in $mfFiles) {
 
 # 3. Forbidden patterns in staged C#
 Write-Host ""
-Write-Host "[3/8] Forbidden C# patterns" -ForegroundColor Cyan
+Write-Host "[3/9] Forbidden C# patterns" -ForegroundColor Cyan
 $csStaged = $staged | Where-Object { $_ -like "*.cs" }
 $forbidden = @(
     @{ Pattern = 'Marshal\.GetActiveObject\s*\('; Reason = "use MarshalCompat (rule: AcadMcp.ComBridge)"; Scope = '*' },
@@ -287,7 +287,7 @@ if ($patternHits -eq 0) {
 
 # 4. Secrets
 Write-Host ""
-Write-Host "[4/8] Secret scan" -ForegroundColor Cyan
+Write-Host "[4/9] Secret scan" -ForegroundColor Cyan
 $secretRegex = '(?i)(api[_-]?key|password|secret|token|access[_-]?key)\s*[:=]\s*["''][A-Za-z0-9_\-]{16,}["'']'
 $skipExt = @(".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".dwg", ".dxf", ".zip", ".7z", ".dll", ".pdb", ".exe")
 foreach ($f in $staged) {
@@ -306,7 +306,7 @@ Add-OK "secret scan complete"
 
 # 5. CHANGELOG touched if src/ touched
 Write-Host ""
-Write-Host "[5/8] CHANGELOG.md gate" -ForegroundColor Cyan
+Write-Host "[5/9] CHANGELOG.md gate" -ForegroundColor Cyan
 $srcTouched = $staged | Where-Object { ($_ -replace '\\','/') -like 'src/*' -and $_ -notlike '*.md' -and $_ -notlike '*Tests*' }
 $changelogTouched = $staged | Where-Object { $_ -eq 'CHANGELOG.md' -or $_ -eq './CHANGELOG.md' }
 if ($srcTouched -and -not $changelogTouched) {
@@ -319,7 +319,7 @@ if ($srcTouched -and -not $changelogTouched) {
 # Skipped automatically when AcadMcp.Backend.exe is not built yet, so the
 # gate stays viable on a freshly cloned repo.
 Write-Host ""
-Write-Host "[6/8] Validator rules self-check" -ForegroundColor Cyan
+Write-Host "[6/9] Validator rules self-check" -ForegroundColor Cyan
 $yamlTouched = $staged | Where-Object { ($_ -replace '\\','/') -like 'validators/*' -and $_ -like '*.yaml' }
 $shouldRunSelfCheck = $All -or ($yamlTouched.Count -gt 0)
 if (-not $shouldRunSelfCheck) {
@@ -350,7 +350,7 @@ if (-not $shouldRunSelfCheck) {
 # Skipped silently when the assembly is not yet built (fresh clone) so new
 # contributors aren't blocked before their first `dotnet build`.
 Write-Host ""
-Write-Host "[7/8] Unit tests" -ForegroundColor Cyan
+Write-Host "[7/9] Unit tests" -ForegroundColor Cyan
 # Whichever configuration is actually built, prefer the newer one -- and remember which,
 # because `dotnet test --no-build` defaults to Debug regardless of the assembly we located.
 # Getting that wrong is how this check failed in CI on its first run: the runner builds
@@ -434,7 +434,7 @@ if ($null -eq $testsDll) {
 
 # 8. Generated tool reference is current
 Write-Host ""
-Write-Host "[8/8] Tool reference" -ForegroundColor Cyan
+Write-Host "[8/9] Tool reference" -ForegroundColor Cyan
 # docs/TOOLS-REFERENCE.md says it is generated from the manifests and therefore cannot
 # drift. It drifted anyway -- to 31 categories / 340 tools against an actual 39 / 478 --
 # because nothing regenerated it and nothing checked. A claim about how a file is
@@ -454,6 +454,30 @@ if ($null -eq $py) {
         Add-Err "docs/TOOLS-REFERENCE.md is stale - run: python scripts/generate-tools-reference.py`n         $($refOut -join "`n         ")"
     } else {
         Add-OK "docs/TOOLS-REFERENCE.md matches the manifests"
+    }
+}
+
+Write-Host ""
+Write-Host "[9/9] Tool descriptions a router can choose on" -ForegroundColor Cyan
+# A tool the router never reaches is as unavailable as one that was never built, and until this
+# gate existed nothing caught it: a stub description compiles, satisfies the manifest check and
+# passes its unit test. The sweep that introduced this found 15 tools whose whole description was
+# one short sentence, 8 intent phrases claimed by two tools at once, and 5 names living in two
+# categories with neither description mentioning the other.
+# Forward slash on purpose: Windows PowerShell 5.1's Join-Path takes only two positional
+# arguments, and a backslash inside a double-quoted string here has already been eaten once.
+$auditScript = Join-Path $RepoRoot "scripts/audit-tool-descriptions.py"
+if ($null -eq $py) {
+    Add-OK "python not on PATH - skipped (run scripts/audit-tool-descriptions.py manually)"
+} elseif (-not (Test-Path $auditScript)) {
+    Add-Err "scripts/audit-tool-descriptions.py is missing; tool descriptions cannot be verified"
+} else {
+    $auditOut = Invoke-NativeCapture $py.Source @($auditScript)
+    if ($script:LastNativeExit -ne 0) {
+        $tail = ($auditOut | Where-Object { $_ -match "^\s*[a-z0-9-]+\.\w+\s" } | Select-Object -First 8)
+        Add-Err ("tool descriptions would leave a router guessing - run: python scripts/audit-tool-descriptions.py`n         " + ($tail -join "`n         "))
+    } else {
+        Add-OK "every tool has a description, 5+ intents and an English intent; no intent collisions"
     }
 }
 

@@ -228,7 +228,7 @@
     },
     {
       "name": "get_layer",
-      "description": "Get full descriptor of one layer by name.",
+      "description": "Return everything about a single layer: colour, linetype, lineweight, plot style, and whether it is on, frozen, locked or plottable. Use this to check a layer before drawing on it; use list_layers when you do not know the name yet, and create_layer when it may not exist. Asking for a layer that is not there is an error rather than an empty answer.",
       "tags": [
         "get",
         "layer"
@@ -260,7 +260,7 @@
     },
     {
       "name": "list_layer_states",
-      "description": "List every saved named layer state in the active drawing.",
+      "description": "List the named layer states saved in this drawing - the stored on/off, frozen, locked and colour settings of every layer, kept under a name so a view can be restored later. This lists what exists; save_layer_state records the current settings under a new name and restore_layer_state puts one back. Layer STATES are not layers: list_layers is the other question.",
       "tags": [
         "list",
         "layer",
@@ -339,7 +339,7 @@
     },
     {
       "name": "restore_layer_state",
-      "description": "Restore a previously saved named layer state.",
+      "description": "Put back a saved named layer state, returning every layer to the on/off, frozen, locked and colour settings recorded under that name. This overwrites the current layer settings across the whole drawing, so save the present state first if it matters. Use list_layer_states to see what has been saved, and save_layer_state to record one.",
       "tags": [
         "restore",
         "layer",
@@ -387,7 +387,7 @@
     },
     {
       "name": "set_layer_color",
-      "description": "Set a layer\u0027s color (true RGB or ACI 1..255).",
+      "description": "Set the colour of a LAYER, which changes every entity drawn on it with colour ByLayer - the normal way colour is controlled in a CAD drawing. Takes either true RGB or an ACI index from 1 to 255. Use modify.set_color to override the colour on individual entities instead, which breaks them away from their layer and is usually not what a drawing standard wants.",
       "tags": [
         "set",
         "layer",
@@ -484,6 +484,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase3_annotations_blocks",
-    "last_regenerated_utc": "2026-08-05T16:36:01.6669464Z"
+    "last_regenerated_utc": "2026-08-09T12:45:48.4003279Z"
   }
 }

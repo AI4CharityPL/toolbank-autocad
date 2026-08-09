@@ -55,7 +55,7 @@ public static class LayoutsTools
     public static Task<LayoutResult> ConfigurePlot(IPluginGateway gw, ConfigurePlotArgs args, CancellationToken ct)
         => LayoutsProxy.CallAsync<ConfigurePlotArgs, LayoutResult>(gw, "acad.layouts.configure_plot", args, T_NORMAL, ct);
 
-    [McpTool("get_layout", "Return descriptor of a single paper-space layout by name.", "layouts",
+    [McpTool("get_layout", "Return everything about one paper-space layout: its sheet size, plot device, plot style table, orientation, scale and tab order. Use it to check a sheet is set up before plotting from it. list_layouts is the one to use when the name is not known yet, and the viewports ON a layout are a separate question - see the viewports category.", "layouts",
         Intent = new[] { "pokaz layout", "get layout info", "describe layout", "info o layoucie", "show layout details" },
         RequiresPlugin = true,
         ReadOnly = true)]

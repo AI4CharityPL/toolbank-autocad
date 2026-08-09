@@ -503,11 +503,11 @@ public static class CivilTools
         "civil",
         Intent = new[]
         {
-            "wstaw strzalke polnocy",
-            "draw north arrow",
+            "strzalka polnocy na mapie",
+            "draw a surveyed north arrow",
             "true north arrow with rotation",
-            "kompas N",
-            "north indicator"
+            "kompas z poprawka na polnoc geograficzna",
+            "north arrow for a site plan"
         },
         RequiresPlugin = true)]
     public static async Task<DrawNorthArrowResult> DrawNorthArrow(

@@ -120,6 +120,7 @@
     "compute perimeter",
     "connect collinear segments",
     "convert a spline to a polyline",
+    "create a 2d annulus",
     "create a wipeout",
     "create annulus",
     "create arc",
@@ -150,8 +151,10 @@
     "dodaj wierzcholek do polilinii",
     "draw a circle",
     "draw a control vertex spline",
+    "draw a flat donut",
     "draw a line",
     "draw a point",
+    "draw a wrapping paragraph of text",
     "draw an elliptical arc",
     "draw an mline with a wall style",
     "draw arc",
@@ -187,6 +190,7 @@
     "fetch entity properties",
     "fill area with hatch",
     "filled ring",
+    "filled ring in plan",
     "fillet corner with radius",
     "fillet polilinii",
     "find entities in rectangle",
@@ -240,6 +244,7 @@
     "move a wall corner",
     "mtext at point",
     "najkrotsza odleglosc do encji",
+    "narysuj akapit tekstu",
     "narysuj chmure rewizji",
     "narysuj donut",
     "narysuj elipse",
@@ -274,6 +279,8 @@
     "perpendicular distance",
     "place markers evenly along a curve",
     "place markers every N units along a curve",
+    "plain mtext without a style",
+    "plaski pierscien 2d",
     "pobierz info o obiekcie",
     "podaj dlugosc krzywej",
     "podaj dystans dwoch punktow",
@@ -314,6 +321,7 @@
     "punkty przeciecia krzywych",
     "punkty sa niewidoczne",
     "put this behind that",
+    "quick multiline text",
     "ramka wipeout nie ma sie drukowac",
     "read polyline points and bulges",
     "rectangle by two corners",
@@ -371,6 +379,7 @@
     "stworz wielokat foremny",
     "stworz xline",
     "szerokosc jednego segmentu polilinii",
+    "tekst zawijany na szerokosc",
     "trace the outline of an area",
     "trim a curve to boundaries",
     "trim do granic",
@@ -488,7 +497,7 @@
     },
     {
       "name": "chamfer_corner",
-      "description": "Chamfer two curves at their intersection with two distances; returns the new chamfer line.",
+      "description": "THE 2D ONE: bevels the corner where two flat curves meet. To bevel the edge of a 3D SOLID, that is geometry_3d.chamfer_edge. Chamfer two curves at their intersection with two distances; returns the new chamfer line.",
       "tags": [
         "chamfer",
         "corner"
@@ -565,7 +574,7 @@
     },
     {
       "name": "draw_circle",
-      "description": "Draw a circle by center point and radius.",
+      "description": "Draw a circle from a centre point and a radius, in the XY plane at z=0. Give the RADIUS, not the diameter - half of every wrong circle in a drawing comes from that. For a filled ring use draw_donut, for an oval draw_ellipse, and for a circle in 3D draw it here and move it with modify.move, since everything in this category is drawn flat.",
       "tags": [
         "draw",
         "circle"
@@ -587,10 +596,10 @@
       ],
       "intent": [
         "narysuj donut",
-        "stworz pierscien",
-        "draw donut shape",
-        "create annulus",
-        "filled ring"
+        "plaski pierscien 2d",
+        "draw a flat donut",
+        "create a 2d annulus",
+        "filled ring in plan"
       ]
     },
     {
@@ -627,7 +636,7 @@
     },
     {
       "name": "draw_hatch",
-      "description": "Apply an associative hatch over closed boundaries identified by handle.",
+      "description": "THE LOW-LEVEL HATCH: a pattern, scale and angle onto a boundary you already have. The hatches category has its own draw_hatch plus the tools to edit, clip, set the origin of and re-associate one afterwards - go there when the hatch has to be maintained rather than merely drawn. Apply an associative hatch over closed boundaries identified by handle.",
       "tags": [
         "draw",
         "hatch"
@@ -673,22 +682,22 @@
     },
     {
       "name": "draw_mtext",
-      "description": "Draw multiline text (MTEXT) with wrap-width and height.",
+      "description": "Draw a paragraph of text that wraps at a given width (MTEXT), as opposed to draw_text which draws one unwrapping line. Width 0 turns wrapping off and lets the text run as far as it likes. This is the low-level draw; annotations.add_mtext is the one to reach for when the text needs a style, a background mask, columns or a rotation, and it is where the editing tools for MText live.",
       "tags": [
         "draw",
         "mtext"
       ],
       "intent": [
-        "wstaw tekst wieloliniowy",
-        "dodaj mtext",
-        "draw multiline text block",
-        "add wrapped text",
-        "mtext at point"
+        "narysuj akapit tekstu",
+        "tekst zawijany na szerokosc",
+        "draw a wrapping paragraph of text",
+        "plain mtext without a style",
+        "quick multiline text"
       ]
     },
     {
       "name": "draw_point",
-      "description": "Draw a single point entity at a 2D position.",
+      "description": "Place a single POINT entity - a node, not a mark you can see by default: AutoCAD draws points as one pixel until PDMODE is changed, which set_point_style does. Points are what divide_object and measure_object leave behind, and what an object snap can catch. To draw something visible at a position, use draw_circle or a block instead.",
       "tags": [
         "draw",
         "point"
@@ -922,7 +931,7 @@
     },
     {
       "name": "fillet_corner",
-      "description": "Fillet two curves at their intersection with the given radius; returns the new fillet arc.",
+      "description": "THE 2D ONE: rounds the corner where two flat curves meet. To round the edge of a 3D SOLID, that is geometry_3d.fillet_edge - a different operation on a different kind of object. Fillet two curves at their intersection with the given radius; returns the new fillet arc.",
       "tags": [
         "fillet",
         "corner"
@@ -1001,7 +1010,7 @@
     },
     {
       "name": "get_distance_points",
-      "description": "Return Cartesian distance between two 2D points.",
+      "description": "Return the straight-line distance between two points you already know the coordinates of. This does no drawing and touches nothing. When the question is how far a point is from an existing object, use get_distance_to_entity; when it is how long a line or curve is, use get_curve_length, which follows the curve rather than cutting across it.",
       "tags": [
         "get",
         "distance",
@@ -1161,7 +1170,7 @@
     },
     {
       "name": "offset_curve",
-      "description": "Offset a curve by a signed distance, returning the new curve handle.",
+      "description": "THE 2D ONE: makes a parallel copy of a flat curve at a given distance. To move the FACE of a 3D solid along its own normal, that is geometry_3d.offset_face, which reshapes an existing solid rather than drawing a new curve. Offset a curve by a signed distance, returning the new curve handle.",
       "tags": [
         "offset",
         "curve"
@@ -1391,6 +1400,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase1_geometry2d",
-    "last_regenerated_utc": "2026-08-07T07:40:19.0383581Z"
+    "last_regenerated_utc": "2026-08-09T12:45:47.7804483Z"
   }
 }

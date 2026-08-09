@@ -45,7 +45,7 @@ public static class Geometry2dTools
     public static Task<EntityResult> DrawMline(IPluginGateway gw, DrawMlineArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawMlineArgs, EntityResult>(gw, "acad.geometry2d.draw_mline", args, T_SLOW, ct);
 
-    [McpTool("draw_circle", "Draw a circle by center point and radius.", "geometry-2d",
+    [McpTool("draw_circle", "Draw a circle from a centre point and a radius, in the XY plane at z=0. Give the RADIUS, not the diameter - half of every wrong circle in a drawing comes from that. For a filled ring use draw_donut, for an oval draw_ellipse, and for a circle in 3D draw it here and move it with modify.move, since everything in this category is drawn flat.", "geometry-2d",
         Intent = new[] { "narysuj okrag", "stworz kolo", "draw a circle", "create circle", "circle by center and radius" },
         RequiresPlugin = true)]
     public static Task<EntityResult> DrawCircle(IPluginGateway gw, DrawCircleArgs args, CancellationToken ct)
@@ -81,14 +81,14 @@ public static class Geometry2dTools
     public static Task<EntityResult> DrawSpline(IPluginGateway gw, DrawSplineArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawSplineArgs, EntityResult>(gw, "acad.geometry2d.draw_spline", args, T_SLOW, ct);
 
-    [McpTool("draw_point", "Draw a single point entity at a 2D position.", "geometry-2d",
+    [McpTool("draw_point", "Place a single POINT entity - a node, not a mark you can see by default: AutoCAD draws points as one pixel until PDMODE is changed, which set_point_style does. Points are what divide_object and measure_object leave behind, and what an object snap can catch. To draw something visible at a position, use draw_circle or a block instead.", "geometry-2d",
         Intent = new[] { "wstaw punkt", "narysuj punkt", "draw a point", "create point entity", "point at coordinate" },
         RequiresPlugin = true)]
     public static Task<EntityResult> DrawPoint(IPluginGateway gw, DrawPointArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawPointArgs, EntityResult>(gw, "acad.geometry2d.draw_point", args, T_FAST, ct);
 
     [McpTool("draw_donut", "Draw a donut (filled annulus) at a center, with inner and outer diameters.", "geometry-2d",
-        Intent = new[] { "narysuj donut", "stworz pierscien", "draw donut shape", "create annulus", "filled ring" },
+        Intent = new[] { "narysuj donut", "plaski pierscien 2d", "draw a flat donut", "create a 2d annulus", "filled ring in plan" },
         RequiresPlugin = true)]
     public static Task<EntityResult> DrawDonut(IPluginGateway gw, DrawDonutArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawDonutArgs, EntityResult>(gw, "acad.geometry2d.draw_donut", args, T_NORMAL, ct);
@@ -111,13 +111,13 @@ public static class Geometry2dTools
     public static Task<EntityResult> DrawText(IPluginGateway gw, DrawTextArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawTextArgs, EntityResult>(gw, "acad.geometry2d.draw_text", args, T_NORMAL, ct);
 
-    [McpTool("draw_mtext", "Draw multiline text (MTEXT) with wrap-width and height.", "geometry-2d",
-        Intent = new[] { "wstaw tekst wieloliniowy", "dodaj mtext", "draw multiline text block", "add wrapped text", "mtext at point" },
+    [McpTool("draw_mtext", "Draw a paragraph of text that wraps at a given width (MTEXT), as opposed to draw_text which draws one unwrapping line. Width 0 turns wrapping off and lets the text run as far as it likes. This is the low-level draw; annotations.add_mtext is the one to reach for when the text needs a style, a background mask, columns or a rotation, and it is where the editing tools for MText live.", "geometry-2d",
+        Intent = new[] { "narysuj akapit tekstu", "tekst zawijany na szerokosc", "draw a wrapping paragraph of text", "plain mtext without a style", "quick multiline text" },
         RequiresPlugin = true)]
     public static Task<EntityResult> DrawMText(IPluginGateway gw, DrawMTextArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<DrawMTextArgs, EntityResult>(gw, "acad.geometry2d.draw_mtext", args, T_NORMAL, ct);
 
-    [McpTool("draw_hatch", "Apply an associative hatch over closed boundaries identified by handle.", "geometry-2d",
+    [McpTool("draw_hatch", "THE LOW-LEVEL HATCH: a pattern, scale and angle onto a boundary you already have. The hatches category has its own draw_hatch plus the tools to edit, clip, set the origin of and re-associate one afterwards - go there when the hatch has to be maintained rather than merely drawn. Apply an associative hatch over closed boundaries identified by handle.", "geometry-2d",
         Intent = new[] { "narysuj kreskowanie", "wypelnij obszar wzorem", "draw hatch pattern", "fill area with hatch", "associative hatch over boundary" },
         RequiresPlugin = true)]
     public static Task<EntityResult> DrawHatch(IPluginGateway gw, DrawHatchArgs args, CancellationToken ct)
@@ -167,7 +167,7 @@ public static class Geometry2dTools
     public static Task<PointsResult> GetIntersections(IPluginGateway gw, TwoHandlesArg args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<TwoHandlesArg, PointsResult>(gw, "acad.geometry2d.get_intersections", args, T_FAST, ct);
 
-    [McpTool("get_distance_points", "Return Cartesian distance between two 2D points.", "geometry-2d",
+    [McpTool("get_distance_points", "Return the straight-line distance between two points you already know the coordinates of. This does no drawing and touches nothing. When the question is how far a point is from an existing object, use get_distance_to_entity; when it is how long a line or curve is, use get_curve_length, which follows the curve rather than cutting across it.", "geometry-2d",
         Intent = new[] { "odleglosc miedzy punktami", "podaj dystans dwoch punktow", "get distance between points", "compute distance points", "length between coordinates" },
         ReadOnly = true)]
     public static Task<ScalarResult> GetDistancePoints(IPluginGateway gw, TwoPointsArg args, CancellationToken ct)
@@ -181,7 +181,7 @@ public static class Geometry2dTools
 
     // ───────────────────────── modifications ─────────────────────────
 
-    [McpTool("offset_curve", "Offset a curve by a signed distance, returning the new curve handle.", "geometry-2d",
+    [McpTool("offset_curve", "THE 2D ONE: makes a parallel copy of a flat curve at a given distance. To move the FACE of a 3D solid along its own normal, that is geometry_3d.offset_face, which reshapes an existing solid rather than drawing a new curve. Offset a curve by a signed distance, returning the new curve handle.", "geometry-2d",
         Intent = new[] { "przesun krzywa rownolegle", "offset polilinii", "offset a curve by distance", "parallel copy curve", "create offset entity" },
         RequiresPlugin = true)]
     public static Task<EntitiesResult> OffsetCurve(IPluginGateway gw, OffsetArgs args, CancellationToken ct)
@@ -211,13 +211,13 @@ public static class Geometry2dTools
     public static Task<EntitiesResult> ExplodeEntity(IPluginGateway gw, HandleArg args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<HandleArg, EntitiesResult>(gw, "acad.geometry2d.explode_entity", args, T_NORMAL, ct);
 
-    [McpTool("fillet_corner", "Fillet two curves at their intersection with the given radius; returns the new fillet arc.", "geometry-2d",
+    [McpTool("fillet_corner", "THE 2D ONE: rounds the corner where two flat curves meet. To round the edge of a 3D SOLID, that is geometry_3d.fillet_edge - a different operation on a different kind of object. Fillet two curves at their intersection with the given radius; returns the new fillet arc.", "geometry-2d",
         Intent = new[] { "zaokraglij naroznik", "fillet polilinii", "fillet corner with radius", "round corner between curves", "create fillet arc" },
         RequiresPlugin = true)]
     public static Task<EntityResult> FilletCorner(IPluginGateway gw, FilletArgs args, CancellationToken ct)
         => Geometry2dProxy.CallAsync<FilletArgs, EntityResult>(gw, "acad.geometry2d.fillet_corner", args, T_NORMAL, ct);
 
-    [McpTool("chamfer_corner", "Chamfer two curves at their intersection with two distances; returns the new chamfer line.", "geometry-2d",
+    [McpTool("chamfer_corner", "THE 2D ONE: bevels the corner where two flat curves meet. To bevel the edge of a 3D SOLID, that is geometry_3d.chamfer_edge. Chamfer two curves at their intersection with two distances; returns the new chamfer line.", "geometry-2d",
         Intent = new[] { "scinaj naroznik", "chamfer polilinii", "chamfer corner with two distances", "bevel corner between curves", "create chamfer segment" },
         RequiresPlugin = true)]
     public static Task<EntityResult> ChamferCorner(IPluginGateway gw, ChamferArgs args, CancellationToken ct)

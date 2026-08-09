@@ -58,6 +58,7 @@
     "copy props from source",
     "create group",
     "delete entities",
+    "delete entities permanently",
     "delete group",
     "displace selected",
     "distribute around point",
@@ -66,6 +67,7 @@
     "dopasuj skale rysunku do wymiaru",
     "duplicate selection",
     "erase entities",
+    "erase the current selection",
     "fit entities to two points",
     "fix the scale of a scanned drawing",
     "group selection",
@@ -143,6 +145,7 @@
     "usun grupe",
     "usun obiekty",
     "wycofaj ostatnia akcje",
+    "wymaz obiekty z rysunku",
     "wyprostuj obiekt narysowany krzywo",
     "wyrownanie do dwoch punktow",
     "zmien grubosc linii",
@@ -168,7 +171,7 @@
     },
     {
       "name": "array_path",
-      "description": "Copy entities along a PATH curve - a line, arc, polyline, spline or circle - spacing them by distance measured ALONG the curve, which is AutoCAD\u0027s ARRAYPATH. On a bend that is a different number from the straight-line gap between neighbours, and spacing by the wrong one bunches the copies on the outside of every turn while still producing the count that was asked for. With alignToPath the copies also turn to follow the local tangent, which is what fence posts, bollards or a row of trees along a road need. The result reports the path length, the spacing and the distance of every copy so the placement can be checked rather than trusted. Use array_rectangular for a grid and array_polar for a circle around a centre.",
+      "description": "Copy entities along a PATH curve - a line, arc, polyline, spline or circle - spacing them by distance measured ALONG the curve, which is AutoCAD\u0027s ARRAYPATH. On a bend that is a different number from the straight-line gap between neighbours, and spacing by the wrong one bunches the copies on the outside of every turn while still producing the count that was asked for. With alignToPath (on by default) the copies also turn to follow the curve, each by how much the path has turned since its start, so the first copy keeps the source\u0027s own orientation - that is what fence posts, bollards or a row of trees along a road need. The result reports the path length, the spacing and the distance of every copy so the placement can be checked rather than trusted. Use array_rectangular for a grid and array_polar for a circle around a centre.",
       "tags": [
         "array",
         "path"
@@ -185,7 +188,7 @@
     },
     {
       "name": "array_polar",
-      "description": "Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path.",
+      "description": "ONE OF THREE ARRAYS - this is the CIRCLE, round a centre point. array_rectangular makes a grid and array_path follows a curve. Polar (circular) array around a center, distributing N items over the given total angle. Optionally rotate items along the path.",
       "tags": [
         "array",
         "polar"
@@ -200,7 +203,7 @@
     },
     {
       "name": "array_rectangular",
-      "description": "Rectangular array (rows \u00D7 cols \u00D7 levels) by row, column and optional Z level spacing.",
+      "description": "ONE OF THREE ARRAYS - this is the GRID: rows, columns and optional Z levels. array_polar goes round a centre and array_path follows a curve. Rectangular array (rows \u00D7 cols \u00D7 levels) by row, column and optional Z level spacing.",
       "tags": [
         "array",
         "rectangular"
@@ -249,11 +252,11 @@
         "erase"
       ],
       "intent": [
-        "usun obiekty",
+        "wymaz obiekty z rysunku",
         "skasuj zaznaczone",
         "erase entities",
-        "delete entities",
-        "remove from drawing"
+        "erase the current selection",
+        "delete entities permanently"
       ]
     },
     {
@@ -287,7 +290,7 @@
     },
     {
       "name": "move",
-      "description": "Translate one or more entities by the vector from\u2192to (WCS).",
+      "description": "Move entities by a displacement given as two points: everything shifts by the vector from the first to the second, exactly like AutoCAD MOVE. The points are a DIRECTION AND DISTANCE, not a destination - the entities do not land on the second point unless they started on the first. Coordinates are WCS and the vector may have a Z, so this moves in 3D as readily as in plan. Use copy to leave the original behind.",
       "tags": [
         "move"
       ],
@@ -452,6 +455,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-08T18:46:54.3731032Z"
+    "last_regenerated_utc": "2026-08-09T12:45:49.0624348Z"
   }
 }

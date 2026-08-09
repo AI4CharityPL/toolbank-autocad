@@ -17,37 +17,37 @@ public static class BooleanOpsTools
     private const int T_NORMAL = 15_000;
     private const int T_SLOW = 30_000;
 
-    [McpTool("union_solids", "Boolean union: merge one or more tool 3D solids into the target solid. Tool solids are erased by default.", "boolean-ops",
+    [McpTool("union_solids", "THE 3D ONE; union_regions is the same operation on flat regions. Boolean union: merge one or more tool 3D solids into the target solid. Tool solids are erased by default.", "boolean-ops",
         Intent = new[] { "scal bryly", "suma boolowska bryl", "boolean union solids", "merge solids", "combine 3d solids" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> UnionSolids(IPluginGateway gw, SolidBooleanArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<SolidBooleanArgs, BooleanResult>(gw, "acad.booleanops.union_solids", args, T_SLOW, ct);
 
-    [McpTool("subtract_solids", "Boolean subtract: remove every tool 3D solid from the target solid. Tool solids are erased by default.", "boolean-ops",
+    [McpTool("subtract_solids", "THE 3D ONE; subtract_regions is the same operation on flat regions. Boolean subtract: remove every tool 3D solid from the target solid. Tool solids are erased by default.", "boolean-ops",
         Intent = new[] { "odejmij bryle", "roznica bool bryl", "boolean subtract solids", "subtract solids", "carve solid" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> SubtractSolids(IPluginGateway gw, SolidBooleanArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<SolidBooleanArgs, BooleanResult>(gw, "acad.booleanops.subtract_solids", args, T_SLOW, ct);
 
-    [McpTool("intersect_solids", "Boolean intersect: replace target with the common volume of target and every tool 3D solid.", "boolean-ops",
+    [McpTool("intersect_solids", "THE 3D ONE; intersect_regions is the same operation on flat regions. Note this REPLACES the target with the common volume - to ask whether two solids clash while leaving both of them standing, use geometry_3d.interfere_solids. Boolean intersect: replace target with the common volume of target and every tool 3D solid.", "boolean-ops",
         Intent = new[] { "czesc wspolna bryl", "iloczyn bool bryl", "boolean intersect solids", "intersect solids", "common volume of solids" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> IntersectSolids(IPluginGateway gw, SolidBooleanArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<SolidBooleanArgs, BooleanResult>(gw, "acad.booleanops.intersect_solids", args, T_SLOW, ct);
 
-    [McpTool("union_regions", "Boolean union of 2D regions (target + tools).", "boolean-ops",
+    [McpTool("union_regions", "Merge 2D regions into one - the flat equivalent of union_solids. The target is modified in place and keeps its handle; the tool regions are consumed. Overlapping area is counted once, which is the point: two regions that share ground do not add up to the sum of their areas. Use union_solids when the things involved are 3D solids rather than flat regions.", "boolean-ops",
         Intent = new[] { "scal regiony", "suma regionow", "boolean union regions", "merge 2d regions", "combine regions" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> UnionRegions(IPluginGateway gw, RegionBooleanArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<RegionBooleanArgs, BooleanResult>(gw, "acad.booleanops.union_regions", args, T_NORMAL, ct);
 
-    [McpTool("subtract_regions", "Boolean subtract for 2D regions (target − tools).", "boolean-ops",
+    [McpTool("subtract_regions", "Cut one or more 2D regions out of another - the flat equivalent of subtract_solids. The target is modified in place and keeps its handle; the tool regions are consumed. Regions are made from closed curves with geometry_2d.region_from_boundary, so this is the way to punch an opening in a flat shape before extruding it. Use subtract_solids when the things involved are 3D solids rather than flat regions.", "boolean-ops",
         Intent = new[] { "odejmij regiony", "roznica regionow", "boolean subtract regions", "subtract 2d regions", "punch hole in region" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> SubtractRegions(IPluginGateway gw, RegionBooleanArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<RegionBooleanArgs, BooleanResult>(gw, "acad.booleanops.subtract_regions", args, T_NORMAL, ct);
 
-    [McpTool("intersect_regions", "Boolean intersect for 2D regions (common area of target and tools).", "boolean-ops",
+    [McpTool("intersect_regions", "THE FLAT ONE, for 2D regions; intersect_solids is the same operation on 3D solids. Boolean intersect for 2D regions (common area of target and tools).", "boolean-ops",
         Intent = new[] { "czesc wspolna regionow", "iloczyn regionow", "boolean intersect regions", "intersect 2d regions", "common area of regions" },
         RequiresPlugin = true)]
     public static Task<BooleanResult> IntersectRegions(IPluginGateway gw, RegionBooleanArgs args, CancellationToken ct)
@@ -59,7 +59,7 @@ public static class BooleanOpsTools
     public static Task<EntitiesResultBool> CreateRegion(IPluginGateway gw, CreateRegionArgs args, CancellationToken ct)
         => BooleanOpsProxy.CallAsync<CreateRegionArgs, EntitiesResultBool>(gw, "acad.booleanops.create_region", args, T_NORMAL, ct);
 
-    [McpTool("check_intersection", "Check whether two entities (solids, regions or curves) intersect, and report a coarse spatial relation tag.", "boolean-ops",
+    [McpTool("check_intersection", "Asks whether TWO OBJECTS touch. geometry_3d.check_solid asks instead whether one solid is internally sound, and validators.check_overlaps audits a whole drawing. Check whether two entities (solids, regions or curves) intersect, and report a coarse spatial relation tag.", "boolean-ops",
         Intent = new[] { "czy bryly sie przecinaja", "sprawdz czy obiekty sie przecinaja", "check entity intersection", "do entities overlap", "test 3d intersection" },
         RequiresPlugin = true,
         ReadOnly = true)]

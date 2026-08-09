@@ -1,4 +1,4 @@
-// AutoCAD acad-plumbing category. 8 tools covering sanitary fixtures for
+﻿// AutoCAD acad-plumbing category. 8 tools covering sanitary fixtures for
 // hospitals, offices and residential buildings. All fixtures comply with
 // Polish WT-2019 (Warunki Techniczne §79, §82, §86) and accessible variants
 // with PN-EN 17210 (toilet footprint 1500×1800 min + 80 cm approach +
@@ -115,7 +115,7 @@ public static class PlumbingTools
         => PlumbingProxy.CallAsync<InsertUrinalArgs, PlumbingInsertResult>(gw, "acad.plumbing.insert_urinal", args, T_NORMAL, ct);
 
     [McpTool("populate_bathroom",
-        "Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: 'wc-public' (WC + basin, single cubicle), 'wc-accessible' (PN-EN 17210 accessible WC + accessible basin + grab-bar markers, min 1500x1800), 'bathroom-residential' (WC + basin + bathtub OR shower), 'bathroom-hospital-patient' (wall-hung WC + basin + walk-in shower + grab bars), 'shower-room' (shower + basin), 'wc-block-staff' (2x WC + 2x basin + urinal). accessible=true overrides with accessible variants.",
+        "Places SANITARY FITTINGS and their clearances. For ordinary furniture in an ordinary room, that is furniture.populate_room. Auto-populate a bathroom/WC with a sanitary preset. Room identified by closed-polyline handle OR bbox. Presets: 'wc-public' (WC + basin, single cubicle), 'wc-accessible' (PN-EN 17210 accessible WC + accessible basin + grab-bar markers, min 1500x1800), 'bathroom-residential' (WC + basin + bathtub OR shower), 'bathroom-hospital-patient' (wall-hung WC + basin + walk-in shower + grab bars), 'shower-room' (shower + basin), 'wc-block-staff' (2x WC + 2x basin + urinal). accessible=true overrides with accessible variants.",
         "plumbing",
         Intent = new[]
         {

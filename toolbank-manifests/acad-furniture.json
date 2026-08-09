@@ -259,7 +259,7 @@
     },
     {
       "name": "populate_room",
-      "description": "Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min\u002Bmax). Presets: \u0027ward-room\u0027 (2 beds \u002B 2 nightstands \u002B 1 armchair), \u0027icu-room\u0027 (1 ICU-bed \u002B monitor cabinet \u002B visitor chair), \u0027or-room\u0027 (OR-table \u002B anaesthesia \u002B instrument trolley), \u0027office\u0027 (desk \u002B chair \u002B file cabinet), \u0027reception\u0027 (reception-desk \u002B 3 waiting chairs), \u0027waiting\u0027 (3 sofas \u002B 1 coffee-table), \u0027consult\u0027 (desk \u002B 2 chairs \u002B exam table \u002B cabinet). Returns handles of inserted items plus per-item layer assignment warnings.",
+      "description": "Furnishes a room with FURNITURE. For sanitary fittings - WCs, basins, showers, and the clearances they need - that is plumbing.populate_bathroom. Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min\u002Bmax). Presets: \u0027ward-room\u0027 (2 beds \u002B 2 nightstands \u002B 1 armchair), \u0027icu-room\u0027 (1 ICU-bed \u002B monitor cabinet \u002B visitor chair), \u0027or-room\u0027 (OR-table \u002B anaesthesia \u002B instrument trolley), \u0027office\u0027 (desk \u002B chair \u002B file cabinet), \u0027reception\u0027 (reception-desk \u002B 3 waiting chairs), \u0027waiting\u0027 (3 sofas \u002B 1 coffee-table), \u0027consult\u0027 (desk \u002B 2 chairs \u002B exam table \u002B cabinet). Returns handles of inserted items plus per-item layer assignment warnings.",
       "tags": [
         "populate",
         "room"
@@ -293,6 +293,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:28.0272828Z"
+    "last_regenerated_utc": "2026-08-09T12:47:03.0987511Z"
   }
 }

@@ -25,7 +25,7 @@ public static class AnnotationsTools
     public static Task<AnnEntityResult> AddDBText(IPluginGateway gw, AddDBTextArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<AddDBTextArgs, AnnEntityResult>(gw, "acad.annotations.add_dbtext", args, T_NORMAL, ct);
 
-    [McpTool("update_dbtext", "Replace the contents of an existing DBText entity by handle.", "annotations",
+    [McpTool("update_dbtext", "For SINGLE-LINE text (DBText/DTEXT). Wrapped paragraph text is a different entity - use update_mtext for that; list_text_by_pattern will say which kind a given handle is. Replace the contents of an existing DBText entity by handle.", "annotations",
         Intent = new[] { "zmien tekst dtext", "edit single line text", "update dbtext content", "popraw napis", "set dbtext text" },
         RequiresPlugin = true)]
     public static Task<AnnEntityResult> UpdateDBText(IPluginGateway gw, UpdateDBTextArgs args, CancellationToken ct)
@@ -39,7 +39,7 @@ public static class AnnotationsTools
     public static Task<AnnEntityResult> AddMText(IPluginGateway gw, AddMTextArgs args, CancellationToken ct)
         => AnnotationsProxy.CallAsync<AddMTextArgs, AnnEntityResult>(gw, "acad.annotations.add_mtext", args, T_NORMAL, ct);
 
-    [McpTool("update_mtext", "Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written.", "annotations",
+    [McpTool("update_mtext", "For WRAPPED paragraph text (MText). Single-line text is a different entity - use update_dbtext for that. Replace the contents string of an existing MText entity by handle. Inline formatting codes are preserved as written.", "annotations",
         Intent = new[] { "zmien mtext", "edit multiline text", "update mtext content", "popraw mtext", "set mtext text" },
         RequiresPlugin = true)]
     public static Task<AnnEntityResult> UpdateMText(IPluginGateway gw, UpdateMTextArgs args, CancellationToken ct)

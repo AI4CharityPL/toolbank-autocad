@@ -1,4 +1,4 @@
-// AutoCAD acad-furniture category. 10 tools covering parametric furniture blocks
+﻿// AutoCAD acad-furniture category. 10 tools covering parametric furniture blocks
 // for hospitals and offices: beds, chairs, desks, cabinets, sofas, tables,
 // generic insert, catalog enumeration, model-space enumeration, per-room
 // populators. Blocks are generated on demand (first call creates the
@@ -121,7 +121,7 @@ public static class FurnitureTools
         => FurnitureProxy.CallAsync<InsertTableArgs, FurnitureInsertResult>(gw, "acad.furniture.insert_table", args, T_NORMAL, ct);
 
     [McpTool("populate_room",
-        "Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min+max). Presets: 'ward-room' (2 beds + 2 nightstands + 1 armchair), 'icu-room' (1 ICU-bed + monitor cabinet + visitor chair), 'or-room' (OR-table + anaesthesia + instrument trolley), 'office' (desk + chair + file cabinet), 'reception' (reception-desk + 3 waiting chairs), 'waiting' (3 sofas + 1 coffee-table), 'consult' (desk + 2 chairs + exam table + cabinet). Returns handles of inserted items plus per-item layer assignment warnings.",
+        "Furnishes a room with FURNITURE. For sanitary fittings - WCs, basins, showers, and the clearances they need - that is plumbing.populate_bathroom. Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min+max). Presets: 'ward-room' (2 beds + 2 nightstands + 1 armchair), 'icu-room' (1 ICU-bed + monitor cabinet + visitor chair), 'or-room' (OR-table + anaesthesia + instrument trolley), 'office' (desk + chair + file cabinet), 'reception' (reception-desk + 3 waiting chairs), 'waiting' (3 sofas + 1 coffee-table), 'consult' (desk + 2 chairs + exam table + cabinet). Returns handles of inserted items plus per-item layer assignment warnings.",
         "furniture",
         Intent = new[]
         {

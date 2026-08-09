@@ -35,6 +35,36 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Changed
+
+- **Phase 4.3 reconnaissance: the mesh API, and a probe that was wrong about six names at once.**
+  Thirteen of the sixteen planned mesh tools are reachable. Present and callable: `SetSubDMesh`,
+  **`SmoothLevel`** (get and set), `SetCrease` in both forms, `GetCrease`, `SplitFace`,
+  `MergeFaces`, `ExtrudeFaces`, `Vertices`, `FaceArray`, `NumberOfFaces`, `NumberOfVertices`,
+  `ConvertToSolid` and `ConvertToSurface`.
+
+  **The seven mesh primitives have no factory methods at all.** `SubDMesh` has no `CreateBox` or
+  `CreateSphere` — unlike `Solid3d`, which has the lot. The only construction route is
+  `SetSubDMesh(vertices, faces, smoothLevel)`, so each primitive must be tessellated by hand:
+  eight vertices and six quads for a box, a ring-by-ring sweep for a sphere. That is real work,
+  but it makes the vertex and face counts exactly predictable, which is the arithmetic those
+  tools will be checked against. Also confirmed absent: `SubDMesh.Volume`, `SurfaceArea` and
+  `IsWatertight`, so a mesh has to be converted to a solid to be measured — which is itself the
+  natural check on the conversion.
+
+  **The first probe of this phase was wrong about six names and would have struck half the work.**
+  It asked for `SubDivisionLevel`, `IncreaseSubDivisionLevel`, `DecreaseSubDivisionLevel`,
+  `Refine`, `Unrefine` and `Splitface`; every one returned CS1061, which reads as "mesh smoothing
+  and face editing are not exposed at all". The real names are `SmoothLevel`, `SplitFace` and
+  `MergeFaces`. Six absences in a row is not corroboration — it is one guess about naming, made
+  six times.
+
+  That is the **fourth** time in this session a single probe round nearly struck buildable tools,
+  after `ShellSolid`/`ShellBody`, `Profile3d`, and `Surface.Trim` answering as
+  `MemoryExtensions.Trim`. Rule 26 §12c now carries all four as a table, with the rule that
+  follows: a struck row is a decision never to look again, and it costs one build to avoid making
+  that decision on a typo.
+
 ### Added
 
 - **Phase 4.2, second tranche — joining, projecting, and the NURBS cage.** `acad-surfaces`

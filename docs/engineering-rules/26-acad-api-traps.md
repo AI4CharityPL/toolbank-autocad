@@ -299,10 +299,28 @@ different arity. It does not exist at all: the compiler was resolving against
 argument produced CS1929 and named the extension method outright. Extension methods on
 `ReadOnlySpan<char>` will happily answer for any name they share.
 
-Practical rule: when a probe says a capability is absent, spend one more round confirming it
-before striking anything. When it says a type is unconstructible, try the constructor you would
-actually want before believing it. When it reports an arity mismatch, check the error names the
-type you asked about — one argument is usually enough to force the compiler to say.
+**A CS1061 for six names at once still means only that those six names are wrong.** Probing
+`SubDMesh` for `SubDivisionLevel`, `IncreaseSubDivisionLevel`, `DecreaseSubDivisionLevel`,
+`Refine`, `Unrefine` and `Splitface` returned CS1061 on every one, which reads as "mesh smoothing
+and face editing are not exposed at all" — a conclusion strong enough to strike half a phase. The
+real names are `SmoothLevel`, `SplitFace` and `MergeFaces`, and all of them work. Six absences in
+a row is not corroboration; it is one guess about naming, made six times.
+
+**Practical rule, and the reason it is worth the round trip.** Four separate times in one session
+a single probe round nearly struck buildable tools:
+
+| what was probed | what was concluded | what was true |
+|---|---|---|
+| `Solid3d.ShellSolid` | shell_solid unbuildable | it is `ShellBody` |
+| `new Profile3d("x")` | copy-constructor only, six surface tools dead | `new Profile3d(entity)` compiles |
+| `srf.Trim(a,b,c)` | exists with another arity | `Surface.Trim` does not exist; that was `MemoryExtensions.Trim` |
+| `SubDMesh.SubDivisionLevel` et al. | mesh smoothing not exposed | it is `SmoothLevel` |
+
+So: when a probe says a capability is absent, spend one more round confirming it before striking
+anything. When it says a type is unconstructible, try the constructor you would actually want.
+When it reports an arity mismatch, check the error names the type you asked about — one argument
+is usually enough to force the compiler to say. A struck row is a decision never to look again,
+and it costs one build to avoid making that decision on a typo.
 
 ---
 

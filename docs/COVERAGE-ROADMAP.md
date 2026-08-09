@@ -682,16 +682,43 @@ exist the compiler reports against the one it picked, so a CS1503 naming a type 
 overload wants this*, never *this is the only overload*. Probe with a plausible argument, not an
 implausible one — the first sweep of 4.1 struck `shell_solid` on the same mistake in reverse.
 
-### 4.3 `acad-mesh` (≈16)
+### 4.3 `acad-mesh` (≈16 → **13 reachable, 3 need building by hand**) — asked of the compiler 2026-08-09
 
 ```
-create_mesh_box             create_mesh_sphere         create_mesh_cylinder
-create_mesh_cone            create_mesh_torus          create_mesh_pyramid
-create_mesh_wedge           smooth_mesh_more           smooth_mesh_less
-refine_mesh                 add_mesh_crease            remove_mesh_crease
-split_mesh_face             extrude_mesh_face          convert_mesh_to_solid
-convert_mesh_to_surface
+create_mesh_box ..~         create_mesh_sphere ..~     create_mesh_cylinder ..~
+create_mesh_cone ..~        create_mesh_torus ..~      create_mesh_pyramid ..~
+create_mesh_wedge ..~       smooth_mesh_more ..        smooth_mesh_less ..
+refine_mesh ..              add_mesh_crease ..         remove_mesh_crease ..
+split_mesh_face ..          extrude_mesh_face ..       convert_mesh_to_solid ..
+convert_mesh_to_surface ..  get_mesh_info ..(added)    merge_mesh_faces ..(added)
 ```
+
+`..~` marks the seven primitives: **there are no factory methods for them.** `SubDMesh` has no
+`CreateBox`, `CreateSphere` or anything like them - unlike `Solid3d`, which has the lot. The only
+construction route is `SetSubDMesh(Point3dCollection vertices, Int32Collection faces, int
+smoothLevel)`, which means each primitive has to be tessellated by hand: eight vertices and six
+quads for a box, and a ring-by-ring sweep for a sphere or a torus. That is real work but it is
+honest work, and it makes the vertex and face counts exactly predictable, which is the arithmetic
+these tools will be checked against.
+
+Present and callable: `SetSubDMesh`, **`SmoothLevel`** (get and set - this is how smoothing is
+raised and lowered), `SetCrease(double)` and `SetCrease(FullSubentityPath[], double)`,
+`GetCrease(FullSubentityPath[])`, `SplitFace(SubentityId, ...)`, `MergeFaces(FullSubentityPath[])`,
+`ExtrudeFaces(FullSubentityPath[], double, Vector3d, double)`, `Vertices`, `FaceArray`,
+`NumberOfFaces`, `NumberOfVertices`, `ConvertToSolid(bool, bool)` and
+`ConvertToSurface(bool, bool)`.
+
+**Confirmed absent:** `SubDMesh.Volume`, `SurfaceArea` and `IsWatertight` - a mesh will have to be
+converted to a solid to be measured, which is itself the natural check on the conversion.
+`GetAdjacentSubentityPath` is absent too.
+
+**The first probe of this phase was wrong about six of these, and would have struck half the
+work.** It asked for `SubDivisionLevel`, `IncreaseSubDivisionLevel`, `DecreaseSubDivisionLevel`,
+`Refine`, `Unrefine` and `Splitface`; every one came back CS1061, which reads as "mesh smoothing
+and face splitting are not exposed". The real names are `SmoothLevel`, `SplitFace` and
+`MergeFaces`. **This is the fourth time in this session that one probe round has nearly struck
+buildable tools** - after `ShellSolid`/`ShellBody`, `Profile3d`, and `Surface.Trim` answering as
+`MemoryExtensions.Trim`. One round is not evidence of absence. See rule 26 §12c.
 
 ### 4.4 `acad-sections-3d` (≈12)
 

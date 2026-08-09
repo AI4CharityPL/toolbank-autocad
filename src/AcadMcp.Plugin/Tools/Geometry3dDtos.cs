@@ -153,3 +153,21 @@ internal sealed record FaceOpArgsDto(
     [property: JsonPropertyName("basePoint")]     Point3dDto? BasePoint,
     [property: JsonPropertyName("direction")]     Point3dDto? Direction,
     [property: JsonPropertyName("thickness")]     double? Thickness);
+
+// ─────────── roadmap 4.1, last tranche: shape and health ───────────
+
+internal sealed record PolysolidArgsDto(
+    [property: JsonPropertyName("pathHandle")] string? PathHandle,
+    [property: JsonPropertyName("vertices")]   List<Point3dDto>? Vertices,
+    [property: JsonPropertyName("closed")]     bool? Closed,
+    [property: JsonPropertyName("width")]      double? Width,
+    [property: JsonPropertyName("height")]     double? Height,
+    [property: JsonPropertyName("justify")]    string? Justify,
+    [property: JsonPropertyName("layer")]      string? Layer);
+
+internal sealed record PressPullArgsDto(
+    [property: JsonPropertyName("handle")]       string? Handle,
+    [property: JsonPropertyName("distance")]     double? Distance,
+    [property: JsonPropertyName("targetHandle")] string? TargetHandle,
+    [property: JsonPropertyName("eraseSource")]  bool? EraseSource,
+    [property: JsonPropertyName("layer")]        string? Layer);

@@ -266,4 +266,38 @@ public static class Geometry3dTools
         RequiresPlugin = true)]
     public static Task<ShellResult> ShellSolid(IPluginGateway gw, FaceOpArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<FaceOpArgs, ShellResult>(gw, "acad.geometry3d.shell_solid", args, T_SLOW, ct);
+
+    // ───────────────────────── shape and health ─────────────────────────
+
+    [McpTool("draw_polysolid", "Draw a wall-shaped solid of constant width and height following a path - AutoCAD's POLYSOLID. Give the path either as pathHandle, a curve already in the drawing, or as vertices for a centre line to be built from. justify says which side of that line the wall sits on: center, left or right. On a STRAIGHT path the volume is exactly width*height*length; round a corner it is less, because the material on the inside of the turn is shared between the two runs meeting there, and the result reports both numbers so the difference is visible. This is the quick way to a wall, a kerb or a skirting; use extrude_curve when the section is not a plain rectangle.", "geometry-3d",
+        Intent = new[] { "narysuj sciane jako bryle", "polysolid o szerokosci 25 i wysokosci 300",
+                         "draw a wall solid along a path", "polysolid from a polyline",
+                         "murek wzdluz linii", "draw a kerb along a road", "sweep a rectangle along a path" },
+        RequiresPlugin = true)]
+    public static Task<PolysolidResult> DrawPolysolid(IPluginGateway gw, PolysolidArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<PolysolidArgs, PolysolidResult>(gw, "acad.geometry3d.draw_polysolid", args, T_SLOW, ct);
+
+    [McpTool("presspull", "Push a closed area into the third dimension - AutoCAD's PRESSPULL. On its own it turns a closed curve or region into a solid of exactly area*distance. Given targetHandle it presses the shape straight into an existing solid instead, and the SIGN decides which: a negative distance cuts a pocket or a hole, a positive one adds a boss. That is the whole of press-pull as a draughtsman uses it, and it saves drawing a second solid and reaching for boolean_ops. If what you have is a point inside an area rather than a curve around it, trace the boundary with geometry_2d.boundary_from_point first. The tool refuses when the push never meets the target, which AutoCAD otherwise reports as a successful boolean over an unchanged solid.", "geometry-3d",
+        Intent = new[] { "wyciagnij obszar w gore", "wytnij otwor przez presspull",
+                         "presspull a closed area", "push a region into a solid",
+                         "zrob wglebienie w bryle", "cut a pocket into a part", "pull a face up" },
+        RequiresPlugin = true)]
+    public static Task<PressPullResult> PressPull(IPluginGateway gw, PressPullArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<PressPullArgs, PressPullResult>(gw, "acad.geometry3d.presspull", args, T_SLOW, ct);
+
+    [McpTool("clean_solid", "Ask AutoCAD to remove redundant edges and vertices from a 3D solid - SOLIDEDIT Clean. Be aware of what it does NOT do, measured rather than assumed: it does not undo an imprint, because the edges an imprint adds separate faces the modeller treats as distinct even when they lie in one plane; and it finds nothing after a union, because AutoCAD merges coplanar faces during the boolean itself. In both of those cases it reports honestly that nothing was redundant, which is a normal answer and not a failure. What it does guarantee is that the shape never changes: the tool refuses to report a clean if the volume moved, since removing material would also leave a perfectly valid solid behind.", "geometry-3d",
+        Intent = new[] { "wyczysc bryle", "usun zbedne krawedzie z bryly",
+                         "clean a solid", "remove redundant edges from a solid",
+                         "uporzadkuj bryle po operacjach boolowskich", "solidedit clean" },
+        RequiresPlugin = true)]
+    public static Task<CleanSolidResult> CleanSolid(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SolidQueryArgs, CleanSolidResult>(gw, "acad.geometry3d.clean_solid", args, T_NORMAL, ct);
+
+    [McpTool("check_solid", "Check that a 3D solid is sound, by arithmetic on its boundary rather than by opinion - AutoCAD's CHECK. Walks the boundary representation, counts faces, edges, vertices and shells, and tests Euler-Poincare: for a closed solid V - E + F = 2*(shells - genus), where the genus is the number of holes running right through it. A box gives 8 - 12 + 6 = 2; drill a hole through it and the same arithmetic gives 0. Anything that does not land on a whole-number genus has a boundary that does not close, and no amount of a healthy-looking volume will say so. Also reports the volume, the surface area and a plain list of what is wrong when something is.", "geometry-3d",
+        Intent = new[] { "sprawdz poprawnosc bryly", "czy ta bryla jest poprawna",
+                         "check a solid for validity", "validate a 3d solid",
+                         "ile dziur ma ta bryla", "is this solid watertight", "solid genus" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<CheckSolidResult> CheckSolid(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SolidQueryArgs, CheckSolidResult>(gw, "acad.geometry3d.check_solid", args, T_NORMAL, ct);
 }

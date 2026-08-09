@@ -37,6 +37,52 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, last tranche — shape and health. 4.1 is complete.** `acad-geometry-3d` 32 → 36,
+  bank 564 → 568: `draw_polysolid`, `presspull`, `clean_solid`, `check_solid`. Verified live
+  **66/66**, and confirmed on an exported PNG.
+
+  `draw_polysolid` sweeps a rectangular section along a path — a wall, a kerb, a skirting.
+  `presspull` turns a closed area into a solid of exactly area×distance, or presses it straight
+  into an existing solid, where the **sign** decides: negative cuts a pocket, positive adds a
+  boss. It refuses when the push never meets the target, which AutoCAD otherwise reports as a
+  successful boolean over an unchanged solid.
+
+  **`check_solid` answers with arithmetic rather than an opinion,** because `CheckSolidNature`
+  does not exist in the managed API. It walks the boundary and tests Euler–Poincaré in the form
+  a B-rep actually needs: **V − E + F − R = 2(S − G)**, where R counts the inner loops of faces,
+  S the shells and G the genus — the number of holes running right through. A box gives
+  8 − 12 + 6 − 0 = 2 and genus 0; drill through it and the same arithmetic gives
+  11 − 16 + 7 − 2 = 0 and genus 1. That is a statement about the boundary closing, which a
+  plausible-looking volume cannot make.
+
+  **Three defects, and two of them were mine rather than AutoCAD's:**
+
+  - **`check_solid` reported genus 0 for a box with a hole right through it** — failing to notice
+    the one thing it exists to notice — because the first version left the **ring term out of
+    Euler–Poincaré**. The volume said the hole was there; the topology said no hole. The two
+    extra loops, one on the top face and one on the bottom, are exactly what make the formula
+    balance. Leaving R out is not a simplification, it is wrong.
+  - **The `draw_polysolid` note had the corner case backwards, in sign as well as size.** It said
+    a wall round a bend holds less than its legs. Measured on a right-angle turn: a **centred**
+    wall comes to exactly width×height×length, because the mitre gives back on the outside of the
+    turn precisely what it takes on the inside; justified **left** it is short by width²×height,
+    the corner block it no longer reaches, and justified **right** it is over by the same amount.
+    The verification now checks all three, which is what stops the centred equality from being
+    read as the corner simply going unnoticed.
+  - **`clean_solid` removes nothing, and now says so.** Two constructed cases where SOLIDEDIT
+    Clean should have applied both came back empty: it does not undo an imprint, because those
+    edges separate faces the modeller treats as distinct even when they lie in one plane, and it
+    finds nothing after a union, because AutoCAD merges coplanar faces during the boolean itself.
+    History recording is turned off before the call so that "nothing was redundant" means the
+    geometry, not a setting. The tool ships describing what it does not do rather than claiming
+    an effect that cannot be demonstrated — and the image shows the imprinted line still on the
+    box after the clean. The guarantee that does hold is enforced: the volume must not move.
+
+  `copy_face` and `color_face` are struck — `Solid3d.CopyFaces` does not exist and per-face
+  colour needs a `FullSubentityPath` route the managed API does not expose.
+  `convert_to_solid`/`convert_to_surface` move to 4.2, where the other half of the conversion
+  lives.
+
 - **Phase 4.1, fifth tranche — the rest of SOLIDEDIT.** `acad-geometry-3d` 25 → 32, bank
   557 → 564: `extrude_face`, `offset_face`, `move_face`, `rotate_face`, `taper_face`,
   `delete_face`, `shell_solid`. Verified live **57/57**, and confirmed on an exported PNG.

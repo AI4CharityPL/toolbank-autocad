@@ -18,6 +18,8 @@
     "cad",
     "centroid",
     "chamfer",
+    "check",
+    "clean",
     "cone",
     "curve",
     "curves",
@@ -42,6 +44,8 @@
     "move",
     "offset",
     "planar",
+    "polysolid",
+    "presspull",
     "properties",
     "pyramid",
     "revolve",
@@ -69,7 +73,9 @@
     "centroid bryly",
     "chamfer an edge of a solid",
     "chamferedge",
+    "check a solid for validity",
     "check clash between solids",
+    "clean a solid",
     "cofnij faze na krawedzi",
     "compute extents 3d",
     "compute mass properties",
@@ -87,12 +93,16 @@
     "create torus solid",
     "create wedge solid",
     "cut a 3d solid in half",
+    "cut a pocket into a part",
     "cylinder by base radius and height",
+    "czy ta bryla jest poprawna",
     "delete a face of a solid",
     "dodaj nadlew na scianie",
     "donut shape solid",
     "draw 3d box",
     "draw a helix",
+    "draw a kerb along a road",
+    "draw a wall solid along a path",
     "draw cone",
     "draw cylinder",
     "draw planar surface from boundary",
@@ -122,11 +132,13 @@
     "grow or shrink a solid by a wall thickness",
     "gwint sciezka",
     "hollow out a solid to a wall thickness",
+    "ile dziur ma ta bryla",
     "ile scian ma bryla",
     "ile wynosi objetosc",
     "imprint curve onto solid",
     "imprint edges on a face",
     "interfere solids",
+    "is this solid watertight",
     "jakie krawedzie ma ta bryla",
     "kat pochylenia formy odlewniczej",
     "kolizja miedzy bry\u0142ami",
@@ -148,12 +160,14 @@
     "measure 3d volume",
     "moment bezwladnosci",
     "move a face of a solid",
+    "murek wzdluz linii",
     "narysuj helise",
     "narysuj klin",
     "narysuj kule",
     "narysuj ostroslup",
     "narysuj powierzchnie plaska",
     "narysuj prostopadloscian",
+    "narysuj sciane jako bryle",
     "narysuj stozek",
     "narysuj torus",
     "narysuj walec",
@@ -172,8 +186,11 @@
     "polacz przekroje bryla",
     "policz objetosc",
     "policz pole powierzchni 3d",
+    "polysolid from a polyline",
+    "polysolid o szerokosci 25 i wysokosci 300",
     "porecz wzdluz krzywej",
     "powierzchnia bryly",
+    "presspull a closed area",
     "przeciagnij profil po sciezce",
     "przejscie miedzy przekrojami",
     "przekroj bryly",
@@ -181,9 +198,12 @@
     "przesun otwor w bryle",
     "przesun sciane bryly",
     "przetnij bryle plaszczyzna",
+    "pull a face up",
     "push a face outward",
+    "push a region into a solid",
     "remove a boss from a part",
     "remove a fillet feature",
+    "remove redundant edges from a solid",
     "reposition a hole in a part",
     "revolve curve around axis",
     "revolve polilinie",
@@ -197,6 +217,8 @@
     "show solid edges with indexes",
     "show solid faces with normals",
     "slice a solid with a plane",
+    "solid genus",
+    "solidedit clean",
     "solidedit delete face",
     "solidedit extrude",
     "solidedit move face",
@@ -210,6 +232,7 @@
     "spiral stair path",
     "split a face of a solid",
     "split solid by plane",
+    "sprawdz poprawnosc bryly",
     "sprawdz przenikanie solidow",
     "sprezyna spirala",
     "srodek ciezkosci",
@@ -222,22 +245,29 @@
     "stworz sfere",
     "stworz stozek scinany",
     "sweep a profile along a path",
+    "sweep a rectangle along a path",
     "sweep solid",
     "taper a face of a solid",
     "tilt a face to make a slope",
+    "uporzadkuj bryle po operacjach boolowskich",
     "usun sciane bryly",
     "usun zaokraglenie z bryly",
+    "usun zbedne krawedzie z bryly",
+    "validate a 3d solid",
     "where is centroid",
     "which edge do I fillet",
     "which face is the top one",
     "wlasciwosci masowe",
     "wyciagniecie przez przekroje",
+    "wyciagnij obszar w gore",
     "wyciagnij polilinie",
     "wyciagnij sciane bryly",
+    "wyczysc bryle",
     "wydraz bryle",
     "wymiary bryly",
     "wypisz krawedzie bryly",
     "wypisz sciany bryly",
+    "wytnij otwor przez presspull",
     "zaokraglenie naroza bryly",
     "zaokraglij krawedz bryly",
     "zaznacz obrys na scianie bryly",
@@ -245,6 +275,7 @@
     "zrob rure wzdluz linii",
     "zrob skorupe o grubosci 10",
     "zrob spadek na plaskim dachu",
+    "zrob wglebienie w bryle",
     "zwez bryle ku gorze"
   ],
   "tools_summary": [
@@ -263,6 +294,39 @@
         "sciecie naroza bryly",
         "chamferedge",
         "bevel solid edge"
+      ]
+    },
+    {
+      "name": "check_solid",
+      "description": "Check that a 3D solid is sound, by arithmetic on its boundary rather than by opinion - AutoCAD\u0027s CHECK. Walks the boundary representation, counts faces, edges, vertices and shells, and tests Euler-Poincare: for a closed solid V - E \u002B F = 2*(shells - genus), where the genus is the number of holes running right through it. A box gives 8 - 12 \u002B 6 = 2; drill a hole through it and the same arithmetic gives 0. Anything that does not land on a whole-number genus has a boundary that does not close, and no amount of a healthy-looking volume will say so. Also reports the volume, the surface area and a plain list of what is wrong when something is.",
+      "tags": [
+        "check",
+        "solid"
+      ],
+      "intent": [
+        "sprawdz poprawnosc bryly",
+        "czy ta bryla jest poprawna",
+        "check a solid for validity",
+        "validate a 3d solid",
+        "ile dziur ma ta bryla",
+        "is this solid watertight",
+        "solid genus"
+      ]
+    },
+    {
+      "name": "clean_solid",
+      "description": "Ask AutoCAD to remove redundant edges and vertices from a 3D solid - SOLIDEDIT Clean. Be aware of what it does NOT do, measured rather than assumed: it does not undo an imprint, because the edges an imprint adds separate faces the modeller treats as distinct even when they lie in one plane; and it finds nothing after a union, because AutoCAD merges coplanar faces during the boolean itself. In both of those cases it reports honestly that nothing was redundant, which is a normal answer and not a failure. What it does guarantee is that the shape never changes: the tool refuses to report a clean if the volume moved, since removing material would also leave a perfectly valid solid behind.",
+      "tags": [
+        "clean",
+        "solid"
+      ],
+      "intent": [
+        "wyczysc bryle",
+        "usun zbedne krawedzie z bryly",
+        "clean a solid",
+        "remove redundant edges from a solid",
+        "uporzadkuj bryle po operacjach boolowskich",
+        "solidedit clean"
       ]
     },
     {
@@ -357,6 +421,23 @@
         "draw planar surface from boundary",
         "create planar surface",
         "make surface from closed curve"
+      ]
+    },
+    {
+      "name": "draw_polysolid",
+      "description": "Draw a wall-shaped solid of constant width and height following a path - AutoCAD\u0027s POLYSOLID. Give the path either as pathHandle, a curve already in the drawing, or as vertices for a centre line to be built from. justify says which side of that line the wall sits on: center, left or right. On a STRAIGHT path the volume is exactly width*height*length; round a corner it is less, because the material on the inside of the turn is shared between the two runs meeting there, and the result reports both numbers so the difference is visible. This is the quick way to a wall, a kerb or a skirting; use extrude_curve when the section is not a plain rectangle.",
+      "tags": [
+        "draw",
+        "polysolid"
+      ],
+      "intent": [
+        "narysuj sciane jako bryle",
+        "polysolid o szerokosci 25 i wysokosci 300",
+        "draw a wall solid along a path",
+        "polysolid from a polyline",
+        "murek wzdluz linii",
+        "draw a kerb along a road",
+        "sweep a rectangle along a path"
       ]
     },
     {
@@ -667,6 +748,22 @@
       ]
     },
     {
+      "name": "presspull",
+      "description": "Push a closed area into the third dimension - AutoCAD\u0027s PRESSPULL. On its own it turns a closed curve or region into a solid of exactly area*distance. Given targetHandle it presses the shape straight into an existing solid instead, and the SIGN decides which: a negative distance cuts a pocket or a hole, a positive one adds a boss. That is the whole of press-pull as a draughtsman uses it, and it saves drawing a second solid and reaching for boolean_ops. If what you have is a point inside an area rather than a curve around it, trace the boundary with geometry_2d.boundary_from_point first. The tool refuses when the push never meets the target, which AutoCAD otherwise reports as a successful boolean over an unchanged solid.",
+      "tags": [
+        "presspull"
+      ],
+      "intent": [
+        "wyciagnij obszar w gore",
+        "wytnij otwor przez presspull",
+        "presspull a closed area",
+        "push a region into a solid",
+        "zrob wglebienie w bryle",
+        "cut a pocket into a part",
+        "pull a face up"
+      ]
+    },
+    {
       "name": "revolve_curve",
       "description": "Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360).",
       "tags": [
@@ -699,7 +796,7 @@
     },
     {
       "name": "shell_solid",
-      "description": "Hollow a 3D solid out to a wall of the given thickness - AutoCAD\u0027s SOLIDEDIT Shell. The faces you name are the ones LEFT OPEN: name the top of a box and you get a box with no lid; name none and the void is sealed inside, which is a real shape and not an error. Positive thickness keeps the wall inside the original surface, negative grows it outward. A 100 cube open at the top with a wall of 10 leaves a cavity of 80 x 80 x 90 and must come to 424000 - worth checking, because a shell that quietly did nothing still returns a perfectly good solid.",
+      "description": "Hollow a 3D solid out to a wall of the given thickness - AutoCAD\u0027s SOLIDEDIT Shell. The faces you name are the ones LEFT OPEN: name the top of a box and you get a box with no lid; name none and the void is sealed inside, which is a real shape and not an error. The SIGN of the thickness is the thing to get right, and it is the opposite of what most people guess: NEGATIVE hollows inward and leaves the part the size it was, POSITIVE grows the wall outward and makes the part bigger in every direction. Measured on a 100 cube open at the top: -10 leaves a cavity of 80 x 80 x 90 and comes to 424000, while \u002B10 grows the outside to 120 x 120 x 110 and comes to 584000. Both are valid shells and only the sign tells them apart, so check the volume against the one that was wanted - a shell that quietly did the other thing still returns a perfectly good solid.",
       "tags": [
         "shell",
         "solid"
@@ -766,7 +863,7 @@
   ],
   "metadata": {
     "category": "geometry-3d",
-    "tool_count_target": 32,
+    "tool_count_target": 36,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -780,6 +877,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-09T11:38:58.4916887Z"
+    "last_regenerated_utc": "2026-08-09T12:28:16.3446276Z"
   }
 }

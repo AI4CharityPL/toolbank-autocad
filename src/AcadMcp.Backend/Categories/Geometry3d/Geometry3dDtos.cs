@@ -244,6 +244,73 @@ public sealed record EdgeOpArgs(
     [property: JsonPropertyName("baseFaceIndex")] int? BaseFaceIndex = null,
     [property: JsonPropertyName("allowFaceLoss")] bool? AllowFaceLoss = null);
 
+// ─────────── roadmap 4.1, last tranche: shape and health ───────────
+
+public sealed record PolysolidArgs(
+    [property: JsonPropertyName("pathHandle")] string? PathHandle = null,
+    [property: JsonPropertyName("vertices")]   IReadOnlyList<Point3dDto>? Vertices = null,
+    [property: JsonPropertyName("closed")]     bool? Closed = null,
+    [property: JsonPropertyName("width")]      double? Width = null,
+    [property: JsonPropertyName("height")]     double? Height = null,
+    [property: JsonPropertyName("justify")]    string? Justify = null,
+    [property: JsonPropertyName("layer")]      string? Layer = null);
+
+public sealed record PolysolidResult(
+    [property: JsonPropertyName("entity")]     EntityHandle Entity,
+    [property: JsonPropertyName("volume")]     double Volume,
+    [property: JsonPropertyName("width")]      double Width,
+    [property: JsonPropertyName("height")]     double Height,
+    [property: JsonPropertyName("pathLength")] double PathLength,
+    [property: JsonPropertyName("widthTimesHeightTimesLength")] double WidthTimesHeightTimesLength,
+    [property: JsonPropertyName("note")]       string Note);
+
+public sealed record PressPullArgs(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("distance")]     double? Distance = null,
+    [property: JsonPropertyName("targetHandle")] string? TargetHandle = null,
+    [property: JsonPropertyName("eraseSource")]  bool? EraseSource = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null);
+
+public sealed record PressPullResult(
+    [property: JsonPropertyName("entity")]            EntityHandle? Entity,
+    [property: JsonPropertyName("handle")]            string? Handle,
+    [property: JsonPropertyName("mode")]              string? Mode,
+    [property: JsonPropertyName("area")]              double Area,
+    [property: JsonPropertyName("distance")]          double Distance,
+    [property: JsonPropertyName("volume")]            double Volume,
+    [property: JsonPropertyName("pushedVolume")]      double? PushedVolume,
+    [property: JsonPropertyName("volumeBefore")]      double? VolumeBefore,
+    [property: JsonPropertyName("volumeChange")]      double? VolumeChange,
+    [property: JsonPropertyName("areaTimesDistance")] double? AreaTimesDistance,
+    [property: JsonPropertyName("note")]              string Note);
+
+public sealed record CleanSolidResult(
+    [property: JsonPropertyName("handle")]       string Handle,
+    [property: JsonPropertyName("facesBefore")]  int FacesBefore,
+    [property: JsonPropertyName("faces")]        int Faces,
+    [property: JsonPropertyName("edgesBefore")]  int EdgesBefore,
+    [property: JsonPropertyName("edges")]        int Edges,
+    [property: JsonPropertyName("facesRemoved")] int FacesRemoved,
+    [property: JsonPropertyName("edgesRemoved")] int EdgesRemoved,
+    [property: JsonPropertyName("volume")]       double Volume,
+    [property: JsonPropertyName("note")]         string Note);
+
+public sealed record CheckSolidResult(
+    [property: JsonPropertyName("handle")]              string Handle,
+    [property: JsonPropertyName("valid")]               bool Valid,
+    [property: JsonPropertyName("faces")]               int Faces,
+    [property: JsonPropertyName("edges")]               int Edges,
+    [property: JsonPropertyName("vertices")]            int Vertices,
+    [property: JsonPropertyName("shells")]              int Shells,
+    [property: JsonPropertyName("complexes")]           int Complexes,
+    [property: JsonPropertyName("rings")]               int Rings,
+    [property: JsonPropertyName("eulerCharacteristic")] int EulerCharacteristic,
+    [property: JsonPropertyName("genus")]               int? Genus,
+    [property: JsonPropertyName("volume")]              double Volume,
+    [property: JsonPropertyName("surfaceArea")]         double SurfaceArea,
+    [property: JsonPropertyName("problems")]            IReadOnlyList<string> Problems,
+    [property: JsonPropertyName("note")]                string Note);
+
 public sealed record FaceOpArgs(
     [property: JsonPropertyName("handle")]        string Handle,
     [property: JsonPropertyName("faceIndexes")]   IReadOnlyList<int>? FaceIndexes = null,

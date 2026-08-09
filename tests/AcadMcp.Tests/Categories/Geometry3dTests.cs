@@ -47,6 +47,11 @@ public class Geometry3dTests
         // condemned it asked for ShellSolid; the method is ShellBody.
         "extrude_face", "offset_face", "move_face", "rotate_face", "taper_face",
         "delete_face", "shell_solid",
+
+        // Roadmap 4.1, last tranche: shape and health. check_solid answers with arithmetic
+        // rather than an opinion - CheckSolidNature does not exist in the managed API, so
+        // it tests Euler-Poincare on the boundary instead.
+        "draw_polysolid", "presspull", "clean_solid", "check_solid",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

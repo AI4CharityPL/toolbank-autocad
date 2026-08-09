@@ -74,6 +74,12 @@ internal static class Geometry3dPluginTools
         host.Register("acad.geometry3d.taper_face",          TaperFace);
         host.Register("acad.geometry3d.delete_face",         DeleteFace);
         host.Register("acad.geometry3d.shell_solid",         ShellSolid);
+
+        // roadmap 4.1, last tranche - shape and health, the two questions left
+        host.Register("acad.geometry3d.draw_polysolid",      DrawPolysolid);
+        host.Register("acad.geometry3d.presspull",           PressPull);
+        host.Register("acad.geometry3d.clean_solid",         CleanSolid);
+        host.Register("acad.geometry3d.check_solid",         CheckSolid);
     }
 
     // ─────────── helpers ───────────
@@ -1442,6 +1448,379 @@ internal static class Geometry3dPluginTools
                        "normal comes from three sampled boundary points and is omitted when the " +
                        "boundary is degenerate. Indexes are stable only while the solid is " +
                        "unedited.",
+            });
+        });
+
+    // ─────────── shape and health ───────────
+
+    private static Task<ToolDispatchResult> DrawPolysolid(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.draw_polysolid", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PolysolidArgsDto>(args);
+            if (a.Width is null || a.Width <= 0) throw new ArgumentException("width must be > 0.");
+            if (a.Height is null || a.Height <= 0) throw new ArgumentException("height must be > 0.");
+
+            Curve path;
+            var madePath = false;
+            if (!string.IsNullOrWhiteSpace(a.PathHandle))
+            {
+                var pe = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.PathHandle!), OpenMode.ForRead);
+                path = pe as Curve ?? throw new ArgumentException(
+                    "The path is a " + pe.GetRXClass().Name + ", not a curve.");
+            }
+            else if (a.Vertices is not null && a.Vertices.Count >= 2)
+            {
+                var pl = new Polyline();
+                for (int i = 0; i < a.Vertices.Count; i++)
+                {
+                    var p = AcadEnv.ToPoint3d(a.Vertices[i]);
+                    pl.AddVertexAt(i, new Point2d(p.X, p.Y), 0, 0, 0);
+                }
+                if (a.Closed == true) pl.Closed = true;
+                path = pl;
+                madePath = true;
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Give either pathHandle - a curve already in the drawing - or vertices, at " +
+                    "least two points for the centre line to follow.");
+            }
+
+            var start = path.StartPoint;
+            var tangent = path.GetFirstDerivative(path.StartParam);
+            if (tangent.Length < 1e-12)
+                throw new ArgumentException("The path has no direction at its start.");
+            var dir = tangent.GetNormal();
+
+            // The profile is a rectangle standing ACROSS the path: width sideways, height up.
+            // Built square to the path at its start, because a profile drawn in the XY plane and
+            // swept along a horizontal path produces a flat ribbon rather than a wall.
+            var up = Math.Abs(dir.DotProduct(Vector3d.ZAxis)) > 0.999 ? Vector3d.YAxis : Vector3d.ZAxis;
+            var side = dir.CrossProduct(up).GetNormal();
+            var w = a.Width.Value;
+            var h = a.Height.Value;
+            var offset = (a.Justify ?? "center").Trim().ToLowerInvariant() switch
+            {
+                "center" or "centre" => -w / 2.0,
+                "left" => -w,
+                "right" => 0.0,
+                _ => throw new ArgumentException("justify must be center, left or right."),
+            };
+            var p0 = start + side * offset;
+            var rect = new Polyline();
+            rect.AddVertexAt(0, Point2d.Origin, 0, 0, 0);
+            rect.AddVertexAt(1, new Point2d(w, 0), 0, 0, 0);
+            rect.AddVertexAt(2, new Point2d(w, h), 0, 0, 0);
+            rect.AddVertexAt(3, new Point2d(0, h), 0, 0, 0);
+            rect.Closed = true;
+            rect.TransformBy(Matrix3d.AlignCoordinateSystem(
+                Point3d.Origin, Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis,
+                p0, side, up, dir));
+
+            var region = RegionFrom(rect, "the wall profile");
+
+            var solid = new Solid3d();
+            var sweep = new SweepOptionsBuilder { Align = SweepOptionsAlignOption.NoAlignment };
+            try
+            {
+                solid.CreateSweptSolid(region, path, sweep.ToSweepOptions());
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused to sweep the wall profile with " + ex.ErrorStatus + ". A " +
+                    "path that doubles back on itself, or a width wider than its tightest bend " +
+                    "can turn through, makes the wall pass through itself.");
+            }
+
+            var handle = AcadEnv.Persist(db, tr, solid, a.Layer);
+            var volume = solid.MassProperties.Volume;
+            var length = path.GetDistanceAtParameter(path.EndParam)
+                       - path.GetDistanceAtParameter(path.StartParam);
+            if (madePath) path.Dispose();
+            rect.Dispose();
+
+            if (volume <= 0)
+                throw new InvalidOperationException(
+                    "The sweep produced a solid of volume " + volume + ", which is not a wall.");
+
+            return Wrap(new
+            {
+                entity = handle,
+                volume,
+                width = w,
+                height = h,
+                pathLength = length,
+                widthTimesHeightTimesLength = w * h * length,
+                note = "A wall of constant section along a path. width*height*length comes to " +
+                       (w * h * length) + " and the solid measures " + volume + ". On a straight " +
+                       "path those are always equal; round a corner it depends on justify, and " +
+                       "measured on a right-angle turn: CENTRED they are still exactly equal, " +
+                       "because the wall loses on the inside of the turn precisely what it gains " +
+                       "on the outside. Justified LEFT it comes up short by width*width*height - " +
+                       "the corner block it no longer reaches - and justified RIGHT it is over by " +
+                       "the same amount, having wrapped round the outside. So a difference here " +
+                       "is not an error, but it should be one of exactly those three numbers.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> PressPull(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.presspull", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<PressPullArgsDto>(args);
+            if (a.Distance is null || a.Distance == 0)
+                throw new ArgumentException(
+                    "distance is required and cannot be 0. Positive pushes the area up, negative " +
+                    "pulls it down, and the sign is what decides whether a pocket or a boss " +
+                    "comes out of it.");
+            if (string.IsNullOrWhiteSpace(a.Handle))
+                throw new ArgumentException(
+                    "handle is required: the closed curve or region bounding the area to push. " +
+                    "Use geometry_2d.boundary_from_point first if what you have is a point " +
+                    "inside an area rather than a curve around it.");
+
+            var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.Handle!), OpenMode.ForWrite);
+            Region region;
+            try
+            {
+                region = RegionFrom(ent, "the area to push");
+            }
+            catch (System.Exception ex)
+            {
+                throw new ArgumentException(
+                    "Entity " + a.Handle + " is a " + ent.GetRXClass().Name + " and does not " +
+                    "enclose an area (" + ex.Message + "). Press-pull needs a CLOSED curve or a " +
+                    "region - an open curve bounds nothing to push. Use " +
+                    "geometry_2d.boundary_from_point to trace a closed boundary round a point " +
+                    "first if that is what you have.");
+            }
+            var area = region.Area;
+
+            var solid = new Solid3d();
+            solid.Extrude(region, a.Distance.Value, 0.0);
+            var pushed = solid.MassProperties.Volume;
+
+            string? mode = null;
+            double? targetBefore = null, targetAfter = null;
+            if (!string.IsNullOrWhiteSpace(a.TargetHandle))
+            {
+                var te = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, a.TargetHandle!), OpenMode.ForWrite);
+                if (te is not Solid3d target)
+                    throw new ArgumentException(
+                        "targetHandle is a " + te.GetRXClass().Name + ", not a 3D solid.");
+                targetBefore = target.MassProperties.Volume;
+                mode = a.Distance.Value < 0 ? "subtract" : "union";
+                target.BooleanOperation(
+                    mode == "subtract" ? BooleanOperationType.BoolSubtract : BooleanOperationType.BoolUnite,
+                    solid);
+                targetAfter = target.MassProperties.Volume;
+                solid.Dispose();
+
+                if (Math.Abs(targetAfter.Value - targetBefore.Value) <= Math.Abs(targetBefore.Value) * 1e-12)
+                    throw new InvalidOperationException(
+                        "The target still measures " + targetBefore + ". The pushed area did not " +
+                        "meet it, so nothing was added or taken away - which AutoCAD reports as a " +
+                        "successful boolean over an unchanged solid.");
+
+                return Wrap(new
+                {
+                    handle = a.TargetHandle,
+                    mode,
+                    area,
+                    distance = a.Distance.Value,
+                    pushedVolume = pushed,
+                    volumeBefore = targetBefore,
+                    volume = targetAfter,
+                    volumeChange = targetAfter - targetBefore,
+                    note = "The area was pushed " + a.Distance.Value + " and " +
+                           (mode == "subtract" ? "CUT OUT OF" : "ADDED TO") + " the target, " +
+                           "because the sign of the distance decides which. Where the push lies " +
+                           "wholly inside the target the change is exactly area*distance, " +
+                           "here " + Math.Abs(area * a.Distance.Value) + " against a measured " +
+                           Math.Abs((targetAfter - targetBefore) ?? 0) + ".",
+                });
+            }
+
+            if (ent is not Region && a.EraseSource == true) ent.Erase();
+            var made = AcadEnv.Persist(db, tr, solid, a.Layer);
+            return Wrap(new
+            {
+                entity = made,
+                area,
+                distance = a.Distance.Value,
+                volume = pushed,
+                areaTimesDistance = Math.Abs(area * a.Distance.Value),
+                note = "Pushing a flat area A by d makes exactly A*|d| of solid, here " +
+                       Math.Abs(area * a.Distance.Value) + " against a measured " + pushed + ". " +
+                       "Give targetHandle to press the shape straight into an existing solid " +
+                       "instead: a negative distance then cuts a pocket and a positive one adds " +
+                       "a boss, which is what PRESSPULL does in the editor.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> CleanSolid(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.clean_solid", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SolidQueryArgsDto>(args);
+            var solid = RequireSolid(db, tr, a.Handle, "handle");
+            var v0 = solid.MassProperties.Volume;
+            var (f0, e0) = Topology(solid);
+
+            try
+            {
+                // History recording keeps the original operands alive inside the solid, which is
+                // one plausible reason a clean would find nothing to do. Turned off first so that
+                // "it removed nothing" means the geometry had nothing redundant in it, rather than
+                // the call having been blocked by a setting.
+                try { solid.RecordHistory = false; } catch { /* not every solid carries history */ }
+                solid.CleanBody();
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException("AutoCAD refused to clean the solid with " + ex.ErrorStatus + ".");
+            }
+
+            var v1 = solid.MassProperties.Volume;
+            var (f1, e1) = Topology(solid);
+
+            // Cleaning must never change the SHAPE - it only removes edges and vertices that
+            // divide a face without separating two different surfaces. A cleaner that changed the
+            // volume has taken material, and would still hand back a valid solid.
+            if (Math.Abs(v1 - v0) > Math.Abs(v0) * 1e-9)
+                throw new InvalidOperationException(
+                    "The solid measured " + v0 + " before cleaning and " + v1 + " after. Cleaning " +
+                    "removes redundant edges, never material, so this is not being reported as a " +
+                    "clean.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                facesBefore = f0,
+                faces = f1,
+                edgesBefore = e0,
+                edges = e1,
+                facesRemoved = f0 - f1,
+                edgesRemoved = e0 - e1,
+                volume = v1,
+                note = (e1 < e0 || f1 < f0)
+                    ? "Removed " + (e0 - e1) + " redundant edges and " + (f0 - f1) + " redundant " +
+                      "faces while leaving the volume at " + v1 + " - the shape is untouched, only " +
+                      "the divisions in it are gone. This is what undoes an imprint, or tidies a " +
+                      "solid left over-divided by a chain of booleans."
+                    : "Nothing was redundant: " + f0 + " faces and " + e0 + " edges, all of them " +
+                      "separating genuinely different surfaces. A clean solid is the normal case " +
+                      "and is not an error.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> CheckSolid(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.check_solid", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SolidQueryArgsDto>(args);
+            var solid = RequireSolid(db, tr, a.Handle, "handle");
+
+            int faces = 0, edges = 0, vertices = 0, shells = 0, complexes = 0, rings = 0;
+            string? walkError = null;
+            try
+            {
+                using var brep = AddressableBrep(solid);
+                foreach (BrepFace fc in brep.Faces)
+                {
+                    faces++;
+                    // RINGS: loops that are not a face's outer boundary. Drilling a hole through a
+                    // box puts a second loop on the top face and another on the bottom, and the
+                    // formula does not balance without them. Measured: the first version of this
+                    // read V - E + F = 2 and reported genus 0 for a box with a hole right through
+                    // it - the one thing it was written to notice.
+                    foreach (var lp in fc.Loops)
+                        if (lp.LoopType != LoopType.LoopExterior) rings++;
+                }
+                foreach (var _ in brep.Edges) edges++;
+                foreach (var _ in brep.Vertices) vertices++;
+                foreach (var _ in brep.Shells) shells++;
+                foreach (var _ in brep.Complexes) complexes++;
+            }
+            catch (System.Exception ex)
+            {
+                walkError = ex.Message;
+            }
+
+            double volume = 0, area = 0;
+            string? massError = null;
+            try
+            {
+                volume = solid.MassProperties.Volume;
+            }
+            catch (System.Exception ex)
+            {
+                massError = ex.Message;
+            }
+            try
+            {
+                // Solid3dMassProperties carries no Area; it is summed off the faces, the same way
+                // get_surface_area does it.
+                using var brep = new Brep(solid);
+                foreach (var face in brep.Faces)
+                {
+                    try { area += face.GetArea(); } catch { /* one bad face should not hide the rest */ }
+                }
+            }
+            catch { /* the walk above already reports a boundary that cannot be read */ }
+
+            // Euler-Poincare, in the form a boundary representation actually needs:
+            //
+            //     V - E + F - R = 2*(S - G)
+            //
+            // where R counts RINGS - the inner loops of faces - S the shells, and G the genus: the
+            // number of holes running right THROUGH the solid. A box gives 8 - 12 + 6 - 0 = 2, so
+            // genus 0. Drill a hole through it and it becomes 11 - 16 + 7 - 2 = 0, so genus 1, and
+            // the two extra loops - one on the top face, one on the bottom - are what make it
+            // balance. Leaving R out is not a simplification, it is wrong, and it was wrong here
+            // first: genus 0 for a solid with a hole in it.
+            //
+            // Anything that does not land on a whole-number genus has a boundary that does not
+            // close, and no amount of a healthy-looking volume will say so.
+            var euler = vertices - edges + faces - rings;
+            double? genusRaw = shells > 0 ? shells - euler / 2.0 : null;
+            var genusWhole = genusRaw is not null && Math.Abs(genusRaw.Value - Math.Round(genusRaw.Value)) < 1e-9;
+            var eulerOk = walkError is null && euler % 2 == 0 && genusWhole && genusRaw >= 0;
+
+            var problems = new List<string>();
+            if (walkError is not null) problems.Add("its boundary could not be walked: " + walkError);
+            if (massError is not null) problems.Add("its mass properties could not be computed: " + massError);
+            if (massError is null && volume <= 0) problems.Add("its volume is " + volume + ", which is not positive");
+            if (massError is null && area <= 0) problems.Add("its surface area is " + area + ", which is not positive");
+            if (walkError is null && !eulerOk)
+                problems.Add("it fails Euler-Poincare: V - E + F - R = " + vertices + " - " +
+                             edges + " + " + faces + " - " + rings + " = " + euler + " over " +
+                             shells + " shell(s), which gives a genus of " + genusRaw +
+                             " rather than a whole number");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                valid = problems.Count == 0,
+                faces,
+                edges,
+                vertices,
+                shells,
+                complexes,
+                rings,
+                eulerCharacteristic = euler,
+                genus = genusWhole ? (int?)Math.Round(genusRaw!.Value) : null,
+                volume,
+                surfaceArea = area,
+                problems,
+                note = problems.Count == 0
+                    ? "Sound. V - E + F - R = " + vertices + " - " + edges + " + " + faces +
+                      " - " + rings + " = " + euler + ", which for " + shells +
+                      " shell(s) means a genus of " +
+                      (genusWhole ? Math.Round(genusRaw!.Value).ToString() : "?") + " - that many " +
+                      "holes running right through it. Volume " + volume + ", surface area " +
+                      area + ". This is arithmetic on the boundary, not an opinion: a solid can " +
+                      "report a perfectly plausible volume with a boundary that does not close."
+                    : "NOT sound: " + string.Join("; ", problems) + ".",
             });
         });
 

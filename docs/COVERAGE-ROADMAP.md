@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**553 tools across 39 categories** (updated 2026-08-08; this document was written at 337 across
+**557 tools across 39 categories** (updated 2026-08-09; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -584,15 +584,15 @@ bind_underlay
 Today: 7 primitives, extrude, revolve, one planar surface, 6 booleans, 5 queries. That is the
 beginning of 3D, not 3D.
 
-### 4.1 `acad-solids-advanced` (≈34 → **7 built, 9 struck**)
+### 4.1 `acad-solids-advanced` (≈34 → **9 built + 2 added, 8 struck**)
 
 ```
 sweep_curve ✔               loft_curves ✔              loft_with_guides ✔
 loft_with_path ✔            draw_helix ✔               draw_polysolid ..
 presspull ..                slice_solid ✔              separate_solids ✘
-shell_solid ✘               clean_solid ..             check_solid ..
+shell_solid ..              clean_solid ..             check_solid ..
 imprint_edges ✔             extract_edges ✘            interfere_solids ✔
-fillet_edge ..              chamfer_edge ..
+fillet_edge ✔               chamfer_edge ✔
 extrude_face ..             move_face ..               rotate_face ..
 offset_face ..              taper_face ..              delete_face ..
 copy_face ..                color_face ..
@@ -618,8 +618,24 @@ AutoCAD's LOFT offers them as alternatives and refuses both at once, which the t
 
 Asked of the compiler before anything was written: `Solid3d.CreateSweptSolid`,
 `CreateLoftedSolid`, `SweepOptions`, `LoftOptions` and `Helix` all exist, while
-**`ShellSolid`, `Separate` and `ExtractBrep` do not** — so `shell_solid`, `separate_solids` and
-`extract_edges` are struck rather than deferred.
+**`Separate` and `ExtractBrep` do not** — so `separate_solids` and `extract_edges` are struck
+rather than deferred.
+
+**Correction, 2026-08-09: `shell_solid` is back.** It was struck on a probe that asked for
+`ShellSolid`. The method is called **`ShellBody(SubentityId[], double)`** and it is there. The
+probe had the wrong name, not the API the wrong method — a struck-through row is a decision to
+never revisit something, so a name typo in a probe is expensive in a way a compile error is not.
+The same sweep confirmed `SubDMesh.CreateBox` genuinely does **not** exist, which lands on 4.3.
+
+**`list_solid_edges` and `list_solid_faces` were added to this phase, not planned into it.**
+Every SOLIDEDIT operation in the managed API takes `SubentityId[]`, and a `SubentityId` is an
+opaque handle a caller on the other end of a JSON pipe cannot spell and that does not survive a
+round trip. Without a way to name one edge, none of `fillet_edge`, `chamfer_edge`, `extrude_face`,
+`taper_face`, `offset_face`, `delete_face` or `shell_solid` is reachable at all. The scheme is an
+index plus the geometry of every slot, with a point-in-space alternative that refuses to snap when
+the point is equidistant from two candidates. One further trap, measured: `new Brep(entity)` gives
+faces and edges that throw `MissingSubentity` when asked for `SubentityPath`, so the Brep must be
+built from a `FullSubentityPath` rooted on the solid's `ObjectId`.
 
 ### 4.2 `acad-surfaces` (≈18)
 
@@ -856,13 +872,13 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **7** | 5 already exist in `acad-modify`, which shipped 3D-capable |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **11** | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **553** | **68 %** |
+| | **Total** | **813** | **557** | **69 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 541 (337 + 75 + 71 + 51 + 7)
-while the bank measures **553**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 545 (337 + 75 + 71 + 51 + 11)
+while the bank measures **557**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

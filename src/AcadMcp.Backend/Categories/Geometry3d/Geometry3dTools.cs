@@ -170,4 +170,38 @@ public static class Geometry3dTools
         RequiresPlugin = true)]
     public static Task<ImprintResult> ImprintEdges(IPluginGateway gw, ImprintArgs args, CancellationToken ct)
         => Geometry3dProxy.CallAsync<ImprintArgs, ImprintResult>(gw, "acad.geometry3d.imprint_edges", args, T_SLOW, ct);
+
+    [McpTool("list_solid_edges", "List every edge of a 3D solid with an INDEX, its endpoints, its midpoint and its length. Call this before fillet_edge or chamfer_edge: those need to be told which edges to work on, and an edge cannot be named any other way - AutoCAD identifies it by an internal handle that does not survive a round trip. The geometry comes back with each index so the choice can be checked against the drawing rather than trusted. Indexes are stable only while the solid is unedited: rounding one edge rebuilds the boundary and renumbers the rest, so list again after every edit.", "geometry-3d",
+        Intent = new[] { "wypisz krawedzie bryly", "jakie krawedzie ma ta bryla",
+                         "list edges of a solid", "show solid edges with indexes",
+                         "ktora krawedz zaokraglic", "which edge do I fillet",
+                         "enumerate solid edges" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<SolidEdgesResult> ListSolidEdges(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SolidQueryArgs, SolidEdgesResult>(gw, "acad.geometry3d.list_solid_edges", args, T_NORMAL, ct);
+
+    [McpTool("list_solid_faces", "List every face of a 3D solid with an INDEX, the centroid of its boundary, its outward normal and how many edges it has. This is how a face is named for chamfer_edge's baseFaceIndex, and it is the readable answer to 'what does this solid consist of'. The centroid LOCATES a face - on a face with a hole in it the centroid can fall inside the hole - so use the normal to tell top from bottom rather than the position alone. Indexes are stable only while the solid is unedited.", "geometry-3d",
+        Intent = new[] { "wypisz sciany bryly", "ile scian ma bryla",
+                         "list faces of a solid", "show solid faces with normals",
+                         "ktora sciana jest gorna", "which face is the top one",
+                         "enumerate solid faces" },
+        RequiresPlugin = true, ReadOnly = true)]
+    public static Task<SolidFacesResult> ListSolidFaces(IPluginGateway gw, SolidQueryArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<SolidQueryArgs, SolidFacesResult>(gw, "acad.geometry3d.list_solid_faces", args, T_NORMAL, ct);
+
+    [McpTool("fillet_edge", "Round one or more edges of a 3D solid to a given radius - AutoCAD's FILLETEDGE. Name the edges either as edgeIndexes from list_solid_edges or as nearPoints, each snapping to the edge closest to it; a point equidistant from two edges is refused rather than snapped to whichever sorted first. Rounding a convex edge removes material and replaces the edge with a curved face, and the amount removed on a straight edge of length L is exactly L*r*r*(1-pi/4), so the result is checkable on paper. A radius large enough to DESTROY a face is refused and the solid is left exactly as it was: AutoCAD itself accepts an oversized radius without complaint - asked for 300 on a 100 face it swallows a whole face and returns success - so the refusal reports the largest radius that does fit, found by bisection. Pass allowFaceLoss to reshape the part deliberately. The tool also refuses to report success when the face count and the volume both came back unchanged. This is the 3D operation; geometry_2d.fillet_corner is the flat one.", "geometry-3d",
+        Intent = new[] { "zaokraglij krawedz bryly", "filet na krawedzi 3d",
+                         "fillet an edge of a solid", "round the edges of a 3d box",
+                         "zaokraglenie naroza bryly", "filletedge", "round solid edge" },
+        RequiresPlugin = true)]
+    public static Task<FilletEdgeResult> FilletEdge(IPluginGateway gw, EdgeOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<EdgeOpArgs, FilletEdgeResult>(gw, "acad.geometry3d.fillet_edge", args, T_SLOW, ct);
+
+    [McpTool("chamfer_edge", "Cut a flat bevel along one or more edges of a 3D solid - AutoCAD's CHAMFEREDGE. Name the edges as edgeIndexes from list_solid_edges or as nearPoints. The two distances are measured from the edge across each of the two faces meeting there; with equal distances the bevel is symmetric and no more is needed, but if they differ you must give baseFaceIndex, because which face the first distance belongs to decides which way the bevel leans - guessing it would silently produce the mirror image. On a straight edge of length L with equal distances d the amount removed is exactly L*d*d/2, which is more than a fillet of radius d takes. A distance large enough to destroy a face is refused the same way fillet_edge refuses one, with the largest distance that fits reported back and allowFaceLoss to override. Use fillet_edge to round instead of bevel.", "geometry-3d",
+        Intent = new[] { "sfazuj krawedz bryly", "faza na krawedzi 3d",
+                         "chamfer an edge of a solid", "bevel the edge of a 3d box",
+                         "sciecie naroza bryly", "chamferedge", "bevel solid edge" },
+        RequiresPlugin = true)]
+    public static Task<ChamferEdgeResult> ChamferEdge(IPluginGateway gw, EdgeOpArgs args, CancellationToken ct)
+        => Geometry3dProxy.CallAsync<EdgeOpArgs, ChamferEdgeResult>(gw, "acad.geometry3d.chamfer_edge", args, T_SLOW, ct);
 }

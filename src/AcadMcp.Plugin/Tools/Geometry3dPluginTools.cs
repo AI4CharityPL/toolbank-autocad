@@ -14,8 +14,11 @@ using AcadMcp.Shared;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using System.Linq;
 using AcadRt = Autodesk.AutoCAD.Runtime;
 using Brep = Autodesk.AutoCAD.BoundaryRepresentation.Brep;
+using BrepEdge = Autodesk.AutoCAD.BoundaryRepresentation.Edge;
+using BrepFace = Autodesk.AutoCAD.BoundaryRepresentation.Face;
 
 namespace AcadMcp.Plugin.Tools;
 
@@ -53,6 +56,14 @@ internal static class Geometry3dPluginTools
         host.Register("acad.geometry3d.slice_solid",         SliceSolid);
         host.Register("acad.geometry3d.interfere_solids",    InterfereSolids);
         host.Register("acad.geometry3d.imprint_edges",       ImprintEdges);
+
+        // roadmap 4.1 - the face/edge family. The two list_ tools come first because nothing
+        // else here is usable without them: every SOLIDEDIT operation in the managed API takes
+        // SubentityId[], and a SubentityId is not something a caller can spell.
+        host.Register("acad.geometry3d.list_solid_edges",    ListSolidEdges);
+        host.Register("acad.geometry3d.list_solid_faces",    ListSolidFaces);
+        host.Register("acad.geometry3d.fillet_edge",         FilletEdge);
+        host.Register("acad.geometry3d.chamfer_edge",        ChamferEdge);
     }
 
     // ─────────── helpers ───────────
@@ -935,6 +946,538 @@ internal static class Geometry3dPluginTools
                        " and " + e0 + " edges became " + e1 + " - while the volume stays at " +
                        v1 + ". That last part is the check: a tool that cut instead of imprinting " +
                        "would also report more faces, and only the volume would give it away.",
+            });
+        });
+
+    // ───────────────────────────────────────────────────────────────────────────────
+    // The face/edge family: addressing
+    //
+    // Every SOLIDEDIT operation in the managed API - FilletEdges, ChamferEdges, ExtrudeFaces,
+    // TaperFaces, OffsetFaces, RemoveFaces, TransformFaces, ShellBody - takes a SubentityId[].
+    // A SubentityId is an opaque handle into the solid's boundary representation; a caller on
+    // the other end of a JSON pipe cannot spell one and it would not survive the round trip. So
+    // the scheme is: enumerate the Brep, hand back an INDEX plus the geometry of every slot, and
+    // accept back either that index or a point in space to snap to. Reporting the geometry is
+    // what makes the choice checkable - an index on its own is a number the caller must trust.
+    //
+    // Indexes are stable while the solid is unedited and NOT across an edit: filleting an edge
+    // rebuilds the boundary and renumbers the rest. Both list tools say so in their own output.
+    // ───────────────────────────────────────────────────────────────────────────────
+
+    private readonly record struct EdgeSlot(
+        int Index, SubentityId Id, Point3d Start, Point3d End, Point3d Mid, double Length,
+        Point3d[] Samples);
+
+    private readonly record struct FaceSlot(
+        int Index, SubentityId Id, Point3d Centroid, Vector3d Normal, bool NormalKnown,
+        int EdgeCount);
+
+    /// <summary>Points along a curve, used both to report an edge and to snap a point to it.</summary>
+    private static Point3d[] SampleCurve(Autodesk.AutoCAD.Geometry.Curve3d c, int n)
+    {
+        var iv = c.GetInterval();
+        double lo = iv.LowerBound, hi = iv.UpperBound;
+        var pts = new Point3d[n];
+        for (int k = 0; k < n; k++)
+            pts[k] = c.EvaluatePoint(lo + (hi - lo) * k / (double)(n - 1));
+        return pts;
+    }
+
+    /// <summary>
+    /// Runs one step of a Brep walk and, if it throws, says WHICH step and with what status.
+    /// A bare "Exception of type BoundaryRepresentation.Exception was thrown" names neither, and
+    /// six candidate causes cost six deploys to tell apart. Per-step attribution costs one.
+    /// </summary>
+    private static T Step<T>(string what, Func<T> f)
+    {
+        try { return f(); }
+        catch (Autodesk.AutoCAD.BoundaryRepresentation.Exception ex)
+        {
+            throw new InvalidOperationException(
+                "Reading the solid's boundary failed at [" + what + "] with " + ex.ErrorStatus + ".", ex);
+        }
+    }
+
+    /// <summary>
+    /// A Brep whose faces and edges know their own SubentityId.
+    ///
+    /// `new Brep(entity)` does NOT give you that: its faces and edges throw MissingSubentity the
+    /// moment you ask for SubentityPath, and since every SOLIDEDIT operation needs exactly that,
+    /// the entity constructor is useless for anything but counting. The path has to be rooted on
+    /// the solid's ObjectId. Measured, not guessed - a step-attributed walk pinned the failure to
+    /// `edge[0].SubentityPath.SubentId` with MissingSubentity while `new Brep(solid)` itself and
+    /// the whole enumeration succeeded, which is why imprint_edges (which only counts) never hit it.
+    /// </summary>
+    private static Brep AddressableBrep(Solid3d solid)
+    {
+        var root = new SubentityId(SubentityType.Null, IntPtr.Zero);
+        var path = new FullSubentityPath(new[] { solid.ObjectId }, root);
+        return Step("new Brep(FullSubentityPath)", () => new Brep(path));
+    }
+
+    private static List<EdgeSlot> EdgeSlots(Solid3d solid)
+    {
+        using var brep = AddressableBrep(solid);
+        var list = new List<EdgeSlot>();
+        int i = 0;
+        foreach (BrepEdge e in Step("brep.Edges", () => brep.Edges))
+        {
+            var idx = i;
+            var c = Step($"edge[{idx}].Curve", () => e.Curve);
+            var iv = Step($"edge[{idx}].Curve.GetInterval", () => c.GetInterval());
+            var sp = Step($"edge[{idx}].Curve.StartPoint", () => c.StartPoint);
+            var ep = Step($"edge[{idx}].Curve.EndPoint", () => c.EndPoint);
+            double len;
+            try { len = c.GetLength(iv.LowerBound, iv.UpperBound, 1e-9); }
+            catch { len = sp.DistanceTo(ep); }
+            var mid = Step($"edge[{idx}].Curve.EvaluatePoint",
+                           () => c.EvaluatePoint((iv.LowerBound + iv.UpperBound) / 2.0));
+            var samples = Step($"edge[{idx}] sampling", () => SampleCurve(c, 17));
+            var sid = Step($"edge[{idx}].SubentityPath.SubentId", () => e.SubentityPath.SubentId);
+            list.Add(new EdgeSlot(i++, sid, sp, ep, mid, len, samples));
+        }
+        return list;
+    }
+
+    private static List<FaceSlot> FaceSlots(Solid3d solid)
+    {
+        using var brep = AddressableBrep(solid);
+        var list = new List<FaceSlot>();
+        int i = 0;
+        foreach (BrepFace f in Step("brep.Faces", () => brep.Faces))
+        {
+            var fi = i;
+            // The normal is computed from three sampled boundary points rather than read off
+            // Face.Surface: a planar face is not guaranteed to come back as a Plane, and a cast
+            // that sometimes works is worse than arithmetic that always does.
+            var pts = new List<Point3d>();
+            int edges = 0;
+            foreach (var loop in Step($"face[{fi}].Loops", () => f.Loops))
+                foreach (var le in Step($"face[{fi}] loop.Edges", () => loop.Edges))
+                {
+                    edges++;
+                    pts.AddRange(Step($"face[{fi}] loop edge sampling", () => SampleCurve(le.Curve, 5)));
+                }
+
+            var centroid = Point3d.Origin;
+            if (pts.Count > 0)
+            {
+                double x = 0, y = 0, z = 0;
+                foreach (var p in pts) { x += p.X; y += p.Y; z += p.Z; }
+                centroid = new Point3d(x / pts.Count, y / pts.Count, z / pts.Count);
+            }
+
+            var normal = Vector3d.ZAxis;
+            var known = false;
+            for (int a = 0; a < pts.Count && !known; a++)
+                for (int b = a + 1; b < pts.Count && !known; b++)
+                    for (int c = b + 1; c < pts.Count && !known; c++)
+                    {
+                        var n = (pts[b] - pts[a]).CrossProduct(pts[c] - pts[a]);
+                        if (n.Length > 1e-6) { normal = n.GetNormal(); known = true; }
+                    }
+
+            var fsid = Step($"face[{fi}].SubentityPath.SubentId", () => f.SubentityPath.SubentId);
+            list.Add(new FaceSlot(i++, fsid, centroid, normal, known, edges));
+        }
+        return list;
+    }
+
+    private static double DistanceToEdge(in EdgeSlot e, Point3d p)
+    {
+        var best = double.MaxValue;
+        foreach (var s in e.Samples) best = Math.Min(best, s.DistanceTo(p));
+        return best;
+    }
+
+    private static List<EdgeSlot> PickEdges(List<EdgeSlot> all, IReadOnlyList<int>? indexes,
+                                            IReadOnlyList<Point3dDto>? nearPoints)
+    {
+        var picked = new List<EdgeSlot>();
+        if (indexes is not null)
+            foreach (var ix in indexes)
+            {
+                if (ix < 0 || ix >= all.Count)
+                    throw new ArgumentException(
+                        "Edge index " + ix + " is out of range: this solid has " + all.Count +
+                        " edges, numbered 0 to " + (all.Count - 1) +
+                        ". Call list_solid_edges to see them with their positions.");
+                picked.Add(all[ix]);
+            }
+
+        if (nearPoints is not null)
+            foreach (var dto in nearPoints)
+            {
+                var p = AcadEnv.ToPoint3d(dto);
+                var ordered = all.OrderBy(e => DistanceToEdge(e, p)).ToList();
+                var d0 = DistanceToEdge(ordered[0], p);
+                // A point equidistant from two edges names neither of them. Snapping silently to
+                // whichever sorted first is how a caller ends up rounding the wrong corner.
+                if (ordered.Count > 1 && Math.Abs(DistanceToEdge(ordered[1], p) - d0) < 1e-9)
+                    throw new ArgumentException(
+                        "The point " + Fmt3(p) + " is the same distance (" + d0 + ") from edge " +
+                        ordered[0].Index + " and edge " + ordered[1].Index + ", so it names " +
+                        "neither. Move it towards the middle of the edge you mean, or give " +
+                        "edgeIndexes instead.");
+                picked.Add(ordered[0]);
+            }
+
+        if (picked.Count == 0)
+            throw new ArgumentException(
+                "Name the edges to work on, either as edgeIndexes from list_solid_edges or as " +
+                "nearPoints, each of which snaps to the edge closest to it.");
+
+        var seen = new HashSet<int>();
+        var unique = new List<EdgeSlot>();
+        foreach (var e in picked) if (seen.Add(e.Index)) unique.Add(e);
+        return unique;
+    }
+
+    private static object Describe(in EdgeSlot e) => new
+    {
+        index = e.Index,
+        start = AcadEnv.FromPoint3d(e.Start),
+        end = AcadEnv.FromPoint3d(e.End),
+        midpoint = AcadEnv.FromPoint3d(e.Mid),
+        length = e.Length,
+    };
+
+    /// <summary>
+    /// The largest radius (or chamfer distance) these edges take without destroying a face,
+    /// found by bisection on THROWAWAY CLONES.
+    ///
+    /// This exists because AutoCAD does not refuse an oversized fillet. Asked for radius 300 on a
+    /// 100 face it rounds happily, swallows a whole face, and returns success - measured, on a
+    /// pristine cube: six faces went to five and the volume dropped by a third. A tool that only
+    /// said "too large, try smaller" would leave the caller guessing at a number the geometry
+    /// already determines, so this searches for it.
+    ///
+    /// The clones are appended inside the caller's transaction and the caller then THROWS, which
+    /// skips tr.Commit() and aborts everything - the clones never existed and the real solid is
+    /// untouched. That rollback is asserted in the verification, not assumed.
+    /// </summary>
+    private static double? LargestSafeSize(
+        Database db, Transaction tr, Solid3d original, IReadOnlyList<int> edgeIndexes,
+        double requested, Func<Solid3d, SubentityId[], double, bool> apply)
+    {
+        var ms = (BlockTableRecord)tr.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
+        var reference = EdgeSlots(original);
+
+        bool Fits(double size)
+        {
+            Solid3d? clone = null;
+            try
+            {
+                clone = (Solid3d)original.Clone();
+                ms.AppendEntity(clone);
+                tr.AddNewlyCreatedDBObject(clone, true);
+
+                var slots = EdgeSlots(clone);
+                // The index -> edge mapping on the clone must be the SAME mapping, or the search
+                // is measuring a different edge and its answer is worse than no answer.
+                if (slots.Count != reference.Count) return false;
+                foreach (var ix in edgeIndexes)
+                    if (slots[ix].Mid.DistanceTo(reference[ix].Mid) > 1e-9) return false;
+
+                var (f0, _) = Topology(clone);
+                if (!apply(clone, edgeIndexes.Select(ix => slots[ix].Id).ToArray(), size)) return false;
+                var (f1, _) = Topology(clone);
+                return f1 >= f0;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (clone is not null && !clone.IsErased) clone.Erase();
+            }
+        }
+
+        if (!Fits(requested * 1e-4)) return null;      // nothing works; no number worth reporting
+
+        double lo = requested * 1e-4, hi = requested;
+        for (int k = 0; k < 14 && hi - lo > requested * 1e-4; k++)
+        {
+            var mid = (lo + hi) / 2.0;
+            if (Fits(mid)) lo = mid; else hi = mid;
+        }
+        return lo;
+    }
+
+    private static string TooLarge(string what, double requested, double? largest, int facesBefore,
+                                   int facesAfter, string allowFlag)
+    {
+        var limit = largest is null
+            ? "No size was found that leaves the faces intact, so this edge may not take " + what +
+              " at all."
+            : "The largest that leaves every face standing is about " + Math.Round(largest.Value, 4) +
+              ", found by bisection on throwaway copies of this solid.";
+        return "Refused: " + what + " " + requested + " is large enough to DESTROY faces - the " +
+               "solid would go from " + facesBefore + " faces down to " + facesAfter + ". " + limit +
+               " AutoCAD itself accepts this without complaint and returns a success, which is " +
+               "why it is caught here. The solid has been left exactly as it was. Pass " +
+               allowFlag + " if reshaping the part this way is genuinely what you want.";
+    }
+
+    private static Solid3d RequireSolid(Database db, Transaction tr, string? handle, string argName)
+    {
+        if (string.IsNullOrWhiteSpace(handle))
+            throw new ArgumentException(argName + " is required.");
+        var ent = (Entity)tr.GetObject(AcadEnv.ResolveHandle(db, handle!), OpenMode.ForWrite);
+        if (ent is not Solid3d s)
+            throw new ArgumentException(
+                "Entity " + handle + " is a " + ent.GetRXClass().Name + ", not a 3D solid.");
+        return s;
+    }
+
+    private static Task<ToolDispatchResult> ListSolidEdges(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.list_solid_edges", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SolidQueryArgsDto>(args);
+            var slots = EdgeSlots(RequireSolid(db, tr, a.Handle, "handle"));
+            return Wrap(new
+            {
+                handle = a.Handle,
+                count = slots.Count,
+                edges = slots.Select(e => Describe(e)).ToArray(),
+                note = "Indexes address edges for fillet_edge and chamfer_edge. They are stable " +
+                       "only while the solid is unedited - filleting one edge rebuilds the " +
+                       "boundary and renumbers the rest, so list again after every edit. Each " +
+                       "edge comes with its endpoints and midpoint so the index can be checked " +
+                       "against the geometry rather than trusted.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ListSolidFaces(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.list_solid_faces", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<SolidQueryArgsDto>(args);
+            var slots = FaceSlots(RequireSolid(db, tr, a.Handle, "handle"));
+            return Wrap(new
+            {
+                handle = a.Handle,
+                count = slots.Count,
+                faces = slots.Select(f => new
+                {
+                    index = f.Index,
+                    centroid = AcadEnv.FromPoint3d(f.Centroid),
+                    normal = f.NormalKnown ? AcadEnv.FromPoint3d(new Point3d(f.Normal.X, f.Normal.Y, f.Normal.Z)) : null,
+                    edgeCount = f.EdgeCount,
+                }).ToArray(),
+                note = "The centroid is the average of points sampled round the face boundary, " +
+                       "so on a face with a hole in it the centroid can fall inside the hole - " +
+                       "it LOCATES the face, it is not a point guaranteed to lie on it. The " +
+                       "normal comes from three sampled boundary points and is omitted when the " +
+                       "boundary is degenerate. Indexes are stable only while the solid is " +
+                       "unedited.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> FilletEdge(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.fillet_edge", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<EdgeOpArgsDto>(args);
+            if (a.Radius is null || a.Radius <= 0)
+                throw new ArgumentException("radius is required and must be greater than 0.");
+            var solid = RequireSolid(db, tr, a.Handle, "handle");
+
+            var picked = PickEdges(EdgeSlots(solid), a.EdgeIndexes, a.NearPoints);
+            var v0 = solid.MassProperties.Volume;
+            var (f0, _) = Topology(solid);
+
+            var radii = new DoubleCollection();
+            var startSetback = new DoubleCollection();
+            var endSetback = new DoubleCollection();
+            foreach (var _ in picked)
+            {
+                radii.Add(a.Radius.Value);
+                startSetback.Add(0.0);
+                endSetback.Add(0.0);
+            }
+
+            try
+            {
+                solid.FilletEdges(picked.Select(p => p.Id).ToArray(), radii, startSetback, endSetback);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                var shortest = picked.OrderBy(p => p.Length).First();
+                throw new ArgumentException(
+                    "AutoCAD refused the fillet with " + ex.ErrorStatus + ". The usual cause is a " +
+                    "radius too large for the geometry: the shortest edge selected is " +
+                    shortest.Length + " long and the radius asked for is " + a.Radius.Value +
+                    ". A fillet needs room on BOTH faces meeting at the edge, so the limit is " +
+                    "usually well under the edge length.");
+            }
+
+            var v1 = solid.MassProperties.Volume;
+            var (f1, _) = Topology(solid);
+
+            // A fillet that did nothing leaves a perfectly good solid and a success code behind
+            // it. Rounding an edge REPLACES that edge with a curved face, so the face count is
+            // what says otherwise.
+            if (f1 == f0 && Math.Abs(v1 - v0) <= Math.Abs(v0) * 1e-12)
+                throw new InvalidOperationException(
+                    "Nothing was rounded: the solid still has " + f0 + " faces and the same " +
+                    "volume, " + v0 + ". The edges named were accepted but produced no fillet.");
+
+            // A fillet big enough to swallow a face is almost never what was meant, and AutoCAD
+            // will not say so. Throwing here aborts the transaction, which puts the solid back.
+            if (f1 < f0 && a.AllowFaceLoss != true)
+            {
+                var largest = LargestSafeSize(db, tr, solid, picked.Select(p => p.Index).ToList(),
+                    a.Radius.Value, (c, ids, size) =>
+                    {
+                        var rr = new DoubleCollection();
+                        var s1 = new DoubleCollection();
+                        var s2 = new DoubleCollection();
+                        foreach (var _ in ids) { rr.Add(size); s1.Add(0.0); s2.Add(0.0); }
+                        c.FilletEdges(ids, rr, s1, s2);
+                        return true;
+                    });
+                throw new ArgumentException(
+                    TooLarge("a fillet radius of", a.Radius.Value, largest, f0, f1, "allowFaceLoss: true"));
+            }
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                edgesFilleted = picked.Count,
+                edges = picked.Select(e => Describe(e)).ToArray(),
+                radius = a.Radius.Value,
+                facesBefore = f0,
+                faces = f1,
+                volumeBefore = v0,
+                volume = v1,
+                volumeRemoved = v0 - v1,
+                facesConsumed = f1 < f0,
+                note = "Rounding a convex edge REMOVES material - " + (v0 - v1) + " of it here - " +
+                       "and replaces the edge with a curved face, which is why the face count " +
+                       "went from " + f0 + " to " + f1 + ". On a straight edge of length L the " +
+                       "amount removed is exactly L*r*r*(1 - pi/4), but only while the fillet " +
+                       "FITS INSIDE both faces meeting at the edge; past that the arc runs off " +
+                       "them and the shape is no longer that prism. " +
+                       (f1 < f0
+                           ? "WARNING: allowFaceLoss was set and this fillet CONSUMED faces - the " +
+                             "solid went from " + f0 + " faces down to " + f1 + ". Without that " +
+                             "flag it would have been refused, because AutoCAD accepts an " +
+                             "oversized radius without complaint and a mistyped one reshapes the " +
+                             "part while still returning success. "
+                           : "") +
+                       "The edge indexes have now CHANGED; call list_solid_edges again before " +
+                       "the next edit.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> ChamferEdge(JsonObject args, CancellationToken ct) =>
+        Run("acad.geometry3d.chamfer_edge", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<EdgeOpArgsDto>(args);
+            var baseDist = a.Distance ?? a.Radius;
+            if (baseDist is null || baseDist <= 0)
+                throw new ArgumentException("distance is required and must be greater than 0.");
+            var otherDist = a.Distance2 ?? baseDist.Value;
+            if (otherDist <= 0) throw new ArgumentException("distance2 must be greater than 0.");
+
+            var solid = RequireSolid(db, tr, a.Handle, "handle");
+            var picked = PickEdges(EdgeSlots(solid), a.EdgeIndexes, a.NearPoints);
+
+            // ChamferEdges wants a BASE FACE as well as the edges: the two distances are measured
+            // from the edge across each of the two faces meeting there, and the base face says
+            // which distance goes where. With equal distances that cannot matter, which is why it
+            // is optional; with unequal ones it decides which way the bevel leans, and guessing
+            // it would silently produce a mirror image of what was asked for.
+            var faces = FaceSlots(solid);
+            FaceSlot chosen;
+            if (a.BaseFaceIndex is not null)
+            {
+                var ix = a.BaseFaceIndex.Value;
+                if (ix < 0 || ix >= faces.Count)
+                    throw new ArgumentException(
+                        "baseFaceIndex " + ix + " is out of range: this solid has " + faces.Count +
+                        " faces, numbered 0 to " + (faces.Count - 1) +
+                        ". Call list_solid_faces to see them.");
+                chosen = faces[ix];
+            }
+            else
+            {
+                if (Math.Abs(baseDist.Value - otherDist) > 1e-12)
+                    throw new ArgumentException(
+                        "distance and distance2 differ (" + baseDist.Value + " vs " + otherDist +
+                        "), so which face the first distance is measured across decides which way " +
+                        "the bevel leans. Give baseFaceIndex explicitly - list_solid_faces reports " +
+                        "every face with its centroid and normal.");
+                var target = picked[0].Mid;
+                chosen = faces.OrderBy(f => f.Centroid.DistanceTo(target)).First();
+            }
+
+            var v0 = solid.MassProperties.Volume;
+            var (f0, _) = Topology(solid);
+
+            try
+            {
+                solid.ChamferEdges(picked.Select(p => p.Id).ToArray(), chosen.Id,
+                                   baseDist.Value, otherDist);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                var shortest = picked.OrderBy(p => p.Length).First();
+                throw new ArgumentException(
+                    "AutoCAD refused the chamfer with " + ex.ErrorStatus + ". The usual cause is a " +
+                    "distance too large for the geometry: the shortest edge selected is " +
+                    shortest.Length + " long and the distances asked for are " + baseDist.Value +
+                    " and " + otherDist + ". The bevel has to fit on both faces meeting at the " +
+                    "edge without running off the far side of either.");
+            }
+
+            var v1 = solid.MassProperties.Volume;
+            var (f1, _) = Topology(solid);
+
+            if (f1 == f0 && Math.Abs(v1 - v0) <= Math.Abs(v0) * 1e-12)
+                throw new InvalidOperationException(
+                    "Nothing was bevelled: the solid still has " + f0 + " faces and the same " +
+                    "volume, " + v0 + ".");
+
+            if (f1 < f0 && a.AllowFaceLoss != true)
+            {
+                var ratio = otherDist / baseDist.Value;
+                var largest = LargestSafeSize(db, tr, solid, picked.Select(p => p.Index).ToList(),
+                    baseDist.Value, (c, ids, size) =>
+                    {
+                        // The search scales BOTH distances together, so an asymmetric bevel keeps
+                        // its shape while shrinking - a number found by moving only one of them
+                        // would describe a different chamfer from the one asked for.
+                        var cf = FaceSlots(c);
+                        if (chosen.Index >= cf.Count) return false;
+                        c.ChamferEdges(ids, cf[chosen.Index].Id, size, size * ratio);
+                        return true;
+                    });
+                throw new ArgumentException(
+                    TooLarge("a chamfer distance of", baseDist.Value, largest, f0, f1,
+                             "allowFaceLoss: true"));
+            }
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                edgesChamfered = picked.Count,
+                edges = picked.Select(e => Describe(e)).ToArray(),
+                distance = baseDist.Value,
+                distance2 = otherDist,
+                baseFaceIndex = chosen.Index,
+                baseFaceCentroid = AcadEnv.FromPoint3d(chosen.Centroid),
+                facesBefore = f0,
+                faces = f1,
+                volumeBefore = v0,
+                volume = v1,
+                volumeRemoved = v0 - v1,
+                facesConsumed = f1 < f0,
+                note = "A chamfer cuts a flat bevel where a fillet rounds. On a straight edge of " +
+                       "length L with equal distances d the amount removed is exactly L*d*d/2 - " +
+                       (v0 - v1) + " here - which is MORE than a fillet of radius d takes, " +
+                       "because the fillet keeps the material inside the arc. The edge indexes " +
+                       "have now CHANGED; call list_solid_edges again before the next edit.",
             });
         });
 }

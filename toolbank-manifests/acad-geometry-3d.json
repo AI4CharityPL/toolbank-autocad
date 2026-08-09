@@ -17,19 +17,24 @@
     "box",
     "cad",
     "centroid",
+    "chamfer",
     "cone",
     "curve",
     "curves",
     "cylinder",
     "draw",
     "dwg",
+    "edge",
     "edges",
     "extrude",
+    "faces",
+    "fillet",
     "geometry-3d",
     "get",
     "helix",
     "imprint",
     "interfere",
+    "list",
     "loft",
     "mass",
     "planar",
@@ -48,9 +53,13 @@
   ],
   "intent_examples": [
     "axis aligned bbox",
+    "bevel solid edge",
+    "bevel the edge of a 3d box",
     "bounding box 3d",
     "box from two corners",
     "centroid bryly",
+    "chamfer an edge of a solid",
+    "chamferedge",
     "check clash between solids",
     "compute extents 3d",
     "compute mass properties",
@@ -79,9 +88,15 @@
     "draw sphere",
     "draw torus",
     "draw wedge",
+    "enumerate solid edges",
+    "enumerate solid faces",
     "extrude polyline",
     "extrude with taper",
     "extruduj krzywa",
+    "faza na krawedzi 3d",
+    "filet na krawedzi 3d",
+    "fillet an edge of a solid",
+    "filletedge",
     "find overlap volume",
     "frustum cone",
     "frustum pyramid n sides",
@@ -92,12 +107,18 @@
     "get total surface area",
     "get volume of solid",
     "gwint sciezka",
+    "ile scian ma bryla",
     "ile wynosi objetosc",
     "imprint curve onto solid",
     "imprint edges on a face",
     "interfere solids",
+    "jakie krawedzie ma ta bryla",
     "kolizja miedzy bry\u0142ami",
     "koordynacja miedzybranzowa kolizje",
+    "ktora krawedz zaokraglic",
+    "ktora sciana jest gorna",
+    "list edges of a solid",
+    "list faces of a solid",
     "loft between cross sections",
     "loft solid",
     "make a pipe from a profile",
@@ -132,6 +153,12 @@
     "revolve curve around axis",
     "revolve polilinie",
     "right angle prism",
+    "round solid edge",
+    "round the edges of a 3d box",
+    "sciecie naroza bryly",
+    "sfazuj krawedz bryly",
+    "show solid edges with indexes",
+    "show solid faces with normals",
     "slice a solid with a plane",
     "sphere by center and radius",
     "spin curve to make solid",
@@ -153,14 +180,37 @@
     "sweep a profile along a path",
     "sweep solid",
     "where is centroid",
+    "which edge do I fillet",
+    "which face is the top one",
     "wlasciwosci masowe",
     "wyciagniecie przez przekroje",
     "wyciagnij polilinie",
     "wymiary bryly",
+    "wypisz krawedzie bryly",
+    "wypisz sciany bryly",
+    "zaokraglenie naroza bryly",
+    "zaokraglij krawedz bryly",
     "zaznacz obrys na scianie bryly",
     "zrob rure wzdluz linii"
   ],
   "tools_summary": [
+    {
+      "name": "chamfer_edge",
+      "description": "Cut a flat bevel along one or more edges of a 3D solid - AutoCAD\u0027s CHAMFEREDGE. Name the edges as edgeIndexes from list_solid_edges or as nearPoints. The two distances are measured from the edge across each of the two faces meeting there; with equal distances the bevel is symmetric and no more is needed, but if they differ you must give baseFaceIndex, because which face the first distance belongs to decides which way the bevel leans - guessing it would silently produce the mirror image. On a straight edge of length L with equal distances d the amount removed is exactly L*d*d/2, which is more than a fillet of radius d takes. A distance large enough to destroy a face is refused the same way fillet_edge refuses one, with the largest distance that fits reported back and allowFaceLoss to override. Use fillet_edge to round instead of bevel.",
+      "tags": [
+        "chamfer",
+        "edge"
+      ],
+      "intent": [
+        "sfazuj krawedz bryly",
+        "faza na krawedzi 3d",
+        "chamfer an edge of a solid",
+        "bevel the edge of a 3d box",
+        "sciecie naroza bryly",
+        "chamferedge",
+        "bevel solid edge"
+      ]
+    },
     {
       "name": "draw_box",
       "description": "Create a 3D solid box defined by two opposite corner points (axis-aligned in WCS).",
@@ -314,6 +364,23 @@
       ]
     },
     {
+      "name": "fillet_edge",
+      "description": "Round one or more edges of a 3D solid to a given radius - AutoCAD\u0027s FILLETEDGE. Name the edges either as edgeIndexes from list_solid_edges or as nearPoints, each snapping to the edge closest to it; a point equidistant from two edges is refused rather than snapped to whichever sorted first. Rounding a convex edge removes material and replaces the edge with a curved face, and the amount removed on a straight edge of length L is exactly L*r*r*(1-pi/4), so the result is checkable on paper. A radius large enough to DESTROY a face is refused and the solid is left exactly as it was: AutoCAD itself accepts an oversized radius without complaint - asked for 300 on a 100 face it swallows a whole face and returns success - so the refusal reports the largest radius that does fit, found by bisection. Pass allowFaceLoss to reshape the part deliberately. The tool also refuses to report success when the face count and the volume both came back unchanged. This is the 3D operation; geometry_2d.fillet_corner is the flat one.",
+      "tags": [
+        "fillet",
+        "edge"
+      ],
+      "intent": [
+        "zaokraglij krawedz bryly",
+        "filet na krawedzi 3d",
+        "fillet an edge of a solid",
+        "round the edges of a 3d box",
+        "zaokraglenie naroza bryly",
+        "filletedge",
+        "round solid edge"
+      ]
+    },
+    {
       "name": "get_3d_bounding_box",
       "description": "Return the axis-aligned 3D bounding box of an entity (min and max points).",
       "tags": [
@@ -427,6 +494,42 @@
       ]
     },
     {
+      "name": "list_solid_edges",
+      "description": "List every edge of a 3D solid with an INDEX, its endpoints, its midpoint and its length. Call this before fillet_edge or chamfer_edge: those need to be told which edges to work on, and an edge cannot be named any other way - AutoCAD identifies it by an internal handle that does not survive a round trip. The geometry comes back with each index so the choice can be checked against the drawing rather than trusted. Indexes are stable only while the solid is unedited: rounding one edge rebuilds the boundary and renumbers the rest, so list again after every edit.",
+      "tags": [
+        "list",
+        "solid",
+        "edges"
+      ],
+      "intent": [
+        "wypisz krawedzie bryly",
+        "jakie krawedzie ma ta bryla",
+        "list edges of a solid",
+        "show solid edges with indexes",
+        "ktora krawedz zaokraglic",
+        "which edge do I fillet",
+        "enumerate solid edges"
+      ]
+    },
+    {
+      "name": "list_solid_faces",
+      "description": "List every face of a 3D solid with an INDEX, the centroid of its boundary, its outward normal and how many edges it has. This is how a face is named for chamfer_edge\u0027s baseFaceIndex, and it is the readable answer to \u0027what does this solid consist of\u0027. The centroid LOCATES a face - on a face with a hole in it the centroid can fall inside the hole - so use the normal to tell top from bottom rather than the position alone. Indexes are stable only while the solid is unedited.",
+      "tags": [
+        "list",
+        "solid",
+        "faces"
+      ],
+      "intent": [
+        "wypisz sciany bryly",
+        "ile scian ma bryla",
+        "list faces of a solid",
+        "show solid faces with normals",
+        "ktora sciana jest gorna",
+        "which face is the top one",
+        "enumerate solid faces"
+      ]
+    },
+    {
       "name": "loft_curves",
       "description": "Run a solid skin between two or more cross sections - AutoCAD\u0027s LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section\u0027s area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less.",
       "tags": [
@@ -492,7 +595,7 @@
   ],
   "metadata": {
     "category": "geometry-3d",
-    "tool_count_target": 21,
+    "tool_count_target": 25,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -506,6 +609,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "phase2_3d_modify",
-    "last_regenerated_utc": "2026-08-08T18:46:54.6682325Z"
+    "last_regenerated_utc": "2026-08-09T11:22:30.1253641Z"
   }
 }

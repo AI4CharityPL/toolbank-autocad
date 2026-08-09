@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 553 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 557 tools total.
 
 ## Categories
 
@@ -17,7 +17,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
 - [acad-geometry-2d](#acad-geometry-2d) (60 tools)
-- [acad-geometry-3d](#acad-geometry-3d) (21 tools)
+- [acad-geometry-3d](#acad-geometry-3d) (25 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
@@ -354,6 +354,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `chamfer_edge` | Cut a flat bevel along one or more edges of a 3D solid - AutoCAD's CHAMFEREDGE. Name the edges as edgeIndexes from list_solid_edges or as nearPoints. The two distances are measured from the edge across each of the two faces meeting there; with equal distances the bevel is symmetric and no more is needed, but if they differ you must give baseFaceIndex, because which face the first distance belongs to decides which way the bevel leans - guessing it would silently produce the mirror image. On a straight edge of length L with equal distances d the amount removed is exactly L*d*d/2, which is more than a fillet of radius d takes. A distance large enough to destroy a face is refused the same way fillet_edge refuses one, with the largest distance that fits reported back and allowFaceLoss to override. Use fillet_edge to round instead of bevel. |
 | `draw_box` | Create a 3D solid box defined by two opposite corner points (axis-aligned in WCS). |
 | `draw_cone` | Create a 3D solid cone or frustum (set topRadius>0 for frustum). |
 | `draw_cylinder` | Create a 3D solid cylinder by base center, radius, and height (Z+). |
@@ -364,6 +365,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `draw_torus` | Create a 3D solid torus by center, major (tube path) radius and minor (tube) radius. |
 | `draw_wedge` | Create a 3D solid wedge (right-angle prism) defined by two opposite corners. |
 | `extrude_curve` | Extrude a closed planar curve (Polyline / Region / Circle) into a 3D solid by given height with optional taper angle in degrees. |
+| `fillet_edge` | Round one or more edges of a 3D solid to a given radius - AutoCAD's FILLETEDGE. Name the edges either as edgeIndexes from list_solid_edges or as nearPoints, each snapping to the edge closest to it; a point equidistant from two edges is refused rather than snapped to whichever sorted first. Rounding a convex edge removes material and replaces the edge with a curved face, and the amount removed on a straight edge of length L is exactly L*r*r*(1-pi/4), so the result is checkable on paper. A radius large enough to DESTROY a face is refused and the solid is left exactly as it was: AutoCAD itself accepts an oversized radius without complaint - asked for 300 on a 100 face it swallows a whole face and returns success - so the refusal reports the largest radius that does fit, found by bisection. Pass allowFaceLoss to reshape the part deliberately. The tool also refuses to report success when the face count and the volume both came back unchanged. This is the 3D operation; geometry_2d.fillet_corner is the flat one. |
 | `get_3d_bounding_box` | Return the axis-aligned 3D bounding box of an entity (min and max points). |
 | `get_3d_centroid` | Return the centroid (center of mass) of a 3D solid in WCS coordinates. |
 | `get_mass_properties` | Return full mass properties of a 3D solid: volume, surface area, centroid, principal moments and radii of gyration. |
@@ -371,6 +373,8 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `get_volume` | Return the volume of a 3D solid (single value, current units). |
 | `imprint_edges` | Press a curve that LIES ON a face of a 3D solid into that face, splitting it into separate faces - AutoCAD's IMPRINT. This adds edges, not material: it is how you mark out a bolt pattern, a recess outline or a weld line before pushing or pulling it, and how you get a face you can select on its own. The curve has to sit on a face; one floating above it or crossing into the interior has nothing to be pressed into and is refused. The face and edge counts are reported before and after, and so is the volume, which must not change - a tool that cut instead of imprinting would also report more faces, and only the volume would give it away. Use boolean_ops.subtract_solids to actually remove material. |
 | `interfere_solids` | Find where two 3D solids clash, and hand the overlap back as a THIRD solid - AutoCAD's INTERFERE. Both originals are left untouched, which is the difference from boolean_ops.intersect_solids: that one replaces the target with the common volume, so it answers the question by destroying the thing you asked about. This is the services-coordination check. Pass createSolid false to get only the yes/no and the volumes. Both solids are measured before and after and any change to either is reported as a failure. |
+| `list_solid_edges` | List every edge of a 3D solid with an INDEX, its endpoints, its midpoint and its length. Call this before fillet_edge or chamfer_edge: those need to be told which edges to work on, and an edge cannot be named any other way - AutoCAD identifies it by an internal handle that does not survive a round trip. The geometry comes back with each index so the choice can be checked against the drawing rather than trusted. Indexes are stable only while the solid is unedited: rounding one edge rebuilds the boundary and renumbers the rest, so list again after every edit. |
+| `list_solid_faces` | List every face of a 3D solid with an INDEX, the centroid of its boundary, its outward normal and how many edges it has. This is how a face is named for chamfer_edge's baseFaceIndex, and it is the readable answer to 'what does this solid consist of'. The centroid LOCATES a face - on a face with a hole in it the centroid can fall inside the hole - so use the normal to tell top from bottom rather than the position alone. Indexes are stable only while the solid is unedited. |
 | `loft_curves` | Run a solid skin between two or more cross sections - AutoCAD's LOFT. Optionally follow guide curves OR a path, which are alternatives and cannot both be given. ruled=true joins the sections with straight sides instead of a smooth skin; closed=true runs the skin back from the last section to the first. The result lists each section's area, so the volume can be checked against them: two equal sections a distance apart make a prism of area times distance, and a taper makes less. |
 | `revolve_curve` | Revolve a closed planar curve around an arbitrary axis (axisStart, axisEnd) by angle in degrees (default 360). |
 | `slice_solid` | Cut a 3D solid with a plane - AutoCAD's SLICE. Give a point the plane passes through and the direction it faces; the half the normal points TOWARDS is the one kept, and keepBoth returns the other as a second solid instead of discarding it. Cutting conserves volume, so with keepBoth the two halves are checked to add back up to what went in and a cut that lost or duplicated material is reported as a failure - it would otherwise leave two perfectly good-looking solids. |

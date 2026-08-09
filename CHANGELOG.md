@@ -37,6 +37,62 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.1, fourth tranche — the face/edge family, and the addressing scheme it was blocked
+  on.** `acad-geometry-3d` 21 → 25, bank 553 → 557: `list_solid_edges`, `list_solid_faces`,
+  `fillet_edge`, `chamfer_edge`. Verified live **65/65**, and confirmed on an exported PNG.
+
+  The roadmap listed this family as needing "a `SubentityId[]` addressing scheme first", and that
+  is the real work here. Every SOLIDEDIT operation in the managed API — `FilletEdges`,
+  `ChamferEdges`, `ExtrudeFaces`, `TaperFaces`, `OffsetFaces`, `RemoveFaces`, `TransformFaces`,
+  `ShellBody` — takes a `SubentityId[]`, and a `SubentityId` is an opaque handle into the
+  boundary representation that a caller on the other end of a JSON pipe cannot spell and that
+  would not survive the round trip. So the scheme is: enumerate the Brep, hand back an **index
+  plus the geometry of every slot**, and take back either that index or a point in space to snap
+  to. Reporting the geometry is what makes the choice checkable — an index alone is a number the
+  caller has to trust, and one pointing at the wrong edge is still an integer in range. The first
+  thing the verification does is prove the twelve midpoints reported for a 0..100 cube *are* the
+  twelve midpoints of a 0..100 cube, and that the six normals are the three axis directions.
+
+  A point equidistant from two edges is **refused**, not snapped to whichever sorted first.
+
+  Both operations are checked against arithmetic: filleting a straight edge of length L with
+  radius r removes exactly `L·r²·(1 − π/4)`, so 100 and 10 must leave 997853.9816; chamfering
+  with equal distances d removes `L·d²/2` = 5000. Doubling the radius must remove four times as
+  much, which is the control showing the radius drives the cut rather than merely being accepted.
+
+  **Three defects and one API trap, all found by measuring:**
+
+  - `new Brep(entity)` gives faces and edges that throw `MissingSubentity` the moment you ask for
+    `SubentityPath`. Since that is the one thing the whole family needs, the entity constructor is
+    useless for anything but counting — which is why `imprint_edges` never hit it. The Brep must
+    be built from a `FullSubentityPath` rooted on the solid's `ObjectId`. Found in **one** deploy
+    by wrapping each step of the Brep walk with its own label and rethrowing with the step name
+    and the `ErrorStatus`; six candidate causes would otherwise have cost six deploys.
+  - **An oversized fillet destroys faces and AutoCAD returns success.** Measured on a pristine
+    cube: radius 300 on a 100 face was accepted, swallowed a whole face — six down to five — and
+    reported a volume a third smaller with no complaint. `fillet_edge` and `chamfer_edge` now
+    refuse when the face count drops, and because the refusal throws, the transaction is aborted
+    rather than committed and the solid is left exactly as it was. That rollback is **asserted**,
+    not assumed: after the refusal the verification re-measures 1000000 and twelve edges.
+  - The refusal reports **the largest size that does fit**, found by bisection on throwaway
+    clones appended inside the same transaction that is then aborted, so they never existed. The
+    search checks that the index→edge mapping on a clone is the same mapping before trusting it,
+    and the verification then fillets at the reported maximum to prove the number is not a
+    fiction. `allowFaceLoss: true` remains for the deliberate case, and still flags what it did.
+  - The identity `L·r²·(1 − π/4)` has a **domain**: it holds only while the fillet fits inside
+    both faces meeting at the edge. At r=150 on a 100 face the arc runs off them and the shape is
+    no longer that prism. Checked on both sides of that boundary.
+
+  Two of my own expectations were wrong before the tool was: r=60 on a 100 face fits perfectly
+  well, and r=300 is not refused by AutoCAD at all. Both were written as "too large is refused"
+  and both would have condemned a working tool.
+
+  Also corrected in the roadmap: **`shell_solid` is buildable after all.** It was struck on a
+  probe that asked for `ShellSolid`; the method is `ShellBody(SubentityId[], double)`. A struck
+  row is a decision never to revisit something, so a name typo in a probe is expensive in a way a
+  compile error is not. The same sweep confirmed `SubDMesh.CreateBox` genuinely does not exist,
+  which lands on phase 4.3.
+
 - **Phase 4.1, third tranche — the third array, and imprinting.** `acad-modify` 18 → 19 and
   `acad-geometry-3d` 20 → 21, bank 551 → 553: `array_path`, `imprint_edges`. Verified live
   **60/60**, and confirmed on an exported PNG.

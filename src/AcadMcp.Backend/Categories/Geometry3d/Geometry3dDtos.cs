@@ -1,4 +1,4 @@
-// Typed DTOs for the acad-geometry-3d category. Mirrors plugin-side wire shape.
+﻿// Typed DTOs for the acad-geometry-3d category. Mirrors plugin-side wire shape.
 // See rule 19-tool-implementation-pattern.md.
 
 using System.Text.Json.Serialization;
@@ -203,3 +203,72 @@ public sealed record ImprintResult(
     [property: JsonPropertyName("volume")]       double Volume,
     [property: JsonPropertyName("sourceErased")] bool SourceErased,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── roadmap 4.1: the face/edge family ───────────
+
+public sealed record SolidQueryArgs(
+    [property: JsonPropertyName("handle")] string Handle);
+
+public sealed record SolidEdgeInfo(
+    [property: JsonPropertyName("index")]    int Index,
+    [property: JsonPropertyName("start")]    Point3dDto Start,
+    [property: JsonPropertyName("end")]      Point3dDto End,
+    [property: JsonPropertyName("midpoint")] Point3dDto Midpoint,
+    [property: JsonPropertyName("length")]   double Length);
+
+public sealed record SolidEdgesResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("count")]  int Count,
+    [property: JsonPropertyName("edges")]  IReadOnlyList<SolidEdgeInfo> Edges,
+    [property: JsonPropertyName("note")]   string Note);
+
+public sealed record SolidFaceInfo(
+    [property: JsonPropertyName("index")]     int Index,
+    [property: JsonPropertyName("centroid")]  Point3dDto Centroid,
+    [property: JsonPropertyName("normal")]    Point3dDto? Normal,
+    [property: JsonPropertyName("edgeCount")] int EdgeCount);
+
+public sealed record SolidFacesResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("count")]  int Count,
+    [property: JsonPropertyName("faces")]  IReadOnlyList<SolidFaceInfo> Faces,
+    [property: JsonPropertyName("note")]   string Note);
+
+public sealed record EdgeOpArgs(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("edgeIndexes")]   IReadOnlyList<int>? EdgeIndexes = null,
+    [property: JsonPropertyName("nearPoints")]    IReadOnlyList<Point3dDto>? NearPoints = null,
+    [property: JsonPropertyName("radius")]        double? Radius = null,
+    [property: JsonPropertyName("distance")]      double? Distance = null,
+    [property: JsonPropertyName("distance2")]     double? Distance2 = null,
+    [property: JsonPropertyName("baseFaceIndex")] int? BaseFaceIndex = null,
+    [property: JsonPropertyName("allowFaceLoss")] bool? AllowFaceLoss = null);
+
+public sealed record FilletEdgeResult(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("edgesFilleted")] int EdgesFilleted,
+    [property: JsonPropertyName("edges")]         IReadOnlyList<SolidEdgeInfo> Edges,
+    [property: JsonPropertyName("radius")]        double Radius,
+    [property: JsonPropertyName("facesBefore")]   int FacesBefore,
+    [property: JsonPropertyName("faces")]         int Faces,
+    [property: JsonPropertyName("volumeBefore")]  double VolumeBefore,
+    [property: JsonPropertyName("volume")]        double Volume,
+    [property: JsonPropertyName("volumeRemoved")] double VolumeRemoved,
+    [property: JsonPropertyName("facesConsumed")] bool FacesConsumed,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record ChamferEdgeResult(
+    [property: JsonPropertyName("handle")]            string Handle,
+    [property: JsonPropertyName("edgesChamfered")]    int EdgesChamfered,
+    [property: JsonPropertyName("edges")]             IReadOnlyList<SolidEdgeInfo> Edges,
+    [property: JsonPropertyName("distance")]          double Distance,
+    [property: JsonPropertyName("distance2")]         double Distance2,
+    [property: JsonPropertyName("baseFaceIndex")]     int BaseFaceIndex,
+    [property: JsonPropertyName("baseFaceCentroid")]  Point3dDto BaseFaceCentroid,
+    [property: JsonPropertyName("facesBefore")]       int FacesBefore,
+    [property: JsonPropertyName("faces")]             int Faces,
+    [property: JsonPropertyName("volumeBefore")]      double VolumeBefore,
+    [property: JsonPropertyName("volume")]            double Volume,
+    [property: JsonPropertyName("volumeRemoved")]     double VolumeRemoved,
+    [property: JsonPropertyName("facesConsumed")]     bool FacesConsumed,
+    [property: JsonPropertyName("note")]              string Note);

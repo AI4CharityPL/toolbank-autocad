@@ -35,6 +35,12 @@ public class Geometry3dTests
         // the tool reports the volume before and after and refuses to call it an imprint
         // if that changed. A tool that cut instead would also report more faces.
         "imprint_edges",
+
+        // Roadmap 4.1, fourth tranche: the face/edge family. The two list_ tools are the
+        // addressing scheme the rest of the family was blocked on - every SOLIDEDIT call in
+        // the managed API takes SubentityId[], which a caller cannot spell, so an index plus
+        // the geometry behind it is how an edge gets named.
+        "list_solid_edges", "list_solid_faces", "fillet_edge", "chamfer_edge",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

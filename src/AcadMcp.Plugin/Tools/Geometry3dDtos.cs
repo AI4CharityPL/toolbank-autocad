@@ -1,4 +1,4 @@
-// Plugin-side DTOs for the acad-geometry-3d category.
+﻿// Plugin-side DTOs for the acad-geometry-3d category.
 // Mirrors src/AcadMcp.Backend/Categories/Geometry3d/Geometry3dDtos.cs wire shape.
 // Kept local to AcadMcp.Plugin to avoid circular dependencies on AcadMcp.Backend.
 
@@ -119,3 +119,19 @@ internal sealed record ImprintArgsDto(
     [property: JsonPropertyName("solidHandle")]  string? SolidHandle,
     [property: JsonPropertyName("curveHandle")]  string? CurveHandle,
     [property: JsonPropertyName("eraseSource")]  bool? EraseSource);
+
+// ─────────── roadmap 4.1: the face/edge family ───────────
+
+internal sealed record SolidQueryArgsDto(
+    [property: JsonPropertyName("handle")] string? Handle);
+
+/// <summary>Shared by fillet_edge and chamfer_edge: which edges, and by how much.</summary>
+internal sealed record EdgeOpArgsDto(
+    [property: JsonPropertyName("handle")]        string? Handle,
+    [property: JsonPropertyName("edgeIndexes")]   List<int>? EdgeIndexes,
+    [property: JsonPropertyName("nearPoints")]    List<Point3dDto>? NearPoints,
+    [property: JsonPropertyName("radius")]        double? Radius,
+    [property: JsonPropertyName("distance")]      double? Distance,
+    [property: JsonPropertyName("distance2")]     double? Distance2,
+    [property: JsonPropertyName("baseFaceIndex")] int? BaseFaceIndex,
+    [property: JsonPropertyName("allowFaceLoss")] bool? AllowFaceLoss);

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 39 categories, 568 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 40 categories, 575 tools total.
 
 ## Categories
 
@@ -36,6 +36,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-selection](#acad-selection) (12 tools)
 - [acad-sheetsets](#acad-sheetsets) (23 tools)
 - [acad-styles](#acad-styles) (32 tools)
+- [acad-surfaces](#acad-surfaces) (7 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
 - [acad-validators](#acad-validators) (11 tools)
 - [acad-verticals](#acad-verticals) (8 tools)
@@ -681,6 +682,18 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `set_current_tablestyle` | Make a table style the current one, so tables created afterwards use it - including the ones the schedules family generates. Returns the style with all its properties so the caller can confirm what they switched to. |
 | `set_point_display` | Set how POINT entities are drawn, drawing-wide. Give a plain glyph name - dot, none, plus, cross, tick - with an optional surround of circle, square or both, and this works out the PDMODE bit code for you; pass mode instead if you already know it. size sets PDSIZE: positive is absolute drawing units, negative is a percentage of the viewport. This is NOT a style object - AutoCAD has no per-point style, only these two system variables, so the change applies to every point in the drawing. |
 | `set_table_cell_style` | Set the per-cell properties of a table style - text height, alignment, text colour and background - for one cell class. A table style keeps a separate set of these for each class, typically _TITLE, _HEADER and _DATA, which is why the style-wide create/modify tools cannot reach them. Pass backgroundColorIndex as -1 to clear a background rather than set one. The result reports the cell's full state afterwards, so a caller sees what the other properties still are. |
+
+## acad-surfaces
+
+| Tool | Description |
+|---|---|
+| `convert_to_solid` | Turn a watertight set of surfaces, a closed mesh or a thickened region into a SOLID - AutoCAD's CONVTOSOLID. This only works on something that ENCLOSES a space: an open sheet has no inside and cannot become a solid, which is a fact about the geometry rather than a limitation of the tool. The volume of the result is reported and must be greater than zero - that is the whole proof the source really was closed, since a conversion that quietly produced an empty solid would hand back just as valid a handle. convert_to_surface goes the other way and always works. |
+| `convert_to_surface` | Turn a solid, a region or a closed planar curve into a SURFACE - AutoCAD's CONVTOSURFACE. A surface is a shell with no inside, so converting a solid keeps its skin and throws the volume away; the area of the result should match the solid's surface area, which is the check the tool reports. This always works, because discarding the inside needs nothing of the shape. convert_to_solid goes the other way and does not always work. |
+| `extrude_surface` | Sweep a curve in a straight line to make a SURFACE - AutoCAD's SURFEXTRUDE. An open curve gives an open sheet and a closed one gives a tube; either way the result has area and no volume, which is the whole difference from geometry_3d.extrude_curve, the one that turns a closed profile into a solid. Sweeping a curve of length L through a height h makes exactly L*h of surface when the taper is zero, so the answer is checkable on paper, and the tool reports both numbers. Use this for a wall face, a road surface or a terrain strip - anything you need the shape of but not the substance. |
+| `get_surface_info` | Report what a surface actually IS: its concrete type, its area, how many faces and edges it has, whether the whole thing lies in one plane, and its bounding box. The type is the useful part - a PlaneSurface, ExtrudedSurface, RevolvedSurface, SweptSurface, LoftedSurface and NurbSurface each accept different edits, and asking for one the surface does not support is the commonest failure in this category. Read-only. For a solid, the equivalent questions are geometry_3d.check_solid and get_surface_area. |
+| `offset_surface` | Make a NEW surface parallel to an existing one at a given distance - AutoCAD's SURFOFFSET. The original is left alone; the sign of the distance chooses which side the copy sits on. On a flat surface this is a translation and the area is unchanged, which is the check; on a curved one the area grows on the convex side and shrinks on the concave. Offsetting further than the tightest radius of curvature folds the surface through itself and is refused. To offset a flat CURVE use geometry_2d.offset_curve, and to move the faces of a SOLID use geometry_3d.offset_face. |
+| `revolve_surface` | Spin a curve about an axis to make a SURFACE of revolution - AutoCAD's SURFREVOLVE. Both ends of the axis are required: a point does not name an axis in 3D. The result is a shell, not a solid, so a revolved arc gives a dish rather than a lump; use geometry_3d.revolve_curve when what you want is filled. The area follows Pappus - a curve of length L swept a full turn at distance R covers 2*pi*R*L - and the tool reports that figure beside the measured one, exact for a curve that keeps a constant distance from the axis and an approximation otherwise. A curve crossing its own axis sweeps through itself and is refused. |
+| `sweep_surface` | Sweep a profile curve along a path curve to make a SURFACE - AutoCAD's SURFSWEEP. The profile turns to stay square to the path as it goes, which is what a handrail, a gutter or a road edge needs. On a straight path the area is exactly the profile length times the path length; round a bend it differs by what the inside of the turn loses against the outside, so the tool reports both. geometry_3d.sweep_curve is the same idea for a solid, and draw_polysolid the special case of a rectangular wall section. |
 
 ## acad-ucs
 

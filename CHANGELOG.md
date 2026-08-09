@@ -35,6 +35,44 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Added
+
+- **Phase 4.2 opens: the `acad-surfaces` category.** Seven tools, bank 568 → 575, and the
+  fortieth category: `extrude_surface`, `revolve_surface`, `sweep_surface`, `offset_surface`,
+  `convert_to_surface`, `convert_to_solid`, `get_surface_info`. Verified live **58/58** and
+  confirmed on an exported PNG.
+
+  **A surface is a shell: area and no volume.** That is the whole reason this is not part of
+  `acad-geometry-3d`, and it is what every check here rests on, because a surface tool that
+  quietly produced nothing hands back a perfectly good handle. So the arithmetic is areas:
+  extruding a 100 line through 50 gives exactly 5000; a circle of radius 40 through 50 gives
+  2·π·40·50; revolving a line about a parallel axis 200 away gives Pappus' 2·π·200·100 **exactly**,
+  because a line parallel to the axis keeps a constant distance from it; half a turn gives half
+  as much, which is the control on the angle; a 40 profile along a straight 300 gives 12000; and
+  offsetting a flat surface leaves the area alone.
+
+  The sharpest check is the round trip: a 100 cube converted to a surface has the cube's surface
+  area of 60000 and **no volume**, and converting it back returns **exactly** 1000000. A
+  conversion that produced an empty shell or an empty solid would return a valid handle either
+  way, and only the numbers coming back to where they started say the trip was real. The tools
+  are also asserted not to have made the wrong kind of thing at all — a sheet must report no
+  volume, which a tool that silently built a solid would fail.
+
+  `get_surface_info` exists because nothing else in the category is usable without it: a
+  `PlaneSurface`, `ExtrudedSurface`, `RevolvedSurface`, `SweptSurface` and `NurbSurface` each
+  accept different edits, and asking for one the surface does not support is the commonest
+  failure here. It reports the concrete type, the area, the face and edge counts, and whether
+  the whole thing is planar — checked against a flat sheet (planar, one face) *and* a tube (not
+  planar), so the flag distinguishes rather than always agreeing.
+
+  Two corrections during the build, both mine rather than the API's. Three of the surface
+  constructors are **static** factories and `Solid3d.CreateFrom` is an **instance** method — the
+  opposite of how they were first written, and the compiler named every signature to the
+  argument. And in the verification, a refusal test aimed at an already-erased solid **passed on
+  `eWasErased`** rather than on the type check it was written to make; a refusal that fires for
+  the wrong reason is not evidence about the thing being tested, so it now uses a live solid and
+  asserts the message names the type.
+
 ### Changed
 
 - **Phase 4.2 reconnaissance: the surface API asked of the compiler before the category exists.**

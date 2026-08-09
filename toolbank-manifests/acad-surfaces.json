@@ -1,0 +1,184 @@
+{
+  "id": "acad-surfaces",
+  "name": "acad-surfaces",
+  "description": "AutoCAD SURFACES - shells that have area and no volume. This is the distinction that decides between this category and acad-geometry-3d: a surface is skin, a solid is material. Reach for surfaces when you need the SHAPE of something but not its substance - a terrain, a wall face, a road surface, a curved roof, or a construction shape that will be cut against later. Everything here reports the AREA of what it made, because a surface tool that quietly produced nothing hands back a perfectly good handle otherwise.\n\nCovers making surfaces by extruding, revolving and sweeping curves (AutoCAD SURFEXTRUDE, SURFREVOLVE, SURFSWEEP), offsetting one to a parallel copy (SURFOFFSET), converting between surfaces and solids in both directions (CONVTOSURFACE, CONVTOSOLID), and asking what kind of surface an entity actually is - which matters because a PlaneSurface, ExtrudedSurface, RevolvedSurface, SweptSurface and NurbSurface each accept different edits.\n\nDoes NOT cover: solids and their faces and edges, which are acad-geometry-3d; flat curves and regions, which are acad-geometry-2d; boolean union, subtract and intersect, which are acad-boolean-ops. Converting a surface to a solid only works on something that ENCLOSES a space - an open sheet has no inside, and that is a fact about the geometry rather than a limitation here. Wraps the managed Autodesk.AutoCAD.DatabaseServices.Surface API and requires the plugin; Surface.Extend, Sculpt and RebuildNurbSurface do not exist in that API and are not offered.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-surfaces.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "convert",
+    "dwg",
+    "extrude",
+    "get",
+    "info",
+    "offset",
+    "revolve",
+    "solid",
+    "surface",
+    "surfaces",
+    "sweep",
+    "to"
+  ],
+  "intent_examples": [
+    "make a surface out of this line",
+    "extrude a curve into a sheet",
+    "revolve a profile into a surface of revolution",
+    "sweep a shape along a path as a surface",
+    "offset a surface 50 away",
+    "convert this solid to a surface",
+    "convert these surfaces back into a solid",
+    "what kind of surface is this and how big is it",
+    "zamien bryle na powierzchnie",
+    "wyciagnij krzywa w powierzchnie",
+    "powierzchnia obrotowa z profilu",
+    "jaka to jest powierzchnia i jakie ma pole"
+  ],
+  "tools_summary": [
+    {
+      "name": "convert_to_solid",
+      "description": "Turn a watertight set of surfaces, a closed mesh or a thickened region into a SOLID - AutoCAD's CONVTOSOLID. This only works on something that ENCLOSES a space: an open sheet has no inside and cannot become a solid, which is a fact about the geometry rather than a limitation of the tool. The volume of the result is reported and must be greater than zero - that is the whole proof the source really was closed, since a conversion that quietly produced an empty solid would hand back just as valid a handle. convert_to_surface goes the other way and always works.",
+      "tags": [
+        "convert",
+        "to",
+        "solid"
+      ],
+      "intent": [
+        "convert a surface to a solid",
+        "convtosolid",
+        "zamien powierzchnie na bryle",
+        "make a solid from closed surfaces",
+        "turn a watertight shell into a solid",
+        "konwersja na bryle",
+        "close a shell into a solid"
+      ]
+    },
+    {
+      "name": "convert_to_surface",
+      "description": "Turn a solid, a region or a closed planar curve into a SURFACE - AutoCAD's CONVTOSURFACE. A surface is a shell with no inside, so converting a solid keeps its skin and throws the volume away; the area of the result should match the solid's surface area, which is the check the tool reports. This always works, because discarding the inside needs nothing of the shape. convert_to_solid goes the other way and does not always work.",
+      "tags": [
+        "convert",
+        "to",
+        "surface"
+      ],
+      "intent": [
+        "convert a solid to a surface",
+        "convtosurface",
+        "zamien bryle na powierzchnie",
+        "turn a region into a surface",
+        "make a shell out of a solid",
+        "konwersja na powierzchnie",
+        "strip the volume from a solid"
+      ]
+    },
+    {
+      "name": "extrude_surface",
+      "description": "Sweep a curve in a straight line to make a SURFACE - AutoCAD's SURFEXTRUDE. An open curve gives an open sheet and a closed one gives a tube; either way the result has area and no volume, which is the whole difference from geometry_3d.extrude_curve, the one that turns a closed profile into a solid. Sweeping a curve of length L through a height h makes exactly L*h of surface when the taper is zero, so the answer is checkable on paper, and the tool reports both numbers. Use this for a wall face, a road surface or a terrain strip - anything you need the shape of but not the substance.",
+      "tags": [
+        "extrude",
+        "surface"
+      ],
+      "intent": [
+        "extrude a curve into a surface",
+        "make a surface by extruding a line",
+        "wyciagnij krzywa w powierzchnie",
+        "surfextrude",
+        "create a sheet from a polyline",
+        "powierzchnia z linii",
+        "extrude to a sheet"
+      ]
+    },
+    {
+      "name": "get_surface_info",
+      "description": "Report what a surface actually IS: its concrete type, its area, how many faces and edges it has, whether the whole thing lies in one plane, and its bounding box. The type is the useful part - a PlaneSurface, ExtrudedSurface, RevolvedSurface, SweptSurface, LoftedSurface and NurbSurface each accept different edits, and asking for one the surface does not support is the commonest failure in this category. Read-only. For a solid, the equivalent questions are geometry_3d.check_solid and get_surface_area.",
+      "tags": [
+        "get",
+        "surface",
+        "info"
+      ],
+      "intent": [
+        "what kind of surface is this",
+        "get surface info",
+        "jaka to jest powierzchnia",
+        "area of a surface",
+        "is this surface flat",
+        "informacje o powierzchni",
+        "describe a surface entity"
+      ]
+    },
+    {
+      "name": "offset_surface",
+      "description": "Make a NEW surface parallel to an existing one at a given distance - AutoCAD's SURFOFFSET. The original is left alone; the sign of the distance chooses which side the copy sits on. On a flat surface this is a translation and the area is unchanged, which is the check; on a curved one the area grows on the convex side and shrinks on the concave. Offsetting further than the tightest radius of curvature folds the surface through itself and is refused. To offset a flat CURVE use geometry_2d.offset_curve, and to move the faces of a SOLID use geometry_3d.offset_face.",
+      "tags": [
+        "offset",
+        "surface"
+      ],
+      "intent": [
+        "offset a surface",
+        "make a parallel surface at a distance",
+        "odsun powierzchnie",
+        "surfoffset",
+        "copy a surface 50 away",
+        "powierzchnia rownolegla",
+        "parallel shell"
+      ]
+    },
+    {
+      "name": "revolve_surface",
+      "description": "Spin a curve about an axis to make a SURFACE of revolution - AutoCAD's SURFREVOLVE. Both ends of the axis are required: a point does not name an axis in 3D. The result is a shell, not a solid, so a revolved arc gives a dish rather than a lump; use geometry_3d.revolve_curve when what you want is filled. The area follows Pappus - a curve of length L swept a full turn at distance R covers 2*pi*R*L - and the tool reports that figure beside the measured one, exact for a curve that keeps a constant distance from the axis and an approximation otherwise. A curve crossing its own axis sweeps through itself and is refused.",
+      "tags": [
+        "revolve",
+        "surface"
+      ],
+      "intent": [
+        "revolve a curve into a surface",
+        "make a surface of revolution",
+        "obroc krzywa w powierzchnie",
+        "surfrevolve",
+        "spin a profile around an axis",
+        "powierzchnia obrotowa",
+        "lathe a shell"
+      ]
+    },
+    {
+      "name": "sweep_surface",
+      "description": "Sweep a profile curve along a path curve to make a SURFACE - AutoCAD's SURFSWEEP. The profile turns to stay square to the path as it goes, which is what a handrail, a gutter or a road edge needs. On a straight path the area is exactly the profile length times the path length; round a bend it differs by what the inside of the turn loses against the outside, so the tool reports both. geometry_3d.sweep_curve is the same idea for a solid, and draw_polysolid the special case of a rectangular wall section.",
+      "tags": [
+        "sweep",
+        "surface"
+      ],
+      "intent": [
+        "sweep a profile along a path as a surface",
+        "surfsweep",
+        "przeciagnij profil wzdluz sciezki jako powierzchnie",
+        "make a handrail surface",
+        "swept shell along a curve",
+        "powierzchnia przeciagniecia",
+        "sweep a shape down a road"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "surfaces",
+    "tool_count_target": 7,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-09T15:42:46.5971629Z"
+  }
+}

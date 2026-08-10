@@ -858,7 +858,7 @@ one cloud, not a good one.
 
 ## Phase 5 — Data, extensibility, escape hatches (≈65 → **61** after review)
 
-### 5.1 `acad-lisp` — the highest-leverage small phase (≈12)
+### 5.1 `acad-lisp` (≈12 → **5 built, 1 struck, 6 blocked on a command context**)
 
 ```
 eval_lisp                   load_lisp_file             list_loaded_lisp
@@ -886,6 +886,31 @@ going through LISP at all. Every `LispDataType` member is there for reading a re
 
 `SendStringToExecute` remains what the caveat says it is — it queues, so its result cannot be
 observed — and is therefore NOT the route any tool here will be built on.
+
+**Built and verified, 34/34: `get_system_variable`, `set_system_variable`,
+`list_system_variables`, `list_loaded_applications`, `purge_regapps`.** All five reach AutoCAD
+through the ordinary managed API and are unaffected by what follows.
+
+**Six were built, deployed, measured and WITHDRAWN on one root cause** — `eval_lisp`,
+`load_lisp_file`, `list_loaded_lisp`, `run_command_sequence`, `run_script_file`,
+`netload_assembly`. `Application.Invoke`, `Editor.Command` and `DynamicLinker.LoadModule` all
+answer `eInvalidInput` from where this plugin dispatches: **application** context, inside a
+document lock and an open transaction. They need a **command** context. Three separate LISP
+formulations were tried and failed identically — when tools that share no code fail with the same
+status, the context is the suspect, not the arguments. Rule 26 §15.
+
+**The fix is known and is the next tranche:** `DocumentCollection.ExecuteInCommandContextAsync`,
+which needs an async runner the plugin does not yet have. That one change unblocks all six, so
+5.1 is 5 built now and 11 once the runner exists.
+
+**`list_loaded_applications` documents a measured limit rather than glossing it.**
+`GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does
+**not** report netloaded .NET assemblies — this very plugin is running and does not appear in its
+own list. The verification asserts that absence, so the limit cannot quietly change.
+
+**`define_command_alias` is struck**: no API exists, and the only route is editing the user's
+global `acad.pgp` and reloading it with `RE_INIT` — a permanent change to the AutoCAD
+installation rather than to a drawing.
 
 ### 5.2 `acad-data` — xdata, dictionaries, data links (≈28)
 
@@ -1059,12 +1084,12 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **5** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **599** | **74 %** |
+| | **Total** | **813** | **604** | **74 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 587 (337 + 75 + 71 + 51 + 53)
-while the bank measures **599**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 592 (337 + 75 + 71 + 51 + 53 + 5)
+while the bank measures **604**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

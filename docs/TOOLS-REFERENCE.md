@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 42 categories, 599 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 43 categories, 604 tools total.
 
 ## Categories
 
@@ -22,6 +22,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
+- [acad-lisp](#acad-lisp) (5 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
 - [acad-mesh](#acad-mesh) (10 tools)
@@ -455,6 +456,16 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_paper_sizes` | Enumerate every paper size supported by a plotter (plotter=null -> the current layout's plotter or the first registered device). Returns the canonical media names (what configure_plot needs) plus the locale-facing display name. Call this before configure_plot if you're unsure which media strings the installed plotter accepts — especially for non-standard devices (e.g. 'DWG To PDF.pc3', 'Microsoft Print to PDF', pen plotters, PublishToWeb PNG). configure_plot accepts canonical / locale / fuzzy names (e.g. 'A0', 'ISO A0'); use this tool when even fuzzy resolution fails. |
 | `rename_layout` | Rename a paper-space layout. The Model tab cannot be renamed; the new name must be unique and valid as an AutoCAD symbol name. |
 | `set_current_layout` | Switch the active layout to the named tab (use "Model" to return to model space). All subsequent draw / viewport tools target this layout. |
+
+## acad-lisp
+
+| Tool | Description |
+|---|---|
+| `get_system_variable` | Read one AutoCAD system variable by name - CLAYER, OSMODE, INSUNITS and the rest. Read-only. Read straight from Application.GetSystemVariable rather than through LISP. The value comes back as text with its underlying CLR type named alongside, because a system variable can hold a string, an integer, a real or a point, and set_system_variable has to be given the matching one. An unknown name is refused rather than answered with an empty value; list_system_variables gives the ones this bank knows by name. |
+| `list_loaded_applications` | List the ARX, CRX and DBX modules AutoCAD has registered, together with its own managed core assemblies (accoremgd.dll, acmgd.dll). Read-only. MEASURED LIMIT, so that a short answer is not mistaken for a broken tool: this returns what DynamicLinker.GetLoadedModules reports, which on a normal session is about 25 entries and does NOT include .NET assemblies loaded with NETLOAD - a netloaded plugin will not appear here even though it is running. `pattern` filters the list by substring. |
+| `list_system_variables` | List the system variables worth knowing, grouped by what they affect - drafting aids, current properties, text and dimensions, units, display, 3D, file state and plotting - each with its live value and type. Read-only. `pattern` filters by name or by group. IMPORTANT: this is a CURATED list, not a complete one - AutoCAD exposes no way to enumerate system variables, there being no table to walk - so treat it as a starting point rather than a boundary: any variable not listed still works with get_system_variable and set_system_variable. Every value is read live rather than remembered, so a name this build of AutoCAD does not have is counted as not present instead of being reported with a stale value. |
+| `purge_regapps` | Remove unreferenced registered application names from the drawing. Registered app names are the keys extended data is filed under, and they accumulate in a drawing that has passed through several applications. Only the UNREFERENCED ones go: Database.Purge is asked first and strikes from the candidate list everything still in use, so a name that some xdata still points at is kept - erasing one that is referenced would corrupt that xdata. ACAD is AutoCAD's own and is never offered. Reports the names purged and the ones remaining, with the counts before and after. |
+| `set_system_variable` | Set one AutoCAD system variable - setvar. The value is converted to the type the variable already holds, since passing a string to an integer variable is rejected outright. The new value is READ BACK afterwards and the tool refuses if it did not change: a read-only system variable accepts the call and quietly keeps its old value, which would otherwise be indistinguishable from success. Both the previous and the new value are reported, so a change can be undone by setting the old one back. |
 
 ## acad-livestream
 

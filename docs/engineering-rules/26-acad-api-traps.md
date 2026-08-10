@@ -388,6 +388,35 @@ Then assert the post-condition in the tool: the normal it reports back must be p
 **both** the section line and the up vector. That is what catches the plane silently being
 somewhere else, and it is now in `create_section_plane`.
 
+### 15. Editor.Command, Application.Invoke and LoadModule need a COMMAND context
+
+```csharp
+ed.Command("_.CIRCLE", "0,0", "10");                  // eInvalidInput from a tool handler
+AcadApp.Invoke(new ResultBuffer(...));                // eInvalidInput, every expression
+SystemObjects.DynamicLinker.LoadModule(path, ...);    // InvalidOperationException
+```
+
+All three compile, all three are the documented API, and all three fail from where this plugin
+dispatches: the **application** context, on the UI thread inside a document lock and an open
+transaction. They require a **command** context. The failure is a bare `eInvalidInput` naming
+nothing, so it reads like a bad argument and invites an afternoon of trying different arguments.
+
+**One root cause behind six unrelated-looking failures.** `eval_lisp`, `load_lisp_file`,
+`list_loaded_lisp`, `run_command_sequence`, `run_script_file` and `netload_assembly` were built,
+deployed and all failed identically; three different LISP formulations were tried
+(`Application.Invoke` with `(read)`+`(eval)`, splicing the parsed form, and the command line
+wrapped to write its value to a file) and every one produced the same error. When several tools
+that share no code fail with the same status, stop varying the arguments and suspect the CONTEXT.
+
+The documented fix is `DocumentCollection.ExecuteInCommandContextAsync`, which runs a delegate in
+command context — and needs an async runner, since it cannot be awaited from the UI thread it
+needs. `SendStringToExecute` also works but queues, so its result cannot be observed, which is the
+whole thing this category exists to avoid.
+
+**What did work, and why it is worth noting:** `Application.GetSystemVariable`/`SetSystemVariable`
+and the ordinary `Database`/`Transaction` API are unaffected. The dividing line is not "old API vs
+new" but whether the call needs to run as if a user had typed it.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

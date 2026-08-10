@@ -77,6 +77,39 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.1 — `acad-lisp`, 5 tools shipped of 11 attempted, and one root cause behind the six
+  that were not.** New category, bank 599 → 604. Live: **34/34** on what ships.
+
+  Built and verified: `get_system_variable`, `set_system_variable`, `list_system_variables`,
+  `list_loaded_applications`, `purge_regapps`. `set_system_variable` reads back and refuses when
+  the value did not change, which is what a read-only variable does — it accepts the assignment
+  and quietly keeps its old value, indistinguishable from success without the check.
+  `purge_regapps` is run twice in verification: the second run must find nothing, or the first was
+  simply erasing whatever it could reach.
+
+  **Six were built, deployed, measured and withdrawn on ONE root cause**: `eval_lisp`,
+  `load_lisp_file`, `list_loaded_lisp`, `run_command_sequence`, `run_script_file` and
+  `netload_assembly`. `Application.Invoke`, `Editor.Command` and `DynamicLinker.LoadModule` all
+  answer a bare `eInvalidInput` from where this plugin dispatches — the **application** context,
+  on the UI thread inside a document lock and an open transaction. They require a **command**
+  context. Three separate LISP formulations were tried (`Invoke` with `(read)`+`(eval)`, splicing
+  the parsed form, and the command line wrapped to write its value to a file) and all three failed
+  identically. When tools that share no code fail with the same status, the context is the suspect
+  and not the arguments. Rule 26 gains §15. The plugin handlers stay registered so the finding
+  stays reproducible; they are simply not offered in the bank.
+
+  The fix is known — `DocumentCollection.ExecuteInCommandContextAsync`, which needs an async
+  runner the plugin does not yet have — and it unblocks all six at once.
+
+  **`list_loaded_applications` ships documenting a measured limit.** `GetLoadedModules` returns
+  about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core and does NOT report netloaded .NET
+  assemblies: this very plugin is running and is absent from its own list. The description says
+  so, and the verification asserts the absence, so a short answer is not mistaken for a broken
+  tool.
+
+  `define_command_alias` is struck: no API, and the only route would be editing the user's global
+  `acad.pgp` — a permanent change to the AutoCAD installation rather than to a drawing.
+
 - **Phase 4.4 complete — `create_section_orthographic`, `generate_section_block`,
   `set_section_settings`.** `acad-sections-3d` 6 → 9, bank 596 → 599. Live: **111/111** over the
   whole category. Phase 4.4 is done at 9 built and 1 struck.

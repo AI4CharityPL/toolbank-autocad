@@ -61,6 +61,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             Geometry2dPluginTools.Register(_toolHost);
             Geometry3dPluginTools.Register(_toolHost);
             SurfacesPluginTools.Register(_toolHost);
+            MeshPluginTools.Register(_toolHost);
             BooleanOpsPluginTools.Register(_toolHost);
             ModifyPluginTools.Register(_toolHost);
             SelectionPluginTools.Register(_toolHost);

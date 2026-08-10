@@ -35,6 +35,44 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Added
+
+- **Phase 4.3 opens: the `acad-mesh` category.** Five tools, bank 580 → 585, and the forty-first
+  category: `create_mesh_box`, `get_mesh_info`, `set_mesh_smoothness`, `convert_mesh_to_solid`,
+  `convert_mesh_to_surface`. Verified live **47/47** and confirmed on an exported PNG.
+
+  A mesh is a CAGE of flat faces AutoCAD can smooth — neither a solid nor a surface. `SubDMesh`
+  carries no volume, no surface area and no watertight flag, so **converting a mesh is the only
+  way to measure one**, which makes that conversion its own check: an unsmoothed box mesh coming
+  out at exactly its side cubed proves the cage was built *and wound* correctly, and a face wound
+  the wrong way looks perfectly normal on screen while enclosing nothing. There are also no
+  factory methods for mesh primitives at all — no `SubDMesh.CreateBox` to match `Solid3d.CreateBox`
+  — so the box cage is written out by hand, eight corners and six quads, which is why its counts
+  are known before the call.
+
+  **Three assumptions of mine were demolished by the live run, and all three were mine rather
+  than AutoCAD's.**
+
+  - **`NumberOfFaces` reports the CAGE, not the subdivided surface.** A box smoothed to level 3
+    still answers 6 faces. Guards asserting 6 → 24 → 96 → 384 fired on a perfectly good mesh
+    three times running.
+  - **`GeometricExtents` reports the cage too.** Smoothing 0 → 1 left the diagonal at exactly
+    100·√3. So the second guard, written to replace the first, was equally wrong.
+  - So the guard was **removed rather than replaced a third time**, and the reason is recorded in
+    the code and in the tool description: what is checked is the level reading back, and the
+    shape change is visible only by converting to a solid. A guard founded on an unchecked
+    assumption is worse than no guard — it rejects correct results while looking rigorous.
+
+  A fourth, in the verification rather than the tools: it asserted a smoothed box is "still more
+  than half" the sharp one. A level-2 Catmull-Clark cube is about a **third** — 349547 against
+  1000000 — and the exported image shows why, because it has visibly become a faceted **ball**.
+  Replaced with a check that is derivable and carries its own control: level 2 shrinks the box
+  more than level 1 does, monotonically.
+
+  The reversibility check stands and is the sharpest here: smoothing to level 3 and back to 0
+  reconverts to **exactly** 1000000, because the cage is kept. A smoothing that rebuilt from the
+  subdivided form instead would look identical on the way up and could never come back.
+
 ### Changed
 
 - **Phase 4.3 reconnaissance: the mesh API, and a probe that was wrong about six names at once.**

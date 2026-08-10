@@ -1,0 +1,183 @@
+{
+  "id": "acad-mesh",
+  "name": "acad-mesh",
+  "description": "AutoCAD MESHES - cages of flat faces that AutoCAD can round off by subdividing. A mesh is neither a solid nor a surface, and the difference decides when to reach for one: solids are for engineered shapes where dimensions matter, meshes are for organic and sculpted ones where the form is pushed about until it looks right. Smoothing is reversible, because the underlying cage is kept.\n\nCovers creating mesh primitives, reading a mesh\u0027s vertex and face counts and its current smoothness, raising and lowering that smoothness (MESHSMOOTHMORE and MESHSMOOTHLESS), and converting a mesh into a solid or a surface (CONVTOSOLID, CONVTOSURFACE).\n\nTwo things this category cannot do, which are facts about the AutoCAD .NET API rather than gaps here. A mesh carries NO volume, NO surface area and NO watertight flag - SubDMesh exposes none of them - so measuring a mesh means converting it to a solid, and that conversion succeeding is itself the proof the cage was watertight. And there are no factory methods for mesh primitives at all, unlike Solid3d which has a full set; every primitive here is tessellated by hand from SetSubDMesh, which is why the vertex and face counts are known before the call and checked against what comes back.\n\nDoes NOT cover: solids, which are acad-geometry-3d; surfaces, which are acad-surfaces; boolean operations, which are acad-boolean-ops. Requires the plugin.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-mesh.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "box",
+    "cad",
+    "convert",
+    "create",
+    "dwg",
+    "get",
+    "info",
+    "mesh",
+    "set",
+    "smoothness",
+    "solid",
+    "surface",
+    "to"
+  ],
+  "intent_examples": [
+    "box as a mesh not a solid",
+    "convert a mesh into a surface",
+    "convert a mesh to a solid",
+    "convert a mesh to a surface",
+    "convert an open mesh that will not become a solid",
+    "convert this mesh into a solid",
+    "convtosolid from mesh",
+    "convtosurface from mesh",
+    "create a mesh box",
+    "describe a mesh entity",
+    "get mesh info",
+    "how many faces does this mesh have",
+    "ile scian ma ta siatka",
+    "informacje o siatce",
+    "lower the smoothness of this mesh",
+    "make a solid out of this mesh",
+    "make a subdivision box",
+    "make a subdivision mesh I can sculpt",
+    "make a surface out of this mesh",
+    "make this mesh rounder",
+    "measure the volume of a mesh",
+    "mesh cube",
+    "mesh to shell",
+    "mesh vertex and face count",
+    "meshsmoothless",
+    "meshsmoothmore",
+    "narysuj siatke prostopadloscienna",
+    "objetosc siatki",
+    "set mesh smoothness to 2",
+    "siatka na powierzchnie",
+    "siatka szescienna",
+    "smooth a mesh more",
+    "smooth mesh box for sculpting",
+    "smooth this mesh one level more",
+    "turn a watertight mesh into a solid",
+    "what smoothness is this mesh",
+    "wygladz siatke",
+    "wygladz siatke o jeden poziom",
+    "zamien siatke na bryle",
+    "zamien siatke na powierzchnie",
+    "zmniejsz wygladzenie siatki"
+  ],
+  "tools_summary": [
+    {
+      "name": "convert_mesh_to_solid",
+      "description": "Turn a mesh into a 3D SOLID - AutoCAD\u0027s CONVTOSOLID. This only works on a WATERTIGHT cage, where every edge is shared by exactly two faces; a mesh with a hole in it, or with faces wound inconsistently, encloses nothing and is refused. Because SubDMesh has no volume of its own, this is the only way to measure a mesh, and an unsmoothed box mesh converting to exactly its side cubed is the proof the cage was built and wound correctly. Pass smooth true to have AutoCAD fit curved faces to the facets rather than keeping them flat - the volume then differs, because the shape does.",
+      "tags": [
+        "convert",
+        "mesh",
+        "to",
+        "solid"
+      ],
+      "intent": [
+        "convert a mesh to a solid",
+        "convtosolid from mesh",
+        "zamien siatke na bryle",
+        "make a solid out of this mesh",
+        "measure the volume of a mesh",
+        "objetosc siatki",
+        "turn a watertight mesh into a solid"
+      ]
+    },
+    {
+      "name": "convert_mesh_to_surface",
+      "description": "Turn a mesh into a SURFACE - AutoCAD\u0027s CONVTOSURFACE. Unlike convert_mesh_to_solid this works on ANY mesh, watertight or not, because a surface is a shell that never had to enclose anything: a torn cage the solid conversion refuses converts to a surface perfectly well. Pass smooth true to fit curved faces to the facets rather than keeping them flat. Use surfaces.get_surface_info to measure what comes out.",
+      "tags": [
+        "convert",
+        "mesh",
+        "to",
+        "surface"
+      ],
+      "intent": [
+        "convert a mesh to a surface",
+        "convtosurface from mesh",
+        "zamien siatke na powierzchnie",
+        "make a surface out of this mesh",
+        "mesh to shell",
+        "siatka na powierzchnie",
+        "convert an open mesh that will not become a solid"
+      ]
+    },
+    {
+      "name": "create_mesh_box",
+      "description": "Create a mesh BOX from two opposite corners - the mesh counterpart of geometry_3d.draw_box. A mesh is a cage of flat faces that AutoCAD can round off by subdividing, which is what you want for organic or sculpted shapes rather than engineered ones. smoothLevel 0 leaves it sharp and each level after that rounds it further, towards a ball. The cage stays 8 vertices and 6 faces at every level - AutoCAD reports the cage, not the subdivision - and those counts are checked against what came back, because there is no CreateBox for meshes in the AutoCAD API: the cage is written out by hand here, so the numbers are known before the call.",
+      "tags": [
+        "create",
+        "mesh",
+        "box"
+      ],
+      "intent": [
+        "create a mesh box",
+        "make a subdivision box",
+        "narysuj siatke prostopadloscienna",
+        "mesh cube",
+        "box as a mesh not a solid",
+        "siatka szescienna",
+        "smooth mesh box for sculpting"
+      ]
+    },
+    {
+      "name": "get_mesh_info",
+      "description": "Report a mesh\u0027s vertex count, face count, current smoothness and bounding box. Read-only. Note what is NOT here and cannot be: a mesh has no volume and no surface area, because SubDMesh exposes neither - to measure one you convert it with convert_mesh_to_solid, which is itself the check on whether the cage is watertight. The counts, by contrast, are exact, and they are how you tell what smoothing has done to a mesh.",
+      "tags": [
+        "get",
+        "mesh",
+        "info"
+      ],
+      "intent": [
+        "get mesh info",
+        "how many faces does this mesh have",
+        "informacje o siatce",
+        "what smoothness is this mesh",
+        "ile scian ma ta siatka",
+        "describe a mesh entity",
+        "mesh vertex and face count"
+      ]
+    },
+    {
+      "name": "set_mesh_smoothness",
+      "description": "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either \u0060level\u0060, the smoothness to set from 0 to 4, or \u0060by\u0060, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Note what the face count does NOT do: it does not multiply. AutoCAD reports the CAGE - a box mesh answers 6 faces at every level - not the subdivided surface, so the count cannot tell you whether smoothing took. What changes is the SHAPE: subdividing pulls the corners in and the mesh shrinks inside its own cage, and that is what the tool measures before reporting success. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it.",
+      "tags": [
+        "set",
+        "mesh",
+        "smoothness"
+      ],
+      "intent": [
+        "smooth a mesh more",
+        "meshsmoothmore",
+        "meshsmoothless",
+        "wygladz siatke",
+        "set mesh smoothness to 2",
+        "zmniejsz wygladzenie siatki",
+        "make this mesh rounder"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "mesh",
+    "tool_count_target": 5,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-10T09:32:58.6762748Z"
+  }
+}

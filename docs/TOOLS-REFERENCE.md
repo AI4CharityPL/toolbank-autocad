@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 44 categories, 627 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 45 categories, 636 tools total.
 
 ## Categories
 
@@ -46,6 +46,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-verticals](#acad-verticals) (8 tools)
 - [acad-view](#acad-view) (8 tools)
 - [acad-viewports](#acad-viewports) (19 tools)
+- [acad-views](#acad-views) (9 tools)
 - [acad-vision](#acad-vision) (9 tools)
 - [acad-xrefs](#acad-xrefs) (22 tools)
 
@@ -856,6 +857,20 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `set_viewport_view_direction` | Set which way a viewport looks at the model: a named preset (top, bottom, front, back, left, right, sw-iso, se-iso, ne-iso, nw-iso) or an explicit direction vector. This is what turns one 3D model into a plan, an elevation and an isometric on the same sheet without duplicating geometry. |
 | `set_viewport_visual_style` | Set the visual style a viewport displays and plots with - 2dWireframe, Hidden, Realistic, Conceptual, Shaded and whatever else the drawing defines. Unknown names are refused with the list of what this drawing actually has, since visual styles are per-drawing rather than fixed. |
 | `sync_viewport_to_annotation_scale` | Set a viewport's zoom scale to match the annotation scale it already carries. set_viewport_annotation_scale does this by default; this tool is for repairing a viewport where the two have drifted apart - text sized for 1:50 on a window drawn at 1:100. Reports the scale before and after and whether anything changed. |
+
+## acad-views
+
+| Tool | Description |
+|---|---|
+| `create_named_view` | Save a named view - where the camera sits, what it looks at, and how much it frames. Give the center point plus width and height in drawing units; to build one from a rectangle instead use create_view_from_window. Optionally set target and viewDirection for a 3D view, lensLength to make it a camera, and twist to rotate it. A named view does NOT change what is on screen: it records a viewpoint for restore_view_in_viewport to use later. Refuses a name already in use rather than replacing a view silently. Read back through a fresh table lookup after creation, and the width and height are checked against what was asked for. |
+| `create_view_from_window` | Save a named view framing the rectangle between two corners - the same result as create_named_view but specified the way a user points at a drawing rather than by center and size. The corners may be given in any order, since a window dragged right-to-left is still a window. Optional target, viewDirection, lensLength and twist behave exactly as in create_named_view. Refuses a name already in use. |
+| `delete_named_view` | Delete a named view from the drawing. Confirmed gone from the view table afterwards rather than assumed. Worth knowing: a viewport that was showing this view KEEPS what it is displaying, because restore_view_in_viewport copies the settings across rather than leaving a reference behind - so deleting a view never disturbs a layout. |
+| `list_named_views` | List every named view in the drawing with its center, size, target, direction, lens length, twist, clipping and whether it carries its own UCS. Read-only. Note that a fresh drawing has NONE - unlike the named objects dictionary, the view table starts empty, so a count of zero is normal rather than a sign that something is wrong. lensLength is what makes a view a camera, since AutoCAD has no separate camera object. |
+| `restore_view_in_viewport` | Point a layout viewport at a saved view - its target, direction, height and twist. Takes the viewport's handle, which viewports.list_viewports finds; this wants a LAYOUT viewport, not the model-space window. IMPORTANT, and it is a consequence of how the API works rather than a choice: Viewport.SetView does not exist, so the settings are COPIED across and the viewport keeps no reference to the view. Changing or deleting the view afterwards leaves the viewport exactly as it is - restore again to pick up a change. |
+| `set_camera_lens` | Set the lens length of a named view, in millimetres on the 35 mm convention: 50 is normal, below about 35 is wide angle, above 85 is telephoto. IMPORTANT: the lens only shows in a PERSPECTIVE view, and perspective belongs to a viewport rather than to the stored view - so setting a lens on a view being displayed in parallel projection is stored faithfully and changes nothing visible. set_perspective_mode is the other half. The previous value is reported and the new one read back. |
+| `set_camera_target` | Set the point a named view looks AT. Together with the view direction and the lens length this is everything AutoCAD means by a camera - there is no Camera object in the managed API, so a camera is a named view and this is how you aim it. The previous target is reported so a change can be undone, and the new one is read back after writing. |
+| `set_perspective_mode` | Turn perspective projection on or off for a layout VIEWPORT. Measured and worth stating plainly, because the name suggests otherwise: perspective belongs to the viewport and NOT to a stored view - ViewTableRecord has no PerspectiveOn at all - which is why this takes a viewport handle rather than a view name. The lens length in force is reported alongside; it means nothing while perspective is off. Refuses when perspective is already in the state asked for, rather than reporting a change that did not happen. |
+| `set_view_ucs_association` | Associate a UCS with a named view, so the drawing plane follows when the view is restored - which is what makes a working view usable for drawing rather than only for looking. Pass a UCS name, or 'world' (the default) for the world coordinate system. Note for anyone extending this: ViewTableRecord.UcsName is READ-ONLY, so the association is made by object id through SetUcs, and IsUcsAssociatedToView is what reads it back. An unknown UCS name is refused and points at ucs.list_ucs. |
 
 ## acad-vision
 

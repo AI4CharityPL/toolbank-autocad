@@ -67,6 +67,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             DataPluginTools.Register(_toolHost);
             DataQueryPluginTools.Register(_toolHost);
             DataLinkPluginTools.Register(_toolHost);
+            ViewsPluginTools.Register(_toolHost);
             BooleanOpsPluginTools.Register(_toolHost);
             ModifyPluginTools.Register(_toolHost);
             SelectionPluginTools.Register(_toolHost);

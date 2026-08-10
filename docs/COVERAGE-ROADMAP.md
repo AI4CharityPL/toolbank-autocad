@@ -1047,7 +1047,7 @@ convert_wcs_to_geo          insert_map_image           set_map_image_type
 set_north_direction         place_geo_marker           list_geo_markers
 ```
 
-### 5.4 `acad-views-cameras` (≈14 → **10 reachable, 4 struck**) — asked of the compiler 2026-08-10
+### 5.4 `acad-views` (≈14 → **9 built, 4 struck, 1 deferred**) — COMPLETE 2026-08-11
 
 ```
 create_named_view           create_view_from_window    create_view_from_layout
@@ -1090,7 +1090,31 @@ and `Viewport.SetViewFromViewportTableRecord` do not exist. Restoring means copy
 direction, height and twist from the `ViewTableRecord` onto the viewport by hand — honest work,
 and it makes the result exactly predictable, which is what the verification will check against.
 
-Revised list: `create_named_view`, `list_named_views`, `delete_named_view`,
+**BUILT AND VERIFIED, 46/46, one AutoCAD restart.** `create_named_view`,
+`create_view_from_window`, `list_named_views`, `delete_named_view`, `restore_view_in_viewport`,
+`set_camera_target`, `set_camera_lens`, `set_perspective_mode`, `set_view_ucs_association`. The
+category ships as **`acad-views`**, not `acad-views-cameras`, because there is nothing separate to
+call a camera.
+
+`set_view_background` is DEFERRED rather than struck: the property is an `ObjectId` pointing at a
+background object, and what creates one is still unknown — one probe round when it is wanted.
+
+**The controls that carry it**, each catching something a naive check would pass: every size is
+ASYMMETRIC (300 by 200), so a width/height swap cannot slip through; `create_view_from_window` is
+checked AGAINST `create_named_view`, the same view from different input having to give the same
+numbers; the window corners are given in reverse order, because a window dragged right-to-left is
+still a window; and `restore_view_in_viewport` is proved to COPY rather than link by CHANGING THE
+VIEW afterwards and requiring the viewport not to follow — a tool that linked would pass the
+obvious check and fail that one.
+
+**A flaw found in the verification script itself, which is worth more than the tools.** The first
+run reported 33/33 while thirteen checks never executed: the viewport handle came back under
+`viewport` rather than `entity`, the block was guarded by `if vp:`, and it silently skipped. That
+is exactly the "passes because it never ran" trap these scripts exist to catch, occurring in the
+script. The handle is now an asserted check of its own, so an absent precondition fails loudly
+instead of quietly removing the tests that depend on it.
+
+Original revised list: `create_named_view`, `list_named_views`, `delete_named_view`,
 `create_view_from_window`, `restore_view_in_viewport`, `set_view_ucs_association`,
 `set_camera_target`, `set_camera_lens`, `set_perspective_mode`, `set_view_background` —
 **10 reachable**, with `set_view_category`, `create_camera`, `list_cameras` and
@@ -1231,12 +1255,12 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **28** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **37** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **627** | **77 %** |
+| | **Total** | **813** | **636** | **78 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 615 (337 + 75 + 71 + 51 + 53 + 28)
-while the bank measures **627**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 624 (337 + 75 + 71 + 51 + 53 + 37)
+while the bank measures **636**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

@@ -77,6 +77,38 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.4 — `acad-views`, 9 tools, 46/46 in one AutoCAD restart.** New category, bank
+  627 → 636. Named `acad-views` rather than `acad-views-cameras` for a measured reason: there is
+  **no `Camera` type in the managed API**. A camera IS a named view carrying a target and a lens
+  length, so `set_camera_target` and `set_camera_lens` act on views and `create_camera` /
+  `list_cameras` have nothing to create or list.
+
+  Two more corrections the reconnaissance made before a line was written: **perspective belongs to
+  the VIEWPORT, not to a stored view** — `ViewTableRecord` has no `PerspectiveOn` at all, so
+  `set_perspective_mode` takes a viewport handle, which the description states plainly because the
+  name suggests otherwise; and **`ViewTableRecord.Category` does not exist**, so
+  `set_view_category` is struck, the view category being a Sheet Set concept.
+  `Viewport.SetView` is absent too, so restoring a view COPIES its settings across — the viewport
+  keeps no reference, and deleting the view afterwards leaves the layout untouched.
+
+  The controls: every size ASYMMETRIC (300×200) so a width/height swap cannot pass;
+  `create_view_from_window` checked AGAINST `create_named_view`, the same view from different
+  input having to agree; corners given in reverse order; and the copy-not-link claim proved by
+  CHANGING THE VIEW after restoring and requiring the viewport not to follow.
+
+  **A flaw in the verification script itself, worth more than the tools.** The first run reported
+  33/33 while thirteen checks never executed — the viewport handle came back under `viewport`
+  rather than `entity`, and an `if vp:` guard silently skipped the block. That is the "passes
+  because it never ran" trap these scripts exist to catch, happening in the script. The handle is
+  now an asserted check of its own.
+
+- **Rule 41 gains the measured recipe.** The scarce resource is AutoCAD restart cycles, not
+  tokens: every deploy costs a user interruption. Built-then-probed categories took 3 restarts
+  each; probed-first categories took 1, and their live runs were clean. The order is now written
+  down: probe the whole category against the compiler (no AutoCAD needed), write it all in one
+  pass, write the verification with its controls, then deploy once and fold docs and commit into
+  the same turn as the passing run.
+
 - **Phase 5.2 COMPLETE — data links, 5 tools.** `acad-data` 18 → 23, bank 622 → 627. Live:
   **126/126 over the whole category.** `create_data_link`, `list_data_links`,
   `link_table_to_source`, `unlink_table`, `update_data_link`.

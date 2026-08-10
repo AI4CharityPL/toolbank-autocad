@@ -1,0 +1,286 @@
+{
+  "id": "acad-views",
+  "name": "acad-views",
+  "description": "Named views and cameras: saving a viewpoint, listing and deleting saved ones, restoring one into a layout viewport, and the camera settings - target, lens length and perspective. MEASURED and worth knowing before choosing a tool here: AutoCAD has NO Camera object in its managed API. A camera IS a named view carrying a target and a lens length, which is why set_camera_target and set_camera_lens act on views and there is no create_camera. Perspective is the other way round: it belongs to a VIEWPORT and not to a stored view, so set_perspective_mode takes a viewport handle. Restoring a view COPIES its settings into the viewport rather than linking to it, so a view can be changed or deleted afterwards without disturbing any layout. Everything written here is read back afterwards and reported.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-views.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "association",
+    "autocad",
+    "cad",
+    "camera",
+    "create",
+    "delete",
+    "dwg",
+    "from",
+    "in",
+    "lens",
+    "list",
+    "mode",
+    "named",
+    "perspective",
+    "restore",
+    "set",
+    "target",
+    "ucs",
+    "view",
+    "viewport",
+    "views",
+    "window"
+  ],
+  "intent_examples": [
+    "aim this view at a point",
+    "apply a named view to this viewport",
+    "associate a ucs with this view",
+    "change the lens to 35mm",
+    "clean up unused views",
+    "create a view from this window",
+    "create a view of this area",
+    "define a view for a viewport",
+    "delete a camera",
+    "delete a named view",
+    "find a view by name",
+    "frame this area as a view",
+    "get rid of this view",
+    "jakie widoki sa zapisane w rysunku",
+    "list cameras in the drawing",
+    "list the named views",
+    "lista nazwanych widokow",
+    "make a named view",
+    "make a named view around these two corners",
+    "make a working view",
+    "make the view restore its ucs",
+    "make this view wide angle",
+    "make this viewport perspective",
+    "parallel or perspective projection",
+    "point a viewport at a view",
+    "point the camera at this location",
+    "powiaz uklad wspolrzednych z widokiem",
+    "przelacz rzutnie na perspektywe",
+    "przypisz ucs do widoku",
+    "przywroc widok w rzutni",
+    "remove a saved view",
+    "restore this view in a viewport",
+    "retarget a camera",
+    "save a named view",
+    "save a view of this rectangle",
+    "set a viewport to show a saved view",
+    "set focal length for a view",
+    "set the camera lens length",
+    "set the camera target",
+    "set the ucs for a named view",
+    "set what the view looks at",
+    "show saved viewpoints",
+    "show this view in the layout",
+    "skasuj zapisany widok z rysunku",
+    "store the current viewpoint as a view",
+    "switch to perspective projection",
+    "telephoto view",
+    "turn on perspective in this viewport",
+    "turn perspective off",
+    "ustaw cel kamery",
+    "ustaw ogniskowa kamery",
+    "ustaw rzutnie na zapisany widok",
+    "usun nazwany widok",
+    "utworz nazwany widok na rysunku",
+    "utworz widok z prostokata",
+    "view from two corners",
+    "view should bring back its coordinate system",
+    "what views are saved in this drawing",
+    "wlacz perspektywe w rzutni",
+    "zapisz widok nazwany",
+    "zapisz widok z okna",
+    "zmien ogniskowa widoku",
+    "zmien punkt na ktory patrzy widok"
+  ],
+  "tools_summary": [
+    {
+      "name": "create_named_view",
+      "description": "Save a named view - where the camera sits, what it looks at, and how much it frames. Give the center point plus width and height in drawing units; to build one from a rectangle instead use create_view_from_window. Optionally set target and viewDirection for a 3D view, lensLength to make it a camera, and twist to rotate it. A named view does NOT change what is on screen: it records a viewpoint for restore_view_in_viewport to use later. Refuses a name already in use rather than replacing a view silently. Read back through a fresh table lookup after creation, and the width and height are checked against what was asked for.",
+      "tags": [
+        "create",
+        "named",
+        "view"
+      ],
+      "intent": [
+        "save a named view",
+        "create a view of this area",
+        "zapisz widok nazwany",
+        "store the current viewpoint as a view",
+        "utworz nazwany widok na rysunku",
+        "make a named view",
+        "define a view for a viewport"
+      ]
+    },
+    {
+      "name": "create_view_from_window",
+      "description": "Save a named view framing the rectangle between two corners - the same result as create_named_view but specified the way a user points at a drawing rather than by center and size. The corners may be given in any order, since a window dragged right-to-left is still a window. Optional target, viewDirection, lensLength and twist behave exactly as in create_named_view. Refuses a name already in use.",
+      "tags": [
+        "create",
+        "view",
+        "from",
+        "window"
+      ],
+      "intent": [
+        "create a view from this window",
+        "save a view of this rectangle",
+        "zapisz widok z okna",
+        "make a named view around these two corners",
+        "utworz widok z prostokata",
+        "frame this area as a view",
+        "view from two corners"
+      ]
+    },
+    {
+      "name": "delete_named_view",
+      "description": "Delete a named view from the drawing. Confirmed gone from the view table afterwards rather than assumed. Worth knowing: a viewport that was showing this view KEEPS what it is displaying, because restore_view_in_viewport copies the settings across rather than leaving a reference behind - so deleting a view never disturbs a layout.",
+      "tags": [
+        "delete",
+        "named",
+        "view"
+      ],
+      "intent": [
+        "delete a named view",
+        "remove a saved view",
+        "usun nazwany widok",
+        "get rid of this view",
+        "skasuj zapisany widok z rysunku",
+        "clean up unused views",
+        "delete a camera"
+      ]
+    },
+    {
+      "name": "list_named_views",
+      "description": "List every named view in the drawing with its center, size, target, direction, lens length, twist, clipping and whether it carries its own UCS. Read-only. Note that a fresh drawing has NONE - unlike the named objects dictionary, the view table starts empty, so a count of zero is normal rather than a sign that something is wrong. lensLength is what makes a view a camera, since AutoCAD has no separate camera object.",
+      "tags": [
+        "list",
+        "named",
+        "views"
+      ],
+      "intent": [
+        "list the named views",
+        "what views are saved in this drawing",
+        "lista nazwanych widokow",
+        "show saved viewpoints",
+        "jakie widoki sa zapisane w rysunku",
+        "find a view by name",
+        "list cameras in the drawing"
+      ]
+    },
+    {
+      "name": "restore_view_in_viewport",
+      "description": "Point a layout viewport at a saved view - its target, direction, height and twist. Takes the viewport's handle, which viewports.list_viewports finds; this wants a LAYOUT viewport, not the model-space window. IMPORTANT, and it is a consequence of how the API works rather than a choice: Viewport.SetView does not exist, so the settings are COPIED across and the viewport keeps no reference to the view. Changing or deleting the view afterwards leaves the viewport exactly as it is - restore again to pick up a change.",
+      "tags": [
+        "restore",
+        "view",
+        "in",
+        "viewport"
+      ],
+      "intent": [
+        "restore this view in a viewport",
+        "set a viewport to show a saved view",
+        "przywroc widok w rzutni",
+        "apply a named view to this viewport",
+        "ustaw rzutnie na zapisany widok",
+        "point a viewport at a view",
+        "show this view in the layout"
+      ]
+    },
+    {
+      "name": "set_camera_lens",
+      "description": "Set the lens length of a named view, in millimetres on the 35 mm convention: 50 is normal, below about 35 is wide angle, above 85 is telephoto. IMPORTANT: the lens only shows in a PERSPECTIVE view, and perspective belongs to a viewport rather than to the stored view - so setting a lens on a view being displayed in parallel projection is stored faithfully and changes nothing visible. set_perspective_mode is the other half. The previous value is reported and the new one read back.",
+      "tags": [
+        "set",
+        "camera",
+        "lens"
+      ],
+      "intent": [
+        "set the camera lens length",
+        "make this view wide angle",
+        "ustaw ogniskowa kamery",
+        "change the lens to 35mm",
+        "zmien ogniskowa widoku",
+        "set focal length for a view",
+        "telephoto view"
+      ]
+    },
+    {
+      "name": "set_camera_target",
+      "description": "Set the point a named view looks AT. Together with the view direction and the lens length this is everything AutoCAD means by a camera - there is no Camera object in the managed API, so a camera is a named view and this is how you aim it. The previous target is reported so a change can be undone, and the new one is read back after writing.",
+      "tags": [
+        "set",
+        "camera",
+        "target"
+      ],
+      "intent": [
+        "set the camera target",
+        "aim this view at a point",
+        "ustaw cel kamery",
+        "point the camera at this location",
+        "zmien punkt na ktory patrzy widok",
+        "set what the view looks at",
+        "retarget a camera"
+      ]
+    },
+    {
+      "name": "set_perspective_mode",
+      "description": "Turn perspective projection on or off for a layout VIEWPORT. Measured and worth stating plainly, because the name suggests otherwise: perspective belongs to the viewport and NOT to a stored view - ViewTableRecord has no PerspectiveOn at all - which is why this takes a viewport handle rather than a view name. The lens length in force is reported alongside; it means nothing while perspective is off. Refuses when perspective is already in the state asked for, rather than reporting a change that did not happen.",
+      "tags": [
+        "set",
+        "perspective",
+        "mode"
+      ],
+      "intent": [
+        "turn on perspective in this viewport",
+        "switch to perspective projection",
+        "wlacz perspektywe w rzutni",
+        "make this viewport perspective",
+        "przelacz rzutnie na perspektywe",
+        "turn perspective off",
+        "parallel or perspective projection"
+      ]
+    },
+    {
+      "name": "set_view_ucs_association",
+      "description": "Associate a UCS with a named view, so the drawing plane follows when the view is restored - which is what makes a working view usable for drawing rather than only for looking. Pass a UCS name, or 'world' (the default) for the world coordinate system. Note for anyone extending this: ViewTableRecord.UcsName is READ-ONLY, so the association is made by object id through SetUcs, and IsUcsAssociatedToView is what reads it back. An unknown UCS name is refused and points at ucs.list_ucs.",
+      "tags": [
+        "set",
+        "view",
+        "ucs",
+        "association"
+      ],
+      "intent": [
+        "associate a ucs with this view",
+        "make the view restore its ucs",
+        "powiaz uklad wspolrzednych z widokiem",
+        "set the ucs for a named view",
+        "przypisz ucs do widoku",
+        "make a working view",
+        "view should bring back its coordinate system"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "views",
+    "tool_count_target": 9,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-10T21:59:45.7045788Z"
+  }
+}

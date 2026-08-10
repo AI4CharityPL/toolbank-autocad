@@ -823,7 +823,7 @@ look equally green: a supported 3d combination must still go through.
 
 Live: **111/111** over all 9 tools.
 
-### 4.5 `acad-pointclouds` (≈12)
+### 4.5 `acad-pointclouds` (≈12) — BLOCKED on a scan file, not on the API
 
 ```
 attach_point_cloud          list_point_clouds          detach_point_cloud
@@ -831,6 +831,26 @@ clip_point_cloud            invert_pointcloud_clip     set_pointcloud_density
 set_pointcloud_colormap     set_pointcloud_stylization extract_pointcloud_section
 pointcloud_to_geometry      set_pointcloud_crop_state  get_pointcloud_info
 ```
+
+**This phase cannot be verified on this machine, and so it is not being built.** Every tool here
+hangs off `attach_point_cloud`: there is nothing to list, clip, stylize or measure until a cloud is
+attached, and attaching needs a real **`.rcp` or `.rcs`** file. There is none on this machine and
+**ReCap is not installed** (checked `C:\Program Files\Autodesk`), so no scan file can be produced
+either — the formats are Autodesk's own and cannot be fabricated. Building twelve tools whose only
+evidence would be a return code is exactly what this project does not do.
+
+Two reconnaissance rounds were run anyway, and the API is NOT the obstacle. Present: the types
+`PointCloudEx`, `PointCloud`, `PointCloudDefEx`, `PointCloudCrop`, `PointCloudCropType`,
+`PointCloudStylizationType` and `PointCloudColorMap`, plus `PointCloudEx.Scale`, `.Location`,
+`.Rotation`, `.GeometricExtents`, `.ShowCropped`, `.Stylization`, `.PointCloudDefExId`, and
+`PointCloudDefEx.SourceFileName`, `.ActiveFileName`, `.EntityCount`. Absent under every name tried
+so far: the attach entry point, and the add/read cropping methods — the `PointCloudCrop` type
+exists, so those are a naming problem for a third round rather than a wall.
+
+**To unblock:** one `.rcp` or `.rcs` file anywhere on disk. Autodesk publishes free ReCap sample
+scans, and any single-scan `.rcs` is enough — the arithmetic these tools would be checked against
+(point counts, extents before and after a crop, the count dropping when a clip is inverted) needs
+one cloud, not a good one.
 
 **Phase 4 total: ≈92 tools.**
 
@@ -847,14 +867,25 @@ netload_assembly            list_loaded_applications   get_system_variable
 set_system_variable         list_system_variables      purge_regapps
 ```
 
-**Why this one first within Phase 5:** `AcadMcp.Lisp` already exists in the solution and is not
-exposed by a single MCP tool. One `eval_lisp` gives an agent a fallback route to almost every
-gap in this document while the dedicated tools are still being written.
+**Why this one first within Phase 5:** one `eval_lisp` gives an agent a fallback route to almost
+every gap in this document while the dedicated tools are still being written.
 
-**Serious caveat:** this is the same command layer that produced `eInvalidInput` in
-`zoom_extents` / `zoom_all` and the silent queueing in `undo` / `redo`. It must run through a
-supervised channel with a timeout and an explicit "the result of a queued command cannot be
-observed" contract — see the honest-result pattern now used by `modify.undo`.
+**Correction, measured 2026-08-10:** the claim that "`AcadMcp.Lisp` already exists" overstates it.
+`src/AcadMcp.Lisp` is a 26-line stub that resolves paths under a `Scripts/` folder and executes
+nothing — its own header says so. There is no LISP execution anywhere in the solution today.
+
+**The serious caveat has an answer, and it is not SendCommand.** Reconnaissance found every piece
+of a SYNCHRONOUS, observable route present and callable: **`Application.Invoke(ResultBuffer)`**,
+which evaluates a LISP call and hands back a `ResultBuffer`; **`Editor.Command(...)`** and
+`CommandAsync`, which run a command sequence and return when it is done; and
+`Application.GetSystemVariable`/`SetSystemVariable`, which reach system variables directly without
+going through LISP at all. Every `LispDataType` member is there for reading a result back —
+`Text`, `Double`, `Int32`, `Point3d`, `ObjectId`, `SelectionSet`, `Nil`, `T_atom`,
+`ListBegin`/`ListEnd`. `SystemObjects.DynamicLinker` supplies `GetLoadedModules`, `LoadModule` and
+`IsModuleLoaded`, so loading assemblies can be confirmed rather than assumed.
+
+`SendStringToExecute` remains what the caveat says it is — it queues, so its result cannot be
+observed — and is therefore NOT the route any tool here will be built on.
 
 ### 5.2 `acad-data` — xdata, dictionaries, data links (≈28)
 

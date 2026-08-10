@@ -939,6 +939,30 @@ list_tagged_entities
 **Note:** `selection.save_selection_set` already persists to an xrecord dictionary internally.
 That mechanism is used but not exposed — this phase makes it a first-class capability.
 
+**Asked of the compiler 2026-08-10, and this phase is clear.** None of it touches the command
+line — it is ordinary `Database` work, which is the part that has never given trouble, unlike 5.1.
+
+Present and callable for the xdata/dictionary/xrecord core, which is about 13 of the 23:
+`Entity.XData` (get and set), `Database.RegAppTableId`, `RegAppTable.Has`, `RegAppTableRecord`,
+and every `DxfCode.ExtendedData*` member needed to build a buffer — `RegAppName`, `AsciiString`,
+`Real`, `Integer32`, `XCoordinate`, `Handle`, `ControlString`, `LayerName`.
+`Entity.CreateExtensionDictionary`, `.ExtensionDictionary` and `.ReleaseExtensionDictionary` are
+all there, as are `DBDictionary.Contains/GetAt/SetAt/Remove/Count` and `Xrecord.Data` with
+`XlateReferences`.
+
+Two things to watch, both measured:
+
+* **The `Table` data-link API is OBSOLETE in the form the roadmap assumed.** `SetDataLink`,
+  `GetDataLink` and `NumRows` all compile but carry `[Obsolete]` telling you the replacements:
+  `Table.Cells[row,column].DataLink`, `Table.Rows.Count`, and `SetSize(rows, cols)`. Building on
+  the obsolete ones would work today and be a migration problem later, so the cell-based API is
+  what these tools use.
+* **`Database.DataLinkManagerId` does not exist**, and `DataLink.Tooltip` and `.SourceFileName`
+  are absent under those names, though the `DataLink` and `DataLinkManager` TYPES are both
+  present along with `DataAdapterId`, `ConnectionString` and `Name`. The data-link half therefore
+  needs one more probe round for the manager route before it is costed — the xdata and dictionary
+  half needs none and is the tranche to build first.
+
 ### 5.3 `acad-geolocation` (≈12)
 
 ```

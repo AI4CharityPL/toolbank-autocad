@@ -27,6 +27,13 @@ public class DataTests
         // Table.ImportFromCsv do not exist in the managed API - measured, not assumed.
         "tag_entities", "list_tagged_entities", "query_by_property",
         "export_table_to_csv", "import_csv_to_table",
+
+        // Third tranche: data links. Database.DataLinkManagerId does NOT exist -
+        // Database.DataLinkManager does - and DataLinkManager.UpdateDataLink is absent, so the
+        // update runs through Table.UpdateDataLink. Listing walks the ACAD_DATALINK dictionary,
+        // GetDataLink taking a name and offering no enumeration.
+        "create_data_link", "list_data_links", "link_table_to_source",
+        "unlink_table", "update_data_link",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

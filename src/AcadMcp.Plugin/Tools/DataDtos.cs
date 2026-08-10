@@ -44,3 +44,14 @@ internal sealed record TableCsvArgsDto(
     [property: JsonPropertyName("handle")]    string? Handle,
     [property: JsonPropertyName("path")]      string? Path,
     [property: JsonPropertyName("overwrite")] bool? Overwrite);
+
+internal sealed record DataLinkArgsDto(
+    [property: JsonPropertyName("name")]        string? Name,
+    [property: JsonPropertyName("path")]        string? Path,
+    [property: JsonPropertyName("range")]       string? Range,
+    [property: JsonPropertyName("description")] string? Description,
+    [property: JsonPropertyName("adapter")]     string? Adapter,
+    [property: JsonPropertyName("handle")]      string? Handle,
+    [property: JsonPropertyName("row")]         int? Row,
+    [property: JsonPropertyName("column")]      int? Column,
+    [property: JsonPropertyName("direction")]   string? Direction);

@@ -77,6 +77,31 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.2 COMPLETE — data links, 5 tools.** `acad-data` 18 → 23, bank 622 → 627. Live:
+  **126/126 over the whole category.** `create_data_link`, `list_data_links`,
+  `link_table_to_source`, `unlink_table`, `update_data_link`.
+
+  **The open question is answered: the Excel adapter DOES accept a plain CSV** — no
+  file-dependency wall here, unlike point clouds. But it does NOT split on commas: each line
+  arrives whole in one cell, so a CSV data link gives raw lines rather than a grid. That is in the
+  `create_data_link` description because it decides whether the tool is any use to a caller, and
+  it is an asserted check rather than a footnote.
+
+  Four measured corrections where the obvious name is wrong: `Database.DataLinkManagerId` does not
+  exist but `Database.DataLinkManager` does; `DataLinkManager.UpdateDataLink` is absent and the
+  route is `Table.UpdateDataLink`; `GetDataLink` takes a NAME with no enumerating overload, so
+  listing walks the `ACAD_DATALINK` dictionary — which makes listing independent of creation, and
+  the verification uses exactly that; and unlinking is `Cell.RemoveDataLink()`, assigning
+  `ObjectId.Null` to `Cell.DataLink` being `eInvalidInput`, with `Cell.IsLinked` (a `bool?`) as
+  the state.
+
+  **A check that passed for the wrong reason, caught and rewritten.** `link_table_to_source`
+  already pulls the data at attach time, so comparing the table around the first
+  `update_data_link` compared an update with nothing left to do and passed on data that was
+  already there. It now CHANGES THE CSV ON DISK and requires the table to follow — and asserts
+  that the first update correctly reports `changed=false`, which is the right answer rather than a
+  failure.
+
 - **Phase 5.2, second tranche — tagging, querying and CSV.** `acad-data` 13 → 18, bank 617 → 622.
   Live: **108/108 over the whole category, no defects.** `tag_entities`, `list_tagged_entities`,
   `query_by_property`, `export_table_to_csv`, `import_csv_to_table`.

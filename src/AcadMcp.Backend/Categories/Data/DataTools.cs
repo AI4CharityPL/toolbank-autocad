@@ -186,4 +186,49 @@ public static class DataTools
         RequiresPlugin = true)]
     public static Task<CsvImportResult> ImportCsvToTable(IPluginGateway gw, TableCsvArgs args, CancellationToken ct)
         => DataProxy.CallAsync<TableCsvArgs, CsvImportResult>(gw, "acad.data.import_csv_to_table", args, T_NORMAL, ct);
+
+    [McpTool("create_data_link", "Create a data link - a named record of WHERE table data comes from. It fetches nothing by itself: link_table_to_source points a table at it and update_data_link pulls the values through. `path` is the spreadsheet, and `range` optionally narrows it to a sheet or cell range, joined to the path with ! as AutoCAD does. The file must exist, because a link to a missing file would fail only later when something tried to read it. `adapter` defaults to AcExcel, which is the only adapter AutoCAD ships. MEASURED, and it decides whether this tool is any use to you: the Excel adapter ACCEPTS a plain .csv, but does NOT split it on commas - each line arrives whole in a single cell. A CSV data link therefore gives you raw lines, not a table. For a real grid use a .xlsx, or use import_csv_to_table instead, which parses the CSV properly but does not stay linked. Refuses a name already in use rather than replacing a link other tables may be pointing at. Read back through the manager by name after creation, which is a different route from the one that made it.", "data",
+        Intent = new[] { "create a data link to a spreadsheet", "link a drawing to an excel file",
+                         "utworz lacze do arkusza", "set up a data link",
+                         "polacz rysunek z plikiem excel", "make a link to external table data",
+                         "connect a table to a spreadsheet file" },
+        RequiresPlugin = true)]
+    public static Task<DataLinkCreateResult> CreateDataLink(IPluginGateway gw, DataLinkCreateArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<DataLinkCreateArgs, DataLinkCreateResult>(gw, "acad.data.create_data_link", args, T_NORMAL, ct);
+
+    [McpTool("list_data_links", "List the data links defined in this drawing, with the connection string each one reads from. Read-only. Listed by walking the ACAD_DATALINK dictionary, because DataLinkManager.GetDataLink takes a NAME and offers no way to enumerate - the dictionary is where the links actually live. A link appearing here says nothing about whether its source file still exists; the connection string is reported so that can be checked.", "data",
+        Intent = new[] { "list the data links in this drawing", "what spreadsheets is this drawing linked to",
+                         "lista laczy do danych", "show data links",
+                         "jakie lacza sa w rysunku", "which external files feed this drawing",
+                         "find broken data links" },
+        ReadOnly = true, RequiresPlugin = true)]
+    public static Task<DataLinkListResult> ListDataLinks(IPluginGateway gw, DataNoArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<DataNoArgs, DataLinkListResult>(gw, "acad.data.list_data_links", args, T_NORMAL, ct);
+
+    [McpTool("link_table_to_source", "Point a table cell at a data link, so the table can follow a spreadsheet. The link attaches to ONE CELL, which is the anchor AutoCAD fills outwards from - Table.Cells[row,column].DataLink is the current API and the whole-table SetDataLink is obsolete and names this as its replacement. Row and column default to 0,0. MEASURED: attaching ALREADY pulls the data through - so the first update_data_link afterwards will correctly report changed=false, having nothing left to do. That is not a failure. update_data_link earns its place when the source has changed since. The cell is verified to read back with the link attached.", "data",
+        Intent = new[] { "link this table to a data link", "attach a spreadsheet link to a table",
+                         "podlacz tabele do lacza danych", "make this table follow the excel file",
+                         "polacz tabele ze zrodlem danych", "point a table at external data",
+                         "bind a table to a spreadsheet" },
+        RequiresPlugin = true)]
+    public static Task<DataLinkAttachResult> LinkTableToSource(IPluginGateway gw, DataLinkAttachArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<DataLinkAttachArgs, DataLinkAttachResult>(gw, "acad.data.link_table_to_source", args, T_NORMAL, ct);
+
+    [McpTool("unlink_table", "Detach the data link from a table cell, so the table stops following its source. IMPORTANT: the cell KEEPS the values it was last given - unlinking stops the table updating, it does not empty it. Note for anyone extending this: the working route is Cell.RemoveDataLink(), and assigning ObjectId.Null to Cell.DataLink is eInvalidInput; the state reads back through Cell.IsLinked, which is a bool? rather than a bool. The data link object itself stays in the drawing and can be attached again; list_data_links still shows it. Refuses a cell that carries no link rather than reporting a change that did not happen.", "data",
+        Intent = new[] { "unlink this table", "stop a table following its spreadsheet",
+                         "odlacz tabele od zrodla", "detach the data link from a table",
+                         "usun powiazanie tabeli z plikiem", "break the link but keep the values",
+                         "disconnect a table from excel" },
+        RequiresPlugin = true)]
+    public static Task<DataLinkUnlinkResult> UnlinkTable(IPluginGateway gw, DataLinkCellArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<DataLinkCellArgs, DataLinkUnlinkResult>(gw, "acad.data.unlink_table", args, T_NORMAL, ct);
+
+    [McpTool("update_data_link", "Pull data through a table's link - or push it back. `direction` fromSource (the default) reads the spreadsheet into the table; toSource writes the table back out to the spreadsheet, which changes a file outside the drawing and should be used deliberately. Runs through Table.UpdateDataLink, because DataLinkManager.UpdateDataLink does not exist. AutoCAD returns no status of its own, so the first row is reported BEFORE and AFTER with a `changed` flag - without that, an update that fetched nothing would look exactly like one that worked. Note that changed=false is not necessarily a failure: it also means the table already matched its source.", "data",
+        Intent = new[] { "update the data link", "refresh this table from its spreadsheet",
+                         "odswiez lacze danych w tabeli", "pull the latest data into the table",
+                         "zaktualizuj tabele ze zrodla", "write the table back to excel",
+                         "refresh linked table data" },
+        RequiresPlugin = true)]
+    public static Task<DataLinkUpdateResult> UpdateDataLink(IPluginGateway gw, DataLinkUpdateArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<DataLinkUpdateArgs, DataLinkUpdateResult>(gw, "acad.data.update_data_link", args, T_NORMAL, ct);
 }

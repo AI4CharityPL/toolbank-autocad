@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Live verification for roadmap 5.2 — acad-data, 18 tools.
+"""Live verification for roadmap 5.2 — acad-data, 23 tools.
 
 Storage tools fail in a particular way: the write reports success, and the value that comes back
 later is not the value that went in. So almost every check here is a ROUND TRIP with a control
@@ -404,6 +404,89 @@ if tbl:
        label="a line is refused by name - it is not a table", expect_fail=True)
 else:
     check("a table could be created for the CSV checks", False, "draw_table did not return a handle")
+
+
+
+# ── data links ──────────────────────────────────────────────────────────────
+# THE OPEN QUESTION this tranche was built to answer: does AutoCAD's Excel adapter accept a plain
+# CSV as a data-link source, or does it insist on a real workbook? If it insists, this is the same
+# file-dependency wall as point clouds. The checks below are written to find out rather than to
+# assume - the create step is allowed to fail, and what it says is the finding.
+print("\n== data links: does the Excel adapter take a CSV? ==")
+src_csv = os.path.join(SCRATCH, "tblink-source.csv")
+with open(src_csv, "w", encoding="utf-8", newline="") as f:
+    f.write("part,qty\r\nbolt,10\r\nnut,20\r\n")
+
+r = do("data", "create_data_link", {"name": "TBLINK", "path": src_csv},
+       label="create a data link pointing at a CSV")
+csv_accepted = isinstance(r, dict)
+if csv_accepted:
+    check("the link reports the connection string it was given",
+          src_csv.replace("\\", "\\") in str(r.get("connectionString")), str(r)[:250])
+else:
+    print("       -> CSV was REFUSED by the Excel adapter. That is the finding, not a bug.")
+
+r = do("data", "list_data_links", {})
+if isinstance(r, dict) and csv_accepted:
+    names = [x.get("name") for x in (r.get("links") or [])]
+    check("PROVEN it is listed by a DIFFERENT route from the one that made it - the ACAD_DATALINK "
+          "dictionary, not the manager that created it",
+          "TBLINK" in names, str(names))
+
+if csv_accepted:
+    tbl2 = hnd(do("annotations", "add_table",
+                  {"position": {"x": 700, "y": 0, "z": 0}, "rows": 3, "cols": 2,
+                   "rowHeight": 10, "colWidth": 40},
+                  label="a table for the link"))
+    if tbl2:
+        do("data", "link_table_to_source", {"handle": tbl2, "name": "TBLINK"})
+
+        # ATTACHING already pulls the data - measured, and it is why the first version of this
+        # check passed for the wrong reason: it compared before and after around an update that
+        # had nothing left to do. The honest test is to CHANGE THE SOURCE and require the table
+        # to follow it.
+        r = do("data", "update_data_link", {"handle": tbl2, "direction": "fromSource"},
+               label="update with the source unchanged")
+        if isinstance(r, dict):
+            check("PROVEN attaching the link already fetched: an update with nothing to do "
+                  "correctly reports changed=false, which is not a failure and says so",
+                  r.get("changed") is False, str(r)[:250])
+            # THE finding this tranche exists to record: a CSV is accepted but NOT split on
+            # commas - the whole line lands in one cell.
+            first = r.get("firstRowAfter") or ["", "x"]
+            check("PROVEN the Excel adapter does NOT parse a CSV into columns: the whole line "
+                  "'part,qty' lands in ONE cell and the second is empty. A CSV data link gives "
+                  "raw lines, not a table - which is what a user has to know before relying on one",
+                  "part,qty" in str(first[0]) and first[1] == "", str(first))
+
+        with open(src_csv, "w", encoding="utf-8", newline="") as f:
+            f.write("CHANGED,qty\r\nbolt,10\r\nnut,20\r\n")
+        r = do("data", "update_data_link", {"handle": tbl2, "direction": "fromSource"},
+               label="update after the source file was CHANGED on disk")
+        if isinstance(r, dict):
+            check("PROVEN the update really re-reads the source: changing the file on disk and "
+                  "updating brings the new text in. This is the check the first version got "
+                  "wrong - it compared before and after around an update with nothing to do, "
+                  "and passed on data that was already there",
+                  r.get("changed") is True
+                  and "CHANGED" in str((r.get("firstRowAfter") or [""])[0]),
+                  f"before={r.get('firstRowBefore')} after={r.get('firstRowAfter')}")
+
+        do("data", "unlink_table", {"handle": tbl2})
+        r = do("data", "unlink_table", {"handle": tbl2},
+               label="unlinking twice is refused - nothing left to unlink", expect_fail=True)
+
+do("data", "create_data_link", {"name": "TBLINK2", "path": os.path.join(SCRATCH, "nope.xlsx")},
+   label="a link to a file that does not exist is refused", expect_fail=True)
+if csv_accepted:
+    do("data", "create_data_link", {"name": "TBLINK", "path": src_csv},
+       label="a duplicate link name is refused", expect_fail=True)
+do("data", "link_table_to_source", {"handle": line1, "name": "TBLINK"},
+   label="a line is refused - it is not a table", expect_fail=True)
+do("data", "link_table_to_source", {"handle": tbl, "name": "NO-SUCH-LINK"},
+   label="an unknown data link name is refused", expect_fail=True)
+do("data", "update_data_link", {"handle": tbl, "direction": "sideways"},
+   label="an unknown direction is refused", expect_fail=True)
 
 
 passed = sum(1 for _, ok in results if ok)

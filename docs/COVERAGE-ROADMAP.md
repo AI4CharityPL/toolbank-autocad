@@ -929,7 +929,7 @@ own list. The verification asserts that absence, so the limit cannot quietly cha
 global `acad.pgp` and reloading it with `RE_INIT` — a permanent change to the AutoCAD
 installation rather than to a drawing.
 
-### 5.2 `acad-data` — xdata, dictionaries, data links (≈28 → **18 built, 5 struck, 5 outstanding**)
+### 5.2 `acad-data` — xdata, dictionaries, data links (≈28 → **23 built, 5 struck**) — COMPLETE
 
 ```
 attach_xdata                get_xdata                  delete_xdata
@@ -989,13 +989,30 @@ that looks fine silently becomes two columns.
 `query_by_property` is checked against a filter matching SOME entities and one matching NONE. A
 query that ignored its filters entirely would pass the first and fail only the second.
 
-**Remaining in 5.2 — the data-link half, 5 tools.** The first probe round was wrong about the
-route: `Database.DataLinkManagerId` does not exist but **`Database.DataLinkManager` does**, along
-with `AddDataLink`, `GetDataLink(name)`, `RemoveDataLink(name)` and `Table.Cells[r,c].DataLink`.
-`DataLinkManager.UpdateDataLink` is absent, so `update_data_link` needs another route or ships as
-a recreate. Before costing them, one live question has to be answered: whether AutoCAD accepts a
-plain CSV as a data-link source, or insists on a real Excel workbook — which would make this the
-same file-dependency wall as 4.5.
+**Third tranche COMPLETE: the data-link half, 5 tools, 126/126 over the whole category.**
+`create_data_link`, `list_data_links`, `link_table_to_source`, `unlink_table`,
+`update_data_link`. 5.2 is done at 23 built and 5 struck.
+
+**The open question is answered: AutoCAD's Excel adapter DOES accept a plain CSV** — there is no
+file-dependency wall here, unlike 4.5. But it does **not split on commas**: each line arrives
+whole in a single cell, so a CSV data link gives raw lines rather than a grid. That is in the
+`create_data_link` description, because it decides whether the tool is any use to a given caller,
+and it is an asserted check rather than a footnote — half-working behaviour of exactly this kind
+is what otherwise passes for success.
+
+Three more measured corrections, each of which the obvious name got wrong:
+`Database.DataLinkManagerId` does not exist but **`Database.DataLinkManager`** does;
+`DataLinkManager.UpdateDataLink` is absent and the route is **`Table.UpdateDataLink`**;
+`GetDataLink` takes a NAME with no enumerating overload, so `list_data_links` walks the
+**`ACAD_DATALINK` dictionary** — which has the side benefit of making listing genuinely
+independent of creation. And unlinking is **`Cell.RemoveDataLink()`**: assigning `ObjectId.Null`
+to `Cell.DataLink` is `eInvalidInput`, with `Cell.IsLinked` (a `bool?`) as the state.
+
+**A check that passed for the wrong reason, caught and rewritten.** `link_table_to_source` already
+pulls the data at attach time, so comparing the table before and after the first
+`update_data_link` compared an update that had nothing left to do — and passed on data that was
+already there. The check now CHANGES THE CSV ON DISK and requires the table to follow, and
+asserts that the first update correctly reports `changed=false`.
 
 **Asked of the compiler 2026-08-10, and this phase is clear.** None of it touches the command
 line — it is ordinary `Database` work, which is the part that has never given trouble, unlike 5.1.
@@ -1174,12 +1191,12 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **23** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **28** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **622** | **77 %** |
+| | **Total** | **813** | **627** | **77 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 610 (337 + 75 + 71 + 51 + 53 + 23)
-while the bank measures **622**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 615 (337 + 75 + 71 + 51 + 53 + 28)
+while the bank measures **627**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

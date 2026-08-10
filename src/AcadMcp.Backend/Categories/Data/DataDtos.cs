@@ -258,3 +258,70 @@ public sealed record CsvImportResult(
     [property: JsonPropertyName("columns")]   int Columns,
     [property: JsonPropertyName("firstCell")] string? FirstCell,
     [property: JsonPropertyName("note")]      string Note);
+
+// ── third tranche: data links ──
+
+public sealed record DataLinkCreateArgs(
+    [property: JsonPropertyName("name")]        string Name,
+    [property: JsonPropertyName("path")]        string Path,
+    [property: JsonPropertyName("range")]       string? Range = null,
+    [property: JsonPropertyName("description")] string? Description = null,
+    [property: JsonPropertyName("adapter")]     string? Adapter = null);
+
+public sealed record DataLinkAttachArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("name")]   string Name,
+    [property: JsonPropertyName("row")]    int? Row = null,
+    [property: JsonPropertyName("column")] int? Column = null);
+
+public sealed record DataLinkCellArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("row")]    int? Row = null,
+    [property: JsonPropertyName("column")] int? Column = null);
+
+public sealed record DataLinkUpdateArgs(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("direction")] string? Direction = null);
+
+public sealed record DataLinkCreateResult(
+    [property: JsonPropertyName("name")]             string Name,
+    [property: JsonPropertyName("handle")]           string Handle,
+    [property: JsonPropertyName("connectionString")] string ConnectionString,
+    [property: JsonPropertyName("adapter")]          string Adapter,
+    [property: JsonPropertyName("sourceExists")]     bool SourceExists,
+    [property: JsonPropertyName("note")]             string Note);
+
+public sealed record DataLinkInfo(
+    [property: JsonPropertyName("name")]             string Name,
+    [property: JsonPropertyName("description")]      string? Description,
+    [property: JsonPropertyName("connectionString")] string? ConnectionString,
+    [property: JsonPropertyName("adapter")]          string? Adapter,
+    [property: JsonPropertyName("handle")]           string Handle);
+
+public sealed record DataLinkListResult(
+    [property: JsonPropertyName("count")] int Count,
+    [property: JsonPropertyName("links")] IReadOnlyList<DataLinkInfo> Links,
+    [property: JsonPropertyName("note")]  string Note);
+
+public sealed record DataLinkAttachResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("name")]   string Name,
+    [property: JsonPropertyName("row")]    int Row,
+    [property: JsonPropertyName("column")] int Column,
+    [property: JsonPropertyName("note")]   string Note);
+
+public sealed record DataLinkUnlinkResult(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("row")]    int Row,
+    [property: JsonPropertyName("column")] int Column,
+    [property: JsonPropertyName("note")]   string Note);
+
+public sealed record DataLinkUpdateResult(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("direction")]      string Direction,
+    [property: JsonPropertyName("rows")]           int Rows,
+    [property: JsonPropertyName("columns")]        int Columns,
+    [property: JsonPropertyName("firstRowBefore")] IReadOnlyList<string> FirstRowBefore,
+    [property: JsonPropertyName("firstRowAfter")]  IReadOnlyList<string> FirstRowAfter,
+    [property: JsonPropertyName("changed")]        bool Changed,
+    [property: JsonPropertyName("note")]           string Note);

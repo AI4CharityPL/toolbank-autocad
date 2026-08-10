@@ -164,29 +164,31 @@ print("\n== extrude_mesh_face: can a single mesh face be addressed at all? ==")
 box = hnd(do("mesh", "create_mesh_box", {"corner1": {"x": 700, "y": 0, "z": 0},
                                          "corner2": {"x": 800, "y": 100, "z": 100}},
              label="a box mesh, 8 vertices and 6 faces"))
-# ANSWERED, and the answer is no. AutoCAD accepted the call, returned success, and left the cage
-# at 8 vertices and 6 faces - a hand-built SubentityId addresses nothing on a SubDMesh. The tool
-# is therefore WITHDRAWN rather than shipped: it cannot be shown to work, and one that silently
-# does nothing while reporting success is worse than an absent one.
-r = do("mesh", "extrude_mesh_face", {"handle": box, "faceIndex": 1, "distance": 50.0},
-       label="a hand-built face path addresses nothing, and the tool refuses rather than "
-             "reporting the success AutoCAD gave it", expect_fail=True)
-check("and the refusal says the cage came back unchanged, which is what makes this a finding "
-      "rather than a guess",
-      "cage is unchanged" in str(r) and "addressed nothing" in str(r), str(r)[:320])
+# ANSWERED, and the answer is no. Measured on the deploy that carried the tool: AutoCAD accepted
+# the call, RETURNED SUCCESS, and left the cage at 8 vertices and 6 faces - a hand-built
+# SubentityId addresses nothing on a SubDMesh. The tool was therefore WITHDRAWN from the bank,
+# so what this check now asserts is the shipped state: that it is NOT offered.
+ok_absent, msg = S["mesh"].call("extrude_mesh_face", {"handle": box, "faceIndex": 1,
+                                                      "distance": 50.0})
+check("PROVEN: extrude_mesh_face is not in the bank - it was built, measured, found to do "
+      "nothing while reporting success, and withdrawn rather than shipped",
+      (not ok_absent) and "not found in category" in str(msg), str(msg)[:250])
+r2 = do("mesh", "get_mesh_info", {"handle": box}, label="and the box is untouched")
+check("the cage is still 8 vertices and 6 faces, which is what the withdrawn tool would have "
+      "left it as anyway - the reason it is gone",
+      isinstance(r2, dict) and r2.get("vertices") == 8 and r2.get("faces") == 6, str(r2)[:200])
 
 print("\n-- refusals --")
-do("mesh", "extrude_mesh_face", {"handle": box, "faceIndex": 99, "distance": 10},
-   label="a face index out of range is refused", expect_fail=True)
-do("mesh", "extrude_mesh_face", {"handle": box, "distance": 10},
-   label="a missing face index is refused", expect_fail=True)
+# The three refusal checks that used to sit here pointed at extrude_mesh_face and now pass
+# because the tool is ABSENT rather than because its validation works - a check that passes for
+# the wrong reason is worth nothing, so they are gone rather than left to look green.
 do("mesh", "create_mesh_sphere", {"center": {"x": 0, "y": 0, "z": 0}, "radius": 50, "rings": 1},
    label="a sphere of 1 ring is refused - that is not a sphere", expect_fail=True)
 do("mesh", "create_mesh_cone", {"basePoint": {"x": 0, "y": 0, "z": 0}, "radius": 50, "height": 0},
    label="a cone of zero height is refused", expect_fail=True)
 ln = hnd(do("geometry-2d", "draw_line", {"start": {"x": 0, "y": 400}, "end": {"x": 100, "y": 400}},
             label="a line"))
-do("mesh", "extrude_mesh_face", {"handle": ln, "faceIndex": 0, "distance": 10},
+do("mesh", "get_mesh_info", {"handle": ln},
    label="a line is refused by name", expect_fail=True)
 
 # ── on screen ────────────────────────────────────────────────────────────────

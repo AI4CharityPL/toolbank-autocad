@@ -35,6 +35,20 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Fixed
+
+- **Three checks in the mesh verification were passing for the wrong reason.** After
+  `extrude_mesh_face` was withdrawn from the bank, the refusal checks aimed at it — a face index
+  out of range, a missing index, a line passed as a mesh — all went green because the tool is
+  **absent**, not because its validation works. A check that passes for the wrong reason is worth
+  nothing, so they were deleted rather than left to look healthy, and the one remaining assertion
+  now states the shipped fact: `extrude_mesh_face` is not offered, and the box it would have been
+  called on is still 8 vertices and 6 faces.
+
+  With that corrected the tranche runs **28/28** on a freshly started AutoCAD, and the image
+  carries what no number does: the 12×6 sphere as a visible twelve-sided polygon beside the 32×16
+  one that reads as round, which is the faceting argument made visual.
+
 ### Changed
 
 - **Phase 4.4 reconnaissance: the Section entity.** Eleven of the twelve planned tools are

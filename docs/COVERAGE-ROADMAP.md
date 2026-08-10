@@ -929,7 +929,7 @@ own list. The verification asserts that absence, so the limit cannot quietly cha
 global `acad.pgp` and reloading it with `RE_INIT` — a permanent change to the AutoCAD
 installation rather than to a drawing.
 
-### 5.2 `acad-data` — xdata, dictionaries, data links (≈28)
+### 5.2 `acad-data` — xdata, dictionaries, data links (≈28 → **13 built, 5 struck, 10 outstanding**)
 
 ```
 attach_xdata                get_xdata                  delete_xdata
@@ -947,6 +947,31 @@ list_tagged_entities
 
 **Note:** `selection.save_selection_set` already persists to an xrecord dictionary internally.
 That mechanism is used but not exposed — this phase makes it a first-class capability.
+
+**First tranche COMPLETE 2026-08-10: 13 tools, 72/72 live, no defects found.** `attach_xdata`,
+`get_xdata`, `delete_xdata`, `register_app_name`, `list_registered_apps`,
+`create_extension_dictionary`, `list_dictionaries`, `get_dictionary_entry`,
+`set_dictionary_entry`, `delete_dictionary_entry`, `create_xrecord`, `read_xrecord`,
+`update_xrecord`. The plugin compiled on the first attempt — the reconnaissance below is what
+bought that, and it is the first tranche this session to find nothing wrong on the live run.
+
+**Every value carries an EXPLICIT type** — string, real, int, point, layer or handle — rather than
+one inferred from the JSON. JSON cannot tell `1` from `1.0` and AutoCAD very much can: an int
+stored where a real was meant reads back as a different type and quietly breaks the round trip.
+The verification asserts the type alongside the value everywhere.
+
+Three controls carry the weight, all of them things a wrong implementation would pass without:
+
+* **application isolation** — two applications write xdata to the SAME entity and each must read
+  back only its own. A tool storing per-entity rather than per-application passes every
+  single-application check and fails only here.
+* **entity isolation** — two entities under the same application name with different values.
+* **a cross-tool control on `lisp.purge_regapps`** — a name referenced by xdata must SURVIVE a
+  purge, and the same name must become purgeable once its xdata is deleted. That is the claim
+  `purge_regapps` makes about itself, and this is the first time it has been checked from outside.
+
+Remaining in 5.2: the data-link half, plus `query_by_property`, `tag_entities` and
+`list_tagged_entities`, which are higher-level tools built on the xdata now in place.
 
 **Asked of the compiler 2026-08-10, and this phase is clear.** None of it touches the command
 line — it is ordinary `Database` work, which is the part that has never given trouble, unlike 5.1.
@@ -1125,12 +1150,12 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **5** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **18** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **604** | **74 %** |
+| | **Total** | **813** | **617** | **76 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 592 (337 + 75 + 71 + 51 + 53 + 5)
-while the bank measures **604**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 605 (337 + 75 + 71 + 51 + 53 + 18)
+while the bank measures **617**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

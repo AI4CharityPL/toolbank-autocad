@@ -77,6 +77,34 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.2, first tranche — `acad-data`: xdata, dictionaries and xrecords.** New category,
+  13 tools, bank 604 → 617. Live: **72/72, first run, no defects** — the plugin compiled on the
+  first attempt and the live run found nothing wrong, which the reconnaissance bought.
+
+  Two storage mechanisms that are not interchangeable, and every description says which to pick:
+  XDATA hangs off one entity, is filed under a registered application name, holds a flat list and
+  is capped at 16 KB per entity per application; DICTIONARIES are drawing-wide or per-entity, hold
+  named entries, nest, and have no cap worth worrying about. A few values belonging to one object
+  are xdata; a structure, or anything shared, is a dictionary.
+
+  **Every value carries an explicit `type`** — string, real, int, point, layer or handle — rather
+  than one inferred from the JSON. JSON cannot tell `1` from `1.0` and AutoCAD very much can: an
+  int stored where a real was meant reads back as a different type and breaks the round trip
+  silently. The verification asserts the type alongside the value on every value returned.
+
+  Three controls carry the verification, each catching a wrong implementation that would otherwise
+  look perfect: **application isolation** (two applications on the SAME entity must not see each
+  other — a tool storing per-entity passes every single-application check and fails only here),
+  **entity isolation** (two entities under the same application name), and **a cross-tool control
+  on `lisp.purge_regapps`** — a name referenced by xdata must survive a purge and become purgeable
+  once its xdata is deleted, which is the claim that tool makes about itself and had never been
+  checked from outside it.
+
+  `delete_xdata` uses AutoCAD's documented mechanism of writing a buffer holding only the
+  application name, which looks like a mistake and is not; it is verified by reading back, and the
+  other applications present before and after are reported so "left untouched" can be checked
+  rather than trusted.
+
 - **Phase 5.1 — `acad-lisp`, 5 tools shipped of 11 attempted, and one root cause behind the six
   that were not.** New category, bank 599 → 604. Live: **34/34** on what ships.
 

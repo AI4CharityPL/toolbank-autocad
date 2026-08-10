@@ -98,8 +98,14 @@ All notable changes to this project will be documented in this file. Format: [Ke
   and not the arguments. Rule 26 gains §15. The plugin handlers stay registered so the finding
   stays reproducible; they are simply not offered in the bank.
 
-  The fix is known — `DocumentCollection.ExecuteInCommandContextAsync`, which needs an async
-  runner the plugin does not yet have — and it unblocks all six at once.
+  **The obvious fix was then built, measured and reverted.**
+  `DocumentCollection.ExecuteInCommandContextAsync` supplies a command context, and a runner was
+  written around it withholding all three suspects — no UI-thread dispatch, no document lock, no
+  transaction across the call. All six tools still answered the same `eInvalidInput`, and the run
+  hung AutoCAD badly enough that the process had to be killed. Reverted to the five that are
+  verified. The next step is deliberately smaller: a throwaway `[CommandMethod]` in this plugin
+  that calls `Editor.Command` and reports what happens, which separates the plugin from the
+  dispatch path — the one thing none of the attempts so far has done.
 
   **`list_loaded_applications` ships documenting a measured limit.** `GetLoadedModules` returns
   about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core and does NOT report netloaded .NET

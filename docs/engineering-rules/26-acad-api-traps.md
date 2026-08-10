@@ -408,10 +408,24 @@ deployed and all failed identically; three different LISP formulations were trie
 wrapped to write its value to a file) and every one produced the same error. When several tools
 that share no code fail with the same status, stop varying the arguments and suspect the CONTEXT.
 
-The documented fix is `DocumentCollection.ExecuteInCommandContextAsync`, which runs a delegate in
-command context — and needs an async runner, since it cannot be awaited from the UI thread it
-needs. `SendStringToExecute` also works but queues, so its result cannot be observed, which is the
-whole thing this category exists to avoid.
+**`ExecuteInCommandContextAsync` was then BUILT and MEASURED, and it does not fix this.** The
+obvious next step is `DocumentCollection.ExecuteInCommandContextAsync`, which supplies a command
+context. A runner was written that calls it with none of the three things suspected of breaking
+the calls — no `UiThreadDispatcher` (it marshals itself, and posting to the UI thread first would
+deadlock), no `LockDocument` (the document is already locked inside a command context), and no
+transaction spanning the call. Every one of the six tools still answered the same bare
+`eInvalidInput`, and the run then **hung AutoCAD**: a later call left a handler blocked and the
+pipe stopped answering, so the process had to be killed. Do not reach for this API expecting it to
+be the answer; it was reverted.
+
+What that leaves: the failure is not the context ALONE, and it is not the arguments. Something
+about driving the command line from a pipe-served handler in this plugin is unsound, and finding
+it needs a SMALLER experiment than a category of eleven tools — a throwaway `[CommandMethod]` in
+this same plugin that calls `Editor.Command` and reports what happens. That separates the plugin
+from the dispatch path, which none of the three attempts so far has done.
+
+`SendStringToExecute` remains available and remains rejected: it queues, so its result cannot be
+observed, which is the whole thing this category exists to avoid.
 
 **What did work, and why it is worth noting:** `Application.GetSystemVariable`/`SetSystemVariable`
 and the ordinary `Database`/`Transaction` API are unaffected. The dividing line is not "old API vs

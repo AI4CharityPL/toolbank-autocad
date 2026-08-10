@@ -899,9 +899,17 @@ document lock and an open transaction. They need a **command** context. Three se
 formulations were tried and failed identically — when tools that share no code fail with the same
 status, the context is the suspect, not the arguments. Rule 26 §15.
 
-**The fix is known and is the next tranche:** `DocumentCollection.ExecuteInCommandContextAsync`,
-which needs an async runner the plugin does not yet have. That one change unblocks all six, so
-5.1 is 5 built now and 11 once the runner exists.
+**The obvious fix was tried and does NOT work.** `DocumentCollection.ExecuteInCommandContextAsync`
+supplies a command context, and a runner was built around it that deliberately withheld all three
+suspects — no UI-thread dispatch, no document lock, no transaction across the call. All six tools
+still answered the same `eInvalidInput`, and the run hung AutoCAD badly enough to need the process
+killed. It was reverted; rule 26 §15 records it so the next attempt does not start there.
+
+So the six stay out, and the next step is smaller rather than larger: a throwaway `[CommandMethod]`
+inside this same plugin that calls `Editor.Command` and reports what happens. That separates the
+plugin from the dispatch path — the one thing none of the three attempts has done — and it answers
+whether the call is reachable from this plugin AT ALL, before another eleven-tool category is built
+on the assumption that it is.
 
 **`list_loaded_applications` documents a measured limit rather than glossing it.**
 `GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does

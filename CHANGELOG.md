@@ -35,6 +35,32 @@ All notable changes to this project will be documented in this file. Format: [Ke
   renamed path, since the `CheckManifestSync` MSBuild target resolves it — `check-manifests.ps1`
   reports 38 categories / 39 manifests / 0 problems, and 219/219 tests pass.
 
+### Changed
+
+- **Phase 4.4 reconnaissance: the Section entity.** Eleven of the twelve planned tools are
+  reachable, asked of the compiler while AutoCAD was down so the next live slot is not spent on
+  discovery.
+
+  **The construction route is the constructor, not a factory** — there is no
+  `Section.CreateSectionPlane` in either form, and `Section.Boundary` is read-only with no
+  `SetBoundary`, so the cut line goes in when the object is made:
+  `new Section(Point3dCollection, Vector3d)`, or the three-argument form that also takes the
+  vertical direction.
+
+  Present and callable: `State` and `IsLiveSectionEnabled` (both get and set), `Elevation`,
+  `VerticalDirection`, `IndicatorTransparency`, `Height(SectionHeight)` with
+  `SetHeight(SectionHeight, double)`, `Settings`, `SectionSettings.CurrentSectionType` and
+  `GenerationOptions`, and
+  `GenerateSectionGeometry(Entity, out Array, out Array, out Array, out Array, out Array)` — five
+  output arrays, which is what makes the 2D, 3D and block generators one implementation driven by
+  a setting rather than three separate ones.
+
+  Two consequences for the tool set, both worth knowing before anything is written.
+  `add_section_jog` cannot ADD a vertex, because the boundary is immutable: it has to rebuild the
+  Section from a new point list, so it will ship as a replace and say so. And
+  `create_section_from_object` is **struck** — nothing in the managed API derives a section line
+  from an existing entity.
+
 ### Added
 
 - **Phase 4.3, third tranche — the curved primitives, and a tool withdrawn after being built.**

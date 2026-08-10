@@ -750,14 +750,41 @@ and face splitting are not exposed". The real names are `SmoothLevel`, `SplitFac
 buildable tools** - after `ShellSolid`/`ShellBody`, `Profile3d`, and `Surface.Trim` answering as
 `MemoryExtensions.Trim`. One round is not evidence of absence. See rule 26 §12c.
 
-### 4.4 `acad-sections-3d` (≈12)
+### 4.4 `acad-sections-3d` (≈12 → **11 reachable, 1 struck**) — asked of the compiler 2026-08-10
 
 ```
-create_section_plane        create_section_from_object create_section_orthographic
-set_section_state           set_section_live           toggle_live_section
-generate_section_block      generate_section_2d        generate_section_3d
-set_section_settings        list_section_planes        add_section_jog
+create_section_plane ..     create_section_from_object ✘ create_section_orthographic ..
+set_section_state ..        set_section_live ..        toggle_live_section ..
+generate_section_block ..   generate_section_2d ..     generate_section_3d ..
+set_section_settings ..     list_section_planes ..     add_section_jog ..(as replace)
+set_section_height ..(added)
 ```
+
+**The construction route is the constructor, not a factory.** There is no
+`Section.CreateSectionPlane` in either form, and `Section.Boundary` is READ-ONLY with no
+`SetBoundary` — so the section line goes in when the object is made:
+`new Section(Point3dCollection, Vector3d)` for the cut line and its normal, or the three-argument
+form which also takes the vertical direction.
+
+Present and callable: `Section.State` (get and set, over `SectionState`),
+`Section.IsLiveSectionEnabled` (get and set), `Section.Elevation`, `Section.VerticalDirection`
+(get and set), `Section.IndicatorTransparency`, `Section.Height(SectionHeight)` and
+`SetHeight(SectionHeight, double)`, `Section.Settings`, `SectionSettings.CurrentSectionType`
+(get and set, over `SectionType`), `SectionSettings.GenerationOptions`, and
+**`Section.GenerateSectionGeometry(Entity, out Array, out Array, out Array, out Array, out Array)`**
+— five output arrays, which is what makes the 2D, 3D and block generators one implementation
+with three settings rather than three separate ones.
+
+**Confirmed absent:** `CreateSectionPlane` (instance and static), `SetBoundary`,
+`AddVertexAt`/`RemoveVertexAt`/`GetVertexAt`, `SetVerticalHeights`, `TopHeight`/`BottomHeight`,
+`Thickness`, `GetSettings`, `SectionSettings.SetSectionType`, `SetSectionGeometry` and
+`GetVisibility`. `Section.Normal` is read-only, and `NumVertices` is present but marked obsolete
+in favour of `Boundary`.
+
+Two consequences for the tool set. `add_section_jog` cannot ADD a vertex, because the boundary
+is immutable — it has to rebuild the Section from a new point list, so it ships as a replace and
+the description will say so. And `create_section_from_object` is struck: nothing in the managed
+API derives a section line from an existing entity.
 
 ### 4.5 `acad-pointclouds` (≈12)
 

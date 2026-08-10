@@ -27,3 +27,20 @@ internal sealed record DictArgsDto(
     [property: JsonPropertyName("nested")]           bool? Nested,
     [property: JsonPropertyName("force")]            bool? Force,
     [property: JsonPropertyName("xlateReferences")]  bool? XlateReferences);
+
+internal sealed record TagArgsDto(
+    [property: JsonPropertyName("handles")] List<string>? Handles,
+    [property: JsonPropertyName("tag")]     string? Tag,
+    [property: JsonPropertyName("value")]   string? Value);
+
+internal sealed record QueryArgsDto(
+    [property: JsonPropertyName("layer")]       string? Layer,
+    [property: JsonPropertyName("objectClass")] string? ObjectClass,
+    [property: JsonPropertyName("colorIndex")]  int? ColorIndex,
+    [property: JsonPropertyName("linetype")]    string? Linetype,
+    [property: JsonPropertyName("hasXdataApp")] string? HasXdataApp);
+
+internal sealed record TableCsvArgsDto(
+    [property: JsonPropertyName("handle")]    string? Handle,
+    [property: JsonPropertyName("path")]      string? Path,
+    [property: JsonPropertyName("overwrite")] bool? Overwrite);

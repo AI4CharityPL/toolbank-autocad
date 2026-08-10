@@ -141,4 +141,49 @@ public static class DataTools
         RequiresPlugin = true)]
     public static Task<XrecordUpdateResult> UpdateXrecord(IPluginGateway gw, XrecordUpdateArgs args, CancellationToken ct)
         => DataProxy.CallAsync<XrecordUpdateArgs, XrecordUpdateResult>(gw, "acad.data.update_xrecord", args, T_NORMAL, ct);
+
+    [McpTool("tag_entities", "Tag one or more entities with a name, and optionally a value - the quick way to mark a set of objects so they can be found again later. A tag IS xdata under the reserved application name TOOLBANK_TAG, which matters: the tag travels with the entity when it is copied, can be read by get_xdata like any other extended data, and shows up in list_registered_apps rather than hiding in a private format. ONE tag per entity - tagging again REPLACES, and the number of entities that already carried a tag is reported, because nothing else would tell you. Find them again with list_tagged_entities, or with query_by_property using hasXdataApp.", "data",
+        Intent = new[] { "tag these entities", "mark objects so i can find them later",
+                         "oznacz obiekty tagiem", "label a set of entities",
+                         "otaguj encje na rysunku", "mark these as reviewed",
+                         "add a tag to selected objects" },
+        RequiresPlugin = true)]
+    public static Task<TagResult> TagEntities(IPluginGateway gw, TagArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<TagArgs, TagResult>(gw, "acad.data.tag_entities", args, T_NORMAL, ct);
+
+    [McpTool("list_tagged_entities", "Find the entities carrying a tag. Read-only. Name a tag to filter to it, or omit one to list everything tagged. Model space only, and erased entities are skipped. The result also carries a tagsInDrawing summary counting every tag present regardless of the filter, which is the quick way to see what tags exist before querying one of them - useful because a tag that was never applied and a tag spelled slightly differently look the same from the outside.", "data",
+        Intent = new[] { "list tagged entities", "which objects have this tag",
+                         "znajdz otagowane obiekty", "show everything i marked",
+                         "jakie tagi sa na rysunku", "find entities by tag",
+                         "what did i tag as reviewed" },
+        ReadOnly = true, RequiresPlugin = true)]
+    public static Task<TagListResult> ListTaggedEntities(IPluginGateway gw, TagListArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<TagListArgs, TagListResult>(gw, "acad.data.list_tagged_entities", args, T_NORMAL, ct);
+
+    [McpTool("query_by_property", "Find entities in model space by their properties: layer, object class, colour index, linetype, or whether they carry xdata from a named application. Read-only. Every filter given must match - they are ANDed, not ORed - and at least one is required, since a query with no filter would return the whole drawing. objectClass matches on SUBSTRING, so 'Line' finds AcDbLine and AcDbPolyline both; give the full class name to be exact. hasXdataApp is how you find everything one application or tool has touched. The number of entities scanned is reported alongside the number matched, so a small result can be told from an empty drawing.", "data",
+        Intent = new[] { "find entities by layer", "query objects by property",
+                         "znajdz obiekty po warstwie", "which entities are on this layer",
+                         "wyszukaj encje po wlasciwosciach", "find all circles in the drawing",
+                         "select objects by colour" },
+        ReadOnly = true, RequiresPlugin = true)]
+    public static Task<QueryResult> QueryByProperty(IPluginGateway gw, QueryArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<QueryArgs, QueryResult>(gw, "acad.data.query_by_property", args, T_NORMAL, ct);
+
+    [McpTool("export_table_to_csv", "Write a table entity out as a .csv file. Refuses to overwrite an existing file unless `overwrite` is set. IMPORTANT, and it is not an AutoCAD wrapper: Table.ExportToCsv does not exist in the managed API, so this reads the cells and writes the file itself. Two consequences worth knowing - cell text is taken AS DISPLAYED, so a formula exports as its result rather than as the formula; and fields containing a comma, a quote or a newline are properly quoted with interior quotes doubled, without which a cell containing a comma silently becomes two columns. UTF-8 with no byte-order mark.", "data",
+        Intent = new[] { "export this table to csv", "save a table as a csv file",
+                         "eksportuj tabele do csv", "get the table data out as a file",
+                         "zapisz tabele do pliku csv", "dump a table to a spreadsheet file",
+                         "export table data" },
+        RequiresPlugin = true)]
+    public static Task<CsvExportResult> ExportTableToCsv(IPluginGateway gw, TableCsvArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<TableCsvArgs, CsvExportResult>(gw, "acad.data.export_table_to_csv", args, T_NORMAL, ct);
+
+    [McpTool("import_csv_to_table", "Fill an existing table entity from a .csv file. IMPORTANT: the table is RESIZED to the CSV and its previous contents are REPLACED - this fills a table, it does not merge into one. Table.ImportFromCsv does not exist in the managed API, so the parsing is done here: quoted fields are handled properly, so a cell containing a comma stays one cell, and ragged rows are padded to the widest row rather than refused. Everything lands as TEXT, so a column of numbers arrives as text that looks like numbers - which is what a CSV actually contains. Create the table first with annotations.add_table.", "data",
+        Intent = new[] { "import a csv into this table", "fill a table from a csv file",
+                         "wczytaj csv do tabeli", "load spreadsheet data into a table",
+                         "zaimportuj dane z pliku csv do tabeli", "populate a table from a file",
+                         "put csv data in the drawing" },
+        RequiresPlugin = true)]
+    public static Task<CsvImportResult> ImportCsvToTable(IPluginGateway gw, TableCsvArgs args, CancellationToken ct)
+        => DataProxy.CallAsync<TableCsvArgs, CsvImportResult>(gw, "acad.data.import_csv_to_table", args, T_NORMAL, ct);
 }

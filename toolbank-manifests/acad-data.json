@@ -14,28 +14,40 @@
     "apps",
     "attach",
     "autocad",
+    "by",
     "cad",
     "create",
+    "csv",
     "data",
     "delete",
     "dictionaries",
     "dictionary",
     "dwg",
+    "entities",
     "entry",
+    "export",
     "extension",
     "get",
+    "import",
     "list",
     "name",
+    "property",
+    "query",
     "read",
     "register",
     "registered",
     "set",
+    "table",
+    "tag",
+    "tagged",
+    "to",
     "update",
     "xdata",
     "xrecord"
   ],
   "intent_examples": [
     "add a regapp to the drawing",
+    "add a tag to selected objects",
     "attach a dictionary to an entity",
     "attach xdata to this entity",
     "browse the drawing dictionaries",
@@ -54,34 +66,55 @@
     "dodaj slownik do encji rysunku",
     "dodaj wartosc do slownika rysunku",
     "dopisz dane rozszerzone do obiektu",
+    "dump a table to a spreadsheet file",
+    "eksportuj tabele do csv",
+    "export table data",
+    "export this table to csv",
     "extension dictionary",
+    "fill a table from a csv file",
+    "find all circles in the drawing",
+    "find entities by layer",
+    "find entities by tag",
     "get application data from an entity",
+    "get the table data out as a file",
     "get the value stored under this key",
     "get the values stored under this name",
     "give an object its own dictionary",
+    "import a csv into this table",
     "jakie dane sa zapisane na tej encji",
     "jakie nazwy aplikacji sa w rysunku",
+    "jakie tagi sa na rysunku",
     "jakie wpisy sa w slowniku",
+    "label a set of entities",
     "list entries of an extension dictionary",
     "list regapps",
     "list registered application names",
+    "list tagged entities",
     "list the dictionaries in this drawing",
     "lista slownikow w rysunku",
     "lista zarejestrowanych aplikacji",
     "load a named data record",
+    "load spreadsheet data into a table",
     "look up a named record",
     "make a named data record",
+    "mark objects so i can find them later",
+    "mark these as reviewed",
     "modify stored values",
     "odczytaj dane rozszerzone obiektu",
     "odczytaj wpis ze slownika",
     "odczytaj xrecord ze slownika",
+    "otaguj encje na rysunku",
     "overwrite a stored record",
+    "oznacz obiekty tagiem",
     "persist some data by name",
     "pobierz wartosc z slownika rysunku",
     "pobierz zapisane dane z rysunku",
+    "populate a table from a file",
     "prepare an app name for xdata",
     "put a named record in the drawing",
     "put application data on an entity",
+    "put csv data in the drawing",
+    "query objects by property",
     "read a dictionary entry",
     "read a stored setting",
     "read an xrecord",
@@ -96,7 +129,10 @@
     "replace the contents of a data record",
     "save a list of values by name",
     "save a setting under a key",
+    "save a table as a csv file",
+    "select objects by colour",
     "show dictionary entries",
+    "show everything i marked",
     "show extended data",
     "show xdata application names",
     "skasuj dane aplikacji z encji",
@@ -109,28 +145,38 @@
     "store structured data on one object",
     "strip extended data off an entity",
     "tag an entity with an id",
+    "tag these entities",
     "update an xrecord",
     "usun dane rozszerzone z obiektu",
     "usun wpis ze slownika",
     "utworz slownik rozszerzen dla obiektu",
     "utworz xrecord w slowniku",
+    "wczytaj csv do tabeli",
     "what custom data is on this object",
+    "what did i tag as reviewed",
     "what is in the named objects dictionary",
     "what is stored under this dictionary key",
     "what regapps are in this drawing",
     "what values are in this xrecord",
     "which applications have touched this drawing",
+    "which entities are on this layer",
+    "which objects have this tag",
+    "wyszukaj encje po wlasciwosciach",
+    "zaimportuj dane z pliku csv do tabeli",
     "zaktualizuj xrecord",
     "zapisz strukture danych w rysunku",
+    "zapisz tabele do pliku csv",
     "zapisz wlasne dane na encji rysunku",
     "zapisz wpis w slowniku",
     "zarejestruj nazwe aplikacji",
-    "zmien zapisane dane w rysunku"
+    "zmien zapisane dane w rysunku",
+    "znajdz obiekty po warstwie",
+    "znajdz otagowane obiekty"
   ],
   "tools_summary": [
     {
       "name": "attach_xdata",
-      "description": "Attach extended data to an entity under an application name. Xdata is how an application stores its own information ON an entity - a cost code, a revision, an ID from another system - so that it travels with the entity when it is copied. The application name is what keeps two applications from treading on each other, and it is REGISTERED automatically here because AutoCAD refuses xdata filed under an unregistered name. Each value carries an explicit `type`: string, real, int, point, layer or handle. The type is given rather than guessed because JSON cannot tell 1 from 1.0 and AutoCAD very much can - an int stored where a real was meant reads back as a different type. The values are read back after writing and reported, so a write that did not take cannot look like one that did. HARD LIMIT: 16 KB per entity per application, which a long list of strings reaches sooner than it looks; anything larger belongs in a dictionary. Xdata already on the entity under other application names is left alone, and any found is listed in the result.",
+      "description": "Attach extended data to an entity under an application name. Xdata is how an application stores its own information ON an entity - a cost code, a revision, an ID from another system - so that it travels with the entity when it is copied. The application name is what keeps two applications from treading on each other, and it is REGISTERED automatically here because AutoCAD refuses xdata filed under an unregistered name. Each value carries an explicit \u0060type\u0060: string, real, int, point, layer or handle. The type is given rather than guessed because JSON cannot tell 1 from 1.0 and AutoCAD very much can - an int stored where a real was meant reads back as a different type. The values are read back after writing and reported, so a write that did not take cannot look like one that did. HARD LIMIT: 16 KB per entity per application, which a long list of strings reaches sooner than it looks; anything larger belongs in a dictionary. Xdata already on the entity under other application names is left alone, and any found is listed in the result.",
       "tags": [
         "attach",
         "xdata"
@@ -147,7 +193,7 @@
     },
     {
       "name": "create_extension_dictionary",
-      "description": "Give an entity its own dictionary. An extension dictionary belongs to ONE entity and travels with it - copy the entity and the data comes too - which is the difference from the drawing-wide named objects dictionary. Against xdata the trade is: no 16 KB cap, NAMED entries rather than a flat list, and nesting, at the cost of not being filed under an application name. An entity does not have one until something puts it there, and it can only have one, so this refuses if it already has it rather than silently reusing it. Afterwards, address it by passing the ENTITY's handle to the dictionary and xrecord tools.",
+      "description": "Give an entity its own dictionary. An extension dictionary belongs to ONE entity and travels with it - copy the entity and the data comes too - which is the difference from the drawing-wide named objects dictionary. Against xdata the trade is: no 16 KB cap, NAMED entries rather than a flat list, and nesting, at the cost of not being filed under an application name. An entity does not have one until something puts it there, and it can only have one, so this refuses if it already has it rather than silently reusing it. Afterwards, address it by passing the ENTITY\u0027s handle to the dictionary and xrecord tools.",
       "tags": [
         "create",
         "extension",
@@ -165,7 +211,7 @@
     },
     {
       "name": "create_xrecord",
-      "description": "Create a new xrecord - a named list of typed values living in a dictionary. This is the way to store a structure that is too large or too widely shared for xdata: there is no 16 KB cap, and entries are named rather than positional. REFUSES a key that already exists, so a repeated call cannot quietly overwrite something; update_xrecord is for replacing contents. Each value carries an explicit type - string, real, int, point, layer or handle - because JSON cannot tell 1 from 1.0. `xlateReferences` controls whether handles inside are translated when the drawing is bound or inserted elsewhere; leave it false unless the values really are handles that must follow. Read back after writing.",
+      "description": "Create a new xrecord - a named list of typed values living in a dictionary. This is the way to store a structure that is too large or too widely shared for xdata: there is no 16 KB cap, and entries are named rather than positional. REFUSES a key that already exists, so a repeated call cannot quietly overwrite something; update_xrecord is for replacing contents. Each value carries an explicit type - string, real, int, point, layer or handle - because JSON cannot tell 1 from 1.0. \u0060xlateReferences\u0060 controls whether handles inside are translated when the drawing is bound or inserted elsewhere; leave it false unless the values really are handles that must follow. Read back after writing.",
       "tags": [
         "create",
         "xrecord"
@@ -182,7 +228,7 @@
     },
     {
       "name": "delete_dictionary_entry",
-      "description": "Remove a named entry from a dictionary and erase the object it pointed at - removing the name alone would leave an orphan in the drawing with nothing referring to it. A nested dictionary that still holds entries is REFUSED unless `force` is set, because deleting it takes everything inside with it; the number of entries that would go is reported in the refusal. Verified by reading back afterwards.",
+      "description": "Remove a named entry from a dictionary and erase the object it pointed at - removing the name alone would leave an orphan in the drawing with nothing referring to it. A nested dictionary that still holds entries is REFUSED unless \u0060force\u0060 is set, because deleting it takes everything inside with it; the number of entries that would go is reported in the refusal. Verified by reading back afterwards.",
       "tags": [
         "delete",
         "dictionary",
@@ -200,7 +246,7 @@
     },
     {
       "name": "delete_xdata",
-      "description": "Remove ONE application's extended data from an entity, leaving any other application's data on it untouched. The mechanism is AutoCAD's documented one - writing a buffer that holds only the application name - which looks like a mistake and is not, so it is done here rather than left to the caller. Verified by reading back afterwards, and the list of other applications present before and after is reported so that 'left untouched' can be checked rather than trusted. Refuses when the entity carries nothing under that name, rather than reporting a deletion that did not happen.",
+      "description": "Remove ONE application\u0027s extended data from an entity, leaving any other application\u0027s data on it untouched. The mechanism is AutoCAD\u0027s documented one - writing a buffer that holds only the application name - which looks like a mistake and is not, so it is done here rather than left to the caller. Verified by reading back afterwards, and the list of other applications present before and after is reported so that \u0027left untouched\u0027 can be checked rather than trusted. Refuses when the entity carries nothing under that name, rather than reporting a deletion that did not happen.",
       "tags": [
         "delete",
         "xdata"
@@ -216,8 +262,27 @@
       ]
     },
     {
+      "name": "export_table_to_csv",
+      "description": "Write a table entity out as a .csv file. Refuses to overwrite an existing file unless \u0060overwrite\u0060 is set. IMPORTANT, and it is not an AutoCAD wrapper: Table.ExportToCsv does not exist in the managed API, so this reads the cells and writes the file itself. Two consequences worth knowing - cell text is taken AS DISPLAYED, so a formula exports as its result rather than as the formula; and fields containing a comma, a quote or a newline are properly quoted with interior quotes doubled, without which a cell containing a comma silently becomes two columns. UTF-8 with no byte-order mark.",
+      "tags": [
+        "export",
+        "table",
+        "to",
+        "csv"
+      ],
+      "intent": [
+        "export this table to csv",
+        "save a table as a csv file",
+        "eksportuj tabele do csv",
+        "get the table data out as a file",
+        "zapisz tabele do pliku csv",
+        "dump a table to a spreadsheet file",
+        "export table data"
+      ]
+    },
+    {
       "name": "get_dictionary_entry",
-      "description": "Read one entry from a dictionary by key. Read-only. An entry can be any database object: when it is an XRECORD its values are decoded and returned, when it is a nested dictionary the entry count is given instead and `path` reaches inside it, and anything else reports its class so you know what you are looking at rather than getting an empty result. Without a handle the key is looked up in the drawing-wide named objects dictionary; with one, in that entity's extension dictionary.",
+      "description": "Read one entry from a dictionary by key. Read-only. An entry can be any database object: when it is an XRECORD its values are decoded and returned, when it is a nested dictionary the entry count is given instead and \u0060path\u0060 reaches inside it, and anything else reports its class so you know what you are looking at rather than getting an empty result. Without a handle the key is looked up in the drawing-wide named objects dictionary; with one, in that entity\u0027s extension dictionary.",
       "tags": [
         "get",
         "dictionary",
@@ -235,7 +300,7 @@
     },
     {
       "name": "get_xdata",
-      "description": "Read the extended data on an entity, grouped BY APPLICATION - which is how it is stored and how it is deleted, since one entity can carry data from several applications at once without them interfering. Read-only. Give an appName to see only that application's values, or omit it to see every application present. Values come back with the type they were stored as, so one written as a real reads back as a real rather than as an int that happens to be whole. An entity with no xdata reports an empty list rather than an error - most entities never have any.",
+      "description": "Read the extended data on an entity, grouped BY APPLICATION - which is how it is stored and how it is deleted, since one entity can carry data from several applications at once without them interfering. Read-only. Give an appName to see only that application\u0027s values, or omit it to see every application present. Values come back with the type they were stored as, so one written as a real reads back as a real rather than as an int that happens to be whole. An entity with no xdata reports an empty list rather than an error - most entities never have any.",
       "tags": [
         "get",
         "xdata"
@@ -251,8 +316,27 @@
       ]
     },
     {
+      "name": "import_csv_to_table",
+      "description": "Fill an existing table entity from a .csv file. IMPORTANT: the table is RESIZED to the CSV and its previous contents are REPLACED - this fills a table, it does not merge into one. Table.ImportFromCsv does not exist in the managed API, so the parsing is done here: quoted fields are handled properly, so a cell containing a comma stays one cell, and ragged rows are padded to the widest row rather than refused. Everything lands as TEXT, so a column of numbers arrives as text that looks like numbers - which is what a CSV actually contains. Create the table first with annotations.add_table.",
+      "tags": [
+        "import",
+        "csv",
+        "to",
+        "table"
+      ],
+      "intent": [
+        "import a csv into this table",
+        "fill a table from a csv file",
+        "wczytaj csv do tabeli",
+        "load spreadsheet data into a table",
+        "zaimportuj dane z pliku csv do tabeli",
+        "populate a table from a file",
+        "put csv data in the drawing"
+      ]
+    },
+    {
       "name": "list_dictionaries",
-      "description": "List the entries of a dictionary. Read-only. Without a handle this lists the drawing-wide NAMED OBJECTS dictionary, where AutoCAD keeps layouts, groups, plot settings, materials and much else - so a fresh drawing is far from empty and most of what is in there is not yours. With an entity handle it lists that entity's extension dictionary instead. `path` walks nested dictionaries, with / between names. Each entry reports its class and whether it is itself a dictionary, so you can tell what can be read with read_xrecord and what has to be walked into.",
+      "description": "List the entries of a dictionary. Read-only. Without a handle this lists the drawing-wide NAMED OBJECTS dictionary, where AutoCAD keeps layouts, groups, plot settings, materials and much else - so a fresh drawing is far from empty and most of what is in there is not yours. With an entity handle it lists that entity\u0027s extension dictionary instead. \u0060path\u0060 walks nested dictionaries, with / between names. Each entry reports its class and whether it is itself a dictionary, so you can tell what can be read with read_xrecord and what has to be walked into.",
       "tags": [
         "list",
         "dictionaries"
@@ -269,7 +353,7 @@
     },
     {
       "name": "list_registered_apps",
-      "description": "List every application name registered in this drawing. Read-only. ACAD is AutoCAD's own and is always present. Worth knowing: a name being registered does NOT mean any entity carries data under it - registration and use are separate, which is precisely why lisp.purge_regapps has something to do. To find out whether a name is actually in use, read the entities with get_xdata.",
+      "description": "List every application name registered in this drawing. Read-only. ACAD is AutoCAD\u0027s own and is always present. Worth knowing: a name being registered does NOT mean any entity carries data under it - registration and use are separate, which is precisely why lisp.purge_regapps has something to do. To find out whether a name is actually in use, read the entities with get_xdata.",
       "tags": [
         "list",
         "registered",
@@ -283,6 +367,42 @@
         "jakie nazwy aplikacji sa w rysunku",
         "which applications have touched this drawing",
         "list regapps"
+      ]
+    },
+    {
+      "name": "list_tagged_entities",
+      "description": "Find the entities carrying a tag. Read-only. Name a tag to filter to it, or omit one to list everything tagged. Model space only, and erased entities are skipped. The result also carries a tagsInDrawing summary counting every tag present regardless of the filter, which is the quick way to see what tags exist before querying one of them - useful because a tag that was never applied and a tag spelled slightly differently look the same from the outside.",
+      "tags": [
+        "list",
+        "tagged",
+        "entities"
+      ],
+      "intent": [
+        "list tagged entities",
+        "which objects have this tag",
+        "znajdz otagowane obiekty",
+        "show everything i marked",
+        "jakie tagi sa na rysunku",
+        "find entities by tag",
+        "what did i tag as reviewed"
+      ]
+    },
+    {
+      "name": "query_by_property",
+      "description": "Find entities in model space by their properties: layer, object class, colour index, linetype, or whether they carry xdata from a named application. Read-only. Every filter given must match - they are ANDed, not ORed - and at least one is required, since a query with no filter would return the whole drawing. objectClass matches on SUBSTRING, so \u0027Line\u0027 finds AcDbLine and AcDbPolyline both; give the full class name to be exact. hasXdataApp is how you find everything one application or tool has touched. The number of entities scanned is reported alongside the number matched, so a small result can be told from an empty drawing.",
+      "tags": [
+        "query",
+        "by",
+        "property"
+      ],
+      "intent": [
+        "find entities by layer",
+        "query objects by property",
+        "znajdz obiekty po warstwie",
+        "which entities are on this layer",
+        "wyszukaj encje po wlasciwosciach",
+        "find all circles in the drawing",
+        "select objects by colour"
       ]
     },
     {
@@ -322,7 +442,7 @@
     },
     {
       "name": "set_dictionary_entry",
-      "description": "Store a named entry in a dictionary - an xrecord of typed values by default, or a nested sub-dictionary with `nested` true. IMPORTANT: this REPLACES an entry of the same name, so the result reports whether something was overwritten; nothing else would tell you. The entry is read back through a fresh dictionary lookup rather than by trusting the object just written. Without a handle the entry goes in the drawing-wide named objects dictionary; with one, in that entity's extension dictionary, which must exist already - create_extension_dictionary makes it. Use create_xrecord instead when the key must NOT already exist.",
+      "description": "Store a named entry in a dictionary - an xrecord of typed values by default, or a nested sub-dictionary with \u0060nested\u0060 true. IMPORTANT: this REPLACES an entry of the same name, so the result reports whether something was overwritten; nothing else would tell you. The entry is read back through a fresh dictionary lookup rather than by trusting the object just written. Without a handle the entry goes in the drawing-wide named objects dictionary; with one, in that entity\u0027s extension dictionary, which must exist already - create_extension_dictionary makes it. Use create_xrecord instead when the key must NOT already exist.",
       "tags": [
         "set",
         "dictionary",
@@ -336,6 +456,23 @@
         "dodaj wartosc do slownika rysunku",
         "create a nested dictionary",
         "persist some data by name"
+      ]
+    },
+    {
+      "name": "tag_entities",
+      "description": "Tag one or more entities with a name, and optionally a value - the quick way to mark a set of objects so they can be found again later. A tag IS xdata under the reserved application name TOOLBANK_TAG, which matters: the tag travels with the entity when it is copied, can be read by get_xdata like any other extended data, and shows up in list_registered_apps rather than hiding in a private format. ONE tag per entity - tagging again REPLACES, and the number of entities that already carried a tag is reported, because nothing else would tell you. Find them again with list_tagged_entities, or with query_by_property using hasXdataApp.",
+      "tags": [
+        "tag",
+        "entities"
+      ],
+      "intent": [
+        "tag these entities",
+        "mark objects so i can find them later",
+        "oznacz obiekty tagiem",
+        "label a set of entities",
+        "otaguj encje na rysunku",
+        "mark these as reviewed",
+        "add a tag to selected objects"
       ]
     },
     {
@@ -358,7 +495,7 @@
   ],
   "metadata": {
     "category": "data",
-    "tool_count_target": 13,
+    "tool_count_target": 18,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -372,6 +509,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-10T21:11:27.4579855Z"
+    "last_regenerated_utc": "2026-08-10T21:25:47.2336714Z"
   }
 }

@@ -180,3 +180,81 @@ public sealed record XrecordUpdateResult(
     [property: JsonPropertyName("count")]       int Count,
     [property: JsonPropertyName("data")]        IReadOnlyList<DataValue> Data,
     [property: JsonPropertyName("note")]        string Note);
+
+// ── second tranche: tagging, querying, CSV ──
+
+public sealed record TagArgs(
+    [property: JsonPropertyName("handles")] IReadOnlyList<string> Handles,
+    [property: JsonPropertyName("tag")]     string Tag,
+    [property: JsonPropertyName("value")]   string? Value = null);
+
+public sealed record TagListArgs(
+    [property: JsonPropertyName("tag")] string? Tag = null);
+
+public sealed record QueryArgs(
+    [property: JsonPropertyName("layer")]       string? Layer = null,
+    [property: JsonPropertyName("objectClass")] string? ObjectClass = null,
+    [property: JsonPropertyName("colorIndex")]  int? ColorIndex = null,
+    [property: JsonPropertyName("linetype")]    string? Linetype = null,
+    [property: JsonPropertyName("hasXdataApp")] string? HasXdataApp = null);
+
+public sealed record TableCsvArgs(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("overwrite")] bool? Overwrite = null);
+
+public sealed record TaggedEntity(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("objectClass")] string ObjectClass,
+    [property: JsonPropertyName("layer")]       string? Layer,
+    [property: JsonPropertyName("tag")]         string Tag,
+    [property: JsonPropertyName("value")]       string? Value,
+    [property: JsonPropertyName("previousTag")] string? PreviousTag = null);
+
+public sealed record TagResult(
+    [property: JsonPropertyName("count")]               int Count,
+    [property: JsonPropertyName("tag")]                 string Tag,
+    [property: JsonPropertyName("value")]               string? Value,
+    [property: JsonPropertyName("replacedExistingTag")] int ReplacedExistingTag,
+    [property: JsonPropertyName("entities")]            IReadOnlyList<TaggedEntity> Entities,
+    [property: JsonPropertyName("note")]                string Note);
+
+public sealed record TagCount(
+    [property: JsonPropertyName("tag")]   string Tag,
+    [property: JsonPropertyName("count")] int Count);
+
+public sealed record TagListResult(
+    [property: JsonPropertyName("tag")]            string? Tag,
+    [property: JsonPropertyName("count")]          int Count,
+    [property: JsonPropertyName("entities")]       IReadOnlyList<TaggedEntity> Entities,
+    [property: JsonPropertyName("tagsInDrawing")]  IReadOnlyList<TagCount> TagsInDrawing,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record QueriedEntity(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("objectClass")] string ObjectClass,
+    [property: JsonPropertyName("layer")]       string? Layer,
+    [property: JsonPropertyName("colorIndex")]  int ColorIndex,
+    [property: JsonPropertyName("linetype")]    string? Linetype);
+
+public sealed record QueryResult(
+    [property: JsonPropertyName("scanned")]  int Scanned,
+    [property: JsonPropertyName("count")]    int Count,
+    [property: JsonPropertyName("entities")] IReadOnlyList<QueriedEntity> Entities,
+    [property: JsonPropertyName("filters")]  QueryArgs Filters,
+    [property: JsonPropertyName("note")]     string Note);
+
+public sealed record CsvExportResult(
+    [property: JsonPropertyName("path")]    string Path,
+    [property: JsonPropertyName("rows")]    int Rows,
+    [property: JsonPropertyName("columns")] int Columns,
+    [property: JsonPropertyName("bytes")]   long Bytes,
+    [property: JsonPropertyName("note")]    string Note);
+
+public sealed record CsvImportResult(
+    [property: JsonPropertyName("handle")]    string Handle,
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("rows")]      int Rows,
+    [property: JsonPropertyName("columns")]   int Columns,
+    [property: JsonPropertyName("firstCell")] string? FirstCell,
+    [property: JsonPropertyName("note")]      string Note);

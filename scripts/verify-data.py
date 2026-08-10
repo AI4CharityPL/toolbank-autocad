@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Live verification for roadmap 5.2, first tranche — acad-data, 13 tools.
+"""Live verification for roadmap 5.2 — acad-data, 18 tools.
 
 Storage tools fail in a particular way: the write reports success, and the value that comes back
 later is not the value that went in. So almost every check here is a ROUND TRIP with a control
@@ -19,14 +19,25 @@ that would catch the plausible-looking wrong answer:
     the first time.
   * Dictionary entries are read back through a FRESH lookup, and nesting is walked by path rather
     than assumed.
+
+Second tranche adds tagging, querying and CSV. Two more controls there:
+
+  * The CSV round trip uses an ASYMMETRIC grid with a comma INSIDE a cell. A symmetric grid would
+    pass even if rows and columns were transposed, and a cell containing a comma is the classic way
+    an export that looks fine silently becomes two columns.
+  * query_by_property is checked against a filter that must match SOME entities and one that must
+    match NONE - a query returning everything and a query returning nothing are both wrong, and
+    only checking one of them would miss it.
 """
 import os
 import sys
 
+SCRATCH = r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\f077b219-34bc-4344-a383-5c4a45649d83\scratchpad"
+
 sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
 from mcpcall import Session  # noqa: E402
 
-S = {c: Session(c) for c in ("files", "geometry-2d", "data", "lisp")}
+S = {c: Session(c) for c in ("files", "geometry-2d", "data", "lisp", "annotations")}
 results = []
 APP = "TBVERIFY"
 APP2 = "TBOTHER"
@@ -281,6 +292,119 @@ r = do("data", "read_xrecord", {"key": "ACAD_LAYOUT"},
        label="reading a key that holds a dictionary, not an xrecord, is refused", expect_fail=True)
 check("and the refusal names what it actually is",
       "AcDbDictionary" in str(r), str(r)[:250])
+
+
+# ── tagging ─────────────────────────────────────────────────────────────────
+print("\n== tag_entities / list_tagged_entities ==")
+r = do("data", "tag_entities", {"handles": [line1, line2], "tag": "REVIEWED", "value": "2026-08"})
+if isinstance(r, dict):
+    check("both entities tagged, and nothing had a tag before",
+          r.get("count") == 2 and r.get("replacedExistingTag") == 0, str(r)[:250])
+
+circle = hnd(do("geometry-2d", "draw_circle", {"center": {"x": 300, "y": 300}, "radius": 25},
+                label="a circle to leave untagged"))
+
+r = do("data", "list_tagged_entities", {"tag": "REVIEWED"})
+if isinstance(r, dict):
+    handles = sorted(e.get("handle") for e in (r.get("entities") or []))
+    check("PROVEN exactly the two tagged entities come back and the untagged circle does not - a "
+          "lister that returned everything would pass a check that only counted",
+          r.get("count") == 2 and circle not in handles, f"{handles} circle={circle}")
+    check("and the value travelled with the tag",
+          all(e.get("value") == "2026-08" for e in (r.get("entities") or [])), str(r)[:250])
+
+# A tag IS xdata - so the xdata tools must see it. That is the claim the description makes.
+r = do("data", "get_xdata", {"handle": line1, "appName": "TOOLBANK_TAG"},
+       label="the tag read through get_xdata")
+check("PROVEN a tag really is ordinary xdata under a documented application name, not a private "
+      "format: get_xdata reads it back",
+      isinstance(r, dict) and (r.get("apps") or [{}])[0].get("count", 0) >= 1, str(r)[:250])
+
+r = do("data", "tag_entities", {"handles": [line1], "tag": "ISSUED"},
+       label="re-tagging replaces")
+check("PROVEN the replacement is REPORTED - one tag per entity, and nothing else would tell you",
+      isinstance(r, dict) and r.get("replacedExistingTag") == 1, str(r)[:250])
+r = do("data", "list_tagged_entities", {})
+if isinstance(r, dict):
+    summary = {x.get("tag"): x.get("count") for x in (r.get("tagsInDrawing") or [])}
+    check("and the drawing now holds one of each tag",
+          summary.get("ISSUED") == 1 and summary.get("REVIEWED") == 1, str(summary))
+do("data", "tag_entities", {"handles": [line1]}, label="a tag with no name is refused",
+   expect_fail=True)
+do("data", "tag_entities", {"tag": "X"}, label="a tag with no entities is refused",
+   expect_fail=True)
+
+# ── querying ────────────────────────────────────────────────────────────────
+print("\n== query_by_property ==")
+r = do("data", "query_by_property", {"objectClass": "AcDbLine"})
+if isinstance(r, dict):
+    check("PROVEN it finds the lines and not the circle, and reports how many it scanned so a "
+          "small answer can be told from an empty drawing",
+          r.get("count") == 2 and (r.get("scanned") or 0) >= 3, str(r)[:250])
+r = do("data", "query_by_property", {"objectClass": "AcDbCircle"})
+check("and the circle on its own", isinstance(r, dict) and r.get("count") == 1, str(r)[:200])
+# THE control: a filter that must match NOTHING. A query returning everything would pass above.
+r = do("data", "query_by_property", {"layer": "NO-SUCH-LAYER"})
+check("PROVEN the filter really filters: a layer nothing is on returns 0, where a query that "
+      "ignored its filters would have returned the whole drawing",
+      isinstance(r, dict) and r.get("count") == 0 and (r.get("scanned") or 0) > 0, str(r)[:200])
+r = do("data", "query_by_property", {"hasXdataApp": "TOOLBANK_TAG"})
+check("PROVEN cross-mechanism: querying by xdata application finds exactly the tagged entities",
+      isinstance(r, dict) and r.get("count") == 2, str(r)[:200])
+r = do("data", "query_by_property", {"layer": "0", "objectClass": "AcDbCircle"})
+check("and two filters are ANDed rather than ORed - layer 0 AND a circle is one entity, not three",
+      isinstance(r, dict) and r.get("count") == 1, str(r)[:200])
+do("data", "query_by_property", {}, label="a query with no filter at all is refused",
+   expect_fail=True)
+
+# ── CSV round trip ──────────────────────────────────────────────────────────
+print("\n== export_table_to_csv / import_csv_to_table ==")
+csv_path = os.path.join(SCRATCH, "tbtable.csv")
+if os.path.exists(csv_path):
+    os.remove(csv_path)
+
+# ASYMMETRIC on purpose - 3 rows by 2 columns - so a transposition cannot pass. And one cell
+# holds a COMMA, which is what separates a correct export from one that looks correct.
+with open(csv_path, "w", encoding="utf-8", newline="") as f:
+    f.write('name,note\r\nalpha,"one, two"\r\nbeta,plain\r\n')
+
+tbl = hnd(do("annotations", "add_table",
+             {"position": {"x": 500, "y": 0, "z": 0}, "rows": 2, "cols": 2,
+              "rowHeight": 10, "colWidth": 40},
+             label="a table to fill"))
+if tbl:
+    r = do("data", "import_csv_to_table", {"handle": tbl, "path": csv_path})
+    if isinstance(r, dict):
+        check("PROVEN the table was RESIZED to the csv: 3 rows by 2 columns, not the 2x2 it was "
+              "created as", r.get("rows") == 3 and r.get("columns") == 2, str(r)[:250])
+
+    out_path = os.path.join(SCRATCH, "tbtable-out.csv")
+    if os.path.exists(out_path):
+        os.remove(out_path)
+    r = do("data", "export_table_to_csv", {"handle": tbl, "path": out_path})
+    check("a file was written", os.path.exists(out_path), out_path)
+    if os.path.exists(out_path):
+        text = open(out_path, encoding="utf-8").read()
+        rows = [x for x in text.replace("\r\n", "\n").split("\n") if x]
+        check("PROVEN the round trip survives a comma INSIDE a cell: it comes back quoted as "
+              '\'"one, two"\' and is still ONE field - unquoted it would silently have become two '
+              "columns, which is the classic way a working-looking export corrupts data",
+              len(rows) == 3 and '"one, two"' in rows[1], repr(text)[:250])
+        check("and the grid is 3 rows by 2 columns the right way round - the grid is asymmetric on "
+              "purpose, so a transposition could not pass",
+              len(rows) == 3 and rows[0] == "name,note" and rows[2].startswith("beta"),
+              repr(rows)[:250])
+    do("data", "export_table_to_csv", {"handle": tbl, "path": out_path},
+       label="overwriting an existing file is refused without overwrite", expect_fail=True)
+    do("data", "export_table_to_csv", {"handle": tbl, "path": out_path, "overwrite": True},
+       label="and goes through with overwrite")
+    do("data", "import_csv_to_table", {"handle": tbl, "path": os.path.join(SCRATCH, "nope.csv")},
+       label="a missing csv is refused", expect_fail=True)
+    do("data", "export_table_to_csv", {"handle": line1, "path": out_path, "overwrite": True},
+       label="a line is refused by name - it is not a table", expect_fail=True)
+else:
+    check("a table could be created for the CSV checks", False, "draw_table did not return a handle")
+
 
 passed = sum(1 for _, ok in results if ok)
 print(f"\n==== {passed}/{len(results)} checks passed ====")

@@ -21,6 +21,12 @@ public class DataTests
         "create_extension_dictionary", "list_dictionaries",
         "get_dictionary_entry", "set_dictionary_entry", "delete_dictionary_entry",
         "create_xrecord", "read_xrecord", "update_xrecord",
+
+        // Second tranche. The tagging and query tools sit on the xdata layer above rather than
+        // inventing a second storage mechanism. The CSV pair is OWN WORK: Table.ExportToCsv and
+        // Table.ImportFromCsv do not exist in the managed API - measured, not assumed.
+        "tag_entities", "list_tagged_entities", "query_by_property",
+        "export_table_to_csv", "import_csv_to_table",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

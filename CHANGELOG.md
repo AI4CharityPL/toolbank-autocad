@@ -77,6 +77,27 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.2, second tranche — tagging, querying and CSV.** `acad-data` 13 → 18, bank 617 → 622.
+  Live: **108/108 over the whole category, no defects.** `tag_entities`, `list_tagged_entities`,
+  `query_by_property`, `export_table_to_csv`, `import_csv_to_table`.
+
+  **A tag IS xdata**, under the reserved application name `TOOLBANK_TAG` rather than a private
+  format — so it survives copying with the entity, `get_xdata` reads it like any other extended
+  data, and it appears in `list_registered_apps`. The verification asserts that rather than
+  trusting the description.
+
+  **`Table.ExportToCsv` and `Table.ImportFromCsv` do not exist** in the managed API, so the CSV
+  pair is own work and says so. Two things a caller needs to know and both are documented: cell
+  text is taken AS DISPLAYED, so a formula exports as its result; and quoting is handled here, so
+  a cell containing a comma stays one cell. The round trip is verified on an ASYMMETRIC 3×2 grid
+  with a comma inside a cell — a symmetric grid would pass even with rows and columns transposed.
+
+  `query_by_property` is checked against a filter that matches SOME entities and one that matches
+  NONE, because a query ignoring its filters would pass the first check and fail only the second.
+
+  Also corrected a description that pointed at `annotations.draw_table`, which does not exist —
+  the tool is `add_table`. A router sent there would have found nothing.
+
 - **Phase 5.2, first tranche — `acad-data`: xdata, dictionaries and xrecords.** New category,
   13 tools, bank 604 → 617. Live: **72/72, first run, no defects** — the plugin compiled on the
   first attempt and the live run found nothing wrong, which the reconnaissance bought.

@@ -1047,7 +1047,7 @@ convert_wcs_to_geo          insert_map_image           set_map_image_type
 set_north_direction         place_geo_marker           list_geo_markers
 ```
 
-### 5.4 `acad-views-cameras` (≈14)
+### 5.4 `acad-views-cameras` (≈14 → **10 reachable, 4 struck**) — asked of the compiler 2026-08-10
 
 ```
 create_named_view           create_view_from_window    create_view_from_layout
@@ -1056,6 +1056,46 @@ set_view_ucs_association    export_named_view
 create_camera               list_cameras               set_camera_target
 set_camera_lens             set_view_background        set_perspective_mode
 ```
+
+**Reconnaissance, and it reshapes the list rather than confirming it.**
+
+**There is no `Camera` type in the managed API at all** — `Autodesk.AutoCAD.DatabaseServices.Camera`
+does not exist. In AutoCAD a camera *is* a named view carrying a target and a lens length, so the
+four camera tools do not survive as written: `create_camera` and `list_cameras` collapse into the
+named-view tools, while `set_camera_target` and `set_camera_lens` are real and become
+`ViewTableRecord.Target` and `.LensLength`, both present.
+
+**`ViewTableRecord` has no `PerspectiveOn`** — nor `Perspective`, `IsPerspectiveOn`, or anything
+like them. The `Viewport` ENTITY does. So `set_perspective_mode` operates on a viewport rather
+than on a stored view, and its description has to say which, because "set the view to
+perspective" reads like it should apply to the named view.
+
+**`ViewTableRecord.Category` does not exist**, so `set_view_category` is **struck** — the view
+category is a Sheet Set concept and lives there, not on the view record.
+
+Present and callable: `ViewTable` with `Has`/`Add`; `ViewTableRecord.Name`, `.CenterPoint`,
+`.Height`, `.Width`, `.ViewDirection`, `.Target`, `.LensLength`, `.ViewTwist`, `.Elevation`,
+`.FrontClipDistance`/`.BackClipDistance` with their `Enabled` flags, `.Layout`,
+`.ViewAssociatedToViewport`, `.AnnotationScale`, `.Background`, `.VisualStyleId`, `.SunId`,
+`.LiveSection`; `SetUcs(ObjectId)` and `SetUcsToWorld()` with `IsUcsAssociatedToView` to read it
+back — which makes `set_view_ucs_association` straightforward. `UcsName` is READ-ONLY, so the UCS
+is set by id and never by name.
+
+On the `Viewport` entity: `PerspectiveOn`, `LensLength`, `ViewTarget`, `ViewDirection`,
+`ViewHeight`, `ViewCenter`, `TwistAngle`, `CustomScale`, `Locked`, `On`, `VisualStyleId`,
+`Background`.
+
+**Absent, so `restore_view_in_viewport` is own work rather than a wrapper:** `Viewport.SetView`
+and `Viewport.SetViewFromViewportTableRecord` do not exist. Restoring means copying target,
+direction, height and twist from the `ViewTableRecord` onto the viewport by hand — honest work,
+and it makes the result exactly predictable, which is what the verification will check against.
+
+Revised list: `create_named_view`, `list_named_views`, `delete_named_view`,
+`create_view_from_window`, `restore_view_in_viewport`, `set_view_ucs_association`,
+`set_camera_target`, `set_camera_lens`, `set_perspective_mode`, `set_view_background` —
+**10 reachable**, with `set_view_category`, `create_camera`, `list_cameras` and
+`create_view_from_layout` struck or absorbed. `set_view_background` needs one more round: the
+property is an `ObjectId` pointing at a background object, and what creates one is not yet known.
 
 **Phase 5 total: ≈66 tools.**
 

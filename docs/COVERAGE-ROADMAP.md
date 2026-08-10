@@ -899,17 +899,26 @@ document lock and an open transaction. They need a **command** context. Three se
 formulations were tried and failed identically — when tools that share no code fail with the same
 status, the context is the suspect, not the arguments. Rule 26 §15.
 
-**The obvious fix was tried and does NOT work.** `DocumentCollection.ExecuteInCommandContextAsync`
-supplies a command context, and a runner was built around it that deliberately withheld all three
-suspects — no UI-thread dispatch, no document lock, no transaction across the call. All six tools
-still answered the same `eInvalidInput`, and the run hung AutoCAD badly enough to need the process
-killed. It was reverted; rule 26 §15 records it so the next attempt does not start there.
+**Measured to the bottom, 2026-08-10.** `ExecuteInCommandContextAsync` was built and reverted, and
+then a one-command experiment settled it — a plain `[CommandMethod]` (`ACADMCP_CMDTEST`) run from a
+genuine command context. `Editor.Command` **works**, including inside an open transaction; a LISP
+expression handed to `Editor.Command` does **not** (it tokenises command input); and
+`Application.Invoke` fails everywhere and should be treated as absent. Rule 26 §15 has the table.
 
-So the six stay out, and the next step is smaller rather than larger: a throwaway `[CommandMethod]`
-inside this same plugin that calls `Editor.Command` and reports what happens. That separates the
-plugin from the dispatch path — the one thing none of the three attempts has done — and it answers
-whether the call is reachable from this plugin AT ALL, before another eleven-tool category is built
-on the assumption that it is.
+The six therefore split rather than standing together:
+
+* **`run_command_sequence`, `run_script_file`** — need only a command context and real command
+  tokens. Recoverable, and the cheapest two.
+* **`netload_assembly`** — has an untried command route: `_.NETLOAD` with `FILEDIA` 0 so it takes
+  the path on the command line rather than opening a dialog.
+* **`eval_lisp`, `load_lisp_file`, `list_loaded_lisp`** — need LISP evaluation, which neither
+  surviving route provides. The remaining candidate is `SendStringToExecute` with the expression
+  wrapped to write its value to a file, then waiting for the file: the evidence becomes the file's
+  contents, so the "observed, not acknowledged" rule still holds.
+
+That also corrects the earlier note here: the transaction was never the culprit, and the hang that
+forced a process kill was self-inflicted by feeding LISP to `Editor.Command`, not a defect in
+`ExecuteInCommandContextAsync`.
 
 **`list_loaded_applications` documents a measured limit rather than glossing it.**
 `GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does

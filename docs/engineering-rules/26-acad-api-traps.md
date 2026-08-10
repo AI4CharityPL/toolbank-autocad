@@ -408,24 +408,55 @@ deployed and all failed identically; three different LISP formulations were trie
 wrapped to write its value to a file) and every one produced the same error. When several tools
 that share no code fail with the same status, stop varying the arguments and suspect the CONTEXT.
 
-**`ExecuteInCommandContextAsync` was then BUILT and MEASURED, and it does not fix this.** The
-obvious next step is `DocumentCollection.ExecuteInCommandContextAsync`, which supplies a command
-context. A runner was written that calls it with none of the three things suspected of breaking
-the calls — no `UiThreadDispatcher` (it marshals itself, and posting to the UI thread first would
-deadlock), no `LockDocument` (the document is already locked inside a command context), and no
-transaction spanning the call. Every one of the six tools still answered the same bare
-`eInvalidInput`, and the run then **hung AutoCAD**: a later call left a handler blocked and the
-pipe stopped answering, so the process had to be killed. Do not reach for this API expecting it to
-be the answer; it was reverted.
+**`ExecuteInCommandContextAsync` was then BUILT and MEASURED, and it does not fix this on its
+own.** A runner was written around it withholding all three suspects — no `UiThreadDispatcher`, no
+`LockDocument`, no transaction spanning the call. Every tool still answered `eInvalidInput` and the
+run **hung AutoCAD**, so it was reverted.
 
-What that leaves: the failure is not the context ALONE, and it is not the arguments. Something
-about driving the command line from a pipe-served handler in this plugin is unsound, and finding
-it needs a SMALLER experiment than a category of eleven tools — a throwaway `[CommandMethod]` in
-this same plugin that calls `Editor.Command` and reports what happens. That separates the plugin
-from the dispatch path, which none of the three attempts so far has done.
+**The isolating experiment, and it should have been the FIRST thing done.** A plain
+`[CommandMethod]` in this same plugin (`ACADMCP_CMDTEST`, kept in
+`Tools/CommandContextProbe.cs`) separates the plugin from the dispatch path — the one variable
+none of the earlier attempts moved. Run from a genuine command context
+(`IsApplicationContext=False`):
 
-`SendStringToExecute` remains available and remains rejected: it queues, so its result cannot be
-observed, which is the whole thing this category exists to avoid.
+| probe | result |
+| --- | --- |
+| `Editor.Command("_.CIRCLE", "0,0", "10")` | **OK**, 0 → 1 entity |
+| the same **inside an open transaction** | **OK** |
+| `Editor.Command("(setq x (+ 1 2))")` — a LISP expression | FAIL `eInvalidInput` |
+| `Application.Invoke((getvar "CLAYER"))` | FAIL `eInvalidInput` |
+| the same inside a transaction | FAIL `eInvalidInput` |
+
+Three conclusions, two of which overturn what had been assumed for two whole attempts:
+
+1. **The transaction was never the problem.** `Editor.Command` works perfectly well inside one.
+   Both earlier attempts treated it as a prime suspect and were wrong.
+2. **`Editor.Command` does not take LISP.** It tokenises COMMAND input; a parenthesised expression
+   is invalid to it. The `(progn (vl-load-com) (setq %tbf (open ...)))` wrapper built for
+   `eval_lisp` was never going to work — and feeding it very probably left AutoCAD waiting for
+   input, which is the hang that had to be killed. The hang was self-inflicted, not an
+   `ExecuteInCommandContextAsync` defect.
+3. **`Application.Invoke` is unusable from this plugin**, in a command context or out of one, with
+   a transaction or without. Treat it as absent.
+
+So the six split rather than standing or falling together:
+
+* `run_command_sequence` and `run_script_file` need only a COMMAND context and real command
+  tokens — `Editor.Command` demonstrably works there.
+* `netload_assembly` has a command route that was never tried: `_.NETLOAD` with `FILEDIA` set to
+  0 so it takes the path on the command line instead of opening a file dialog.
+* `eval_lisp`, `load_lisp_file` and `list_loaded_lisp` need LISP evaluation, and neither surviving
+  route provides it. The remaining candidate is `SendStringToExecute` with the expression wrapped
+  to write its value to a FILE, then waiting for that file — which keeps the honesty rule, because
+  the evidence becomes the file's contents rather than the fact that something was queued.
+
+**The lesson is about method, not about AutoCAD.** Two attempts were spent varying arguments and
+dispatch strategy against a category of eleven tools. One `[CommandMethod]` and five lines answered
+it. When several tools fail identically, shrink the experiment until exactly one variable moves —
+and do it before building, not after.
+
+`SendStringToExecute` remains what it was: it queues, so a tool that merely reports "sent" is
+still forbidden. Waiting on a file it writes is a different thing and is allowed.
 
 **What did work, and why it is worth noting:** `Application.GetSystemVariable`/`SetSystemVariable`
 and the ordinary `Database`/`Transaction` API are unaffected. The dividing line is not "old API vs

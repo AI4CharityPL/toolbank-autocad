@@ -74,3 +74,45 @@ public sealed record MeshToSurfaceResult(
     [property: JsonPropertyName("meshFaces")]    int MeshFaces,
     [property: JsonPropertyName("sourceErased")] bool SourceErased,
     [property: JsonPropertyName("note")]         string Note);
+
+// ─────────── roadmap 4.3, second tranche ───────────
+
+public sealed record MeshCreaseArgs(
+    [property: JsonPropertyName("handle")] string Handle,
+    [property: JsonPropertyName("level")]  double? Level = null);
+
+public sealed record MeshCylinderArgs(
+    [property: JsonPropertyName("basePoint")]   Point3dDto BasePoint,
+    [property: JsonPropertyName("radius")]      double? Radius = null,
+    [property: JsonPropertyName("height")]      double? Height = null,
+    [property: JsonPropertyName("sides")]       int? Sides = null,
+    [property: JsonPropertyName("smoothLevel")] int? SmoothLevel = null,
+    [property: JsonPropertyName("layer")]       string? Layer = null);
+
+public sealed record MeshCreaseResult(
+    [property: JsonPropertyName("handle")]      string Handle,
+    [property: JsonPropertyName("creaseLevel")] double CreaseLevel,
+    [property: JsonPropertyName("smoothLevel")] int SmoothLevel,
+    [property: JsonPropertyName("allEdges")]    bool AllEdges,
+    [property: JsonPropertyName("note")]        string Note);
+
+public sealed record MeshCylinderResult(
+    [property: JsonPropertyName("entity")]        EntityHandle Entity,
+    [property: JsonPropertyName("vertices")]      int Vertices,
+    [property: JsonPropertyName("faces")]         int Faces,
+    [property: JsonPropertyName("smoothLevel")]   int SmoothLevel,
+    [property: JsonPropertyName("sides")]         int Sides,
+    [property: JsonPropertyName("radius")]        double Radius,
+    [property: JsonPropertyName("height")]        double Height,
+    [property: JsonPropertyName("prismVolume")]   double PrismVolume,
+    [property: JsonPropertyName("circleVolume")]  double CircleVolume,
+    [property: JsonPropertyName("note")]          string Note);
+
+public sealed record MeshWedgeResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("vertices")]       int Vertices,
+    [property: JsonPropertyName("faces")]          int Faces,
+    [property: JsonPropertyName("smoothLevel")]    int SmoothLevel,
+    [property: JsonPropertyName("size")]           MeshSize Size,
+    [property: JsonPropertyName("halfBoxVolume")]  double HalfBoxVolume,
+    [property: JsonPropertyName("note")]           string Note);

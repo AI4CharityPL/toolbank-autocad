@@ -14,7 +14,9 @@
     "box",
     "cad",
     "convert",
+    "crease",
     "create",
+    "cylinder",
     "dwg",
     "get",
     "info",
@@ -23,7 +25,8 @@
     "smoothness",
     "solid",
     "surface",
-    "to"
+    "to",
+    "wedge"
   ],
   "intent_examples": [
     "box as a mesh not a solid",
@@ -34,13 +37,20 @@
     "convert this mesh into a solid",
     "convtosolid from mesh",
     "convtosurface from mesh",
+    "crease the edges of a mesh",
     "create a mesh box",
+    "create a mesh cylinder",
+    "create a mesh wedge",
+    "cylinder as a mesh not a solid",
     "describe a mesh entity",
     "get mesh info",
+    "half a box as a mesh",
     "how many faces does this mesh have",
     "ile scian ma ta siatka",
     "informacje o siatce",
+    "keep mesh edges sharp when smoothing",
     "lower the smoothness of this mesh",
+    "make a prism mesh with n sides",
     "make a solid out of this mesh",
     "make a subdivision box",
     "make a subdivision mesh I can sculpt",
@@ -48,22 +58,36 @@
     "make this mesh rounder",
     "measure the volume of a mesh",
     "mesh cube",
+    "mesh ramp",
     "mesh to shell",
+    "mesh tube",
     "mesh vertex and face count",
+    "meshcrease",
     "meshsmoothless",
     "meshsmoothmore",
+    "meshuncrease",
+    "narysuj siatke klinowa",
     "narysuj siatke prostopadloscienna",
+    "narysuj siatke walcowa",
     "objetosc siatki",
     "set mesh smoothness to 2",
+    "siatka klina",
     "siatka na powierzchnie",
     "siatka szescienna",
+    "siatka walca",
     "smooth a mesh more",
     "smooth mesh box for sculpting",
     "smooth this mesh one level more",
+    "stop this mesh rounding its corners",
+    "subdivision cylinder for sculpting",
+    "subdivision wedge",
     "turn a watertight mesh into a solid",
+    "usun zagniecenia z siatki",
+    "wedge as a mesh not a solid",
     "what smoothness is this mesh",
     "wygladz siatke",
     "wygladz siatke o jeden poziom",
+    "zaloz zagniecenie na siatce",
     "zamien siatke na bryle",
     "zamien siatke na powierzchnie",
     "zmniejsz wygladzenie siatki"
@@ -126,8 +150,44 @@
       ]
     },
     {
+      "name": "create_mesh_cylinder",
+      "description": "Create a mesh CYLINDER from a base point, radius and height. Be clear what this is: a mesh cylinder is a PRISM of n flat sides, not a circle - the cage has flat walls and smoothing rounds them off. So its volume comes to (n/2)*r*r*sin(2*pi/n)*h, which is LESS than the pi*r*r*h a true cylinder holds, and the tool reports both figures so the gap is visible rather than surprising. sides defaults to 8, AutoCAD\u0027s own default; raise it to close the gap or smooth the mesh instead. For a true cylinder with exact volume, use geometry_3d.draw_cylinder.",
+      "tags": [
+        "create",
+        "mesh",
+        "cylinder"
+      ],
+      "intent": [
+        "create a mesh cylinder",
+        "mesh tube",
+        "narysuj siatke walcowa",
+        "cylinder as a mesh not a solid",
+        "siatka walca",
+        "make a prism mesh with n sides",
+        "subdivision cylinder for sculpting"
+      ]
+    },
+    {
+      "name": "create_mesh_wedge",
+      "description": "Create a mesh WEDGE from two opposite corners - a box with its top edge collapsed to one side, so exactly HALF the volume of the box on the same corners. That halving is the arithmetic worth checking once it is converted to a solid. The cage is six vertices and five faces: two triangles and three quads, so unlike a box it mixes face sizes, which is worth knowing if you go on to edit it. For a solid wedge with no cage, use geometry_3d.draw_wedge.",
+      "tags": [
+        "create",
+        "mesh",
+        "wedge"
+      ],
+      "intent": [
+        "create a mesh wedge",
+        "mesh ramp",
+        "narysuj siatke klinowa",
+        "wedge as a mesh not a solid",
+        "siatka klina",
+        "half a box as a mesh",
+        "subdivision wedge"
+      ]
+    },
+    {
       "name": "get_mesh_info",
-      "description": "Report a mesh\u0027s vertex count, face count, current smoothness and bounding box. Read-only. Note what is NOT here and cannot be: a mesh has no volume and no surface area, because SubDMesh exposes neither - to measure one you convert it with convert_mesh_to_solid, which is itself the check on whether the cage is watertight. The counts, by contrast, are exact, and they are how you tell what smoothing has done to a mesh.",
+      "description": "Report a mesh\u0027s vertex count, face count, current smoothness and bounding box. Read-only. Note what is NOT here and cannot be: a mesh has no volume and no surface area, because SubDMesh exposes neither - to measure one you convert it with convert_mesh_to_solid, which is itself the check on whether the cage is watertight. The counts are exact but describe the CAGE rather than the subdivided surface, so they stay the same whatever the smoothness - a box mesh answers 6 faces at every level. The bounding box reports the cage too, so it will not show smoothing either - to see that, convert the mesh to a solid and compare volumes.",
       "tags": [
         "get",
         "mesh",
@@ -144,8 +204,26 @@
       ]
     },
     {
+      "name": "set_mesh_crease",
+      "description": "Hold a mesh\u0027s edges against smoothing - AutoCAD\u0027s MESHCREASE and MESHUNCREASE. level 0 removes the crease and lets the edges round off; -1 holds them sharp for ever; a positive number is how many levels of smoothing an edge resists before it starts to soften. This is what keeps a mesh chair leg square while its seat rounds. The effect is checkable: crease a box fully, smooth it, convert it to a solid, and the volume comes back to the sharp figure rather than the rounded one. Note this applies to ALL edges at once - SubDMesh offers no way to name individual ones, because the GetSubentityPathsAt family that Solid3d has is simply not there, and a tool cannot select what the API will not address.",
+      "tags": [
+        "set",
+        "mesh",
+        "crease"
+      ],
+      "intent": [
+        "crease the edges of a mesh",
+        "meshcrease",
+        "meshuncrease",
+        "zaloz zagniecenie na siatce",
+        "keep mesh edges sharp when smoothing",
+        "usun zagniecenia z siatki",
+        "stop this mesh rounding its corners"
+      ]
+    },
+    {
       "name": "set_mesh_smoothness",
-      "description": "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either \u0060level\u0060, the smoothness to set from 0 to 4, or \u0060by\u0060, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Note what the face count does NOT do: it does not multiply. AutoCAD reports the CAGE - a box mesh answers 6 faces at every level - not the subdivided surface, so the count cannot tell you whether smoothing took. What changes is the SHAPE: subdividing pulls the corners in and the mesh shrinks inside its own cage, and that is what the tool measures before reporting success. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it.",
+      "description": "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either \u0060level\u0060, the smoothness to set from 0 to 4, or \u0060by\u0060, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Be aware that NEITHER the face count NOR the bounding box will show you this happened: both report the CAGE rather than the subdivided surface, so a box answers 6 faces and the same extents at every level. That is measured rather than assumed - guards built on each of them in turn rejected correct results. What the tool checks is the level reading back; to see the SHAPE change, convert to a solid and compare volumes, where a box smoothed to level 2 comes out at roughly a third of the sharp one. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it.",
       "tags": [
         "set",
         "mesh",
@@ -164,7 +242,7 @@
   ],
   "metadata": {
     "category": "mesh",
-    "tool_count_target": 5,
+    "tool_count_target": 8,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -178,6 +256,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-10T09:32:58.6762748Z"
+    "last_regenerated_utc": "2026-08-10T12:59:31.8796947Z"
   }
 }

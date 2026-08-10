@@ -36,7 +36,7 @@ public static class MeshTools
     public static Task<MeshInfoResult> GetMeshInfo(IPluginGateway gw, MeshHandleArgs args, CancellationToken ct)
         => MeshProxy.CallAsync<MeshHandleArgs, MeshInfoResult>(gw, "acad.mesh.get_mesh_info", args, T_NORMAL, ct);
 
-    [McpTool("set_mesh_smoothness", "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either `level`, the smoothness to set from 0 to 4, or `by`, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Be aware that NEITHER the face count NOR the bounding box will show you this happened: both report the CAGE rather than the subdivided surface, so a box answers 6 faces and the same extents at every level. That is measured rather than assumed - guards built on each of them in turn rejected correct results. What the tool checks is the level reading back; to see the SHAPE change, convert to a solid and compare volumes, where a box smoothed to level 2 comes out at roughly a third of the sharp one. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it.", "mesh",
+    [McpTool("set_mesh_smoothness", "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either `level`, the smoothness to set from 0 to 4, or `by`, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Be aware that NEITHER the face count NOR the bounding box will show you this happened: both report the CAGE rather than the subdivided surface, so a box answers 6 faces and the same extents at every level. That is measured rather than assumed - guards built on each of them in turn rejected correct results. What the tool checks is the level reading back; to see the SHAPE change, convert to a solid and compare volumes, where a box smoothed to level 2 comes out at roughly a third of the sharp one. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it. One warning, measured rather than assumed: changing the smoothness rebuilds the mesh through an API that carries no crease data, so ANY CREASES ARE LOST - set the smoothness first and crease afterwards. The tool cannot warn you when this happens, because reading a crease back needs an addressing path SubDMesh does not expose.", "mesh",
         Intent = new[] { "smooth a mesh more", "meshsmoothmore", "meshsmoothless",
                          "wygladz siatke", "set mesh smoothness to 2",
                          "zmniejsz wygladzenie siatki", "make this mesh rounder" },
@@ -61,4 +61,32 @@ public static class MeshTools
         RequiresPlugin = true)]
     public static Task<MeshToSurfaceResult> ConvertMeshToSurface(IPluginGateway gw, MeshConvertArgs args, CancellationToken ct)
         => MeshProxy.CallAsync<MeshConvertArgs, MeshToSurfaceResult>(gw, "acad.mesh.convert_mesh_to_surface", args, T_SLOW, ct);
+
+    // ───────────────────────── creasing, and two more primitives ─────────────────────────
+
+    [McpTool("set_mesh_crease", "Hold a mesh's edges against smoothing - AutoCAD's MESHCREASE and MESHUNCREASE. level 0 removes the crease and lets the edges round off; -1 holds them sharp for ever; a positive number is how many levels of smoothing an edge resists before it starts to soften. This is what keeps a mesh chair leg square while its seat rounds. The effect is checkable: crease a box fully, smooth it, convert it to a solid, and the volume comes back to the sharp figure rather than the rounded one. ORDER MATTERS here, and it is the opposite of what most people try: crease AFTER setting the smoothness, because changing smoothness rebuilds the mesh and silently discards every crease. Measured - a box creased then smoothed comes out at the rounded volume, while one smoothed then creased comes out sharp. Note also that this applies to ALL edges at once: SubDMesh offers no way to name individual ones, because the GetSubentityPathsAt family that Solid3d has is simply not there, and a tool cannot select what the API will not address.", "mesh",
+        Intent = new[] { "crease the edges of a mesh", "meshcrease", "meshuncrease",
+                         "zaloz zagniecenie na siatce", "keep mesh edges sharp when smoothing",
+                         "usun zagniecenia z siatki", "stop this mesh rounding its corners" },
+        RequiresPlugin = true)]
+    public static Task<MeshCreaseResult> SetMeshCrease(IPluginGateway gw, MeshCreaseArgs args, CancellationToken ct)
+        => MeshProxy.CallAsync<MeshCreaseArgs, MeshCreaseResult>(gw, "acad.mesh.set_mesh_crease", args, T_SLOW, ct);
+
+    [McpTool("create_mesh_cylinder", "Create a mesh CYLINDER from a base point, radius and height. Be clear what this is: a mesh cylinder is a PRISM of n flat sides, not a circle - the cage has flat walls and smoothing rounds them off. So its volume comes to (n/2)*r*r*sin(2*pi/n)*h, which is LESS than the pi*r*r*h a true cylinder holds, and the tool reports both figures so the gap is visible rather than surprising. sides defaults to 8, AutoCAD's own default; raise it to close the gap or smooth the mesh instead. For a true cylinder with exact volume, use geometry_3d.draw_cylinder.", "mesh",
+        Intent = new[] { "create a mesh cylinder", "mesh tube",
+                         "narysuj siatke walcowa", "cylinder as a mesh not a solid",
+                         "siatka walca", "make a prism mesh with n sides",
+                         "subdivision cylinder for sculpting" },
+        RequiresPlugin = true)]
+    public static Task<MeshCylinderResult> CreateMeshCylinder(IPluginGateway gw, MeshCylinderArgs args, CancellationToken ct)
+        => MeshProxy.CallAsync<MeshCylinderArgs, MeshCylinderResult>(gw, "acad.mesh.create_mesh_cylinder", args, T_SLOW, ct);
+
+    [McpTool("create_mesh_wedge", "Create a mesh WEDGE from two opposite corners - a box with its top edge collapsed to one side, so exactly HALF the volume of the box on the same corners. That halving is the arithmetic worth checking once it is converted to a solid. The cage is six vertices and five faces: two triangles and three quads, so unlike a box it mixes face sizes, which is worth knowing if you go on to edit it. For a solid wedge with no cage, use geometry_3d.draw_wedge.", "mesh",
+        Intent = new[] { "create a mesh wedge", "mesh ramp",
+                         "narysuj siatke klinowa", "wedge as a mesh not a solid",
+                         "siatka klina", "half a box as a mesh", "subdivision wedge" },
+        RequiresPlugin = true)]
+    public static Task<MeshWedgeResult> CreateMeshWedge(IPluginGateway gw, MeshBoxArgs args, CancellationToken ct)
+        => MeshProxy.CallAsync<MeshBoxArgs, MeshWedgeResult>(gw, "acad.mesh.create_mesh_wedge", args, T_SLOW, ct);
+
 }

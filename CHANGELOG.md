@@ -37,6 +37,38 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.3, second tranche — creasing and two more primitives.** `acad-mesh` 5 → 8, bank
+  585 → 588: `set_mesh_crease`, `create_mesh_cylinder`, `create_mesh_wedge`. Verified live
+  **46/46** and confirmed on an exported PNG.
+
+  A mesh wedge is exactly **half** the box on the same corners — 500000 for a 100 cube — and its
+  cage is six vertices over five faces, two triangles and three quads, so unlike a box it mixes
+  face sizes. A mesh cylinder is a **prism, not a circle**, and the tool says so rather than
+  letting the caller assume otherwise: eight flat sides inscribed in radius 50 give
+  `(8/2)·50²·sin(2π/8)·100` = 707106.78, noticeably less than the `πr²h` = 785398.16 a true
+  cylinder holds. Both figures are reported, and 32 sides closing the gap is the control that
+  says the shortfall is faceting rather than a fault.
+
+  **A defect found by a control, in tools that individually work.** The crease check first came
+  back at 349547.26189088693 against an uncreased 349547.2618908878 — identical to ten
+  significant figures, so the crease had done nothing at all. Measuring four orderings found why:
+  `set_mesh_smoothness` rebuilds the mesh through `SetSubDMesh`, which carries no crease data and
+  **silently discards every crease**. Crease *after* smoothing and it comes back to exactly
+  1000000; crease before and it is lost.
+
+  The tools cannot detect this and warn, because reading a crease back needs a
+  `FullSubentityPath` and `SubDMesh` exposes no way to obtain one. So both descriptions state the
+  ordering, and the verification asserts **both orders** — the one that works and the trap — so
+  the claim is checkable rather than merely written down.
+
+  This is the failure a build count never shows: two tools that each pass on their own and give a
+  silently wrong result when used in the obvious order. It was only visible because the check ran
+  the uncreased case first as a control; a single number would have looked like success either
+  way. `set_mesh_crease` works on all edges at once, for the same addressing reason as before —
+  a tool cannot select what the API will not address.
+
+### Added
+
 - **Phase 4.3 opens: the `acad-mesh` category.** Five tools, bank 580 → 585, and the forty-first
   category: `create_mesh_box`, `get_mesh_info`, `set_mesh_smoothness`, `convert_mesh_to_solid`,
   `convert_mesh_to_surface`. Verified live **47/47** and confirmed on an exported PNG.

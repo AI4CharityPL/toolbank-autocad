@@ -22,6 +22,12 @@ public class MeshTests
         // unlike Solid3d which has the lot. That is why the counts are known before the call.
         "create_mesh_box", "get_mesh_info", "set_mesh_smoothness",
         "convert_mesh_to_solid", "convert_mesh_to_surface",
+
+        // Second tranche: creasing and two more hand-tessellated primitives. set_mesh_crease
+        // works on ALL edges because SubDMesh exposes no way to name individual ones - the
+        // GetSubentityPathsAt family that Solid3d has is absent, and a tool cannot select
+        // what the API will not address.
+        "set_mesh_crease", "create_mesh_cylinder", "create_mesh_wedge",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

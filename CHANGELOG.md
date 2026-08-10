@@ -37,6 +37,49 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.3, third tranche — the curved primitives, and a tool withdrawn after being built.**
+  `acad-mesh` 8 → 10, bank 588 → 590: `create_mesh_sphere`, `create_mesh_cone`. Phase 4.3 is
+  complete at 10 built and 3 struck.
+
+  A lat/long sphere cage is **exactly** `2 + (rings-1)·segments` vertices and `rings·segments`
+  faces — 62 and 72 at 12×6, 482 and 512 at 32×16 — and a mesh cone is a **pyramid** over an
+  n-gon, so its volume is exactly one third of base area times height: 235702.2604 against the
+  261799.3878 a true cone holds. Both are inscribed polyhedra and both report the round figure
+  they fall short of, so the gap is visible rather than surprising; a finer tessellation closing
+  it is the control that says the shortfall is faceting rather than a fault.
+
+  **`extrude_mesh_face` was built, deployed, measured — and withdrawn.** `ExtrudeFaces`,
+  `SplitFace` and `MergeFaces` all exist on `SubDMesh` and all want a `FullSubentityPath[]`,
+  which `SubDMesh` offers no way to produce: the `GetSubentityPathsAt*` family that made the
+  entire solid face-and-edge family reachable is absent here. The hypothesis was that a path
+  could simply be constructed with the face index in the pointer field of a `SubentityId`. It
+  cannot — AutoCAD accepts the call, **returns success**, and leaves the cage at 8 vertices and
+  6 faces.
+
+  The tool is out of the bank because one that silently does nothing while reporting success is
+  worse than an absent one. Its plugin handler stays, guarded, so the finding is reproducible,
+  and the live check asserts the refusal so nobody spends the same build cycle again.
+  `split_mesh_face`, `merge_mesh_faces` and `refine_mesh` are struck with it.
+
+### Fixed
+
+- **A harness failure that looked like arithmetic, and two wrong diagnoses before the right one.**
+  Verification runs began failing every cross-category measurement: a solid minted by the mesh
+  session came back *"Handle not found"* from `geometry-3d`. Each category is its own backend
+  process bound to a document, and `deploy-plugin.ps1 -Kill` restarts them all — some came back
+  bound to a drawing that a later `new_document` replaced. The giveaway was handles **climbing
+  across three consecutive `new_document` calls**: 7F, 82, 84, which is a session that saw none
+  of them.
+
+  Two diagnoses were wrong first and both were discarded by measurement rather than argument:
+  `eraseSource` erasing the result (the failure occurs without it), and sessions binding late (a
+  warm-up loop was added, changed nothing, and was **removed rather than left in looking
+  useful**). The remedy is a clean AutoCAD start before each run, which is why every live check
+  in this project is preceded by one. Now written up as rule 26 §13a with the symptom to
+  recognise, alongside §13 for the un-addressable mesh sub-entities.
+
+### Added
+
 - **Phase 4.3, second tranche — creasing and two more primitives.** `acad-mesh` 5 → 8, bank
   585 → 588: `set_mesh_crease`, `create_mesh_cylinder`, `create_mesh_wedge`. Verified live
   **46/46** and confirmed on an exported PNG.

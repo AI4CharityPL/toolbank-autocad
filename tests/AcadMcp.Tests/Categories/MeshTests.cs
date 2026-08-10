@@ -28,6 +28,15 @@ public class MeshTests
         // GetSubentityPathsAt family that Solid3d has is absent, and a tool cannot select
         // what the API will not address.
         "set_mesh_crease", "create_mesh_cylinder", "create_mesh_wedge",
+
+        // Third tranche: the two curved primitives.
+        //
+        // extrude_mesh_face is deliberately NOT here, and must not come back without the
+        // underlying problem being solved first. It was built, deployed and measured: a
+        // hand-built SubentityId addresses nothing on a SubDMesh, and AutoCAD reports the call
+        // as a SUCCESS while leaving the cage at 8 vertices and 6 faces. split_mesh_face and
+        // merge_mesh_faces need the same addressing and are struck with it.
+        "create_mesh_sphere", "create_mesh_cone",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

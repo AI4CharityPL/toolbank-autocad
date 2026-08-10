@@ -13,23 +13,28 @@
     "autocad",
     "box",
     "cad",
+    "cone",
     "convert",
     "crease",
     "create",
     "cylinder",
     "dwg",
+    "extrude",
+    "face",
     "get",
     "info",
     "mesh",
     "set",
     "smoothness",
     "solid",
+    "sphere",
     "surface",
     "to",
     "wedge"
   ],
   "intent_examples": [
     "box as a mesh not a solid",
+    "cone as a mesh not a solid",
     "convert a mesh into a surface",
     "convert a mesh to a solid",
     "convert a mesh to a surface",
@@ -39,17 +44,24 @@
     "convtosurface from mesh",
     "crease the edges of a mesh",
     "create a mesh box",
+    "create a mesh cone",
     "create a mesh cylinder",
+    "create a mesh sphere",
     "create a mesh wedge",
     "cylinder as a mesh not a solid",
     "describe a mesh entity",
+    "extrude a face of a mesh",
+    "faceted cone mesh",
     "get mesh info",
+    "grow a mesh by pulling a face",
     "half a box as a mesh",
     "how many faces does this mesh have",
     "ile scian ma ta siatka",
     "informacje o siatce",
     "keep mesh edges sharp when smoothing",
+    "lat long sphere mesh",
     "lower the smoothness of this mesh",
+    "make a faceted sphere for sculpting",
     "make a prism mesh with n sides",
     "make a solid out of this mesh",
     "make a subdivision box",
@@ -58,33 +70,46 @@
     "make this mesh rounder",
     "measure the volume of a mesh",
     "mesh cube",
+    "mesh pyramid over a polygon",
     "mesh ramp",
     "mesh to shell",
     "mesh tube",
     "mesh vertex and face count",
     "meshcrease",
+    "meshextrude",
     "meshsmoothless",
     "meshsmoothmore",
     "meshuncrease",
     "narysuj siatke klinowa",
+    "narysuj siatke kulista",
     "narysuj siatke prostopadloscienna",
+    "narysuj siatke stozkowa",
     "narysuj siatke walcowa",
     "objetosc siatki",
+    "push a mesh face out",
+    "sculpt a mesh by extruding faces",
     "set mesh smoothness to 2",
     "siatka klina",
+    "siatka kuli",
     "siatka na powierzchnie",
+    "siatka stozka",
     "siatka szescienna",
     "siatka walca",
     "smooth a mesh more",
     "smooth mesh box for sculpting",
     "smooth this mesh one level more",
+    "sphere as a mesh not a solid",
     "stop this mesh rounding its corners",
+    "subdivision ball",
+    "subdivision cone",
     "subdivision cylinder for sculpting",
     "subdivision wedge",
     "turn a watertight mesh into a solid",
     "usun zagniecenia z siatki",
     "wedge as a mesh not a solid",
     "what smoothness is this mesh",
+    "wyciagniecie sciany siatki",
+    "wyciagnij sciane siatki",
     "wygladz siatke",
     "wygladz siatke o jeden poziom",
     "zaloz zagniecenie na siatce",
@@ -150,6 +175,24 @@
       ]
     },
     {
+      "name": "create_mesh_cone",
+      "description": "Create a mesh CONE - which is really a PYRAMID over an n-sided base, and the tool says so rather than letting the caller assume otherwise. The cage is n\u002B1 vertices and n\u002B1 faces: the base plus n triangles meeting at the apex. Its volume is exactly one third of base area times height, which is LESS than the pi*r*r*h/3 a true cone holds, because the flat sides cut the corners off the circle. Both figures are reported. For a true cone, use geometry_3d.draw_cone.",
+      "tags": [
+        "create",
+        "mesh",
+        "cone"
+      ],
+      "intent": [
+        "create a mesh cone",
+        "mesh pyramid over a polygon",
+        "narysuj siatke stozkowa",
+        "cone as a mesh not a solid",
+        "siatka stozka",
+        "faceted cone mesh",
+        "subdivision cone"
+      ]
+    },
+    {
       "name": "create_mesh_cylinder",
       "description": "Create a mesh CYLINDER from a base point, radius and height. Be clear what this is: a mesh cylinder is a PRISM of n flat sides, not a circle - the cage has flat walls and smoothing rounds them off. So its volume comes to (n/2)*r*r*sin(2*pi/n)*h, which is LESS than the pi*r*r*h a true cylinder holds, and the tool reports both figures so the gap is visible rather than surprising. sides defaults to 8, AutoCAD\u0027s own default; raise it to close the gap or smooth the mesh instead. For a true cylinder with exact volume, use geometry_3d.draw_cylinder.",
       "tags": [
@@ -165,6 +208,24 @@
         "siatka walca",
         "make a prism mesh with n sides",
         "subdivision cylinder for sculpting"
+      ]
+    },
+    {
+      "name": "create_mesh_sphere",
+      "description": "Create a mesh SPHERE by latitude and longitude - two poles plus (rings-1) circles of \u0060segments\u0060 points, giving triangles against each pole and quads in the bands between. Like every mesh primitive it is a POLYHEDRON inscribed in the shape it is named after, so its volume comes out LESS than the true 4/3*pi*r^3, and the tool reports that true figure alongside so the gap is visible rather than surprising. Raise segments and rings to close it, or smooth the mesh. For a true sphere with exact volume, use geometry_3d.draw_sphere.",
+      "tags": [
+        "create",
+        "mesh",
+        "sphere"
+      ],
+      "intent": [
+        "create a mesh sphere",
+        "subdivision ball",
+        "narysuj siatke kulista",
+        "sphere as a mesh not a solid",
+        "siatka kuli",
+        "make a faceted sphere for sculpting",
+        "lat long sphere mesh"
       ]
     },
     {
@@ -205,7 +266,7 @@
     },
     {
       "name": "set_mesh_crease",
-      "description": "Hold a mesh\u0027s edges against smoothing - AutoCAD\u0027s MESHCREASE and MESHUNCREASE. level 0 removes the crease and lets the edges round off; -1 holds them sharp for ever; a positive number is how many levels of smoothing an edge resists before it starts to soften. This is what keeps a mesh chair leg square while its seat rounds. The effect is checkable: crease a box fully, smooth it, convert it to a solid, and the volume comes back to the sharp figure rather than the rounded one. Note this applies to ALL edges at once - SubDMesh offers no way to name individual ones, because the GetSubentityPathsAt family that Solid3d has is simply not there, and a tool cannot select what the API will not address.",
+      "description": "Hold a mesh\u0027s edges against smoothing - AutoCAD\u0027s MESHCREASE and MESHUNCREASE. level 0 removes the crease and lets the edges round off; -1 holds them sharp for ever; a positive number is how many levels of smoothing an edge resists before it starts to soften. This is what keeps a mesh chair leg square while its seat rounds. The effect is checkable: crease a box fully, smooth it, convert it to a solid, and the volume comes back to the sharp figure rather than the rounded one. ORDER MATTERS here, and it is the opposite of what most people try: crease AFTER setting the smoothness, because changing smoothness rebuilds the mesh and silently discards every crease. Measured - a box creased then smoothed comes out at the rounded volume, while one smoothed then creased comes out sharp. Note also that this applies to ALL edges at once: SubDMesh offers no way to name individual ones, because the GetSubentityPathsAt family that Solid3d has is simply not there, and a tool cannot select what the API will not address.",
       "tags": [
         "set",
         "mesh",
@@ -223,7 +284,7 @@
     },
     {
       "name": "set_mesh_smoothness",
-      "description": "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either \u0060level\u0060, the smoothness to set from 0 to 4, or \u0060by\u0060, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Be aware that NEITHER the face count NOR the bounding box will show you this happened: both report the CAGE rather than the subdivided surface, so a box answers 6 faces and the same extents at every level. That is measured rather than assumed - guards built on each of them in turn rejected correct results. What the tool checks is the level reading back; to see the SHAPE change, convert to a solid and compare volumes, where a box smoothed to level 2 comes out at roughly a third of the sharp one. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it.",
+      "description": "Raise or lower how much AutoCAD rounds a mesh off - MESHSMOOTHMORE and MESHSMOOTHLESS. Give either \u0060level\u0060, the smoothness to set from 0 to 4, or \u0060by\u0060, a step from where it is now: by 1 is smooth-more and by -1 is smooth-less. Be aware that NEITHER the face count NOR the bounding box will show you this happened: both report the CAGE rather than the subdivided surface, so a box answers 6 faces and the same extents at every level. That is measured rather than assumed - guards built on each of them in turn rejected correct results. What the tool checks is the level reading back; to see the SHAPE change, convert to a solid and compare volumes, where a box smoothed to level 2 comes out at roughly a third of the sharp one. Smoothing is REVERSIBLE because the cage is kept, so coming back down returns the original mesh rather than an approximation of it. One warning, measured rather than assumed: changing the smoothness rebuilds the mesh through an API that carries no crease data, so ANY CREASES ARE LOST - set the smoothness first and crease afterwards. The tool cannot warn you when this happens, because reading a crease back needs an addressing path SubDMesh does not expose.",
       "tags": [
         "set",
         "mesh",
@@ -242,7 +303,7 @@
   ],
   "metadata": {
     "category": "mesh",
-    "tool_count_target": 8,
+    "tool_count_target": 10,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -256,6 +317,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-10T12:59:31.8796947Z"
+    "last_regenerated_utc": "2026-08-10T13:32:40.7668598Z"
   }
 }

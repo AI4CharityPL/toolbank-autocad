@@ -16,7 +16,7 @@ the phases below are ordered by what unblocks real work first.
 
 ## Where the bank stands today
 
-**588 tools across 41 categories** (updated 2026-08-09; this document was written at 337 across
+**590 tools across 41 categories** (updated 2026-08-10; this document was written at 337 across
 31). Coverage is close to complete for one thing: *drawing and annotating a 2D production
 sheet*, and after Phase 1 also for referencing, coordinate systems and sheet control — see
 [Totals](#totals) for exactly how far Phase 1 actually got, which is less than "done".
@@ -682,15 +682,15 @@ exist the compiler reports against the one it picked, so a CS1503 naming a type 
 overload wants this*, never *this is the only overload*. Probe with a plausible argument, not an
 implausible one — the first sweep of 4.1 struck `shell_solid` on the same mistake in reverse.
 
-### 4.3 `acad-mesh` (≈16+2 → **8 built, 13 reachable**)
+### 4.3 `acad-mesh` (≈16+2 → **10 built, 3 struck**) — COMPLETE
 
 ```
-create_mesh_box ✔          create_mesh_sphere ..~     create_mesh_cylinder ✔
-create_mesh_cone ..~        create_mesh_torus ..~      create_mesh_pyramid ..~
+create_mesh_box ✔          create_mesh_sphere ✔      create_mesh_cylinder ✔
+create_mesh_cone ✔         create_mesh_torus ..~      create_mesh_pyramid ..
 create_mesh_wedge ✔        smooth_mesh_more ✔        smooth_mesh_less ✔
-refine_mesh ..              add_mesh_crease ✔          remove_mesh_crease ✔
-split_mesh_face ..          extrude_mesh_face ..       convert_mesh_to_solid ✔
-convert_mesh_to_surface ✔  get_mesh_info ✔(added)    merge_mesh_faces ..(added)
+refine_mesh ✘               add_mesh_crease ✔          remove_mesh_crease ✔
+split_mesh_face ✘           extrude_mesh_face ✘       convert_mesh_to_solid ✔
+convert_mesh_to_surface ✔  get_mesh_info ✔(added)    merge_mesh_faces ✘(added)
 ```
 
 `..~` marks the seven primitives: **there are no factory methods for them.** `SubDMesh` has no
@@ -715,6 +715,17 @@ built on each in turn rejected correct results, so `set_mesh_smoothness` now che
 level reads back, and says in its own description that the shape change is visible only by
 converting to a solid. A guard founded on an unchecked assumption is worse than none: it rejects
 correct results while looking rigorous.
+
+**A mesh FACE cannot be addressed at all, so three tools are struck.** `ExtrudeFaces`,
+`SplitFace` and `MergeFaces` all exist and all want a `FullSubentityPath[]`, and `SubDMesh`
+exposes no `GetSubentityPathsAt*` family to produce one - unlike `Solid3d`, where exactly that
+family is what made the whole solid face-and-edge family reachable. `extrude_mesh_face` was
+BUILT, deployed and measured on the hypothesis that a path could simply be constructed with the
+face index in the pointer field of a `SubentityId`. It cannot: AutoCAD accepts the call,
+**returns success**, and leaves the cage at 8 vertices and 6 faces. The tool was withdrawn from
+the bank rather than shipped - one that silently does nothing while reporting success is worse
+than an absent one - and its plugin handler stays, guarded, so the finding is reproducible.
+`refine_mesh` is struck with them: `Refine` does not exist, and smoothing already covers it.
 
 **A second measured trap, and this one is a defect rather than a surprise.** Changing the
 smoothness rebuilds the mesh through `SetSubDMesh`, which carries no crease data - so it
@@ -952,13 +963,13 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **42** | 5 already exist in `acad-modify`, which shipped 3D-capable |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **44** | 5 already exist in `acad-modify`, which shipped 3D-capable |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **588** | **72 %** |
+| | **Total** | **813** | **590** | **73 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 576 (337 + 75 + 71 + 51 + 42)
-while the bank measures **588**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 578 (337 + 75 + 71 + 51 + 44)
+while the bank measures **590**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

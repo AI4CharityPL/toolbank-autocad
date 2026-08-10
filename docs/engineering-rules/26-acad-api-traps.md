@@ -322,6 +322,38 @@ When it reports an arity mismatch, check the error names the type you asked abou
 is usually enough to force the compiler to say. A struck row is a decision never to look again,
 and it costs one build to avoid making that decision on a typo.
 
+### 13. `SubDMesh` sub-entities cannot be addressed, and the failure is a SUCCESS
+
+`ExtrudeFaces`, `SplitFace` and `MergeFaces` all exist on `SubDMesh` and all want a
+`FullSubentityPath[]`. There is no way to obtain one: the `GetSubentityPathsAt*` family that
+`Solid3d` carries — and which is exactly what made the solid face-and-edge tools reachable — is
+absent here. Building a path by hand does not work either:
+
+```csharp
+var sid  = new SubentityId(SubentityType.Face, (IntPtr)(faceIndex + 1));
+var path = new FullSubentityPath(new[] { mesh.ObjectId }, sid);
+mesh.ExtrudeFaces(new[] { path }, 50.0, Vector3d.ZAxis, 0.0);
+// no exception, no error - and the cage is still 8 vertices and 6 faces
+```
+
+AutoCAD **reports success** and changes nothing. Any tool built on this must compare the vertex
+and face counts before and after and refuse when neither moved, because the return value will
+not tell you. `acad-mesh` ships without those three for this reason.
+
+### 13a. Backends restarted mid-session bind to a document that may be replaced
+
+Each category runs in its own `AcadMcp.Backend.exe`, and each binds to a document. Kill them —
+which every `deploy-plugin.ps1 -Kill` does — and the ones that come back can be bound to a
+drawing that a later `new_document` replaces. The symptom is *"Handle 'XX' not found"* from one
+category for a handle another category has just minted, and the giveaway is handles that keep
+climbing across consecutive `new_document` calls: a session minting 7F, 82, 84 over three new
+drawings never saw any of them.
+
+This is not fixable from the verification side — a warm-up call was tried and does nothing. The
+remedy is a **clean AutoCAD start before each verification run**, which is why every live check
+in this project is preceded by one. Put the cross-session probe at the top of every script so
+this shows up as a named failure rather than as arithmetic that mysteriously will not add up.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

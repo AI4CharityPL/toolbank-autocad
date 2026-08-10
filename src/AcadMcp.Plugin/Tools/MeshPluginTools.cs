@@ -47,6 +47,12 @@ internal static class MeshPluginTools
         host.Register("acad.mesh.set_mesh_crease",         SetMeshCrease);
         host.Register("acad.mesh.create_mesh_cylinder",    CreateMeshCylinder);
         host.Register("acad.mesh.create_mesh_wedge",       CreateMeshWedge);
+
+        // roadmap 4.3, third tranche - the two curved primitives, and a test of whether a
+        // single mesh face can be addressed at all
+        host.Register("acad.mesh.create_mesh_sphere",      CreateMeshSphere);
+        host.Register("acad.mesh.create_mesh_cone",        CreateMeshCone);
+        host.Register("acad.mesh.extrude_mesh_face",       ExtrudeMeshFace);
     }
 
     /// <summary>
@@ -636,4 +642,209 @@ internal static class MeshPluginTools
                        "three quads, so the cage mixes face sizes, which a box does not.",
             });
         });
+
+    // ─────────── roadmap 4.3, third tranche ───────────
+
+    private static Task<ToolDispatchResult> CreateMeshSphere(JsonObject args, CancellationToken ct) =>
+        Run("acad.mesh.create_mesh_sphere", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MeshSphereArgsDto>(args);
+            if (a.Center is null) throw new ArgumentException("center is required.");
+            if (a.Radius is null || a.Radius <= 0) throw new ArgumentException("radius must be > 0.");
+            var segs = a.Segments ?? 12;      // around the equator
+            var rings = a.Rings ?? 6;         // pole to pole
+            if (segs < 3 || segs > 64) throw new ArgumentException("segments must be 3 to 64.");
+            if (rings < 2 || rings > 64) throw new ArgumentException("rings must be 2 to 64.");
+
+            var c = AcadEnv.ToPoint3d(a.Center);
+            var r = a.Radius.Value;
+
+            // Latitude/longitude tessellation: two poles plus (rings-1) circles of `segs` points,
+            // triangles against each pole and quads in the bands between.
+            var verts = new Point3dCollection { new Point3d(c.X, c.Y, c.Z + r) };   // 0 = north
+            for (int i = 1; i < rings; i++)
+            {
+                var phi = Math.PI * i / rings;
+                var z = r * Math.Cos(phi);
+                var rr = r * Math.Sin(phi);
+                for (int j = 0; j < segs; j++)
+                {
+                    var th = 2.0 * Math.PI * j / segs;
+                    verts.Add(new Point3d(c.X + rr * Math.Cos(th), c.Y + rr * Math.Sin(th), c.Z + z));
+                }
+            }
+            verts.Add(new Point3d(c.X, c.Y, c.Z - r));                              // last = south
+            var south = verts.Count - 1;
+
+            int Ring(int ring, int j) => 1 + (ring - 1) * segs + (j % segs);
+
+            var faces = new Int32Collection();
+            for (int j = 0; j < segs; j++)                                          // north cap
+            {
+                faces.Add(3); faces.Add(0); faces.Add(Ring(1, j)); faces.Add(Ring(1, j + 1));
+            }
+            for (int i = 1; i < rings - 1; i++)                                     // the bands
+                for (int j = 0; j < segs; j++)
+                {
+                    faces.Add(4);
+                    faces.Add(Ring(i, j));
+                    faces.Add(Ring(i + 1, j));
+                    faces.Add(Ring(i + 1, j + 1));
+                    faces.Add(Ring(i, j + 1));
+                }
+            for (int j = 0; j < segs; j++)                                          // south cap
+            {
+                faces.Add(3); faces.Add(south); faces.Add(Ring(rings - 1, j + 1));
+                faces.Add(Ring(rings - 1, j));
+            }
+
+            var smooth = a.SmoothLevel ?? 0;
+            if (smooth < 0 || smooth > 4) throw new ArgumentException("smoothLevel must be 0 to 4.");
+
+            var trueVolume = 4.0 / 3.0 * Math.PI * r * r * r;
+            return BuildMesh(db, tr, verts, faces, smooth, a.Layer,
+                             2 + (rings - 1) * segs, rings * segs, "mesh sphere", new
+                             {
+                                 segments = segs,
+                                 rings,
+                                 radius = r,
+                                 trueSphereVolume = trueVolume,
+                                 note = "A lat/long cage: 2 poles plus " + (rings - 1) + " rings of " +
+                                        segs + " points, giving " + (2 + (rings - 1) * segs) +
+                                        " vertices and " + (rings * segs) + " faces - triangles " +
+                                        "against each pole and quads in the bands between. Like the " +
+                                        "mesh cylinder it is a POLYHEDRON inscribed in the sphere, " +
+                                        "so its volume comes out LESS than the true " + trueVolume +
+                                        "; raise segments and rings, or smooth it, to close the gap.",
+                             });
+        });
+
+    private static Task<ToolDispatchResult> CreateMeshCone(JsonObject args, CancellationToken ct) =>
+        Run("acad.mesh.create_mesh_cone", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MeshCylinderArgsDto>(args);
+            if (a.BasePoint is null) throw new ArgumentException("basePoint is required.");
+            if (a.Radius is null || a.Radius <= 0) throw new ArgumentException("radius must be > 0.");
+            if (a.Height is null || a.Height == 0)
+                throw new ArgumentException("height is required and cannot be 0.");
+            var sides = a.Sides ?? 8;
+            if (sides < 3 || sides > 64) throw new ArgumentException("sides must be 3 to 64.");
+
+            var b = AcadEnv.ToPoint3d(a.BasePoint);
+            var r = a.Radius.Value;
+            var h = a.Height.Value;
+
+            var verts = new Point3dCollection();
+            for (int i = 0; i < sides; i++)
+            {
+                var t = 2.0 * Math.PI * i / sides;
+                verts.Add(new Point3d(b.X + r * Math.Cos(t), b.Y + r * Math.Sin(t), b.Z));
+            }
+            verts.Add(new Point3d(b.X, b.Y, b.Z + h));           // apex
+            var apex = sides;
+
+            var faces = new Int32Collection();
+            faces.Add(sides);                                     // base, wound to face away
+            for (int i = sides - 1; i >= 0; i--) faces.Add(i);
+            for (int i = 0; i < sides; i++)                       // the sloping triangles
+            {
+                faces.Add(3); faces.Add(i); faces.Add((i + 1) % sides); faces.Add(apex);
+            }
+
+            var smooth = a.SmoothLevel ?? 0;
+            if (smooth < 0 || smooth > 4) throw new ArgumentException("smoothLevel must be 0 to 4.");
+
+            // A pyramid over a regular n-gon: exactly one third of base area times height.
+            var baseArea = 0.5 * sides * r * r * Math.Sin(2.0 * Math.PI / sides);
+            var pyramid = baseArea * Math.Abs(h) / 3.0;
+            return BuildMesh(db, tr, verts, faces, smooth, a.Layer,
+                             sides + 1, sides + 1, "mesh cone", new
+                             {
+                                 sides,
+                                 radius = r,
+                                 height = h,
+                                 pyramidVolume = pyramid,
+                                 coneVolume = Math.PI * r * r * Math.Abs(h) / 3.0,
+                                 note = "A mesh cone is a PYRAMID over an n-gon, not a cone: " +
+                                        (sides + 1) + " vertices and " + (sides + 1) + " faces, the " +
+                                        "base plus " + sides + " triangles. Its volume is exactly " +
+                                        "one third of base area times height, " + pyramid +
+                                        ", against the " + (Math.PI * r * r * Math.Abs(h) / 3.0) +
+                                        " a true cone holds - the flat sides cut the corners off " +
+                                        "the circle, exactly as they do for the mesh cylinder.",
+                             });
+        });
+
+    private static Task<ToolDispatchResult> ExtrudeMeshFace(JsonObject args, CancellationToken ct) =>
+        Run("acad.mesh.extrude_mesh_face", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<MeshFaceOpArgsDto>(args);
+            if (a.FaceIndex is null)
+                throw new ArgumentException(
+                    "faceIndex is required: which face of the cage to push out, numbered from 0.");
+            if (a.Distance is null || a.Distance == 0)
+                throw new ArgumentException("distance is required and cannot be 0.");
+
+            var m = RequireMesh(db, tr, a.Handle, OpenMode.ForWrite);
+            var nf = m.NumberOfFaces;
+            if (a.FaceIndex < 0 || a.FaceIndex >= nf)
+                throw new ArgumentException(
+                    "faceIndex " + a.FaceIndex + " is out of range: this cage has " + nf +
+                    " faces, numbered 0 to " + (nf - 1) + ".");
+
+            // THE OPEN QUESTION this tool exists to settle. ExtrudeFaces wants a
+            // FullSubentityPath[], and SubDMesh exposes no GetSubentityPathsAt* family to produce
+            // one, unlike Solid3d. The hypothesis under test is that a path can simply be BUILT,
+            // carrying the face index in the pointer field of the SubentityId. If that is wrong
+            // the call will either throw or do nothing at all, and BOTH are caught below rather
+            // than reported as a success.
+            var sid = new SubentityId(SubentityType.Face, (IntPtr)(a.FaceIndex.Value + 1));
+            var path = new FullSubentityPath(new[] { m.ObjectId }, sid);
+            var dir = a.Direction is null ? Vector3d.ZAxis : AcadEnv.ToVector3d(a.Direction);
+            if (dir.Length < 1e-12) throw new ArgumentException("direction cannot be the zero vector.");
+
+            var vertsBefore = m.NumberOfVertices;
+            var facesBefore = nf;
+            try
+            {
+                m.ExtrudeFaces(new[] { path }, a.Distance.Value, dir.GetNormal(),
+                               (a.TaperAngleDeg ?? 0) * Math.PI / 180.0);
+            }
+            catch (AcadRt.Exception ex)
+            {
+                throw new ArgumentException(
+                    "AutoCAD refused the face extrusion with " + ex.ErrorStatus + ". This is the " +
+                    "expected outcome if a mesh face cannot be addressed by a hand-built " +
+                    "SubentityId: SubDMesh has no GetSubentityPathsAt* family to produce a real " +
+                    "one, so there may be no way to name a single mesh face through this API.");
+            }
+
+            var vertsAfter = m.NumberOfVertices;
+            var facesAfter = m.NumberOfFaces;
+            // Pushing a face out replaces it with a box of new ones, so both counts must grow.
+            // If neither moved, the path addressed nothing and AutoCAD called that a success.
+            if (vertsAfter == vertsBefore && facesAfter == facesBefore)
+                throw new InvalidOperationException(
+                    "The cage is unchanged: still " + vertsBefore + " vertices and " + facesBefore +
+                    " faces. Pushing a face out must add both, so the hand-built path addressed " +
+                    "nothing - meaning a mesh face cannot be named this way, and AutoCAD reports " +
+                    "that as a successful call rather than an error.");
+
+            return Wrap(new
+            {
+                handle = a.Handle,
+                faceIndex = a.FaceIndex.Value,
+                distance = a.Distance.Value,
+                verticesBefore = vertsBefore,
+                vertices = vertsAfter,
+                facesBefore,
+                faces = facesAfter,
+                note = "Face " + a.FaceIndex.Value + " pushed out by " + a.Distance.Value +
+                       ". The cage went from " + vertsBefore + " vertices and " + facesBefore +
+                       " faces to " + vertsAfter + " and " + facesAfter + " - both must grow, " +
+                       "because extruding a face replaces it with a box of new ones, and that " +
+                       "growth is the only thing that says the face was really addressed.",
+            });
+        });
+
 }

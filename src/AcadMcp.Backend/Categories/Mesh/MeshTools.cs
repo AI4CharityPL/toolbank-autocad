@@ -89,4 +89,37 @@ public static class MeshTools
     public static Task<MeshWedgeResult> CreateMeshWedge(IPluginGateway gw, MeshBoxArgs args, CancellationToken ct)
         => MeshProxy.CallAsync<MeshBoxArgs, MeshWedgeResult>(gw, "acad.mesh.create_mesh_wedge", args, T_SLOW, ct);
 
+    // ───────────────────────── the curved primitives, and face addressing ─────────────────────────
+
+    [McpTool("create_mesh_sphere", "Create a mesh SPHERE by latitude and longitude - two poles plus (rings-1) circles of `segments` points, giving triangles against each pole and quads in the bands between. Like every mesh primitive it is a POLYHEDRON inscribed in the shape it is named after, so its volume comes out LESS than the true 4/3*pi*r^3, and the tool reports that true figure alongside so the gap is visible rather than surprising. Raise segments and rings to close it, or smooth the mesh. For a true sphere with exact volume, use geometry_3d.draw_sphere.", "mesh",
+        Intent = new[] { "create a mesh sphere", "subdivision ball",
+                         "narysuj siatke kulista", "sphere as a mesh not a solid",
+                         "siatka kuli", "make a faceted sphere for sculpting",
+                         "lat long sphere mesh" },
+        RequiresPlugin = true)]
+    public static Task<MeshSphereResult> CreateMeshSphere(IPluginGateway gw, MeshSphereArgs args, CancellationToken ct)
+        => MeshProxy.CallAsync<MeshSphereArgs, MeshSphereResult>(gw, "acad.mesh.create_mesh_sphere", args, T_SLOW, ct);
+
+    [McpTool("create_mesh_cone", "Create a mesh CONE - which is really a PYRAMID over an n-sided base, and the tool says so rather than letting the caller assume otherwise. The cage is n+1 vertices and n+1 faces: the base plus n triangles meeting at the apex. Its volume is exactly one third of base area times height, which is LESS than the pi*r*r*h/3 a true cone holds, because the flat sides cut the corners off the circle. Both figures are reported. For a true cone, use geometry_3d.draw_cone.", "mesh",
+        Intent = new[] { "create a mesh cone", "mesh pyramid over a polygon",
+                         "narysuj siatke stozkowa", "cone as a mesh not a solid",
+                         "siatka stozka", "faceted cone mesh", "subdivision cone" },
+        RequiresPlugin = true)]
+    public static Task<MeshConeResult> CreateMeshCone(IPluginGateway gw, MeshCylinderArgs args, CancellationToken ct)
+        => MeshProxy.CallAsync<MeshCylinderArgs, MeshConeResult>(gw, "acad.mesh.create_mesh_cone", args, T_SLOW, ct);
+
+    // extrude_mesh_face WITHDRAWN 2026-08-10, after being built and measured.
+    //
+    // ExtrudeFaces needs a FullSubentityPath[], and SubDMesh exposes no GetSubentityPathsAt*
+    // family to produce one - unlike Solid3d, where that family is exactly how the whole face and
+    // edge family became reachable. The hypothesis was that a path could simply be BUILT, with
+    // the face index carried in the pointer field of a SubentityId. It cannot: AutoCAD accepts
+    // the call, RETURNS SUCCESS, and leaves the cage at 8 vertices and 6 faces.
+    //
+    // The plugin handler stays registered and guarded so the finding is reproducible - see
+    // scripts/verify-mesh-curved.py, which asserts the refusal - but the tool is not offered in
+    // the bank, because one that silently does nothing while reporting success is worse than an
+    // absent one. split_mesh_face and merge_mesh_faces are struck for the same reason: they take
+    // the same addressing and it does not exist.
+
 }

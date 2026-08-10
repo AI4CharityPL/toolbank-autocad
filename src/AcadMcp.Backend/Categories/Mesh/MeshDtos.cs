@@ -116,3 +116,53 @@ public sealed record MeshWedgeResult(
     [property: JsonPropertyName("size")]           MeshSize Size,
     [property: JsonPropertyName("halfBoxVolume")]  double HalfBoxVolume,
     [property: JsonPropertyName("note")]           string Note);
+
+// ─────────── roadmap 4.3, third tranche ───────────
+
+public sealed record MeshSphereArgs(
+    [property: JsonPropertyName("center")]      Point3dDto Center,
+    [property: JsonPropertyName("radius")]      double? Radius = null,
+    [property: JsonPropertyName("segments")]    int? Segments = null,
+    [property: JsonPropertyName("rings")]       int? Rings = null,
+    [property: JsonPropertyName("smoothLevel")] int? SmoothLevel = null,
+    [property: JsonPropertyName("layer")]       string? Layer = null);
+
+public sealed record MeshFaceOpArgs(
+    [property: JsonPropertyName("handle")]        string Handle,
+    [property: JsonPropertyName("faceIndex")]     int? FaceIndex = null,
+    [property: JsonPropertyName("distance")]      double? Distance = null,
+    [property: JsonPropertyName("direction")]     Point3dDto? Direction = null,
+    [property: JsonPropertyName("taperAngleDeg")] double? TaperAngleDeg = null);
+
+public sealed record MeshSphereResult(
+    [property: JsonPropertyName("entity")]            EntityHandle Entity,
+    [property: JsonPropertyName("vertices")]          int Vertices,
+    [property: JsonPropertyName("faces")]             int Faces,
+    [property: JsonPropertyName("smoothLevel")]       int SmoothLevel,
+    [property: JsonPropertyName("segments")]          int Segments,
+    [property: JsonPropertyName("rings")]             int Rings,
+    [property: JsonPropertyName("radius")]            double Radius,
+    [property: JsonPropertyName("trueSphereVolume")]  double TrueSphereVolume,
+    [property: JsonPropertyName("note")]              string Note);
+
+public sealed record MeshConeResult(
+    [property: JsonPropertyName("entity")]         EntityHandle Entity,
+    [property: JsonPropertyName("vertices")]       int Vertices,
+    [property: JsonPropertyName("faces")]          int Faces,
+    [property: JsonPropertyName("smoothLevel")]    int SmoothLevel,
+    [property: JsonPropertyName("sides")]          int Sides,
+    [property: JsonPropertyName("radius")]         double Radius,
+    [property: JsonPropertyName("height")]         double Height,
+    [property: JsonPropertyName("pyramidVolume")]  double PyramidVolume,
+    [property: JsonPropertyName("coneVolume")]     double ConeVolume,
+    [property: JsonPropertyName("note")]           string Note);
+
+public sealed record MeshFaceExtrudeResult(
+    [property: JsonPropertyName("handle")]         string Handle,
+    [property: JsonPropertyName("faceIndex")]      int FaceIndex,
+    [property: JsonPropertyName("distance")]       double Distance,
+    [property: JsonPropertyName("verticesBefore")] int VerticesBefore,
+    [property: JsonPropertyName("vertices")]       int Vertices,
+    [property: JsonPropertyName("facesBefore")]    int FacesBefore,
+    [property: JsonPropertyName("faces")]          int Faces,
+    [property: JsonPropertyName("note")]           string Note);

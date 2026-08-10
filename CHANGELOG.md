@@ -77,6 +77,39 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 3.4 — `acad-selection` extensions, 11 tools, 67/67 in one restart.** Bank 636 → 647.
+  `select_similar`, `select_by_area_range`, `select_by_length_range`, `select_duplicates`,
+  `select_last`, `hide_objects`, `isolate_objects`, `unisolate_objects`,
+  `create_selection_filter`, `list_selection_filters`, `apply_saved_filter`.
+
+  **Two roadmap entries struck as duplicates rather than built.** `quick_select_by_property` is
+  already covered by `filter_entities` and `data.query_by_property` — a third name for one
+  operation only makes a router choose badly. `select_previous` is struck because AutoCAD's
+  previous selection is the USER's and nothing an agent does here creates one, so it would almost
+  always answer nothing; `save_selection_set` is the honest equivalent.
+
+  `select_last` is re-read rather than wrapped: it returns the entities most recently ADDED to
+  model space, the dependable meaning for an agent, while still consulting `Editor.SelectLast` and
+  reporting that separately. **That consultation narrowed rule 26 §15 for free:** it returned a
+  selection from the application-context runner, so the boundary is not "Editor methods need a
+  command context" — `Editor.Command` does, the non-interactive selection methods do not. Do not
+  generalise from one failing member to its whole type.
+
+  The verification is built so a tool ignoring its criteria cannot pass, every check having a
+  negative half: `select_similar` must give THREE DIFFERENT counts (5 → 3 → 2) from three flag
+  settings; `select_duplicates` gets an exact copy AND a near-copy 0.5 away and must report only
+  the first, then catch both when the tolerance widens; visibility is read back through a
+  DIFFERENT tool than the one that wrote it; and the saved filter is applied after the drawing
+  changes, so it must re-evaluate (2 → 3) rather than remember a result.
+
+  `select_duplicates` reports and never deletes, naming one entity to keep per group, because the
+  match is a bounding-box heuristic that will group two different splines sharing an extent.
+
+  A unit test asserting `save_selection_set` was this category's only writer was true before and
+  is not now — `hide_objects`, `isolate_objects`, `unisolate_objects` and
+  `create_selection_filter` genuinely modify the drawing. The writers are now named explicitly
+  rather than the rule being loosened, so a new non-read-only tool still has to be justified.
+
 - **Phase 5.4 — `acad-views`, 9 tools, 46/46 in one AutoCAD restart.** New category, bank
   627 → 636. Named `acad-views` rather than `acad-views-cameras` for a measured reason: there is
   **no `Camera` type in the managed API**. A camera IS a named view carrying a target and a lens

@@ -553,14 +553,40 @@ descender depth while `BaseLeft` threw `eNotApplicable` — the default justific
 is. The displacement is now measured and undone rather than predicted.
 
 
-### 3.4 `acad-selection` extensions (≈12)
+### 3.4 `acad-selection` extensions (≈12 → **11 built, 2 struck**) — COMPLETE 2026-08-11
 
 ```
-quick_select_by_property    create_selection_filter    apply_saved_filter
-select_similar              select_previous            select_last
-isolate_objects             hide_objects               unisolate_objects
-select_by_area_range        select_by_length_range     select_duplicates
+quick_select_by_property ✘  create_selection_filter ✔  apply_saved_filter ✔
+select_similar ✔            select_previous ✘          select_last ✔(re-read)
+isolate_objects ✔           hide_objects ✔             unisolate_objects ✔
+select_by_area_range ✔      select_by_length_range ✔   select_duplicates ✔
+list_selection_filters ✔(added)
 ```
+
+**11 built, 67/67 live, one AutoCAD restart, no defects.**
+
+**Two struck as duplicates rather than built.** `quick_select_by_property` is already covered by
+`filter_entities` here and `data.query_by_property`; a third name for one operation only makes a
+router choose badly. `select_previous` is struck because AutoCAD's previous selection is the
+USER's, and nothing an agent does through this bank creates one — the tool would almost always
+answer nothing. `save_selection_set` is the honest equivalent.
+
+**`select_last` is re-read rather than wrapped.** It returns the entities most recently ADDED to
+model space, which enumerates in creation order — the dependable meaning of "last" for an agent.
+It also consults `Editor.SelectLast` and reports that SEPARATELY, and that consultation paid for
+itself: it returned a selection from the application-context runner, which **narrows rule 26 §15**
+— `Editor.Command` needs a command context, but the non-interactive selection methods do not.
+
+**The verification is built so a tool ignoring its criteria cannot pass**, every check having a
+negative half. `select_similar` must produce THREE DIFFERENT counts (5 → 3 → 2) from three flag
+settings on a drawing seeded so that no answer is trivially one or all. `select_duplicates` is
+given an exact copy AND a near-copy 0.5 away: it must report the first and not the second, then
+catch both when the tolerance widens. Visibility is read back through a DIFFERENT tool rather than
+from the counts the writer reported. And the saved filter is applied AFTER the drawing changes, so
+it has to re-evaluate (2 → 3) rather than remember a result.
+
+`select_duplicates` reports and never deletes — each group names one entity to keep — because the
+match is a bounding-box heuristic that will group two different splines sharing an extent.
 
 ### 3.5 `acad-images` / `acad-underlays` (≈22)
 
@@ -1253,14 +1279,14 @@ should happen before any of phases 3–5 is started, not while it is being built
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **37** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **636** | **78 %** |
+| | **Total** | **813** | **647** | **80 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 624 (337 + 75 + 71 + 51 + 53 + 37)
-while the bank measures **636**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 635 (337 + 75 + 71 + 62 + 53 + 37)
+while the bank measures **647**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 45 categories, 636 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 45 categories, 647 tools total.
 
 ## Categories
 
@@ -37,7 +37,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-schedules](#acad-schedules) (9 tools)
 - [acad-sections-3d](#acad-sections-3d) (9 tools)
 - [acad-sections](#acad-sections) (4 tools)
-- [acad-selection](#acad-selection) (12 tools)
+- [acad-selection](#acad-selection) (23 tools)
 - [acad-sheetsets](#acad-sheetsets) (23 tools)
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-surfaces](#acad-surfaces) (12 tools)
@@ -677,18 +677,29 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 
 | Tool | Description |
 |---|---|
+| `apply_saved_filter` | Run a saved selection filter and return what it matches. Read-only. The criteria actually used are REPORTED, read back out of the stored filter rather than restated from the request - so a filter that was saved differently from how it was meant shows up here instead of quietly selecting the wrong things. All criteria are ANDed, and the number of entities scanned is reported alongside the number matched, so a small result can be told from an empty drawing. |
 | `count_entities` | Count entities in model space (optionally filtered by DXF type). |
+| `create_selection_filter` | Save a named set of selection criteria in the drawing, to be reused with apply_saved_filter. Criteria are layer, objectClass, colorIndex and a min/max range whose meaning is set by `rangeKind` - area or length. At least one criterion is required, since a filter with none would match everything. All criteria are ANDed when applied. The filter is stored in a dictionary inside the .dwg, so it travels with the drawing and is still there next session - one that lived only in memory would be useless for the job filters are for. Refuses a name already in use, because replacing one silently would change what every later call selects. |
 | `filter_entities` | Apply an additional layer/type/color filter to a candidate set (or to all of model space if no handles supplied). |
+| `hide_objects` | Hide the named entities - AutoCAD's HIDEOBJECTS. They are STILL THERE: not erased, still found by the selection tools, and brought back by unisolate_objects. Each entity is read back after being hidden, and any that were already hidden are counted separately rather than reported as newly hidden. |
+| `isolate_objects` | Show only the named entities and hide everything else in model space - AutoCAD's ISOLATEOBJECTS. The named entities are made VISIBLE if they were hidden, since isolating something and leaving it hidden would be the wrong answer. Nothing is erased and unisolate_objects brings it all back. Model space only: entities in a layout are untouched. Refuses if any named handle is not in model space, rather than silently isolating fewer things than asked for. |
+| `list_selection_filters` | List the selection filters saved in this drawing, with the criteria of each. Read-only. Filters live in a dictionary inside the .dwg, so they travel with the drawing rather than only lasting the session. |
 | `load_selection_set` | Load a previously saved named selection set and return its handles. Validates each handle still exists. |
 | `save_selection_set` | Save a list of entity handles under a named selection set (stored in the AcadMcp xrecord dictionary on the drawing). |
 | `select_all` | Select every entity currently in model space (no filtering). |
+| `select_by_area_range` | Find closed curves whose enclosed area falls in a range - give min, max, or both, inclusive. Read-only. IMPORTANT for reading the result: only CLOSED curves have an area, so the result reports how many of the scanned entities were `measurable` at all. Without that number a count of zero would not distinguish 'nothing in range' from 'nothing in this drawing has an area'. A self-intersecting closed polyline reports the absolute value AutoCAD computes, which is not the area a person would measure by hand. |
 | `select_by_color` | Select every entity whose colour matches, given either as true RGB or an ACI index from 1 to 255. This matches the colour as SET ON THE ENTITY, so anything drawn ByLayer will not match a search for the layer colour it appears in - which is the usual surprise here. To gather everything on a layer, use select_by_layer instead. |
 | `select_by_handle` | Resolve a list of entity handles into a single selection result. Validates each handle exists. |
 | `select_by_layer` | Select all entities on the given layer. Optionally restrict by frozen/thawed state. |
+| `select_by_length_range` | Find curves whose length falls in a range - give min, max, or both, inclusive. Read-only. Only CURVES have a length: a block insert or a piece of text does not, so the result reports how many entities were `measurable`, which is what tells a count of zero apart from a drawing full of things that cannot be measured. For a CLOSED curve the length reported is the perimeter, not zero. |
 | `select_by_type` | Select entities by AutoCAD DXF entity name (e.g. "LINE", "LWPOLYLINE", "CIRCLE", "3DSOLID", "INSERT"). |
+| `select_duplicates` | Report entities that look like duplicates of each other - the doubled-up lines OVERKILL exists for. Read-only: it finds and reports, it does NEVER deletes. Each group names one entity to `keep` and lists the rest as `duplicates`, so the handles can be passed to modify.delete_entities once you have looked at them. Duplicates are judged by object class, layer and bounding box within a tolerance, which is a HEURISTIC and is described as one - two different splines that happen to share a bounding box will be reported together, so read a group before acting on it. |
 | `select_fence` | Select entities crossing a polyline fence defined by an ordered vertex list. |
+| `select_last` | Return the entities most recently ADDED to model space - `count` of them, one by default. Read-only. This is the dependable meaning of 'last' for an agent: model space enumerates in creation order, and nothing this bank does creates a UI selection. AutoCAD's own Editor.SelectLast is consulted as well and reported SEPARATELY, so you can see when it has something and when it does not; in a scripted session it is usually empty, which is a fact about the editor rather than an error. Use this to grab what you have just drawn without tracking handles yourself. |
 | `select_polygon` | Select entities inside (crossing=false) or intersecting (crossing=true) a closed polygonal region. |
+| `select_similar` | Find every entity like a reference one - AutoCAD's SELECTSIMILAR. Object class always has to match; `matchLayer` also matters by default, while `matchColor` and `matchLinetype` do not, which mirrors AutoCAD's own default. What counted as similar is REPORTED in the result rather than left implicit, because 'similar' is a choice and two people would make it differently. The reference entity is included in the result, since it is similar to itself and leaving it out would make the count disagree with what you see on screen. Read-only. Model space only. |
 | `select_window` | Select entities fully inside (or, with crossing=true, intersecting) the WCS axis-aligned window from min to max. |
+| `unisolate_objects` | Make everything in model space visible again - AutoCAD's UNISOLATEOBJECTS. IMPORTANT: it shows EVERYTHING; it does not restore some earlier state. Anything that was hidden for its own reasons before you isolated will therefore also reappear, and there is no operation that puts back exactly what was hidden before. That is the behaviour, not a defect. Reports how many were shown and how many were already visible. |
 
 ## acad-sheetsets
 

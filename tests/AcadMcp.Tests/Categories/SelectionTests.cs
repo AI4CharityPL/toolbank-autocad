@@ -1,5 +1,6 @@
 ﻿// Smoke + regression test for acad-selection category (12 tools).
 
+using System.Collections.Generic;
 using System.Linq;
 using AcadMcp.Backend.Mcp;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,7 +13,16 @@ public class SelectionTests
     private static readonly string[] ExpectedTools = new[]
     {
         "select_all", "select_by_layer", "select_by_color", "select_by_type", "select_by_handle",
-        "select_window", "select_fence", "select_polygon",
+        "select_window",
+
+        // Phase 3.4 extensions. quick_select_by_property is deliberately absent: filter_entities
+        // and data.query_by_property already cover it. select_previous is absent too - AutoCAD's
+        // previous selection is the USER's, and nothing an agent does here creates one, so the
+        // tool would almost always answer nothing; save_selection_set is the honest equivalent.
+        "select_similar", "select_by_area_range", "select_by_length_range",
+        "select_duplicates", "select_last",
+        "hide_objects", "isolate_objects", "unisolate_objects",
+        "create_selection_filter", "list_selection_filters", "apply_saved_filter", "select_fence", "select_polygon",
         "filter_entities", "save_selection_set", "load_selection_set", "count_entities",
     };
 
@@ -45,10 +55,24 @@ public class SelectionTests
     [Fact]
     public void Pure_select_and_count_are_read_only()
     {
-        // save_selection_set is the only writer in this category.
+        // Selecting is a question, not a change, so nearly everything here is read-only. The
+        // writers are named EXPLICITLY rather than excluded by a blanket rule, so that a new tool
+        // arriving without ReadOnly has to be justified here rather than slipping in: the phase
+        // 3.4 additions changed the visibility of entities and saved filters into the drawing,
+        // which is why this list is no longer just save_selection_set.
+        var writers = new HashSet<string>
+        {
+            "save_selection_set",
+            "hide_objects", "isolate_objects", "unisolate_objects",
+            "create_selection_filter",
+        };
         foreach (var t in NewRegistry().ToolsFor("selection"))
         {
-            if (t.Name == "save_selection_set") continue;
+            if (writers.Contains(t.Name))
+            {
+                Assert.False(t.ReadOnly, $"{t.Name} changes the drawing and must not be ReadOnly");
+                continue;
+            }
             Assert.True(t.ReadOnly, $"{t.Name} should be ReadOnly = true");
         }
     }

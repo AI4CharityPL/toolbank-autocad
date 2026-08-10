@@ -458,6 +458,12 @@ and do it before building, not after.
 `SendStringToExecute` remains what it was: it queues, so a tool that merely reports "sent" is
 still forbidden. Waiting on a file it writes is a different thing and is allowed.
 
+**The boundary is NARROWER than "Editor methods need a command context", measured 2026-08-11.**
+`selection.select_last` calls `Editor.SelectLast()` from the ordinary application-context runner
+and it WORKS — it returned a selection set with one entity. So the rule is not about the `Editor`
+class: `Editor.Command` needs a command context, while the non-interactive selection methods do
+not. Do not generalise from one failing member to its whole type.
+
 **What did work, and why it is worth noting:** `Application.GetSystemVariable`/`SetSystemVariable`
 and the ordinary `Database`/`Transaction` API are unaffected. The dividing line is not "old API vs
 new" but whether the call needs to run as if a user had typed it.

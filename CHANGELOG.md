@@ -77,6 +77,32 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 5.3 — `acad-geo`, 7 tools, 44/44.** New category, bank 647 → 654.
+  `set_geographic_location`, `get_geographic_location`, `remove_geolocation`,
+  `convert_wcs_to_geo`, `convert_geo_to_wcs`, `place_geo_marker`, `list_geo_markers`.
+
+  **Five roadmap entries struck on measured grounds.** There is no `GeoMap` type in this API, so
+  online map imagery is unreachable; `NorthDirection` is read-only and is an ANGLE rather than a
+  vector, so there is nothing for `set_north_direction` to set; and the coordinate-system pair
+  collapses into `set_geographic_location`, AutoCAD exposing no catalogue to enumerate.
+
+  **The trap the category is built around:** AutoCAD stores geographic positions as
+  `(longitude, latitude, altitude)` — x is LONGITUDE — the reverse of how people say it, and a
+  swap yields well-formed coordinates in the wrong hemisphere. Every tool takes and returns them
+  as NAMED values, never as a bare point. The test position is Warsaw, 52.23 / 21.01, chosen
+  because 52 is not a plausible longitude for Poland; (50, 50) would pass a swapped implementation
+  perfectly.
+
+  **Two real defects, found live, now rule 26 §16 and §17.** `Database.GeoDataObject` THROWS
+  `eNullObjectId` when the drawing has no location instead of returning a null id — so the obvious
+  `IsNull` guard never runs, and every tool failed with an error about a null object id, including
+  the one whose job is to create the location. And the backend DTO declared `latitude` as a
+  non-nullable `double`, so an omitted latitude became `0.0`, which is a valid coordinate: the
+  tool set a location nobody asked for, reported success, and silently moved the drawing to the
+  equator — after which five later checks failed looking exactly like conversion bugs. The single
+  check that named the cause was the least dramatic line in the list. Arguments with a plausible
+  zero are now nullable, with the reason written beside them.
+
 - **Phase 3.4 — `acad-selection` extensions, 11 tools, 67/67 in one restart.** Bank 636 → 647.
   `select_similar`, `select_by_area_range`, `select_by_length_range`, `select_duplicates`,
   `select_last`, `hide_objects`, `isolate_objects`, `unisolate_objects`,

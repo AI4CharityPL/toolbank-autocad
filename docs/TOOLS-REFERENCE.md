@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 45 categories, 647 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 46 categories, 654 tools total.
 
 ## Categories
 
@@ -17,6 +17,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-fields](#acad-fields) (17 tools)
 - [acad-files](#acad-files) (14 tools)
 - [acad-furniture](#acad-furniture) (10 tools)
+- [acad-geo](#acad-geo) (7 tools)
 - [acad-geometry-2d](#acad-geometry-2d) (60 tools)
 - [acad-geometry-3d](#acad-geometry-3d) (36 tools)
 - [acad-grids](#acad-grids) (6 tools)
@@ -318,6 +319,18 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_furniture_catalog` | Enumerate the built-in furniture block catalog (hospital + office + residential). Read-only. Returns name, category (bed/chair/desk/cabinet/sofa/table/misc), domain (hospital/office/residential), default width/depth in mm, and a one-line description. |
 | `list_furniture_in_model` | Enumerate all furniture BlockReferences currently in model-space (block names starting with 'FURN-'). Optionally filter by layer or by exact block name. Returns handle, block name, layer, position, rotation and any {inv_id, type, note} attribute values. Read-only. |
 | `populate_room` | Furnishes a room with FURNITURE. For sanitary fittings - WCs, basins, showers, and the clearances they need - that is plumbing.populate_bathroom. Auto-populate a room with a furniture preset. Room is identified either by a closed polyline handle OR explicit bbox (min+max). Presets: 'ward-room' (2 beds + 2 nightstands + 1 armchair), 'icu-room' (1 ICU-bed + monitor cabinet + visitor chair), 'or-room' (OR-table + anaesthesia + instrument trolley), 'office' (desk + chair + file cabinet), 'reception' (reception-desk + 3 waiting chairs), 'waiting' (3 sofas + 1 coffee-table), 'consult' (desk + 2 chairs + exam table + cabinet). Returns handles of inserted items plus per-item layer assignment warnings. |
+
+## acad-geo
+
+| Tool | Description |
+|---|---|
+| `convert_geo_to_wcs` | Convert a latitude and longitude into a drawing point. Read-only. The exact inverse of convert_wcs_to_geo - feeding one result into the other returns the position you started from, which is the check worth running when a location looks wrong. Latitude and longitude are taken as NAMED arguments rather than a point, because the API orders them longitude-first and the two are trivially swapped when positional. Requires the drawing to have a geographic location. |
+| `convert_wcs_to_geo` | Convert a drawing point into latitude, longitude and altitude. Read-only. The result is broken out BY NAME because AutoCAD returns it as a point carrying (longitude, latitude, altitude) - x is longitude - and handing that back as a bare point invites reading it the way people speak, latitude first, which is a mistake with no symptom until the position turns out to be somewhere else entirely. convert_geo_to_wcs is the exact inverse: feeding one result into the other returns where you started. Requires the drawing to have a geographic location. |
+| `get_geographic_location` | Read the drawing's geographic location: latitude, longitude and altitude, plus the design point, coordinate system, units and north angle. Read-only. Latitude and longitude are pulled out BY NAME because the reference point stores them as (longitude, latitude, altitude) and reading that point positionally is the classic geo-data mistake. The north direction is reported as an ANGLE and is read-only in the API - it is derived from the design and reference points rather than stored, which is why no tool sets it. Refuses when the drawing has no location rather than answering with zeros. |
+| `list_geo_markers` | List the geo markers in model space, each with its drawing position, notes, and the latitude and longitude it corresponds to. Read-only. IMPORTANT for reading the result: the coordinates are COMPUTED from the drawing position through the current geo data, so they are absent when the drawing has no geographic location - the markers are still listed, because they are real entities either way, and `hasGeoLocation` says which case you are looking at rather than leaving empty coordinates to be guessed at. |
+| `place_geo_marker` | Place a geo marker - an entity that records a position on the Earth, with optional notes. Give EITHER a drawing point OR a latitude and longitude, not both: they could disagree, and this tool should not be the one deciding which to believe. The result reports both the drawing point and the latitude and longitude it corresponds to, converted back through the geo data - so placing by coordinates shows you where that landed in the drawing, and placing by point shows you where on Earth it is. Requires the drawing to have a geographic location. |
+| `remove_geolocation` | Remove the drawing's geographic location. The previous location is reported so it can be put back. Nothing in the geometry moves - a location tells you what the coordinates mean on the Earth and does not change them - and any geo markers already placed stay exactly where they are, becoming ordinary annotation. Afterwards the conversion tools refuse until a location is set again. Verified gone by reading Database.GeoDataObject back. |
+| `set_geographic_location` | Give the drawing a place on the Earth: the DESIGN point is a spot in the drawing, and the latitude and longitude say where that spot actually is. Optionally set the coordinate system by name, the altitude, and the horizontal and vertical units. Nothing in the geometry moves - a geographic location says what the existing coordinates MEAN, it does not change them. Latitude and longitude are taken as NAMED arguments rather than as a point on purpose: AutoCAD stores the reference point as (longitude, latitude, altitude), x being longitude, which is the reverse of how people say it aloud and is the easiest thing to get silently wrong. Replacing an existing location is allowed and reported. Read back through Database.GeoDataObject afterwards - a different route from the one that wrote it. |
 
 ## acad-geometry-2d
 

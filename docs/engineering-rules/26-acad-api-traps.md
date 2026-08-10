@@ -468,6 +468,50 @@ not. Do not generalise from one failing member to its whole type.
 and the ordinary `Database`/`Transaction` API are unaffected. The dividing line is not "old API vs
 new" but whether the call needs to run as if a user had typed it.
 
+### 16. `Database.GeoDataObject` THROWS when there is no geographic location
+
+```csharp
+if (db.GeoDataObject.IsNull) { ... }        // never runs - the GETTER throws eNullObjectId
+```
+
+It does not return a null `ObjectId`; it raises `eNullObjectId`. So the obvious guard cannot
+execute, and every tool in the category fails with an error about a null object id instead of
+saying what is actually wrong — including the tool whose whole job is to CREATE the location, if
+it checks for an existing one first. Asking whether a drawing is geolocated means **catching, not
+testing**:
+
+```csharp
+ObjectId id;
+try { id = db.GeoDataObject; } catch (AcadRt.Exception) { return null; }
+```
+
+Two more measured facts about the same object: **`GeoLocationData` is the class**, not `GeoData`,
+though `GeoDataObject` is the property that points at it; **`NorthDirection` is read-only and is
+a `double` — an ANGLE, not a vector**; and **`CoordinateSystem` cannot be set before `PostToDb`**,
+raising `eNoDatabase` if you try.
+
+### 17. A non-nullable `double` in a DTO turns an OMITTED argument into a valid one
+
+```csharp
+public sealed record GeoSetArgs(
+    [property: JsonPropertyName("latitude")] double Latitude,   // omitted -> 0.0
+    ...
+```
+
+`0` is a perfectly good latitude and longitude — the Gulf of Guinea. So a caller who forgets the
+latitude does not get an error: the tool sets a location nobody asked for and reports success, and
+a plugin-side `is null` check never fires because the backend already filled the gap.
+
+**What makes this worth its own section is how it presented.** The offending call sat before a
+block of conversion checks, and silently moved the drawing's location to the equator. Six checks
+then failed, five of them looking exactly like conversion bugs — wrong latitude, wrong direction,
+markers in the wrong place. The single check that pointed at the cause, *"a location with no
+latitude is refused"*, was one line in that list and the least dramatic of them.
+
+**Make every argument that has a plausible zero nullable**, and refuse the null. A missing value
+must not be indistinguishable from a valid one. Coordinates, angles, indices and scales are all in
+this class; a count or a tolerance, where 0 is already invalid, is not.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

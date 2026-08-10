@@ -1064,14 +1064,37 @@ Two things to watch, both measured:
   needs one more probe round for the manager route before it is costed — the xdata and dictionary
   half needs none and is the tranche to build first.
 
-### 5.3 `acad-geolocation` (≈12)
+### 5.3 `acad-geo` (≈12 → **7 built, 5 struck**) — COMPLETE 2026-08-11
 
 ```
-set_geographic_location     get_geographic_location    remove_geolocation
-list_coordinate_systems     set_coordinate_system      convert_geo_to_wcs
-convert_wcs_to_geo          insert_map_image           set_map_image_type
-set_north_direction         place_geo_marker           list_geo_markers
+set_geographic_location ✔   get_geographic_location ✔  remove_geolocation ✔
+list_coordinate_systems ✘   set_coordinate_system ✘    convert_geo_to_wcs ✔
+convert_wcs_to_geo ✔        insert_map_image ✘         set_map_image_type ✘
+set_north_direction ✘       place_geo_marker ✔         list_geo_markers ✔
 ```
+
+**7 built, 44/44 live.** Ships as `acad-geo`.
+
+**Five struck, all measured before a line was written.** There is NO `GeoMap` type and no
+`GeoMapType`/`GeoMapResolution` enums, so `insert_map_image` and `set_map_image_type` are not
+buildable — online map imagery is not in this API. `NorthDirection` is READ-ONLY and is a `double`
+(an ANGLE, not a vector), derived from the design and reference points, so `set_north_direction`
+has nothing to set. `list_coordinate_systems` and `set_coordinate_system` collapse into
+`set_geographic_location`, which takes the system by name; AutoCAD exposes no catalogue to walk.
+
+**The trap this category is built around: AutoCAD stores geographic positions as
+(longitude, latitude, altitude) — x is LONGITUDE** — the reverse of how people say it. Every tool
+takes and returns them as NAMED values, never as a bare point. The test position is Warsaw,
+52.23 / 21.01, chosen because 52 is not a plausible longitude for Poland: a position like (50, 50)
+would pass a swapped implementation perfectly.
+
+**Two defects found live, both real, and both instructive.** `Database.GeoDataObject` THROWS
+`eNullObjectId` when there is no location rather than returning a null id, so the obvious guard
+never runs and every tool failed with an error about a null object id (rule 26 §16). And the
+backend DTO declared `latitude` as a non-nullable `double`, so an OMITTED latitude became `0.0` —
+a valid coordinate — and silently relocated the drawing to the equator, making five later checks
+fail as if the conversions were broken (rule 26 §17). The one check that named the cause was the
+least dramatic line in the failure list.
 
 ### 5.4 `acad-views` (≈14 → **9 built, 4 struck, 1 deferred**) — COMPLETE 2026-08-11
 
@@ -1281,12 +1304,12 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **37** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **44** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **647** | **80 %** |
+| | **Total** | **813** | **654** | **80 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 635 (337 + 75 + 71 + 62 + 53 + 37)
-while the bank measures **647**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 642 (337 + 75 + 71 + 62 + 53 + 44)
+while the bank measures **654**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

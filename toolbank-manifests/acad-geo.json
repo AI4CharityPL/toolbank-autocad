@@ -1,0 +1,229 @@
+{
+  "id": "acad-geo",
+  "name": "acad-geo",
+  "description": "Giving a drawing a place on the Earth, converting between drawing coordinates and latitude and longitude, and marking real-world positions. A geographic location says what the existing coordinates MEAN - it never moves any geometry. THE TRAP THIS CATEGORY IS BUILT AROUND: AutoCAD stores geographic positions as (longitude, latitude, altitude) - x is LONGITUDE - which is the reverse of how people say it aloud, so every tool here takes and returns them as NAMED values and never as a bare point. Measured limits worth knowing before choosing a tool: the north direction is READ-ONLY and is an angle derived from the design and reference points, so nothing sets it; and online map imagery is not in this API at all, so there is no tool to insert a map image. The two conversion tools are exact inverses, which is the check to run when a position looks wrong.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-geo.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "convert",
+    "dwg",
+    "geo",
+    "geographic",
+    "geolocation",
+    "get",
+    "list",
+    "location",
+    "marker",
+    "markers",
+    "place",
+    "remove",
+    "set",
+    "to",
+    "wcs"
+  ],
+  "intent_examples": [
+    "add a gps marker",
+    "clear the geo data from this drawing",
+    "convert latitude and longitude to a drawing point",
+    "convert this point to latitude and longitude",
+    "delete geolocation",
+    "detach the drawing from its map position",
+    "find geo markers",
+    "find the drawing point for a real world position",
+    "geolocate this drawing",
+    "get the geographic location",
+    "get the real world position of a point",
+    "is this drawing geolocated",
+    "jakie wspolrzedne geograficzne ma rysunek",
+    "jakie znaczniki geograficzne sa na rysunku",
+    "lat long to wcs",
+    "list marked real world positions",
+    "list the geo markers",
+    "lista znacznikow geograficznych",
+    "mark this position on the map",
+    "odczytaj lokalizacje geograficzna",
+    "oznacz punkt geograficzny na rysunku",
+    "place a geo marker",
+    "przelicz punkt na wspolrzedne geograficzne",
+    "przelicz wspolrzedne geograficzne na punkt",
+    "przypisz wspolrzedne geograficzne do rysunku",
+    "put a marker at this latitude and longitude",
+    "put this drawing at a latitude and longitude",
+    "put this lat long into model coordinates",
+    "record a real world position in the drawing",
+    "remove the geographic location",
+    "set lat long for the model",
+    "set the geographic location of this drawing",
+    "show all gps markers",
+    "show the geo coordinates",
+    "skasuj wspolrzedne geograficzne rysunku",
+    "ungeolocate this drawing",
+    "ustaw lokalizacje geograficzna rysunku",
+    "usun lokalizacje geograficzna",
+    "wcs to lat long",
+    "what are the gps coordinates of this point",
+    "what latitude and longitude is this drawing",
+    "what positions are marked in this drawing",
+    "where does this gps position land in the drawing",
+    "where is this drawing located",
+    "where on earth is this drawing",
+    "where on earth is this drawing point",
+    "wstaw znacznik geograficzny",
+    "zamien wspolrzedne geograficzne na rysunkowe",
+    "zamien wspolrzedne rysunku na geograficzne"
+  ],
+  "tools_summary": [
+    {
+      "name": "convert_geo_to_wcs",
+      "description": "Convert a latitude and longitude into a drawing point. Read-only. The exact inverse of convert_wcs_to_geo - feeding one result into the other returns the position you started from, which is the check worth running when a location looks wrong. Latitude and longitude are taken as NAMED arguments rather than a point, because the API orders them longitude-first and the two are trivially swapped when positional. Requires the drawing to have a geographic location.",
+      "tags": [
+        "convert",
+        "geo",
+        "to",
+        "wcs"
+      ],
+      "intent": [
+        "convert latitude and longitude to a drawing point",
+        "where does this gps position land in the drawing",
+        "przelicz wspolrzedne geograficzne na punkt",
+        "put this lat long into model coordinates",
+        "zamien wspolrzedne geograficzne na rysunkowe",
+        "lat long to wcs",
+        "find the drawing point for a real world position"
+      ]
+    },
+    {
+      "name": "convert_wcs_to_geo",
+      "description": "Convert a drawing point into latitude, longitude and altitude. Read-only. The result is broken out BY NAME because AutoCAD returns it as a point carrying (longitude, latitude, altitude) - x is longitude - and handing that back as a bare point invites reading it the way people speak, latitude first, which is a mistake with no symptom until the position turns out to be somewhere else entirely. convert_geo_to_wcs is the exact inverse: feeding one result into the other returns where you started. Requires the drawing to have a geographic location.",
+      "tags": [
+        "convert",
+        "wcs",
+        "to",
+        "geo"
+      ],
+      "intent": [
+        "convert this point to latitude and longitude",
+        "what are the gps coordinates of this point",
+        "przelicz punkt na wspolrzedne geograficzne",
+        "where on earth is this drawing point",
+        "zamien wspolrzedne rysunku na geograficzne",
+        "wcs to lat long",
+        "get the real world position of a point"
+      ]
+    },
+    {
+      "name": "get_geographic_location",
+      "description": "Read the drawing's geographic location: latitude, longitude and altitude, plus the design point, coordinate system, units and north angle. Read-only. Latitude and longitude are pulled out BY NAME because the reference point stores them as (longitude, latitude, altitude) and reading that point positionally is the classic geo-data mistake. The north direction is reported as an ANGLE and is read-only in the API - it is derived from the design and reference points rather than stored, which is why no tool sets it. Refuses when the drawing has no location rather than answering with zeros.",
+      "tags": [
+        "get",
+        "geographic",
+        "location"
+      ],
+      "intent": [
+        "where is this drawing located",
+        "get the geographic location",
+        "odczytaj lokalizacje geograficzna",
+        "what latitude and longitude is this drawing",
+        "jakie wspolrzedne geograficzne ma rysunek",
+        "is this drawing geolocated",
+        "show the geo coordinates"
+      ]
+    },
+    {
+      "name": "list_geo_markers",
+      "description": "List the geo markers in model space, each with its drawing position, notes, and the latitude and longitude it corresponds to. Read-only. IMPORTANT for reading the result: the coordinates are COMPUTED from the drawing position through the current geo data, so they are absent when the drawing has no geographic location - the markers are still listed, because they are real entities either way, and `hasGeoLocation` says which case you are looking at rather than leaving empty coordinates to be guessed at.",
+      "tags": [
+        "list",
+        "geo",
+        "markers"
+      ],
+      "intent": [
+        "list the geo markers",
+        "what positions are marked in this drawing",
+        "lista znacznikow geograficznych",
+        "show all gps markers",
+        "jakie znaczniki geograficzne sa na rysunku",
+        "find geo markers",
+        "list marked real world positions"
+      ]
+    },
+    {
+      "name": "place_geo_marker",
+      "description": "Place a geo marker - an entity that records a position on the Earth, with optional notes. Give EITHER a drawing point OR a latitude and longitude, not both: they could disagree, and this tool should not be the one deciding which to believe. The result reports both the drawing point and the latitude and longitude it corresponds to, converted back through the geo data - so placing by coordinates shows you where that landed in the drawing, and placing by point shows you where on Earth it is. Requires the drawing to have a geographic location.",
+      "tags": [
+        "place",
+        "geo",
+        "marker"
+      ],
+      "intent": [
+        "place a geo marker",
+        "mark this position on the map",
+        "wstaw znacznik geograficzny",
+        "put a marker at this latitude and longitude",
+        "oznacz punkt geograficzny na rysunku",
+        "add a gps marker",
+        "record a real world position in the drawing"
+      ]
+    },
+    {
+      "name": "remove_geolocation",
+      "description": "Remove the drawing's geographic location. The previous location is reported so it can be put back. Nothing in the geometry moves - a location tells you what the coordinates mean on the Earth and does not change them - and any geo markers already placed stay exactly where they are, becoming ordinary annotation. Afterwards the conversion tools refuse until a location is set again. Verified gone by reading Database.GeoDataObject back.",
+      "tags": [
+        "remove",
+        "geolocation"
+      ],
+      "intent": [
+        "remove the geographic location",
+        "ungeolocate this drawing",
+        "usun lokalizacje geograficzna",
+        "clear the geo data from this drawing",
+        "skasuj wspolrzedne geograficzne rysunku",
+        "detach the drawing from its map position",
+        "delete geolocation"
+      ]
+    },
+    {
+      "name": "set_geographic_location",
+      "description": "Give the drawing a place on the Earth: the DESIGN point is a spot in the drawing, and the latitude and longitude say where that spot actually is. Optionally set the coordinate system by name, the altitude, and the horizontal and vertical units. Nothing in the geometry moves - a geographic location says what the existing coordinates MEAN, it does not change them. Latitude and longitude are taken as NAMED arguments rather than as a point on purpose: AutoCAD stores the reference point as (longitude, latitude, altitude), x being longitude, which is the reverse of how people say it aloud and is the easiest thing to get silently wrong. Replacing an existing location is allowed and reported. Read back through Database.GeoDataObject afterwards - a different route from the one that wrote it.",
+      "tags": [
+        "set",
+        "geographic",
+        "location"
+      ],
+      "intent": [
+        "set the geographic location of this drawing",
+        "geolocate this drawing",
+        "ustaw lokalizacje geograficzna rysunku",
+        "put this drawing at a latitude and longitude",
+        "przypisz wspolrzedne geograficzne do rysunku",
+        "set lat long for the model",
+        "where on earth is this drawing"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "geo",
+    "tool_count_target": 7,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-10T22:59:59.7392033Z"
+  }
+}

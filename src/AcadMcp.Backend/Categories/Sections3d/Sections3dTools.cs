@@ -71,4 +71,31 @@ public static class Sections3dTools
         RequiresPlugin = true)]
     public static Task<SectionGenerateResult> GenerateSection(IPluginGateway gw, SectionGenerateArgs args, CancellationToken ct)
         => Sections3dProxy.CallAsync<SectionGenerateArgs, SectionGenerateResult>(gw, "acad.sections3d.generate_section", args, T_SLOW, ct);
+
+    [McpTool("create_section_orthographic", "Place a section plane through the middle of the model in one of the six standard views - front, back, left, right, top or bottom - without working out any coordinates yourself. Front and back cut across the width looking along Y, left and right across the depth looking along X, and top and bottom are the horizontal cut a floor plan is made from. `offset` shifts the plane off centre along the direction it looks, which is how you cut at a particular floor rather than half way up; `sourceHandles` restricts the extents to named solids instead of the whole of model space. AutoCAD has no API for this - neither Section.CreateOrthographic nor SetOrthographic exists - so the plane is placed by arithmetic over the model's extents, and the extents used are reported back so the position can be checked. Like every section plane it CUTS NOTHING: use generate_section to draw the result.", "sections-3d",
+        Intent = new[] { "place a front section through the model", "cut a standard elevation",
+                         "przekroj czolowy przez model", "section the model from the left",
+                         "przekroj poziomy przez srodek modelu", "make a top section plane",
+                         "orthographic section plane", "section plane through the middle" },
+        RequiresPlugin = true)]
+    public static Task<SectionOrthographicResult> CreateSectionOrthographic(IPluginGateway gw, SectionOrthographicArgs args, CancellationToken ct)
+        => Sections3dProxy.CallAsync<SectionOrthographicArgs, SectionOrthographicResult>(gw, "acad.sections3d.create_section_orthographic", args, T_SLOW, ct);
+
+    [McpTool("generate_section_block", "Draw the geometry a section plane would cut and put it into a BLOCK rather than leaving it loose in the drawing - what SECTIONPLANETOBLOCK does. Use this when the section is to be moved, copied onto a sheet or scaled as one thing; use generate_section when the curves are wanted individually for dimensioning or editing. sourceHandles is required and names the solids to cut. The block name must not already exist, because overwriting a definition would silently change every insert of it. The curves live inside the block, so they will not appear in a model-space selection. The source solids are untouched.", "sections-3d",
+        Intent = new[] { "generate the section as a block", "sectionplanetoblock",
+                         "wygeneruj przekroj jako blok", "make a section block",
+                         "przekroj do bloku", "put the section geometry in a block",
+                         "section block from this plane" },
+        RequiresPlugin = true)]
+    public static Task<SectionBlockResult> GenerateSectionBlock(IPluginGateway gw, SectionBlockArgs args, CancellationToken ct)
+        => Sections3dProxy.CallAsync<SectionBlockArgs, SectionBlockResult>(gw, "acad.sections3d.generate_section_block", args, T_SLOW, ct);
+
+    [McpTool("set_section_settings", "Control how a section is DRAWN: the colour, layer, visibility, division lines, hidden-line treatment and linetype scale of each part of it, plus which objects it takes as its source. `part` picks what is being styled - cut (the outline of the cut face), fill (the poche inside it), background (what lies beyond the plane) or foreground (what lies in front of it) - and this is how a section reads as a drawing rather than a wireframe. Settings are held per section TYPE as well, so `kind` 2d and 3d carry their own. NOT every property applies to every part, and the limits are measured rather than guessed: colour, layer and linetypeScale work on all four parts of a 2d or 3d section; `visible` works everywhere EXCEPT the cut of a 2d section (the cut outline IS the section, so it cannot be hidden) and the background of a 3d one; `divisionLines` exists only on the cut of a 2d section; `hiddenLine` only on the background and foreground of a 2d section. NOTHING can be styled on kind=live - AutoCAD refuses every property there, so use set_live_section to switch live sectioning and let it take its appearance from the model. Asking for an unsupported combination is refused with the reason rather than passed through as AutoCAD's bare eInvalidInput. faceTransparency and edgeTransparency are REPORTED but cannot be set: the setters exist and refuse every value from 0 to 255 on every part. Every value is READ BACK after being written and reported, because a setting the object quietly declines to keep would otherwise look identical to one it took. These affect what generate_section and generate_section_block produce NEXT time; geometry already drawn keeps the settings it was drawn with.", "sections-3d",
+        Intent = new[] { "set the colour of the section cut lines", "style the section hatch",
+                         "ustaw kolor przekroju", "change the section layer",
+                         "ustawienia wygladu przekroju", "hide the background geometry in a section",
+                         "section display settings", "przezroczystosc przekroju" },
+        RequiresPlugin = true)]
+    public static Task<SectionSettingsResult> SetSectionSettings(IPluginGateway gw, SectionSettingsArgs args, CancellationToken ct)
+        => Sections3dProxy.CallAsync<SectionSettingsArgs, SectionSettingsResult>(gw, "acad.sections3d.set_section_settings", args, T_NORMAL, ct);
 }

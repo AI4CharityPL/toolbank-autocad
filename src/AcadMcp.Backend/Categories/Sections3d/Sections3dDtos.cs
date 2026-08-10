@@ -43,6 +43,79 @@ public sealed record SectionGenerateArgs(
 
 public sealed record SectionListArgs();
 
+public sealed record SectionOrthographicArgs(
+    [property: JsonPropertyName("orientation")]   string Orientation,
+    [property: JsonPropertyName("sourceHandles")] IReadOnlyList<string>? SourceHandles = null,
+    [property: JsonPropertyName("offset")]        double? Offset = null,
+    [property: JsonPropertyName("state")]         string? State = null,
+    [property: JsonPropertyName("liveSection")]   bool? LiveSection = null,
+    [property: JsonPropertyName("layer")]         string? Layer = null);
+
+public sealed record SectionBlockArgs(
+    [property: JsonPropertyName("handle")]            string Handle,
+    [property: JsonPropertyName("sourceHandles")]     IReadOnlyList<string> SourceHandles,
+    [property: JsonPropertyName("blockName")]         string? BlockName = null,
+    [property: JsonPropertyName("insertionPoint")]    Point3dDto? InsertionPoint = null,
+    [property: JsonPropertyName("kind")]              string? Kind = null,
+    [property: JsonPropertyName("includeBackground")] bool? IncludeBackground = null,
+    [property: JsonPropertyName("includeForeground")] bool? IncludeForeground = null,
+    [property: JsonPropertyName("includeTangency")]   bool? IncludeTangency = null,
+    [property: JsonPropertyName("layer")]             string? Layer = null);
+
+public sealed record SectionSettingsArgs(
+    [property: JsonPropertyName("handle")]           string Handle,
+    [property: JsonPropertyName("part")]             string Part,
+    [property: JsonPropertyName("kind")]             string? Kind = null,
+    [property: JsonPropertyName("color")]            int? Color = null,
+    [property: JsonPropertyName("layer")]            string? Layer = null,
+    [property: JsonPropertyName("visible")]          bool? Visible = null,
+    [property: JsonPropertyName("divisionLines")]    bool? DivisionLines = null,
+    [property: JsonPropertyName("hiddenLine")]       bool? HiddenLine = null,
+    [property: JsonPropertyName("linetypeScale")]    double? LinetypeScale = null,
+    [property: JsonPropertyName("sourceObjects")]    IReadOnlyList<string>? SourceObjects = null);
+
+public sealed record SectionOrthographicResult(
+    [property: JsonPropertyName("entity")]            EntityHandle Entity,
+    [property: JsonPropertyName("orientation")]       string Orientation,
+    [property: JsonPropertyName("vertices")]          int Vertices,
+    [property: JsonPropertyName("state")]             string State,
+    [property: JsonPropertyName("liveSection")]       bool LiveSection,
+    [property: JsonPropertyName("normal")]            Point3dDto Normal,
+    [property: JsonPropertyName("verticalDirection")] Point3dDto VerticalDirection,
+    [property: JsonPropertyName("center")]            Point3dDto Center,
+    [property: JsonPropertyName("extentsMin")]        Point3dDto ExtentsMin,
+    [property: JsonPropertyName("extentsMax")]        Point3dDto ExtentsMax,
+    [property: JsonPropertyName("sourcesMeasured")]   int SourcesMeasured,
+    [property: JsonPropertyName("note")]              string Note);
+
+public sealed record SectionBlockResult(
+    [property: JsonPropertyName("entity")]           EntityHandle Entity,
+    [property: JsonPropertyName("blockName")]        string BlockName,
+    [property: JsonPropertyName("entitiesInBlock")]  int EntitiesInBlock,
+    [property: JsonPropertyName("insertionPoint")]   Point3dDto InsertionPoint,
+    [property: JsonPropertyName("cutCurves")]        int CutCurves,
+    [property: JsonPropertyName("backgroundCurves")] int BackgroundCurves,
+    [property: JsonPropertyName("foregroundCurves")] int ForegroundCurves,
+    [property: JsonPropertyName("tangencyCurves")]   int TangencyCurves,
+    [property: JsonPropertyName("totalCurveLength")] double TotalCurveLength,
+    [property: JsonPropertyName("note")]             string Note);
+
+public sealed record SectionSettingsResult(
+    [property: JsonPropertyName("handle")]             string Handle,
+    [property: JsonPropertyName("kind")]               string Kind,
+    [property: JsonPropertyName("part")]               string Part,
+    [property: JsonPropertyName("changed")]            IReadOnlyList<string> Changed,
+    [property: JsonPropertyName("color")]              int? Color,
+    [property: JsonPropertyName("layer")]              string? Layer,
+    [property: JsonPropertyName("visible")]            bool Visible,
+    [property: JsonPropertyName("divisionLines")]      bool DivisionLines,
+    [property: JsonPropertyName("hiddenLine")]         bool HiddenLine,
+    [property: JsonPropertyName("linetypeScale")]      double LinetypeScale,
+    [property: JsonPropertyName("faceTransparency")]   int FaceTransparency,
+    [property: JsonPropertyName("edgeTransparency")]   int EdgeTransparency,
+    [property: JsonPropertyName("sourceObjectCount")]  int SourceObjectCount,
+    [property: JsonPropertyName("note")]               string Note);
+
 public sealed record SectionCreateResult(
     [property: JsonPropertyName("entity")]      EntityHandle Entity,
     [property: JsonPropertyName("vertices")]    int Vertices,

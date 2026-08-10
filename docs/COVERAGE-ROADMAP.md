@@ -750,13 +750,13 @@ and face splitting are not exposed". The real names are `SmoothLevel`, `SplitFac
 buildable tools** - after `ShellSolid`/`ShellBody`, `Profile3d`, and `Surface.Trim` answering as
 `MemoryExtensions.Trim`. One round is not evidence of absence. See rule 26 §12c.
 
-### 4.4 `acad-sections-3d` (≈12 → **11 reachable, 1 struck**) — 6 built 2026-08-10
+### 4.4 `acad-sections-3d` (≈12 → **11 reachable, 1 struck**) — COMPLETE 2026-08-10
 
 ```
-create_section_plane ✔      create_section_from_object ✘ create_section_orthographic ..
+create_section_plane ✔      create_section_from_object ✘ create_section_orthographic ✔
 set_section_state ✔         set_section_live ✔         toggle_live_section ✔(one tool)
-generate_section_block ..   generate_section_2d ✔      generate_section_3d ✔(one tool)
-set_section_settings ..     list_section_planes ✔      add_section_jog ✔(as replace)
+generate_section_block ✔    generate_section_2d ✔      generate_section_3d ✔(one tool)
+set_section_settings ✔      list_section_planes ✔      add_section_jog ✔(as replace)
 set_section_height ✔(added)
 ```
 
@@ -802,7 +802,26 @@ normal it worked out, and asserts that normal is square to both inputs.
 **The verification passed 41/43 while this was broken, and the two failures were the ones that
 mattered.** A cube cannot tell a cut from a silhouette — through the middle and 5000 units away
 both answer 400 — so the check now uses a sphere cut off-centre (251.327 against 314.159) and a
-100×80×60 box (320 upright against 360 flat). Rule 26 §14. Live: **57/57**.
+100×80×60 box (320 upright against 360 flat). Rule 26 §14.
+
+**The second tranche found the same shape of trap twice more.** `create_section_orthographic`
+refused *itself* on the first live run: AutoCAD derives the normal as `up × along`, not
+`along × up`, and the two differ only in sign — which the first tranche's check waved through
+because it asserted `|y| = 1` rather than the vector. The fix was a deletion (`along = view × up`
+needs no correction at all), and the check now pins the exact vector. The three standard views on
+a 100×80×60 box give **320 / 280 / 360**, so an orientation that silently defaulted cannot pass.
+
+**`set_section_settings` has a measured validity matrix**, because AutoCAD answers an unsupported
+combination with a bare `eInvalidInput` naming neither field nor reason. Colour, layer and
+linetypeScale work on all four parts of a 2d or 3d section; `visible` everywhere except the cut of
+a 2d section (the cut outline *is* the section) and the background of a 3d one; `divisionLines`
+only on the 2d cut; `hiddenLine` only on 2d background and foreground. **Nothing at all can be set
+on `live`.** `faceTransparency` and `edgeTransparency` refuse every value from 0 to 255 on every
+part, so they are reported but no longer accepted — the getters work, which is how the setter was
+identified as the culprit. One check exists to stop the guard being a blanket refusal that would
+look equally green: a supported 3d combination must still go through.
+
+Live: **111/111** over all 9 tools.
 
 ### 4.5 `acad-pointclouds` (≈12)
 
@@ -1008,13 +1027,13 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **51** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
-| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **50** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.4 first tranche in |
+| 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | 0 | 5 struck: data extraction is a wizard, property sets are AEC-only |
 | 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **596** | **73 %** |
+| | **Total** | **813** | **599** | **74 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 584 (337 + 75 + 71 + 51 + 50)
-while the bank measures **596**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 587 (337 + 75 + 71 + 51 + 53)
+while the bank measures **599**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

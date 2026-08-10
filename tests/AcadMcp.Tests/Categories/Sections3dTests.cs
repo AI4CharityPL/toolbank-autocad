@@ -23,6 +23,11 @@ public class Sections3dTests
         "create_section_plane", "list_section_planes", "set_section_state",
         "set_live_section", "set_section_height", "generate_section",
 
+        // Second tranche. create_section_orthographic is NOT an API wrapper: Section has neither
+        // CreateOrthographic nor SetOrthographic in any form, so the plane is placed by arithmetic
+        // over the model's extents.
+        "create_section_orthographic", "generate_section_block", "set_section_settings",
+
         // create_section_from_object is struck: nothing in the managed API derives a section line
         // from an existing entity. add_section_jog is not here either - the boundary is immutable,
         // so a jog means rebuilding the section from a new point list, and that is what

@@ -33,6 +33,37 @@ internal sealed record SectionHeightArgsDto(
     [property: JsonPropertyName("below")]     double? Below,
     [property: JsonPropertyName("elevation")] double? Elevation);
 
+internal sealed record SectionOrthographicArgsDto(
+    [property: JsonPropertyName("orientation")]   string? Orientation,
+    [property: JsonPropertyName("sourceHandles")] List<string>? SourceHandles,
+    [property: JsonPropertyName("offset")]        double? Offset,
+    [property: JsonPropertyName("state")]         string? State,
+    [property: JsonPropertyName("liveSection")]   bool? LiveSection,
+    [property: JsonPropertyName("layer")]         string? Layer);
+
+internal sealed record SectionBlockArgsDto(
+    [property: JsonPropertyName("handle")]            string? Handle,
+    [property: JsonPropertyName("sourceHandles")]     List<string>? SourceHandles,
+    [property: JsonPropertyName("blockName")]         string? BlockName,
+    [property: JsonPropertyName("insertionPoint")]    Point3dDto? InsertionPoint,
+    [property: JsonPropertyName("kind")]              string? Kind,
+    [property: JsonPropertyName("includeBackground")] bool? IncludeBackground,
+    [property: JsonPropertyName("includeForeground")] bool? IncludeForeground,
+    [property: JsonPropertyName("includeTangency")]   bool? IncludeTangency,
+    [property: JsonPropertyName("layer")]             string? Layer);
+
+internal sealed record SectionSettingsArgsDto(
+    [property: JsonPropertyName("handle")]           string? Handle,
+    [property: JsonPropertyName("kind")]             string? Kind,
+    [property: JsonPropertyName("part")]             string? Part,
+    [property: JsonPropertyName("color")]            int? Color,
+    [property: JsonPropertyName("layer")]            string? Layer,
+    [property: JsonPropertyName("visible")]          bool? Visible,
+    [property: JsonPropertyName("divisionLines")]    bool? DivisionLines,
+    [property: JsonPropertyName("hiddenLine")]       bool? HiddenLine,
+    [property: JsonPropertyName("linetypeScale")]    double? LinetypeScale,
+    [property: JsonPropertyName("sourceObjects")]    List<string>? SourceObjects);
+
 internal sealed record SectionGenerateArgsDto(
     [property: JsonPropertyName("handle")]            string? Handle,
     [property: JsonPropertyName("sourceHandles")]     List<string>? SourceHandles,

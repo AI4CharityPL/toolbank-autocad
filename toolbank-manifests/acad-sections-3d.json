@@ -11,6 +11,7 @@
   "lazy_mode": true,
   "tags": [
     "autocad",
+    "block",
     "cad",
     "create",
     "dwg",
@@ -18,31 +19,114 @@
     "height",
     "list",
     "live",
+    "orthographic",
     "plane",
     "planes",
     "section",
     "sections-3d",
     "set",
+    "settings",
     "state"
   ],
   "intent_examples": [
-    "place a section plane through this building",
+    "add a section plane at this line",
+    "change the section layer",
+    "change the section plane state",
+    "clip the section to a box",
     "cut a jogged section through the model",
-    "turn on the live section so I can see inside",
+    "cut a section through this building",
+    "cut a standard elevation",
+    "draw the 2d section",
+    "find the live section",
     "generate the 2d section geometry from this plane",
+    "generate the section as a block",
+    "generate the section geometry",
+    "hide the background geometry in a section",
+    "hide the model in front of the section",
+    "how far the section reaches up",
+    "ile przekrojow ma ten rysunek",
     "isolate one room with a section volume",
+    "limit the section depth",
     "list the section planes in this drawing",
-    "set how far the section reaches above its line",
-    "wstaw plaszczyzne przekroju przez model",
-    "wlacz przekroj na zywo",
-    "wygeneruj przekroj 2d z tej plaszczyzny",
+    "livesection",
+    "make a jogged section line",
+    "make a section block",
+    "make a section block from this plane",
+    "make a top section plane",
+    "make this section a volume",
+    "narysuj przekroj przez bryly",
+    "orthographic section plane",
+    "place a front section through the model",
+    "place a section plane through the model",
+    "place a section plane through this building",
+    "poziomy przekroj przez model",
+    "przekroj czolowy przez model",
+    "przekroj do bloku",
+    "przekroj objetosciowy",
     "przekroj objetosciowy jednego pomieszczenia",
-    "wypisz plaszczyzny przekroju w rysunku"
+    "przekroj poziomy przez srodek modelu",
+    "przekroj przez model",
+    "przezroczystosc przekroju",
+    "put the section geometry in a block",
+    "rzedna plaszczyzny przekroju",
+    "section block from this plane",
+    "section display settings",
+    "section plane above and below",
+    "section plane through the middle",
+    "section the model from the left",
+    "sectionplane",
+    "sectionplanetoblock",
+    "set how far the section reaches above its line",
+    "set section elevation",
+    "set the colour of the section cut lines",
+    "set the height of a section plane",
+    "show all section planes",
+    "show the cut on screen without drawing it",
+    "style the section hatch",
+    "switch section to boundary",
+    "toggle live sectioning",
+    "turn a section plane into drawn geometry",
+    "turn on the live section",
+    "turn on the live section so I can see inside",
+    "ustaw kolor przekroju",
+    "ustaw wysokosc plaszczyzny przekroju",
+    "ustawienia wygladu przekroju",
+    "what sections are defined",
+    "which section plane is live",
+    "wlacz przekroj na zywo",
+    "wstaw plaszczyzne przekroju",
+    "wstaw plaszczyzne przekroju przez model",
+    "wygeneruj przekroj 2d z tej plaszczyzny",
+    "wygeneruj przekroj jako blok",
+    "wygeneruj przekroj z plaszczyzny",
+    "wylacz podglad przekroju",
+    "wypisz plaszczyzny przekroju",
+    "wypisz plaszczyzny przekroju w rysunku",
+    "zmien stan plaszczyzny przekroju"
   ],
   "tools_summary": [
     {
+      "name": "create_section_orthographic",
+      "description": "Place a section plane through the middle of the model in one of the six standard views - front, back, left, right, top or bottom - without working out any coordinates yourself. Front and back cut across the width looking along Y, left and right across the depth looking along X, and top and bottom are the horizontal cut a floor plan is made from. \u0060offset\u0060 shifts the plane off centre along the direction it looks, which is how you cut at a particular floor rather than half way up; \u0060sourceHandles\u0060 restricts the extents to named solids instead of the whole of model space. AutoCAD has no API for this - neither Section.CreateOrthographic nor SetOrthographic exists - so the plane is placed by arithmetic over the model\u0027s extents, and the extents used are reported back so the position can be checked. Like every section plane it CUTS NOTHING: use generate_section to draw the result.",
+      "tags": [
+        "create",
+        "section",
+        "orthographic"
+      ],
+      "intent": [
+        "place a front section through the model",
+        "cut a standard elevation",
+        "przekroj czolowy przez model",
+        "section the model from the left",
+        "przekroj poziomy przez srodek modelu",
+        "make a top section plane",
+        "orthographic section plane",
+        "section plane through the middle"
+      ]
+    },
+    {
       "name": "create_section_plane",
-      "description": "Place a section plane through a model - AutoCAD's SECTIONPLANE. Give the vertices of the line the section is cut along, seen in plan; two points give a straight section and more give a JOGGED one, which is how a plan cuts through different parts of a building at different places. The normal is which way the section looks, and defaults to perpendicular to the first segment - what the arrows on a section mark mean. Note that a section plane CUTS NOTHING: it is an object in the drawing that reports what a cut would look like, and the solids it crosses are untouched. geometry_3d.slice_solid is the one that really cuts.",
+      "description": "Place a section plane through a model - AutoCAD\u0027s SECTIONPLANE. Give the vertices of the line the section is cut along, seen in plan; two points give a straight section and more give a JOGGED one, which is how a plan cuts through different parts of a building at different places. The cut plane is the one CONTAINING that line and verticalDirection, which defaults to (0,0,1) and gives the upright section a plan line means; pass a horizontal vector instead and you get a horizontal cut through the model. The plane\u0027s normal - which way the section looks - follows from those two and CANNOT be given, because Section.Normal is read-only; reverse the order of the vertices to look the other way. Note that a section plane CUTS NOTHING: it is an object in the drawing that reports what a cut would look like, and the solids it crosses are untouched. geometry_3d.slice_solid is the one that really cuts.",
       "tags": [
         "create",
         "section",
@@ -55,12 +139,13 @@
         "cut a section through this building",
         "przekroj przez model",
         "make a jogged section line",
-        "add a section plane at this line"
+        "add a section plane at this line",
+        "poziomy przekroj przez model"
       ]
     },
     {
       "name": "generate_section",
-      "description": "Draw the geometry a section plane would cut - AutoCAD's SECTIONPLANETOBLOCK. kind 2d gives flat curves you can dimension and plot, 3d gives the cut model as solids, and live gives what the live-section display shows. sourceHandles is required and names the solids to cut: a section plane is a plane, not a query, so it does not know what it crosses. By default only the CUT curves are drawn - what the plane passes through - because that is what a section drawing wants; background, foreground and tangency curves are what lies beyond, in front of and along the silhouette, and each is opt-in. A plane placed clear of the model produces an empty result rather than a complaint, so the tool refuses that case instead of reporting a success over nothing.",
+      "description": "Draw the geometry a section plane would cut - AutoCAD\u0027s SECTIONPLANETOBLOCK. kind 2d gives flat curves you can dimension and plot, 3d gives the cut model as solids, and live gives what the live-section display shows. sourceHandles is required and names the solids to cut: a section plane is a plane, not a query, so it does not know what it crosses. By default only the CUT curves are drawn - what the plane passes through - because that is what a section drawing wants; background, foreground and tangency curves are what lies beyond, in front of and along the silhouette, and each is opt-in. A plane placed clear of the model produces an empty result rather than a complaint, so the tool refuses that case instead of reporting a success over nothing.",
       "tags": [
         "generate",
         "section"
@@ -73,6 +158,24 @@
         "narysuj przekroj przez bryly",
         "make a section block from this plane",
         "turn a section plane into drawn geometry"
+      ]
+    },
+    {
+      "name": "generate_section_block",
+      "description": "Draw the geometry a section plane would cut and put it into a BLOCK rather than leaving it loose in the drawing - what SECTIONPLANETOBLOCK does. Use this when the section is to be moved, copied onto a sheet or scaled as one thing; use generate_section when the curves are wanted individually for dimensioning or editing. sourceHandles is required and names the solids to cut. The block name must not already exist, because overwriting a definition would silently change every insert of it. The curves live inside the block, so they will not appear in a model-space selection. The source solids are untouched.",
+      "tags": [
+        "generate",
+        "section",
+        "block"
+      ],
+      "intent": [
+        "generate the section as a block",
+        "sectionplanetoblock",
+        "wygeneruj przekroj jako blok",
+        "make a section block",
+        "przekroj do bloku",
+        "put the section geometry in a block",
+        "section block from this plane"
       ]
     },
     {
@@ -95,7 +198,7 @@
     },
     {
       "name": "set_live_section",
-      "description": "Turn the LIVE section display on or off for a plane - AutoCAD's LIVESECTION. A live section shows the cut on screen without drawing anything: the model in front of the plane is hidden and the cut face is shaded, and nothing is added to the drawing. generate_section is the other half, drawing real geometry you can dimension and plot. Only one section can be live at a time, so turning this on turns the others off - that is AutoCAD behaviour, not a choice made here.",
+      "description": "Turn the LIVE section display on or off for a plane - AutoCAD\u0027s LIVESECTION. A live section shows the cut on screen without drawing anything: the model in front of the plane is hidden and the cut face is shaded, and nothing is added to the drawing. generate_section is the other half, drawing real geometry you can dimension and plot. Only one section can be live at a time, so turning this on turns the others off - that is AutoCAD behaviour, not a choice made here.",
       "tags": [
         "set",
         "live",
@@ -113,7 +216,7 @@
     },
     {
       "name": "set_section_height",
-      "description": "Set how far a section plane reaches up and down from its cut line, and where that line sits in Z. `above` and `below` are the reach; `elevation` is the height of the line itself. Every value is read back after being set, because these are plain properties that can accept a number the object then declines to keep. IMPORTANT: heights only bite in the BOUNDARY and VOLUME states - a plane-state section is unbounded and ignores them, which is why a height that appears to do nothing usually means the state is still plane.",
+      "description": "Set how far a section plane reaches up and down from its cut line, and where that line sits in Z. \u0060above\u0060 and \u0060below\u0060 are the reach; \u0060elevation\u0060 is the height of the line itself. Every value is read back after being set, because these are plain properties that can accept a number the object then declines to keep. IMPORTANT: heights only bite in the BOUNDARY and VOLUME states - a plane-state section is unbounded and ignores them, which is why a height that appears to do nothing usually means the state is still plane.",
       "tags": [
         "set",
         "section",
@@ -127,6 +230,25 @@
         "rzedna plaszczyzny przekroju",
         "limit the section depth",
         "section plane above and below"
+      ]
+    },
+    {
+      "name": "set_section_settings",
+      "description": "Control how a section is DRAWN: the colour, layer, visibility, division lines, hidden-line treatment and linetype scale of each part of it, plus which objects it takes as its source. \u0060part\u0060 picks what is being styled - cut (the outline of the cut face), fill (the poche inside it), background (what lies beyond the plane) or foreground (what lies in front of it) - and this is how a section reads as a drawing rather than a wireframe. Settings are held per section TYPE as well, so \u0060kind\u0060 2d and 3d carry their own. NOT every property applies to every part, and the limits are measured rather than guessed: colour, layer and linetypeScale work on all four parts of a 2d or 3d section; \u0060visible\u0060 works everywhere EXCEPT the cut of a 2d section (the cut outline IS the section, so it cannot be hidden) and the background of a 3d one; \u0060divisionLines\u0060 exists only on the cut of a 2d section; \u0060hiddenLine\u0060 only on the background and foreground of a 2d section. NOTHING can be styled on kind=live - AutoCAD refuses every property there, so use set_live_section to switch live sectioning and let it take its appearance from the model. Asking for an unsupported combination is refused with the reason rather than passed through as AutoCAD\u0027s bare eInvalidInput. faceTransparency and edgeTransparency are REPORTED but cannot be set: the setters exist and refuse every value from 0 to 255 on every part. Every value is READ BACK after being written and reported, because a setting the object quietly declines to keep would otherwise look identical to one it took. These affect what generate_section and generate_section_block produce NEXT time; geometry already drawn keeps the settings it was drawn with.",
+      "tags": [
+        "set",
+        "section",
+        "settings"
+      ],
+      "intent": [
+        "set the colour of the section cut lines",
+        "style the section hatch",
+        "ustaw kolor przekroju",
+        "change the section layer",
+        "ustawienia wygladu przekroju",
+        "hide the background geometry in a section",
+        "section display settings",
+        "przezroczystosc przekroju"
       ]
     },
     {
@@ -150,7 +272,7 @@
   ],
   "metadata": {
     "category": "sections-3d",
-    "tool_count_target": 6,
+    "tool_count_target": 9,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -164,6 +286,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-10T14:43:29.9436320Z"
+    "last_regenerated_utc": "2026-08-10T17:53:35.8987364Z"
   }
 }

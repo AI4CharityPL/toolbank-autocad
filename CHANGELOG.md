@@ -77,6 +77,46 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.4 complete — `create_section_orthographic`, `generate_section_block`,
+  `set_section_settings`.** `acad-sections-3d` 6 → 9, bank 596 → 599. Live: **111/111** over the
+  whole category. Phase 4.4 is done at 9 built and 1 struck.
+
+  **`create_section_orthographic` is not an API wrapper.** `Section` has neither
+  `CreateOrthographic` nor `SetOrthographic` in any form, so the plane is placed by arithmetic over
+  the model's own extents — which makes the result exactly predictable and is what the verification
+  checks against. The three standard views on a 100×80×60 box give **320 / 280 / 360**, three
+  different numbers, so an orientation that silently defaulted cannot pass; `offset` is proved on a
+  sphere, where 30 off centre must give 251.327 rather than the great circle's 314.159 (on a box an
+  ignored offset would look identical). The extents actually used are reported back.
+
+  **It refused itself on the first live run, and that is the tool working.** AutoCAD derives the
+  normal as `up × along`, not `along × up` — the two differ only in sign. The first tranche's check
+  asked only that `|y| = 1`, so a sign error walked straight through it; the check now pins the
+  exact vector. The fix was a deletion: `along = view × up` needs no correction, since
+  `up × (view × up) = view`.
+
+  **`set_section_settings` ships with a MEASURED validity matrix.** AutoCAD answers an unsupported
+  combination with a bare `eInvalidInput` naming neither the field nor the reason, so each field was
+  probed against each part of each section type. Colour, layer and linetypeScale work on all four
+  parts of a 2d or 3d section; `visible` everywhere except the cut of a 2d section — the cut outline
+  IS the section — and the background of a 3d one; `divisionLines` only on the 2d cut;
+  `hiddenLine` only on 2d background and foreground; and **nothing whatever can be set on `live`**.
+  Unsupported requests are refused with the reason rather than passing the bare error through, and
+  one check exists specifically to stop that guard being a blanket refusal that would look just as
+  green: a supported 3d combination must still go through.
+
+  `faceTransparency` and `edgeTransparency` are **reported but no longer accepted**: the setters
+  refuse every value from 0 to 255, on every part, in every kind. The getters work — which is how
+  the setter was identified as the culprit, since colour-only calls succeed while running the same
+  read-back block. A parameter that always fails is worse than an absent one.
+
+  `SectionGeometry` has exactly four members, so there is no tangency PART to style even though
+  `GenerateSectionGeometry` returns tangency curves; the tool says so when asked for one.
+  `generate_section_block` builds the block itself — `GenerateSectionGeometry` hands back loose
+  entities whatever `SectionGeneration.DestinationNewBlock` is set to — and asserts the definition
+  holds exactly the entities generated, since an empty definition would still insert and look like
+  a success while drawing nothing.
+
 - **Phase 4.4, first tranche — `acad-sections-3d`, and a green verification that was measuring
   nothing.** New category, 6 tools, bank 590 → 596: `create_section_plane`,
   `list_section_planes`, `set_section_state`, `set_live_section`, `set_section_height`,

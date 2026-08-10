@@ -52,3 +52,33 @@ What the script generates:
 | Test class           | `Categories/<Folder>Tests.cs`                | `Geometry2dTests.cs`               |
 
 If any one of these is out of sync, `check-manifests.ps1` fails and the build does too (via `CheckManifestSync` MSBuild target).
+
+
+## The measured recipe — one AutoCAD restart per category
+
+Written from the numbers of 2026-08-10, where the same person built four categories two ways.
+The scarce resource is **AutoCAD restart cycles**, not tokens: every deploy needs the user to
+restart AutoCAD, so a category costing four restarts costs four interruptions.
+
+| category | order of work | restarts | result |
+| --- | --- | ---: | --- |
+| `acad-lisp` | built first, probed after | 3 | 5 of 12 shipped, six withdrawn |
+| `acad-sections-3d` | probed, but assumptions unchecked | 3 | 9 shipped, 3 defects found live |
+| `acad-data` ×3 tranches | probed first, every time | 1 each | 13, 5 and 5 shipped, first-run clean |
+
+**The order that works:**
+
+1. **Probe the whole category against the compiler BEFORE writing any tool.** Probe builds need
+   no AutoCAD, so they are free of restarts. Guess names generously and in bulk; one round is not
+   evidence of absence (§12c). Read `CS0219 assigned but never used` as *the name exists*.
+2. **Write the entire category in one pass** — plugin, DTOs, backend, tests — not tranche by
+   tranche. The compiler catches the shape errors, and it costs no restarts.
+3. **Write the verification with its CONTROLS before deploying**, and pick test shapes that can
+   fail: an asymmetric grid, a sphere cut off-centre, a filter that must match nothing. A cube
+   cannot tell a cut from a silhouette; a symmetric grid cannot tell a transposition.
+4. **Deploy once. Verify once.** Fold the docs, roadmap, changelog and commit into the same turn
+   as the passing run.
+
+**What burns a cycle every time:** varying arguments against a failing API instead of shrinking
+the experiment. When several tools that share no code fail with the same status, stop and write a
+five-line `[CommandMethod]` (rule 26 §15) — it answered in one round what two rebuilds could not.

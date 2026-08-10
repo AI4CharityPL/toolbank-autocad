@@ -1,0 +1,169 @@
+{
+  "id": "acad-sections-3d",
+  "name": "acad-sections-3d",
+  "description": "AutoCAD 3D SECTION PLANES - objects that report what a cut through a model would look like, without cutting anything. That distinction decides when to reach for this category: a section plane leaves the solids it crosses completely untouched and can be moved, restated or deleted at any time, where geometry_3d.slice_solid really does cut and hands back two solids you then have to manage.\n\nCovers placing a section plane along a line - straight or jogged, which is how a plan cuts through different parts of a building at different places (SECTIONPLANE); switching it between its plane, boundary and volume states; turning the LIVE section display on, which shows the cut on screen without drawing anything (LIVESECTION); setting how far it reaches above and below its line; and generating real geometry from it as 2D curves, 3D solids or a block (SECTIONPLANETOBLOCK).\n\nTwo things worth knowing before use. A section plane does NOT know what it crosses - it is a plane, not a query - so generating geometry means naming the solids to cut. And heights only bite in the boundary and volume states: a plane-state section is unbounded and ignores them, which is the usual reason a height appears to do nothing.\n\nDoes NOT cover: cutting a solid for real, which is geometry_3d.slice_solid; 2D section marks and callout bubbles on a sheet, which are acad-callouts and acad-sections; viewports and layouts, which are acad-viewports. Requires the plugin.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-sections-3d.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "create",
+    "dwg",
+    "generate",
+    "height",
+    "list",
+    "live",
+    "plane",
+    "planes",
+    "section",
+    "sections-3d",
+    "set",
+    "state"
+  ],
+  "intent_examples": [
+    "place a section plane through this building",
+    "cut a jogged section through the model",
+    "turn on the live section so I can see inside",
+    "generate the 2d section geometry from this plane",
+    "isolate one room with a section volume",
+    "list the section planes in this drawing",
+    "set how far the section reaches above its line",
+    "wstaw plaszczyzne przekroju przez model",
+    "wlacz przekroj na zywo",
+    "wygeneruj przekroj 2d z tej plaszczyzny",
+    "przekroj objetosciowy jednego pomieszczenia",
+    "wypisz plaszczyzny przekroju w rysunku"
+  ],
+  "tools_summary": [
+    {
+      "name": "create_section_plane",
+      "description": "Place a section plane through a model - AutoCAD's SECTIONPLANE. Give the vertices of the line the section is cut along, seen in plan; two points give a straight section and more give a JOGGED one, which is how a plan cuts through different parts of a building at different places. The normal is which way the section looks, and defaults to perpendicular to the first segment - what the arrows on a section mark mean. Note that a section plane CUTS NOTHING: it is an object in the drawing that reports what a cut would look like, and the solids it crosses are untouched. geometry_3d.slice_solid is the one that really cuts.",
+      "tags": [
+        "create",
+        "section",
+        "plane"
+      ],
+      "intent": [
+        "place a section plane through the model",
+        "sectionplane",
+        "wstaw plaszczyzne przekroju",
+        "cut a section through this building",
+        "przekroj przez model",
+        "make a jogged section line",
+        "add a section plane at this line"
+      ]
+    },
+    {
+      "name": "generate_section",
+      "description": "Draw the geometry a section plane would cut - AutoCAD's SECTIONPLANETOBLOCK. kind 2d gives flat curves you can dimension and plot, 3d gives the cut model as solids, and live gives what the live-section display shows. sourceHandles is required and names the solids to cut: a section plane is a plane, not a query, so it does not know what it crosses. By default only the CUT curves are drawn - what the plane passes through - because that is what a section drawing wants; background, foreground and tangency curves are what lies beyond, in front of and along the silhouette, and each is opt-in. A plane placed clear of the model produces an empty result rather than a complaint, so the tool refuses that case instead of reporting a success over nothing.",
+      "tags": [
+        "generate",
+        "section"
+      ],
+      "intent": [
+        "generate the section geometry",
+        "sectionplanetoblock",
+        "wygeneruj przekroj z plaszczyzny",
+        "draw the 2d section",
+        "narysuj przekroj przez bryly",
+        "make a section block from this plane",
+        "turn a section plane into drawn geometry"
+      ]
+    },
+    {
+      "name": "list_section_planes",
+      "description": "List every section plane in the drawing with its state, whether it is the live section, how many vertices its cut line has, its elevation and its normal. Read-only. Use it before the other tools here, which all address a plane by handle. Worth knowing: a section plane is an OBJECT and stays in the drawing until erased, and at most one can be the live section at a time.",
+      "tags": [
+        "list",
+        "section",
+        "planes"
+      ],
+      "intent": [
+        "list the section planes in this drawing",
+        "what sections are defined",
+        "wypisz plaszczyzny przekroju",
+        "show all section planes",
+        "ile przekrojow ma ten rysunek",
+        "find the live section",
+        "which section plane is live"
+      ]
+    },
+    {
+      "name": "set_live_section",
+      "description": "Turn the LIVE section display on or off for a plane - AutoCAD's LIVESECTION. A live section shows the cut on screen without drawing anything: the model in front of the plane is hidden and the cut face is shaded, and nothing is added to the drawing. generate_section is the other half, drawing real geometry you can dimension and plot. Only one section can be live at a time, so turning this on turns the others off - that is AutoCAD behaviour, not a choice made here.",
+      "tags": [
+        "set",
+        "live",
+        "section"
+      ],
+      "intent": [
+        "turn on the live section",
+        "livesection",
+        "wlacz przekroj na zywo",
+        "show the cut on screen without drawing it",
+        "wylacz podglad przekroju",
+        "toggle live sectioning",
+        "hide the model in front of the section"
+      ]
+    },
+    {
+      "name": "set_section_height",
+      "description": "Set how far a section plane reaches up and down from its cut line, and where that line sits in Z. `above` and `below` are the reach; `elevation` is the height of the line itself. Every value is read back after being set, because these are plain properties that can accept a number the object then declines to keep. IMPORTANT: heights only bite in the BOUNDARY and VOLUME states - a plane-state section is unbounded and ignores them, which is why a height that appears to do nothing usually means the state is still plane.",
+      "tags": [
+        "set",
+        "section",
+        "height"
+      ],
+      "intent": [
+        "set the height of a section plane",
+        "how far the section reaches up",
+        "ustaw wysokosc plaszczyzny przekroju",
+        "set section elevation",
+        "rzedna plaszczyzny przekroju",
+        "limit the section depth",
+        "section plane above and below"
+      ]
+    },
+    {
+      "name": "set_section_state",
+      "description": "Switch a section plane between its three states. PLANE is an unbounded cut, which is what a building section wants. BOUNDARY clips it to the outline the plane was given. VOLUME clips it to a box as well, which is what isolates one room or one bay out of a whole model. The state decides what generate_section produces and what a live section shows; it does not change the cut line itself. A height set on a plane-state section appears to do nothing, because only boundary and volume respect it.",
+      "tags": [
+        "set",
+        "section",
+        "state"
+      ],
+      "intent": [
+        "change the section plane state",
+        "make this section a volume",
+        "zmien stan plaszczyzny przekroju",
+        "clip the section to a box",
+        "isolate one room with a section volume",
+        "przekroj objetosciowy",
+        "switch section to boundary"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "sections-3d",
+    "tool_count_target": 6,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-10T14:43:29.9436320Z"
+  }
+}

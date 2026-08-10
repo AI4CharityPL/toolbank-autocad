@@ -354,6 +354,40 @@ remedy is a **clean AutoCAD start before each verification run**, which is why e
 in this project is preceded by one. Put the cross-session probe at the top of every script so
 this shows up as a named failure rather than as arithmetic that mysteriously will not add up.
 
+### 14. `new Section(pts, v)` — that vector is `verticalDir`, NOT the normal
+
+```csharp
+sec = new Section(pts, normal.GetNormal());   // WRONG - and it compiles, runs, and reports success
+sec = new Section(pts, up.GetNormal());       // right: which way is UP in the section
+```
+
+The cut plane is the one **containing the section line and that vector**, so the normal falls out
+as `line × up` and cannot be supplied at all — `Section.Normal` is read-only. Pass the intended
+normal (a horizontal vector, for a plan line) and the plane becomes the one containing the plan
+line *and* a horizontal direction: the **XY plane**. Every "vertical" section is then taken
+horizontally at z=0, and nothing complains.
+
+**Both overloads take `Vector3d`, so the compiler cannot tell you which is which by type — but it
+will by NAME.** Named arguments turn it into an oracle: `verticalDir:` compiles, `normal:` and
+`verticalDirection:` are CS1739. The same round proved `Normal` read-only (CS0200) and
+`VerticalDirection` settable after construction. When several parameters share a type, probe the
+names.
+
+**What made this survive a green verification run is worth more than the trap itself: the test
+shape could not tell a cut from a silhouette.** A plane through the middle of a 100 cube and a
+plane 5000 units away both answered 400, because a cube's cross-section and its outline are the
+same square — and the script called 400 proof. Two controls fix it, and both belong in any
+section or projection test:
+
+* a **sphere cut off-centre** — r=50 cut at y=30 gives `2π·40 = 251.327`, against `314.159` for
+  the great circle. One number says the plane was used, the other says it was ignored.
+* a **box with three different edge lengths** — 100×80×60 gives `2(100+60) = 320` upright and
+  `2(100+80) = 360` flat, so the two orientations cannot be confused with each other either.
+
+Then assert the post-condition in the tool: the normal it reports back must be perpendicular to
+**both** the section line and the up vector. That is what catches the plane silently being
+somewhere else, and it is now in `create_section_plane`.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

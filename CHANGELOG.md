@@ -77,6 +77,49 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 4.4, first tranche — `acad-sections-3d`, and a green verification that was measuring
+  nothing.** New category, 6 tools, bank 590 → 596: `create_section_plane`,
+  `list_section_planes`, `set_section_state`, `set_live_section`, `set_section_height`,
+  `generate_section`. Live: **57/57**.
+
+  A section plane **cuts nothing**. It is an object that reports what a cut would look like, and
+  the solids it crosses come out untouched — the whole difference from `geometry_3d.slice_solid`,
+  and invisible in a JSON result, so the source volume is measured after every operation in the
+  verification.
+
+  Three tools collapse into one where the API has one code path.
+  `GenerateSectionGeometry` returns five arrays from a single call and the output type is chosen
+  through `SectionSettings.CurrentSectionType`, so `generate_section` takes `kind` = 2d / 3d /
+  live rather than shipping three names for the same thing. Likewise `set_live_section` covers
+  both the setter and the toggle. `add_section_jog` is subsumed by `create_section_plane` with
+  more than two vertices, because `Section.Boundary` is read-only and a jog therefore means
+  rebuilding; `create_section_from_object` is struck, nothing in the managed API deriving a
+  section line from an entity.
+
+  **The constructor's second `Vector3d` is `verticalDir`, not the normal — and this shipped wrong
+  before it shipped right.** The cut plane is the one containing the section line and that vector,
+  so the normal comes out as `line × up` and cannot be supplied at all: `Section.Normal` is
+  read-only. Passing the intended normal (horizontal, for a plan line) makes the plane contain the
+  plan line *and* a horizontal direction — the XY plane — so every "vertical" section was taken
+  horizontally at z=0. AutoCAD reported success throughout. `create_section_plane` no longer
+  accepts `normal`; it takes `verticalDirection` (default Z, and a horizontal vector now
+  deliberately gives a flat cut), reports the normal it worked out, and refuses if that normal is
+  not square to both inputs.
+
+  Both overloads take `Vector3d`, so the compiler could not answer by type — but it answered by
+  **name**. Named arguments made it an oracle: `verticalDir:` compiles, `normal:` and
+  `verticalDirection:` are CS1739; the same rounds proved `Normal` read-only and
+  `VerticalDirection` settable after construction.
+
+  **What let this survive is worth more than the trap: the test shape could not tell a cut from a
+  silhouette.** The first verification ran 41/43 with the tool broken, and the two failures were
+  the ones that mattered. A plane through the middle of a 100 cube and a plane 5000 units clear of
+  it both answered 400, because a cube's cross-section and its outline are the same square — and
+  the script called 400 proof. The checks now use shapes where the two differ: a sphere of r=50
+  cut 30 off-centre gives `2π·40 = 251.327` against `314.159` for the great circle, and a
+  100×80×60 box gives `2(100+60) = 320` upright against `2(100+80) = 360` flat, so neither
+  position nor orientation can be mistaken. Rule 26 §14.
+
 - **Phase 4.3, third tranche — the curved primitives, and a tool withdrawn after being built.**
   `acad-mesh` 8 → 10, bank 588 → 590: `create_mesh_sphere`, `create_mesh_cone`. Phase 4.3 is
   complete at 10 built and 3 struck.

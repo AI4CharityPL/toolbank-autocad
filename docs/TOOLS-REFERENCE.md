@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 41 categories, 590 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 42 categories, 596 tools total.
 
 ## Categories
 
@@ -33,6 +33,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-publish](#acad-publish) (6 tools)
 - [acad-router](#acad-router) (10 tools)
 - [acad-schedules](#acad-schedules) (9 tools)
+- [acad-sections-3d](#acad-sections-3d) (6 tools)
 - [acad-sections](#acad-sections) (4 tools)
 - [acad-selection](#acad-selection) (12 tools)
 - [acad-sheetsets](#acad-sheetsets) (23 tools)
@@ -607,6 +608,17 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `generate_window_schedule` | Build a window schedule table (ZESTAWIENIE STOLARKI OKIENNEJ) from every opening of kind=window currently in model space. Columns: NR, TYP, SZER., WYS., PARAPET, SZYBA, RC, DB, POM. Values come from the acad-openings attribute contract (rule 65). Uses HOSPITAL-DEF/OFFICE-DEF TableStyle. Table anchored at the given position, layer A-ANNO-TBLS. |
 | `get_room_data` | READ-ONLY, universal. Locate ONE space (room, office, apartment room, classroom, yard/garden, hall, …) by its number or name (substring, case-insensitive) and return a full dossier: number + name, MEASURED area (m², computed from a wall-aware flood-fill of the actual boundary) plus the labelled area (labelAreaM2, parsed from the label text) when present, bounding-box dimensions (width × depth in mm), the boundary detection method, and every door, window and furniture/equipment item that lies inside the room (furniture tested against the traced outline, openings against the perimeter). Scans labels on ALL layers by default (not just A-ROOM-*). Use this to gather accurate data BEFORE drawing a schedule or generating a visualization. Does NOT modify the drawing. |
 | `update_schedules` | Find existing schedule tables by their title cell (ZESTAWIENIE STOLARKI / POMIESZCZEŃ / LEGENDA WYKOŃCZEŃ) and rebuild each one from current drawing content. Old tables are erased and replaced at the same insertion point. Useful after inserting/removing openings or rooms; one call keeps every schedule in sync. |
+
+## acad-sections-3d
+
+| Tool | Description |
+|---|---|
+| `create_section_plane` | Place a section plane through a model - AutoCAD's SECTIONPLANE. Give the vertices of the line the section is cut along, seen in plan; two points give a straight section and more give a JOGGED one, which is how a plan cuts through different parts of a building at different places. The normal is which way the section looks, and defaults to perpendicular to the first segment - what the arrows on a section mark mean. Note that a section plane CUTS NOTHING: it is an object in the drawing that reports what a cut would look like, and the solids it crosses are untouched. geometry_3d.slice_solid is the one that really cuts. |
+| `generate_section` | Draw the geometry a section plane would cut - AutoCAD's SECTIONPLANETOBLOCK. kind 2d gives flat curves you can dimension and plot, 3d gives the cut model as solids, and live gives what the live-section display shows. sourceHandles is required and names the solids to cut: a section plane is a plane, not a query, so it does not know what it crosses. By default only the CUT curves are drawn - what the plane passes through - because that is what a section drawing wants; background, foreground and tangency curves are what lies beyond, in front of and along the silhouette, and each is opt-in. A plane placed clear of the model produces an empty result rather than a complaint, so the tool refuses that case instead of reporting a success over nothing. |
+| `list_section_planes` | List every section plane in the drawing with its state, whether it is the live section, how many vertices its cut line has, its elevation and its normal. Read-only. Use it before the other tools here, which all address a plane by handle. Worth knowing: a section plane is an OBJECT and stays in the drawing until erased, and at most one can be the live section at a time. |
+| `set_live_section` | Turn the LIVE section display on or off for a plane - AutoCAD's LIVESECTION. A live section shows the cut on screen without drawing anything: the model in front of the plane is hidden and the cut face is shaded, and nothing is added to the drawing. generate_section is the other half, drawing real geometry you can dimension and plot. Only one section can be live at a time, so turning this on turns the others off - that is AutoCAD behaviour, not a choice made here. |
+| `set_section_height` | Set how far a section plane reaches up and down from its cut line, and where that line sits in Z. `above` and `below` are the reach; `elevation` is the height of the line itself. Every value is read back after being set, because these are plain properties that can accept a number the object then declines to keep. IMPORTANT: heights only bite in the BOUNDARY and VOLUME states - a plane-state section is unbounded and ignores them, which is why a height that appears to do nothing usually means the state is still plane. |
+| `set_section_state` | Switch a section plane between its three states. PLANE is an unbounded cut, which is what a building section wants. BOUNDARY clips it to the outline the plane was given. VOLUME clips it to a box as well, which is what isolates one room or one bay out of a whole model. The state decides what generate_section produces and what a live section shows; it does not change the cut line itself. A height set on a plane-state section appears to do nothing, because only boundary and volume respect it. |
 
 ## acad-sections
 

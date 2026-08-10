@@ -1,0 +1,80 @@
+// Smoke + regression test for the acad-sections-3d category.
+// Asserts catalog completeness, snake_case names, RequiresPlugin/ReadOnly flags and
+// Intent >= 5 examples per tool (rule 22).
+
+using System.Linq;
+using AcadMcp.Backend.Mcp;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+
+namespace AcadMcp.Tests.Categories;
+
+public class Sections3dTests
+{
+    private static readonly string[] ExpectedTools = new[]
+    {
+        // Roadmap 4.4, first tranche. A section plane REPORTS a cut rather than making one - the
+        // solids it crosses are untouched, which is the whole difference from
+        // geometry_3d.slice_solid.
+        //
+        // The construction route is the constructor, not a factory: Section.CreateSectionPlane
+        // does not exist in either form and Section.Boundary is read-only with no SetBoundary,
+        // so the cut line can only go in when the object is made.
+        "create_section_plane", "list_section_planes", "set_section_state",
+        "set_live_section", "set_section_height", "generate_section",
+
+        // create_section_from_object is struck: nothing in the managed API derives a section line
+        // from an existing entity. add_section_jog is not here either - the boundary is immutable,
+        // so a jog means rebuilding the section from a new point list, and that is what
+        // create_section_plane already does with more than two vertices.
+    };
+
+    private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());
+
+    [Fact]
+    public void Catalog_contains_all_expected_tools()
+    {
+        var tools = NewRegistry().ToolsFor("sections-3d").Select(t => t.Name).OrderBy(n => n).ToArray();
+        var expected = ExpectedTools.OrderBy(n => n).ToArray();
+        Assert.Equal(expected, tools);
+    }
+
+    [Fact]
+    public void All_tool_names_are_snake_case_and_short()
+    {
+        foreach (var t in NewRegistry().ToolsFor("sections-3d"))
+        {
+            Assert.Matches(@"^[a-z][a-z0-9_]*$", t.Name);
+            Assert.True(t.Name.Split('_').Length <= 5, $"{t.Name} > 5 words");
+        }
+    }
+
+    [Fact]
+    public void All_tools_require_plugin()
+    {
+        foreach (var t in NewRegistry().ToolsFor("sections-3d"))
+        {
+            Assert.True(t.RequiresPlugin, $"{t.Name} should require the plugin");
+        }
+    }
+
+    [Fact]
+    public void Read_only_tools_are_marked()
+    {
+        foreach (var t in NewRegistry().ToolsFor("sections-3d"))
+        {
+            if (t.Name.StartsWith("get_") || t.Name.StartsWith("list_"))
+                Assert.True(t.ReadOnly, $"{t.Name} should be ReadOnly = true");
+        }
+    }
+
+    [Fact]
+    public void Every_tool_has_at_least_5_intents()
+    {
+        foreach (var t in NewRegistry().ToolsFor("sections-3d"))
+        {
+            Assert.True(t.Intent.Count >= 5,
+                $"{t.Name} has only {t.Intent.Count} intents (need >= 5 PL+EN combined)");
+        }
+    }
+}

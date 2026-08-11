@@ -775,7 +775,7 @@ the point is equidistant from two candidates. One further trap, measured: `new B
 faces and edges that throw `MissingSubentity` when asked for `SubentityPath`, so the Brep must be
 built from a `FullSubentityPath` rooted on the solid's `ObjectId`.
 
-### 4.2 `acad-surfaces` (≈18+2 → **12 built, 6 struck**)
+### 4.2 `acad-surfaces` (≈18+2 → **12 built, 8 struck**) — COMPLETE 2026-08-11
 
 ```
 create_nurbs_surface ..     surface_blend ✔           surface_patch ..
@@ -783,7 +783,7 @@ surface_network ..          surface_trim ✘            surface_untrim ..
 surface_extend ✘            surface_fillet ..          surface_offset ✔
 surface_sculpt ✘            project_geometry_to_surface ✔ set_surface_associativity ✘
 convert_to_nurbs ✔         rebuild_nurbs ✘            show_cv ✔
-edit_cv ✔                  surface_curvature_analysis ? surface_draft_analysis ?
+edit_cv ✔                  surface_curvature_analysis ✘ surface_draft_analysis ✘
 convert_to_solid ✔          convert_to_surface ✔
 extrude_surface ✔           revolve_surface ✔          sweep_surface ✔
 get_surface_info ✔          (the three above and get_surface_info were added to this
@@ -808,8 +808,17 @@ produced CS1929 and named the extension method outright. Third variant of the ru
 **Struck, confirmed absent:** `Surface.Extend`, `Surface.Sculpt`, `Surface.RebuildNurbSurface`,
 `Surface.ConvertToSolid` (the conversion goes the other way, through `Solid3d.CreateFrom`),
 `Surface.Associativity` / `IsAssociative`, `CreateInterferenceSurface`,
-`NurbSurface.NumControlPointsInU`. The two analyses are marked `?` because they are AutoCAD
-*display* modes rather than API calls, and need their own look.
+`NurbSurface.NumControlPointsInU`.
+
+**`surface_curvature_analysis` / `surface_draft_analysis` resolved 2026-08-11, struck.** Left
+marked `?` since this phase was first written - a real open question, not a guess. `ANALYSISCURVATURE`/
+`ANALYSISDRAFT` are genuine AutoCAD commands, so this deserved an actual answer rather than staying
+a hunch. Bulk-probed (rule 26 §12c: guess generously, suspect the namespace before absence):
+`Entity.AnalysisMesh`/`AnalysisStyle`, and an `AnalysisStyle` type under
+`DatabaseServices`/`GraphicsInterface`/`Colors`/`ApplicationServices` - all seven fail to compile.
+There is no DB-persisted, readable-back analysis object anywhere in the managed API; these two
+commands are viewport display modes with nothing an API caller can observe, the same shape as
+`set_render_environment` (fog, §6.1) - struck for the same reason, not merely unbuilt.
 
 **The trap this reconnaissance nearly fell into, for the second time.** Probing
 `new Profile3d("x")` returns *"cannot convert from string to Profile3d"*, which reads as though

@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **685 tools in 49 categories**. The product language is **English**; every tool
+pipe. There are **686 tools in 50 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -147,8 +147,24 @@ Practical rules that follow:
 
 ## 7. What is left
 
-**685 built.** Roughly 20 identified as remaining, and nearly all of it is gated rather than hard —
+**686 built.** Roughly 19 identified as remaining, and nearly all of it is gated rather than hard —
 this session cleared everything that wasn't.
+
+**2026-08-11: `acad-lisp`'s `netload_assembly` built, 11/11 live, WITH THE USER'S EXPLICIT
+GO-AHEAD** for this specific capability — dynamic assembly loading is a materially different risk
+from evaluating LISP or queuing drawing commands, and this tranche asked before writing it, after
+an earlier attempt was blocked by this session's own safety classifier. Loading a `.dll` is the
+`_.NETLOAD` **command**, not a LISP form, so it reuses the `run_command_sequence`
+`[CommandMethod]` bridge rather than the LISP-eval one, with `FILEDIA` forced to 0 — the same
+file-dialog precedent already fixed for `run_script_file`'s `SCRIPT`. `DynamicLinker.LoadModule`
+needs a command context exactly like `Editor.Command`; and `DynamicLinker.GetLoadedModules`/
+`IsModuleLoaded` do **not** report netloaded .NET assemblies at all, so "already loaded" and
+"loaded" are both read back through `AppDomain.CurrentDomain.GetAssemblies()` instead. Verified
+against a fully-controlled test fixture built for this check (`scripts/fixtures/
+netload-test-assembly`), never an ambient or found DLL — the DynamicLinker blind spot proven
+directly, not just cited. `acad-lisp` is now complete: 10 of 12 originally planned, with
+`run_script_file` withdrawn and `define_command_alias` struck as the only two decisions rather
+than gaps.
 
 **2026-08-11: `acad-lisp`'s escape-hatch trio built, 27/27 live — `eval_lisp`, `load_lisp_file`,
 `list_loaded_lisp`, with the user's explicit go-ahead** (arbitrary LISP evaluation is a materially
@@ -160,8 +176,6 @@ writes the result to a response file. One real defect found live: AutoLISP's `(r
 STRING, not a file object - the fix is `(read (read-line file))`. Rule 26 §24. Proven against real
 content, not synthetic one-liners: `load_lisp_file` loads AutoCAD's own `afact.lsp` sample and the
 proof it worked is calling the loaded `fact1(5)` afterward and getting `120` back.
-`netload_assembly` alone remains withdrawn — same fix, but blocked by the safety classifier, not
-attempted without explicit separate go-ahead.
 
 **2026-08-11: `acad-underlays` built, 5 tools, 42/42 live**, plus `acad-lights.create_web_light`,
 7/7. Both were "blocked on a file the user must supply" until the user pointed at AutoCAD's own
@@ -181,10 +195,7 @@ bug, and a fatal `AssociateRasterDef`/`ForRead` crash that needed an AutoCAD res
 **2026-08-11: `acad-lisp`'s `run_command_sequence` built, 17/17 live**, via a queued
 `[CommandMethod]` bridge that gives `Editor.Command` a genuine command context (rule 26 §15/§22).
 `run_script_file` was built on the same bridge and withdrawn after two measured fix attempts —
-see rule 26 §22. `netload_assembly` was not attempted: writing it was blocked by this session's
-own safety classifier (dynamic DLL loading reads as a different risk class from queuing drawing
-commands) — needs the user's explicit go-ahead to revisit. `eval_lisp`/`load_lisp_file`/
-`list_loaded_lisp` still need actual LISP evaluation, unbuilt.
+see rule 26 §22.
 
 **2026-08-11: 6.1 `set_render_environment` (fog) reconnaissance completed and struck**, not
 pending — see KNOWN-GAPS §B. `RenderEnvironment` has no found persistence route, and even a
@@ -210,7 +221,6 @@ already be shipped (`acad-lights`), undercounted in this doc until this pass fou
 | item | tools | the actual blocker |
 | --- | ---: | --- |
 | `insert_field_sheet_set_property` | 1 | `AcSm` fields resolve against the sheet set open in the **Sheet Set Manager**, which nothing here can establish. Needs the `SHEETSET` command or `AcSmSheetSetMgr` COM. **This is the last item in Phase 1.** Note the recorded blocker was wrong for months — see the changelog |
-| `acad-lisp`: `netload_assembly` | 1 | has the same command-context fix as the now-built `run_command_sequence`/`eval_lisp`, but writing it was blocked by the safety classifier (dynamic DLL loading) — needs explicit user go-ahead, not a technical blocker |
 | `acad-lisp`: `run_script_file` | 1 | **withdrawn, not blocked** — built on the working command-context bridge and still drew nothing from a one-line `.scr`; two measured fix attempts, both wrong. Rule 26 §22 |
 
 ### Struck — do not build these
@@ -247,10 +257,10 @@ reason before resurrecting any of them.**
 ## 9. State of the repo right now
 
 * branch `fix/tool-input-schemas`, everything committed, working tree clean
-* `pre-commit.ps1 -All` → **0 errors**, 114 items
-* `dotnet test` → **265 passed**
+* `pre-commit.ps1 -All` → **0 errors**, 115 items
+* `dotnet test` → **266 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 49 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **685 tools**
+* 50 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **686 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

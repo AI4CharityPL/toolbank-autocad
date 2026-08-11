@@ -108,6 +108,7 @@
     "uruchom wyrazenie autolisp",
     "ustaw zmienna systemowa",
     "usun nieuzywane nazwy aplikacji",
+    "wczytaj biblioteke dll",
     "wczytaj plik lisp",
     "wczytaj plik lsp",
     "wczytaj wtyczke .net",
@@ -125,6 +126,7 @@
     "wykonaj sekwencje polecen",
     "zaladuj biblioteke dll",
     "zaladuj plik lisp",
+    "zaladuj wtyczke .net",
     "zmien wartosc zmiennej systemowej"
   ],
   "tools_summary": [
@@ -236,6 +238,23 @@
       ]
     },
     {
+      "name": "netload_assembly",
+      "description": "Load a .NET assembly (.dll) into the running AutoCAD process via the NETLOAD command, making any commands or code it defines available. IMPORTANT: this is a materially more powerful capability than run_command_sequence or eval_lisp - a loaded assembly runs with full .NET access inside the AutoCAD process. Refuses an assembly already loaded (checked via reflection on the current process, not AutoCAD\u0027s own module list, which does not track .NET assemblies loaded this way) rather than pretending to reload it - .NET assemblies CANNOT be unloaded; picking up a rebuilt DLL needs an AutoCAD restart. Confirmed loaded the same way, by reflection, not by the call merely not throwing.",
+      "tags": [
+        "netload",
+        "assembly"
+      ],
+      "intent": [
+        "netload an assembly",
+        "load a .net dll into autocad",
+        "zaladuj wtyczke .net",
+        "netload this dll",
+        "wczytaj biblioteke dll",
+        "load a custom command dll",
+        "load my plugin assembly"
+      ]
+    },
+    {
       "name": "purge_regapps",
       "description": "Remove unreferenced registered application names from the drawing. Registered app names are the keys extended data is filed under, and they accumulate in a drawing that has passed through several applications. Only the UNREFERENCED ones go: Database.Purge is asked first and strikes from the candidate list everything still in use, so a name that some xdata still points at is kept - erasing one that is referenced would corrupt that xdata. ACAD is AutoCAD\u0027s own and is never offered. Reports the names purged and the ones remaining, with the counts before and after.",
       "tags": [
@@ -291,7 +310,7 @@
   ],
   "metadata": {
     "category": "lisp",
-    "tool_count_target": 9,
+    "tool_count_target": 10,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -305,6 +324,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-11T12:18:48.9429741Z"
+    "last_regenerated_utc": "2026-08-11T14:25:00.6408149Z"
   }
 }

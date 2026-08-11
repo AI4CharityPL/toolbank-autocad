@@ -31,12 +31,19 @@ public class LispTests
         // user's expression travels through a request FILE rather than being embedded in it.
         "eval_lisp", "load_lisp_file", "list_loaded_lisp",
 
+        // FIXED 2026-08-11, third pass, WITH THE USER'S EXPLICIT GO-AHEAD: netload_assembly -
+        // dynamic assembly loading is a materially different risk from evaluating LISP or
+        // queuing drawing commands, so this one was built only after being asked about
+        // specifically. Uses the run_command_sequence [CommandMethod] bridge (_.NETLOAD is a
+        // COMMAND, not a LISP form), with FILEDIA forced to 0 - the same precedent already fixed
+        // for run_script_file's SCRIPT. "Loaded" is read back via
+        // AppDomain.CurrentDomain.GetAssemblies(), since DynamicLinker does not see .NET
+        // assemblies loaded this way.
+        "netload_assembly",
+
         // STILL WITHDRAWN: run_script_file was built on the run_command_sequence bridge but even
         // a single CIRCLE inside a .scr draws nothing - two measured fix attempts, both wrong
-        // (see LispTools.cs). netload_assembly needs the same command-context fix as
-        // run_command_sequence but is deliberately out of scope - dynamic assembly loading is a
-        // different risk from evaluating LISP or queuing drawing commands, and this session did
-        // not have the user's go-ahead for that specific capability.
+        // (see LispTools.cs). It is the only one of the original six left unbuilt.
 
         // define_command_alias is struck: AutoCAD exposes no API for command aliases, and the only
         // route is editing the user's global acad.pgp and reloading it with RE_INIT - a permanent

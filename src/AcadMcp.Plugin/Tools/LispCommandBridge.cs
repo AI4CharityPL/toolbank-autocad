@@ -300,4 +300,60 @@ internal static class LispCommandBridge
         }
         WriteResponse(id, resp);
     }
+
+    [CommandMethod("ACADMCP_NETLOAD")]
+    public static void NetloadCmd()
+    {
+        var doc = AcadApp.DocumentManager.MdiActiveDocument;
+        var id = ReadGuidAnswer(doc.Editor, "Request id: ");
+        if (id is null) return;
+        var resp = new JsonObject();
+        try
+        {
+            var req = ReadRequest(id) ?? throw new InvalidOperationException("request file missing");
+            var path = req["path"]!.GetValue<string>();
+
+            // MEASURED (same precedent as SCRIPT): NETLOAD opens a file-picker dialog unless
+            // FILEDIA is 0, in which case the path on the command line is taken directly.
+            object? prevFiledia = null;
+            try { prevFiledia = AcadApp.GetSystemVariable("FILEDIA"); } catch (System.Exception) { }
+            try
+            {
+                AcadApp.SetSystemVariable("FILEDIA", (short)0);
+                doc.Editor.Command("_.NETLOAD", path);
+            }
+            finally
+            {
+                if (prevFiledia is not null)
+                {
+                    try { AcadApp.SetSystemVariable("FILEDIA", prevFiledia); } catch (System.Exception) { }
+                }
+            }
+
+            // DynamicLinker.GetLoadedModules/IsModuleLoaded do NOT report netloaded .NET
+            // assemblies (rule 26, list_loaded_applications' own measured limit) - read back
+            // through a DIFFERENT route instead: NETLOAD loads into the CURRENT process, so
+            // AppDomain.CurrentDomain.GetAssemblies() sees it directly.
+            var wantName = System.IO.Path.GetFileNameWithoutExtension(path);
+            bool loaded = System.AppDomain.CurrentDomain.GetAssemblies().Any(a =>
+            {
+                try
+                {
+                    return string.Equals(
+                        System.IO.Path.GetFileNameWithoutExtension(a.Location), wantName,
+                        System.StringComparison.OrdinalIgnoreCase);
+                }
+                catch (System.Exception) { return false; }
+            });
+
+            resp["ok"] = true;
+            resp["loaded"] = loaded;
+        }
+        catch (System.Exception ex)
+        {
+            resp["ok"] = false;
+            resp["error"] = DescribeError(ex);
+        }
+        WriteResponse(id, resp);
+    }
 }

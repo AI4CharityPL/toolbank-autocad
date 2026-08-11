@@ -463,49 +463,71 @@ internal static class LispPluginTools
 
     // ─────────── .NET assemblies ───────────
 
-    private static Task<ToolDispatchResult> NetloadAssembly(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.netload_assembly", args, ct, (doc, db, tr) =>
+    // MEASURED: DynamicLinker.LoadModule (the direct .NET API) needs a command context exactly
+    // like Editor.Command - rule 26 §15. The fix used for run_command_sequence/eval_lisp does not
+    // transfer directly, because loading a .dll is a COMMAND (_.NETLOAD), not a LISP form or a
+    // drawing command, so this goes through the same [CommandMethod] bridge as
+    // run_command_sequence, with FILEDIA forced to 0 first - the same NETLOAD-dialog precedent
+    // already fixed for run_script_file's SCRIPT command.
+    //
+    // MEASURED: DynamicLinker.GetLoadedModules/IsModuleLoaded do NOT report netloaded .NET
+    // assemblies (list_loaded_applications' own documented limit), so "already loaded" and
+    // "loaded" are both answered through AppDomain.CurrentDomain.GetAssemblies() instead - a
+    // different, honest route, since NETLOAD loads into the CURRENT process.
+    private static async Task<ToolDispatchResult> NetloadAssembly(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.netload_assembly";
+        var a = Read<LispLoadArgsDto>(args);
+        if (string.IsNullOrWhiteSpace(a.Path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "path is required: the .dll to load."));
+        var path = Path.GetFullPath(a.Path!);
+        if (!File.Exists(path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException("No file at " + path + "."));
+
+        var wantName = Path.GetFileNameWithoutExtension(path);
+        bool alreadyLoaded = AppDomain.CurrentDomain.GetAssemblies().Any(asm =>
         {
-            var a = Read<LispLoadArgsDto>(args);
-            if (string.IsNullOrWhiteSpace(a.Path))
-                throw new ArgumentException("path is required: the .dll to load.");
-            var path = Path.GetFullPath(a.Path!);
-            if (!File.Exists(path))
-                throw new ArgumentException("No file at " + path + ".");
-
-            var already = SystemObjects.DynamicLinker.IsModuleLoaded(path);
-            if (already)
-                throw new ArgumentException(
-                    "That assembly is already loaded. .NET assemblies CANNOT be unloaded from " +
-                    "AutoCAD once in - the only way to load a rebuilt one is to restart AutoCAD, " +
-                    "which is why this refuses rather than pretending to reload.");
-
-            try
-            {
-                SystemObjects.DynamicLinker.LoadModule(path, false, false);
-            }
-            catch (System.Exception ex)
-            {
-                throw new ArgumentException(
-                    "AutoCAD refused to load " + path + ": " + ex.Message +
-                    ". The commonest causes are a .NET version the running AutoCAD cannot host, " +
-                    "and a missing dependency next to the DLL.");
-            }
-
-            var loaded = SystemObjects.DynamicLinker.IsModuleLoaded(path);
-            if (!loaded)
-                throw new InvalidOperationException(
-                    "LoadModule raised no error but the assembly does not read back as loaded.");
-
-            return Wrap(new
-            {
-                path,
-                loaded,
-                note = "Confirmed by asking DynamicLinker.IsModuleLoaded afterwards rather than " +
-                       "by the call not throwing. Note that a .NET assembly cannot be UNLOADED: " +
-                       "to pick up a rebuilt DLL, AutoCAD has to be restarted.",
-            });
+            try { return string.Equals(Path.GetFileNameWithoutExtension(asm.Location), wantName, StringComparison.OrdinalIgnoreCase); }
+            catch (System.Exception) { return false; }
         });
+        if (alreadyLoaded)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "An assembly named '" + wantName + "' is already loaded in this process " +
+                "(confirmed via AppDomain reflection, not DynamicLinker, which does not see " +
+                ".NET assemblies loaded through NETLOAD). .NET assemblies CANNOT be unloaded " +
+                "from AutoCAD once in - the only way to load a rebuilt one is to restart AutoCAD."));
+
+        var req = new JsonObject { ["path"] = path };
+        var result = await LispCommandBridge.RunAsync("ACADMCP_NETLOAD", req, 20_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        var resp = result.Response!;
+        if (resp["ok"]?.GetValue<bool>() != true)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "AutoCAD refused to load " + path + ": " + resp["error"] +
+                ". The commonest causes are a .NET version the running AutoCAD cannot host, and " +
+                "a missing dependency next to the DLL."));
+
+        var loaded = resp["loaded"]?.GetValue<bool>() ?? false;
+        if (!loaded)
+            return AcadErrorMapper.Fail(toolKey, new InvalidOperationException(
+                "NETLOAD reported no error but the assembly does not read back as loaded via " +
+                "AppDomain reflection - a silent failure this tool refuses to report as success."));
+
+        return new ToolDispatchResult(true, Wrap(new
+        {
+            path,
+            loaded,
+            note = "Loaded via the _.NETLOAD command in a genuine command context (rule 26 " +
+                   "§15/§22), FILEDIA forced to 0 to take the path directly instead of opening a " +
+                   "file dialog. Confirmed via AppDomain.CurrentDomain.GetAssemblies() rather " +
+                   "than DynamicLinker, which does not see .NET assemblies loaded this way. A " +
+                   ".NET assembly cannot be UNLOADED: to pick up a rebuilt DLL, AutoCAD has to " +
+                   "be restarted.",
+        }), null);
+    }
 
     private static Task<ToolDispatchResult> ListLoadedApplications(JsonObject args, CancellationToken ct) =>
         Run("acad.lisp.list_loaded_applications", args, ct, (doc, db, tr) =>

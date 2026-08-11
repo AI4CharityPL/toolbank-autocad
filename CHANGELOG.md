@@ -6,6 +6,36 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`acad-lisp`'s `netload_assembly` built, 11/11 live, bank 685 → 686, WITH THE USER'S EXPLICIT
+  GO-AHEAD** for this specific capability. Dynamic assembly loading is a materially different risk
+  from evaluating LISP or queuing drawing commands - a loaded assembly runs with full .NET access
+  inside the AutoCAD process - and this session asked before writing it, after an earlier attempt
+  was blocked by this session's own safety classifier.
+
+  Loading a `.dll` is the `_.NETLOAD` **command**, not a LISP form, so this reuses the
+  `run_command_sequence` `[CommandMethod]` bridge rather than the LISP-eval one, with `FILEDIA`
+  forced to 0 - the same file-dialog precedent already fixed for `run_script_file`'s `SCRIPT`.
+  `SystemObjects.DynamicLinker.LoadModule` (the direct .NET API) needs a genuine command context
+  exactly like `Editor.Command` (rule 26 §15).
+
+  **`DynamicLinker.GetLoadedModules`/`IsModuleLoaded` do not report netloaded .NET assemblies at
+  all** - a pre-existing, documented limit of `list_loaded_applications` itself. "Already loaded"
+  and "loaded" are both read back through `AppDomain.CurrentDomain.GetAssemblies()` instead, a
+  different and honest route, since NETLOAD loads directly into the current process.
+
+  **No defects found - clean first deploy.** Verified against a fully-controlled test fixture
+  built specifically for this check (`scripts/fixtures/netload-test-assembly`, committed as
+  source, built on demand), never an ambient or found DLL. The sharpest control: the fixture is
+  confirmed **absent** from `list_loaded_applications` both before AND after `netload_assembly`
+  loads it, proving the DynamicLinker blind spot live rather than merely citing it - a tool that
+  trusted `DynamicLinker` for its own verification would report false failure on exactly this
+  check. Re-loading the same assembly is refused by name, not silently re-attempted, since .NET
+  assemblies cannot be unloaded from a running AutoCAD process.
+
+  `acad-lisp` is now complete: 10 of the original 12 planned tools shipped. `run_script_file`
+  (withdrawn, two measured fix attempts both wrong) and `define_command_alias` (struck, no API)
+  are the only two not shipped, both decisions rather than gaps.
+
 - **`acad-lisp`'s escape-hatch trio built, 27/27 live, bank 682 → 685: `eval_lisp`,
   `load_lisp_file`, `list_loaded_lisp`.** Built with the user's explicit go-ahead - arbitrary LISP
   evaluation is a materially different risk from `run_command_sequence`'s bounded drawing
@@ -32,9 +62,6 @@ All notable changes to this project will be documented in this file. Format: [Ke
   `get_system_variable` reading the same `CLAYER` through a completely different code path, and
   a nested list `(list 1 (list 2 3) 4)` proves the LISP-to-JSON parser preserves structure rather
   than flattening it.
-
-  `netload_assembly` remains withdrawn - same command-context fix, but writing it was blocked by
-  this session's own safety classifier and not attempted without a separate, specific go-ahead.
 
 - **`acad-underlays` built, 5 tools, 42/42 live, plus `acad-lights.create_web_light`, 7/7. Bank
   676 → 682.** Both were recorded as "blocked on a file the user must supply." Asked directly,

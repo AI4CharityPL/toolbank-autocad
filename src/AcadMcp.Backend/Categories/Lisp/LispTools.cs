@@ -39,11 +39,17 @@
 // eInvalidInput everywhere) falling back to a bare Editor.Command(wrapped) call, which throws
 // from application context for the exact reason run_command_sequence originally did.
 //
-// netload_assembly REMAINS WITHDRAWN - it needs the identical command-context fix, but writing
-// it was deliberately not attempted: dynamic assembly loading is a materially different risk from
-// evaluating LISP or queuing drawing commands, and this tranche did not have the user's specific
-// go-ahead for that capability. The plugin handler stays registered so the finding stays
-// reproducible.
+// netload_assembly FIXED, 2026-08-11 (third pass), WITH THE USER'S EXPLICIT GO-AHEAD for this
+// specific capability - dynamic assembly loading is a materially different risk from evaluating
+// LISP or queuing drawing commands, and this tranche asked before writing it. Uses the SAME
+// [CommandMethod] bridge as run_command_sequence (loading a .dll is a COMMAND, _.NETLOAD, not a
+// LISP form), with FILEDIA forced to 0 first - the same file-dialog precedent already fixed for
+// run_script_file's SCRIPT command. DynamicLinker.LoadModule (the direct .NET API) needs a
+// command context exactly like Editor.Command; DynamicLinker.GetLoadedModules/IsModuleLoaded do
+// NOT report netloaded .NET assemblies at all (list_loaded_applications' own documented limit),
+// so "already loaded" and "loaded" are both read back through
+// AppDomain.CurrentDomain.GetAssemblies() instead - a different, honest route, since NETLOAD
+// loads into the CURRENT process.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -83,6 +89,15 @@ public static class LispTools
         ReadOnly = true, RequiresPlugin = true)]
     public static Task<LispSymbolsResult> ListLoadedLisp(IPluginGateway gw, LispSymbolsArgs args, CancellationToken ct)
         => LispProxy.CallAsync<LispSymbolsArgs, LispSymbolsResult>(gw, "acad.lisp.list_loaded_lisp", args, T_NORMAL, ct);
+
+    [McpTool("netload_assembly", "Load a .NET assembly (.dll) into the running AutoCAD process via the NETLOAD command, making any commands or code it defines available. IMPORTANT: this is a materially more powerful capability than run_command_sequence or eval_lisp - a loaded assembly runs with full .NET access inside the AutoCAD process. Refuses an assembly already loaded (checked via reflection on the current process, not AutoCAD's own module list, which does not track .NET assemblies loaded this way) rather than pretending to reload it - .NET assemblies CANNOT be unloaded; picking up a rebuilt DLL needs an AutoCAD restart. Confirmed loaded the same way, by reflection, not by the call merely not throwing.", "lisp",
+        Intent = new[] { "netload an assembly", "load a .net dll into autocad",
+                         "zaladuj wtyczke .net", "netload this dll",
+                         "wczytaj biblioteke dll", "load a custom command dll",
+                         "load my plugin assembly" },
+        RequiresPlugin = true)]
+    public static Task<LispNetloadResult> NetloadAssembly(IPluginGateway gw, LispLoadArgs args, CancellationToken ct)
+        => LispProxy.CallAsync<LispLoadArgs, LispNetloadResult>(gw, "acad.lisp.netload_assembly", args, T_NORMAL, ct);
 
     [McpTool("list_loaded_applications", "List the ARX, CRX and DBX modules AutoCAD has registered, together with its own managed core assemblies (accoremgd.dll, acmgd.dll). Read-only. MEASURED LIMIT, so that a short answer is not mistaken for a broken tool: this returns what DynamicLinker.GetLoadedModules reports, which on a normal session is about 25 entries and does NOT include .NET assemblies loaded with NETLOAD - a netloaded plugin will not appear here even though it is running. `pattern` filters the list by substring.", "lisp",
         Intent = new[] { "list loaded arx modules", "what modules has autocad loaded",
@@ -139,5 +154,5 @@ public static class LispTools
         => LispProxy.CallAsync<LispCommandArgs, LispCommandResult>(gw, "acad.lisp.run_command_sequence", args, T_SLOW, ct);
 
     // run_script_file is WITHDRAWN - see the header comment. Two measured fix attempts, both
-    // wrong; not exposed here, matching eval_lisp/load_lisp_file/list_loaded_lisp/netload_assembly.
+    // wrong; not exposed here. It is the only one of the original six left unbuilt.
 }

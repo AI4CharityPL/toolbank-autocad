@@ -980,7 +980,7 @@ one cloud, not a good one.
 
 ## Phase 5 — Data, extensibility, escape hatches (≈65 → **61** after review)
 
-### 5.1 `acad-lisp` (≈12 → **9 built, 1 struck, 1 withdrawn, 1 blocked**)
+### 5.1 `acad-lisp` (≈12 → **10 built, 1 struck, 1 withdrawn — COMPLETE**)
 
 ```
 eval_lisp                   load_lisp_file             list_loaded_lisp
@@ -1080,10 +1080,25 @@ genuinely loaded is calling `(fact1 5)` afterward through `eval_lisp` and gettin
 real recursive arithmetic a placeholder success could not fake. `list_loaded_lisp` is checked
 before AND after: `FACT1` absent, then present.
 
-**`netload_assembly` remains withdrawn** — writing the command-context fix for it was blocked by
-this session's own safety classifier, which read dynamic DLL loading as a materially different
-risk from evaluating LISP or queuing drawing commands, and this tranche did not have the user's
-go-ahead for that specific capability.
+**`netload_assembly` BUILT 2026-08-11 (third pass), 11/11 live, WITH THE USER'S EXPLICIT
+GO-AHEAD** for this specific capability — dynamic assembly loading is a materially different
+risk from evaluating LISP or queuing drawing commands, and this tranche asked before writing it,
+after the earlier attempt was blocked by the safety classifier. Loading a `.dll` is the
+`_.NETLOAD` **command**, not a LISP form, so this reuses the `run_command_sequence`
+`[CommandMethod]` bridge rather than the LISP-eval one, with `FILEDIA` forced to 0 — the same
+file-dialog precedent already fixed for `run_script_file`'s `SCRIPT`. `DynamicLinker.LoadModule`
+(the direct .NET API) needs a command context exactly like `Editor.Command`; and
+`DynamicLinker.GetLoadedModules`/`IsModuleLoaded` do **not** report netloaded .NET assemblies at
+all (`list_loaded_applications`'s own documented limit), so "already loaded" and "loaded" are
+both read back through `AppDomain.CurrentDomain.GetAssemblies()` instead — a different, honest
+route, since NETLOAD loads into the current process. Verified against a fully-controlled test
+fixture built for this check (`scripts/fixtures/netload-test-assembly`), never an ambient or
+found DLL, with the DynamicLinker blind spot proven directly: the loaded fixture is confirmed
+absent from `list_loaded_applications` even while `netload_assembly` correctly reports it loaded.
+
+**`acad-lisp` is now complete** at 10 of the original 12 planned — `run_script_file` withdrawn
+(two measured fix attempts, both wrong) and `define_command_alias` struck (no API) are the only
+two not shipped, both decisions rather than gaps.
 
 **`list_loaded_applications` documents a measured limit rather than glossing it.**
 `GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does
@@ -1573,7 +1588,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **74** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half, 7 tools) and `acad-underlays` (5 tools, `attach_dgn_underlay` withheld) both built 2026-08-11 — the latter unblocked by real DGN/DWF files found in AutoCAD's own install tree, not supplied by the user |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **48** | 5 struck: data extraction is a wizard, property sets are AEC-only; **5.1 acad-lisp effectively complete** — `run_command_sequence`, `eval_lisp`, `load_lisp_file`, `list_loaded_lisp` all built 2026-08-11 (rule 26 §22/§24); `run_script_file` withdrawn (two measured fix attempts, both wrong); `netload_assembly` alone remains, blocked by the safety classifier rather than the API, needs explicit go-ahead |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **49** | 5 struck: data extraction is a wizard, property sets are AEC-only; **5.1 acad-lisp COMPLETE** — all 10 buildable tools shipped 2026-08-11 (rule 26 §22/§24), `netload_assembly` last with the user's explicit go-ahead; `run_script_file` withdrawn (two measured fix attempts, both wrong), `define_command_alias` struck (no API) |
 | 6 | Visualisation — render, animation | 40 → **26** | **15** | **6.1 complete** — materials, lights, sun and `create_web_light` all done (the last two undercounted here until this session); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
 | | **Total** | **813** | **685** | **84 %** |
 

@@ -175,9 +175,15 @@ change the plan:
   calls and the "what if a second client opens a different set" question never arises. 23 tools,
   not 25 — and the two that go are the two the roadmap was most worried about.
 * **First tranche is read-only and unblocks something already shipped.**
-  `fields.insert_field_sheet_set_property` exists and is blocked on `get_sheet_property`, so the
-  six read tools come first: they need none of the `Save()` discipline and they turn a dead field
-  live.
+  `fields.insert_field_sheet_set_property` is blocked on `get_sheet_property`, so the
+  six read tools come first: they need none of the `Save()` discipline.
+
+  **CORRECTED 2026-08-11: that tool does not exist and never did.** This paragraph said it
+  "exists and is blocked", and a comment in `SheetSetsTools.cs` said it had "shipped long ago and
+  has been waiting" — neither was true. `acad-fields` has 17 tools and none of them is this one.
+  The record is how it stayed unbuilt: nobody builds what the plan says is already there.
+  `get_sheet_property` shipped in phase 2.1, so the dependency is now satisfied and the tool is
+  buildable — it is the single item standing between phase 1 and complete.
 
 **Four entries are somebody else's job:**
 
@@ -1300,7 +1306,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 | Phase | Focus | Planned | Built | Status |
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
-| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **75** | **partial** |
+| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **partial** — 88 shipped and verified; the ONE tool still genuinely missing is `insert_field_sheet_set_property`, and it is no longer blocked |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
@@ -1357,12 +1363,17 @@ is not: those ratios say *everything built works*, not *everything planned was b
 | `acad-annotative` | 14 | 15 | 2 | −1 |
 | **Total** | **98** | **88** | **13** | **0** |
 
-## Phase 1 is complete
+## Phase 1 — 88 shipped, ONE still to build
 
 All five categories are built out: 88 tools shipped and verified against live AutoCAD, 13
-withheld with a recorded reason each in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B, nothing left
-unattempted. The one genuinely blocked item, `insert_field_sheet_set_property`, needs
-`acad-sheetsets` and moves to Phase 2 where it belongs.
+withheld with a recorded reason each in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B.
+
+**Counted afresh 2026-08-11 and the heading was wrong.** `insert_field_sheet_set_property` was
+recorded in three places as existing-but-blocked, and a comment in `SheetSetsTools.cs` said it had
+shipped. It had not: `acad-fields` holds 17 tools and that is not one of them. Its dependency,
+`get_sheet_property`, shipped with phase 2.1, so nothing blocks it now. Phase 1 closes when that
+one tool is built and verified — it needs a field-expression experiment of the kind rule 26 §12c
+describes, since the `AcSm` field syntax for a sheet-set property is not guessable.
 
 Two roadmap bullets turned out not to be tools at all - `bind_xref_insert` is `bind_xref` with
 `insertMode: true`, `rotate_ucs_x/y/z` is one `rotate_ucs` with an axis argument - which is why

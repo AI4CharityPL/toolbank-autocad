@@ -1,6 +1,7 @@
 // MCP tools for acad-sheetsets — roadmap 2.1. Six reads, then four writes.
 //
-// The reads came first on purpose. `fields.insert_field_sheet_set_property` shipped long ago and
+// The reads came first on purpose. `fields.insert_field_sheet_set_property` is NOT built - the
+// roadmap said it was, which is how it stayed unbuilt - and when it is, it will need
 // was dead ever since, because nothing could read a sheet-set property for it to bind to. Six
 // read tools needed none of the save discipline the writes do, and they turned that field live.
 //
@@ -67,7 +68,7 @@ public static class SheetSetsTools
     public static Task<SubsetListResult> ListSubsets(IPluginGateway gw, SheetSetPathArgs args, CancellationToken ct)
         => SheetSetsProxy.CallAsync<SheetSetPathArgs, SubsetListResult>(gw, "acad.sheetsets.list_subsets", args, T_NORMAL, ct);
 
-    [McpTool("get_sheet_property", "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property has been waiting for.", "sheetsets",
+    [McpTool("get_sheet_property", "Read the properties of ONE sheet - name, number, title, description, plus every custom property on it. Read-only. Identify the sheet by its NAME or by its NUMBER, since on a real project people say 'A-101' at least as often as they say a sheet's name. Name a single property to get just that one, with whether it was built in or custom; omit it to get all of them. This is the tool fields.insert_field_sheet_set_property needs; that tool is not built yet.", "sheetsets",
         Intent = new[] { "wlasciwosci arkusza", "jaki numer ma ten arkusz",
                          "get a sheet property", "read sheet number and title",
                          "dane arkusza do tabliczki", "sheet custom property value" },

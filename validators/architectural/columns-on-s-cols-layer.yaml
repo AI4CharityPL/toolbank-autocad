@@ -6,18 +6,28 @@ description: |
   Per rule 36 §5 structural columns are referenced from the architectural
   plan but OWNED by the structural discipline. They MUST sit on layer
   'S-COLS' (with the centre-mark on S-COLS-CTRL). Drafting columns on
-  'A-WALL', 'A-COLS', 'COLUMNS' etc. breaks coordination with the structural
-  set when the model is exchanged.
+  'A-COLS', 'COLUMNS' etc. breaks coordination with the structural set when
+  the model is exchanged.
 
   This rule pairs with `acad-architecture.insert_rect_column` and
   `acad-architecture.insert_round_column`, both of which place the column
   profile on S-COLS by default.
+
+  FIXED 2026-08-12: 'A-WALL' was removed from the scope pattern. A-WALL is
+  arch.walls.on-walls-layer's own REQUIRED, correctly-used target layer for
+  wall faces (Polyline entities) - this rule's scope had no way to tell a
+  legitimate wall face from a column mistakenly left on the wall layer, so
+  every correctly-placed wall face was also flagged as "should be on
+  S-COLS." Confirmed live: a wall built with acad-architecture.draw_wall,
+  entirely correct per the walls rule, was simultaneously flagged by this
+  one. A rule that cannot distinguish the two should not scope the layer
+  either rule actually owns.
 references:
   - .cursor/rules/36-architecture-domain-traps.md#5-columns-are-never-on-the-wall-layer
   - .cursor/rules/36-architecture-domain-traps.md#11-layer-key
 scope:
   entity_types: [Polyline, Circle]
-  layer_pattern: "^(A[-_]?COLS?|COLUMNS?|COLS?|A[-_]?WALL|STRUCT[-_]?COLS?)$"
+  layer_pattern: "^(A[-_]?COLS?|COLUMNS?|COLS?|STRUCT[-_]?COLS?)$"
 checks:
   - { type: layer_equals, value: S-COLS }
 fix:

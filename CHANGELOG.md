@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **Two `acad-validators` rules found by a deliberate-violation test session, both confirmed live
+  before and after.**
+
+  `arch.doors.must-have-room-tag` checked for a `ROOM_NUMBER` attribute that
+  `acad-openings.insert_door` has never set — it writes `ROOM_FROM`/`ROOM_TO`, the same pair the
+  door schedule's own CSV export reads. Confirmed live before the fix: a door placed with
+  `roomFrom`/`roomTo` correctly filled in was flagged anyway — every door this bank's own tool
+  produces failed this rule unconditionally, regardless of the caller's good faith. The YAML now
+  checks `ROOM_FROM`. Verified both directions after the fix: a door with `roomFrom` set now
+  passes, and a door without one still fails — the rule was corrected, not disabled.
+
+  `arch.columns.on-s-cols-layer`'s scope pattern included `A-WALL` — the exact layer
+  `arch.walls.on-walls-layer` requires wall faces to sit on. A Polyline correctly placed on
+  `A-WALL` by `acad-architecture.draw_wall` matched both rules' scope at once, so a perfectly
+  correct wall was simultaneously flagged as "should be on S-COLS." This is what produced the
+  "6 columns" finding during the two-level test-building session — those were wall segments, not
+  columns. `A-WALL` removed from the scope pattern; the rule still catches genuine legacy names
+  (`A-COLS`, `COLUMNS`, `STRUCT-COLS`, …), it just no longer claims a layer it doesn't own.
+
+  Both fixes are plain YAML edits under `validators/architectural/`, hot-reloadable (no plugin
+  redeploy) — `AcadMcp.Backend.exe --validators-self-check` and a dedicated live regression
+  (`scripts/verify-validators-rule-fixes.py`, 33/33) both pass clean: the fixed rules catch
+  genuine violations, do not flag correct usage, and `auto_fix_violations` still only touches
+  what it claims to.
+
 - **`acad-schedules` triple-counted every room's area.** `define_room` places THREE separate text
   entities per room (number, name, area — all on `A-ROOM-IDEN`), and `generate_room_schedule` /
   `audit_all_rooms` / `correct_all_room_areas` iterated the raw label list directly, treating each

@@ -124,6 +124,23 @@ the gate blocks the commit otherwise.
 Write the commit message for someone who will read it in a year without the diff in front of
 them. Say what was wrong, not only what is now right.
 
+## Blocked only on a file — good first contribution
+
+Some tools are fully coded and reconnaissance-complete, but withheld because nothing on the
+machines that built this bank could prove them correct — no return code is shipped as evidence
+here, so an unverifiable tool stays unshipped rather than guessed at. If you have the file, this
+is the fastest way to add real tools:
+
+- **`acad-pointclouds`, 12 tools** — need one `.rcp`/`.rcs` scan file. Autodesk publishes free
+  ReCap sample scans; any single-scan file is enough. Details: [KNOWN-GAPS.md §B](docs/KNOWN-GAPS.md).
+- **`set_material_map`, `set_material_mapping`, `load_material_library`, 3 tools** — need a
+  texture image and one `.adsklib`. Details: [KNOWN-GAPS.md §B](docs/KNOWN-GAPS.md).
+- **`attach_dgn_underlay`** — needs one real (non-seed-template) `.dgn`. Details:
+  [KNOWN-GAPS.md §B](docs/KNOWN-GAPS.md).
+
+Each entry says exactly what was measured, why the API is not the blocker, and what "unblocked"
+looks like — bring the file, run the same probe, and these are candidates for the next release.
+
 ## Reporting instead of fixing
 
 Entirely welcome, and the issue templates ask the questions that matter. A tool defect

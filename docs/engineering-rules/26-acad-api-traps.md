@@ -534,6 +534,22 @@ precisely why the failure is hard to spot: most of the object works.
 cone arithmetic — *"a spot light DOES have a target"*. It was the only thing between the bank and
 a spot light that silently pointed nowhere.
 
+### 19. Before building a category, ask what the bank ALREADY does
+
+Phase 6.1 planned six rendering tools. The probe found a real managed route to an image —
+`Manager.CreateAutoCADOffScreenDevice` plus `View.GetSnapShot` — and the honest conclusion was
+still to strike them, because **`files.export_file` already exports PNG** at a chosen scope and
+pixel size, and has done since phase 1. Every live verification in this project uses it.
+
+Building `render_view` on the offscreen device would have produced a second name for an existing
+capability. A router faced with two tools that do the same thing chooses badly, which is the same
+reason `quick_select_by_property` was struck in 3.4 against `filter_entities` and
+`data.query_by_property`.
+
+**The check costs one grep of the manifests and belongs beside the API probe.** An API that exists
+is not a reason to build; a capability the bank lacks is. The two questions are different and only
+the second one matters.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

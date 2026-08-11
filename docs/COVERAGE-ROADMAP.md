@@ -1271,10 +1271,39 @@ angles all survive — so the object looks fine and the spot light simply is not
 Spot and distant lights are now persisted FIRST and aimed afterwards, with a read-back assertion.
 The check that caught it was the most trivial-looking line in the script.
 
-**Remaining in 6.1: the sun and environment, and the renderers.** The order and the open question
-are unchanged — settle whether an image can be produced at all before building the tools that
-produce one. Note from 5.4's probe that the sun hangs off a VIEW (`ViewTableRecord.SunId`), not
-the database.
+**Remaining in 6.1: the sun and environment (buildable), and the renderers (mostly struck).**
+
+**Sun and environment are ready to build, 3–4 tools.** `Sun` carries `IsOn`, `Intensity`,
+`DateTime`, `SkyParameters` and `ShadowParameters`, and a sun is attached through
+**`ViewportTableRecord.SetSun(sun)`** with `SunId` on both `ViewportTableRecord` and
+`ViewTableRecord` — so a sun belongs to a VIEWPORT or VIEW, not to the drawing, and
+`set_sun_properties` has to take one. `RenderEnvironment` is constructible with `FogEnabled` and
+`FogColor`. Absent: `Sun.Color`, `Sun.DaylightSavingsTime`, `Sun.SetDatabaseDefaults`, and
+`SkyParameters` is not in `DatabaseServices`.
+
+**THE RENDERER QUESTION IS SETTLED, and the answer strikes most of the six.** Asked before
+building rather than after, which is what 5.1 taught:
+
+* There IS a managed route to an image — `Manager.CreateAutoCADOffScreenDevice(GraphicsKernel)`
+  and `View.GetSnapShot(...)` both exist. But what that produces is a SHADED VIEWPORT CAPTURE.
+* **The bank already does exactly that.** `files.export_file` exports PNG with `Display`,
+  `Extents`, `Limits`, `Window`, `View` or `Layout` scope and an explicit pixel size — every live
+  verification in this project has used it. A `render_view` or `render_to_file` built on the
+  offscreen device would be a second name for a tool that already exists, which is the same
+  duplication that struck `quick_select_by_property` in 3.4.
+* What is genuinely missing is PHOTOREALISTIC rendering — materials, lights and shadows resolved
+  by the renderer — and that needs the `RENDER` command, which rule 26 §15 says cannot be driven
+  from where this plugin dispatches. `MentalRayRenderSettings` does not exist in the managed API
+  either.
+
+So `render_view`, `render_region` and `render_to_file` are **struck as duplicates or blocked**,
+not left as unbuilt work: the first two duplicate `files.export_file`, and the photorealistic case
+is blocked on the command context. `set_render_preset`, `set_render_quality`, `set_exposure` and
+`list_render_history` follow the same fate — settings for a renderer that cannot be invoked are
+settings for nothing.
+
+**Realistic remaining scope for 6.1 is therefore the sun and environment**, which takes the phase
+to about 16 of 26 with the rest struck on recorded grounds rather than pending.
 
 **Suggested split for the next session:** materials first (8 tools, no open questions, verifiable
 by reading assignments back), then lights (7, after one probe for the light-type enum), then the

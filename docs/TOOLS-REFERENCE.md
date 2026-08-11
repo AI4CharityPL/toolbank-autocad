@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 49 categories, 675 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 49 categories, 676 tools total.
 
 ## Categories
 
@@ -26,7 +26,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
 - [acad-lights](#acad-lights) (8 tools)
-- [acad-lisp](#acad-lisp) (5 tools)
+- [acad-lisp](#acad-lisp) (6 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-materials](#acad-materials) (6 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
@@ -536,6 +536,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_loaded_applications` | List the ARX, CRX and DBX modules AutoCAD has registered, together with its own managed core assemblies (accoremgd.dll, acmgd.dll). Read-only. MEASURED LIMIT, so that a short answer is not mistaken for a broken tool: this returns what DynamicLinker.GetLoadedModules reports, which on a normal session is about 25 entries and does NOT include .NET assemblies loaded with NETLOAD - a netloaded plugin will not appear here even though it is running. `pattern` filters the list by substring. |
 | `list_system_variables` | List the system variables worth knowing, grouped by what they affect - drafting aids, current properties, text and dimensions, units, display, 3D, file state and plotting - each with its live value and type. Read-only. `pattern` filters by name or by group. IMPORTANT: this is a CURATED list, not a complete one - AutoCAD exposes no way to enumerate system variables, there being no table to walk - so treat it as a starting point rather than a boundary: any variable not listed still works with get_system_variable and set_system_variable. Every value is read live rather than remembered, so a name this build of AutoCAD does not have is counted as not present instead of being reported with a stale value. |
 | `purge_regapps` | Remove unreferenced registered application names from the drawing. Registered app names are the keys extended data is filed under, and they accumulate in a drawing that has passed through several applications. Only the UNREFERENCED ones go: Database.Purge is asked first and strikes from the candidate list everything still in use, so a name that some xdata still points at is kept - erasing one that is referenced would corrupt that xdata. ACAD is AutoCAD's own and is never offered. Reports the names purged and the ones remaining, with the counts before and after. |
+| `run_command_sequence` | Run ONE AutoCAD command with its answers, one token each - for example ["_.CIRCLE", "0,0", "10"]. Underscore-dot prefixes keep it working on a non-English AutoCAD and immune to a redefined command name. Runs in a genuine COMMAND context (rule 26 §15) via a queued [CommandMethod], NOT the application context every other tool in this bank dispatches from - Editor.Command throws from there. TWO MEASURED LIMITS, both refused rather than silently wrong: a second command chained after the first in one call is dropped without error, so only one command per call is accepted; and commands that prompt for object SELECTION (ERASE, MOVE, COPY and similar - not an exhaustive list) complete and report success while changing nothing, so the common ones are refused by name. Commands that only draw new geometry (CIRCLE, LINE, RECTANG, PLINE, ...) work reliably. Editor.Command returns VOID, so the count of model-space entities before and after is the evidence this tool can honestly report. A sequence that runs out of answers leaves AutoCAD waiting for one it will never get - this tool then TIMES OUT rather than hanging forever, and says to check the AutoCAD window, because it cannot see what is on screen. |
 | `set_system_variable` | Set one AutoCAD system variable - setvar. The value is converted to the type the variable already holds, since passing a string to an integer variable is rejected outright. The new value is READ BACK afterwards and the tool refuses if it did not change: a read-only system variable accepts the call and quietly keeps its old value, which would otherwise be indistinguishable from success. Both the previous and the new value are reported, so a change can be undone by setting the old one back. |
 
 ## acad-livestream

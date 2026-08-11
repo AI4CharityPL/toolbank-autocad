@@ -83,10 +83,12 @@
     "purge unused regapps",
     "read the value of osmode",
     "remove leftover xdata app names",
+    "run a command sequence",
     "run a command that has no tool",
     "run a script file",
     "run an autocad command with answers",
     "run autolisp code",
+    "run this autocad command with answers",
     "run this autocad script",
     "send a command sequence",
     "set a system variable",
@@ -101,6 +103,7 @@
     "turn off object snap",
     "type this command for me",
     "uruchom polecenie autocada",
+    "uruchom sekwencje polecen",
     "uruchom skrypt scr",
     "uruchom wyrazenie autolisp",
     "ustaw zmienna systemowa",
@@ -196,6 +199,24 @@
       ]
     },
     {
+      "name": "run_command_sequence",
+      "description": "Run ONE AutoCAD command with its answers, one token each - for example [\u0022_.CIRCLE\u0022, \u00220,0\u0022, \u002210\u0022]. Underscore-dot prefixes keep it working on a non-English AutoCAD and immune to a redefined command name. Runs in a genuine COMMAND context (rule 26 \u00A715) via a queued [CommandMethod], NOT the application context every other tool in this bank dispatches from - Editor.Command throws from there. TWO MEASURED LIMITS, both refused rather than silently wrong: a second command chained after the first in one call is dropped without error, so only one command per call is accepted; and commands that prompt for object SELECTION (ERASE, MOVE, COPY and similar - not an exhaustive list) complete and report success while changing nothing, so the common ones are refused by name. Commands that only draw new geometry (CIRCLE, LINE, RECTANG, PLINE, ...) work reliably. Editor.Command returns VOID, so the count of model-space entities before and after is the evidence this tool can honestly report. A sequence that runs out of answers leaves AutoCAD waiting for one it will never get - this tool then TIMES OUT rather than hanging forever, and says to check the AutoCAD window, because it cannot see what is on screen.",
+      "tags": [
+        "run",
+        "command",
+        "sequence"
+      ],
+      "intent": [
+        "run a command sequence",
+        "drive a command from the command line",
+        "uruchom sekwencje polecen",
+        "run this autocad command with answers",
+        "wykonaj sekwencje polecen",
+        "send a command sequence",
+        "type this command for me"
+      ]
+    },
+    {
       "name": "set_system_variable",
       "description": "Set one AutoCAD system variable - setvar. The value is converted to the type the variable already holds, since passing a string to an integer variable is rejected outright. The new value is READ BACK afterwards and the tool refuses if it did not change: a read-only system variable accepts the call and quietly keeps its old value, which would otherwise be indistinguishable from success. Both the previous and the new value are reported, so a change can be undone by setting the old one back.",
       "tags": [
@@ -216,7 +237,7 @@
   ],
   "metadata": {
     "category": "lisp",
-    "tool_count_target": 5,
+    "tool_count_target": 6,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -230,6 +251,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-10T18:31:20.8550668Z"
+    "last_regenerated_utc": "2026-08-11T11:14:18.1615730Z"
   }
 }

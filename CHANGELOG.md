@@ -6,6 +6,51 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`acad-lisp`'s `run_command_sequence` built, 17/17 live, bank 675 → 676.** A queued
+  `[CommandMethod]` bridge (`LispCommandBridge`) gives `Editor.Command` a genuine COMMAND
+  context — the application-context handler writes a request file, queues
+  `ACADMCP_RUNSEQ <guid>` via `Document.SendStringToExecute` (safe from application context,
+  because it only queues), and polls for the response file the command writes once its
+  synchronous, now genuinely-nested `Editor.Command` call has finished. The guid travels as a
+  queued answer to `Editor.GetString`, since `[CommandMethod]`s take no parameters. A previous
+  attempt at this (`ExecuteInCommandContextAsync`) hung AutoCAD; this avoids that mechanism
+  entirely and goes through the ordinary command queue instead.
+
+  **Two further limits were measured live and are now refusals, documented as rule 26 §22.** A
+  second command chained after the first inside one `Editor.Command` call is silently DROPPED —
+  entitiesAdded undercounts by exactly the missing command, no error — so more than one
+  command-shaped token is refused outright. A command that prompts for object SELECTION (`ERASE`
+  tried with both `"L"` and `"ALL"`) completes and reports success while changing nothing — so a
+  short, explicitly-non-exhaustive blacklist of selection-based verbs is refused by name.
+  Commands that only draw new geometry are unaffected and work reliably.
+
+  **`run_script_file` was built on the same bridge and WITHDRAWN after a second measured
+  attempt.** Even a `.scr` containing one plain `CIRCLE` drew nothing. The obvious cause —
+  `_.SCRIPT` opens its file-picker dialog unless `FILEDIA=0`, the precedent already recorded for
+  `NETLOAD` — was tried and ruled out: a captured before/after `FILEDIA` baseline confirmed the
+  fix correctly forced 0 during the call and restored the original value after, and the script
+  still did nothing. Likely the same "second round of input silently drops" limit, this time
+  inside `_.SCRIPT`'s own internal line replay rather than the outer call — a hypothesis, not a
+  measurement, so not shipped on it.
+
+  **`netload_assembly` was not attempted.** Writing its command-context fix was blocked by this
+  session's own safety classifier — dynamically loading an arbitrary DLL into the running
+  process reads as a materially different risk from queuing drawing commands, and the write was
+  refused outright. `run_command_sequence` went through once `DynamicLinker.LoadModule` was
+  dropped from the same file.
+
+- **Phase 6.1 `set_render_environment` (fog): reconnaissance completed, struck rather than
+  built.** `RenderEnvironment` compiles as a real `DBObject` with `FogEnabled`/`FogColor`, but
+  three probe rounds found no persistence route — `Database.RenderEnvironment` doesn't exist,
+  and neither does `RenderEnvironmentId` on `ViewportTableRecord` or `ViewTableRecord`, the
+  pattern that worked for `Sun`. More to the point, even a working version would be
+  unverifiable: fog is resolved by a renderer, and this bank's only image route
+  (`files.export_file`'s shaded-viewport capture) doesn't render fog at all — the same
+  "settings for a renderer that cannot be invoked" reasoning already used to strike
+  `set_render_preset`/`set_render_quality`/`set_exposure`/`list_render_history`. Also found and
+  corrected in the same pass: `Sun` was already fully shipped in `acad-lights`
+  (`get_sun_properties`/`set_sun_properties`), undercounted in the roadmap until now.
+
 - **Phase 3.5, `acad-images` (raster half) — 7 tools, 48/48 live, bank 668 → 675.**
   `attach_image`, `list_images`, `detach_image`, `clip_image`, `set_image_adjust`,
   `set_image_frame`, `set_image_path`. Probed against the compiler first: `set_image_transparency`

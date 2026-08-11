@@ -20,11 +20,17 @@ public class LispTests
         "get_system_variable", "set_system_variable", "list_system_variables",
         "purge_regapps",
 
-        // WITHDRAWN on one measured root cause: eval_lisp, load_lisp_file, list_loaded_lisp,
-        // run_command_sequence, run_script_file and netload_assembly all need a COMMAND context.
-        // Application.Invoke, Editor.Command and LoadModule each answer eInvalidInput from the
-        // APPLICATION context this plugin dispatches in. The fix is
-        // ExecuteInCommandContextAsync and an async runner - next tranche.
+        // FIXED 2026-08-11: run_command_sequence now goes through LispCommandBridge, a queued
+        // [CommandMethod] that gives Editor.Command a genuine COMMAND context instead of the
+        // APPLICATION context every other tool dispatches from.
+        "run_command_sequence",
+
+        // STILL WITHDRAWN: run_script_file was built on the same bridge but even a single
+        // CIRCLE inside a .scr draws nothing - two measured fix attempts, both wrong (see
+        // LispTools.cs). netload_assembly needs the same command-context fix but is
+        // deliberately out of this tranche - dynamic assembly loading is a different risk from
+        // queuing drawing commands. eval_lisp, load_lisp_file and list_loaded_lisp need actual
+        // LISP EVALUATION, which neither Editor.Command nor Application.Invoke provides.
 
         // define_command_alias is struck: AutoCAD exposes no API for command aliases, and the only
         // route is editing the user's global acad.pgp and reloading it with RE_INIT - a permanent

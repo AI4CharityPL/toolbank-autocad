@@ -597,6 +597,59 @@ entity sharing the first one's definition. Treat a fatal internal error as leavi
 unreliable rather than merely the one transaction — this one needed AutoCAD restarted before the
 next live run, not just the code fixed.
 
+### 22. A nested `Editor.Command` reliably runs ONE command; a second one, or a selection prompt, silently drops
+
+Rule 26 §15 proved that a genuine COMMAND context (a real `[CommandMethod]`, invoked via a queued
+`Document.SendStringToExecute`) lets `Editor.Command` work at all, where it throws `eInvalidInput`
+from the ordinary application-context dispatch every ToolBank handler runs in. That much is true.
+What §15's own isolating experiment never tested — because it only ran one `CIRCLE` — is what
+happens with more than one command, or a command with a variable-length prompt loop, INSIDE that
+same nested call. Both silently do less than asked, with no exception of any kind:
+
+```csharp
+// A: a second command chained after the first
+ed.Command("_.CIRCLE", "50,50", "5", "_.CIRCLE", "100,100", "7");
+// entitiesAdded measured as 1, not 2 - the second CIRCLE never runs. An explicit "" separator
+// between the two commands makes no difference.
+
+// B: a command that prompts for object SELECTION
+ed.Command("_.ERASE", "L", "");     // "Last" then Enter to end selection
+ed.Command("_.ERASE", "ALL", "");   // same result with "ALL"
+// entitiesAdded measured as 0 in BOTH cases - ERASE reports success and erases nothing.
+```
+
+**What does NOT explain it, measured and ruled out:** a plain single command with several
+different-typed prompts works fine nested this way — `RECTANG` (two points) and `CIRCLE 2P` (a
+keyword answer, "2P", followed by two points) both completed correctly. So the limit is not
+"nesting breaks multi-prompt commands" in general; it is specifically a SECOND command, or a
+prompt that REPEATS until a terminator (`ERASE`'s "Select objects:" loops until an empty answer)
+that gets lost.
+
+**The working hypothesis, not yet confirmed:** the queued `SendStringToExecute` call only primes
+enough of AutoCAD's input machinery for one command's fixed-length prompt sequence to resolve
+inside the nested call; anything needing another round — a second command, or a repeating
+selection prompt — has nothing left to consume and silently returns as if it had been answered
+with nothing. This would also explain why `run_script_file`, built on the identical bridge, ran a
+`.scr` containing one plain `CIRCLE` and drew nothing (§below) — `_.SCRIPT` itself is a second
+layer of command dispatch on top of the outer `[CommandMethod]`.
+
+**Practical rule for anything built on this bridge:** treat it as sound for exactly one
+NEW-GEOMETRY command per call — `CIRCLE`, `LINE`, `RECTANG`, `PLINE`, and similar. Refuse, don't
+guess, on (a) more than one command-shaped token in the sequence, and (b) any command from a
+short blacklist of known selection-prompting verbs (`ERASE`, `MOVE`, `COPY`, `ROTATE`, `SCALE`,
+`MIRROR`, `ARRAY`, `TRIM`, `EXTEND`, `FILLET`, `CHAMFER`, `EXPLODE`, `STRETCH`, `BREAK`, `JOIN`,
+`CHPROP`, `CHANGE`, `HATCH`, `LENGTHEN`, `MATCHPROP`) — not exhaustive, but the ones most likely
+to be reached for, and a false "success" here is worse than a refusal. `acad-lisp`'s
+`run_command_sequence` does both.
+
+**`run_script_file` was withdrawn on this same trap, after a second measured attempt.** The
+obvious alternate cause — `_.SCRIPT` opening the "Select Script File" dialog even when given a
+path directly, unless `FILEDIA` is 0 (the precedent already recorded for `NETLOAD`) — was tried:
+`FILEDIA` was forced to 0 for the call and confirmed, via a captured before/after baseline, to be
+correctly restored afterward. The script still drew nothing. Two measured attempts, two different
+explanations tried, both wrong reasons ruled out rather than one guess accepted — which is why
+this is withdrawn rather than shipped on the theory that the fix probably worked.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

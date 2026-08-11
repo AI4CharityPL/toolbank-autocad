@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **675 tools in 48 categories**. The product language is **English**; every tool
+pipe. There are **676 tools in 48 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -147,13 +147,26 @@ Practical rules that follow:
 
 ## 7. What is left
 
-**675 built.** Roughly 50 identified as remaining, and most of it is gated rather than hard.
+**676 built.** Roughly 50 identified as remaining, and most of it is gated rather than hard.
 
 **2026-08-11: `acad-images` (raster half) built, 7 tools, 48/48 live.** `attach_image`,
 `list_images`, `detach_image`, `clip_image`, `set_image_adjust`, `set_image_frame`,
 `set_image_path`. `set_image_transparency` and `reorder_image_draworder` struck — see
 KNOWN-GAPS §B and rule 26 §20-21 for two real defects found and fixed live (a squared aspect-ratio
 bug, and a fatal `AssociateRasterDef`/`ForRead` crash that needed an AutoCAD restart mid-session).
+
+**2026-08-11: `acad-lisp`'s `run_command_sequence` built, 17/17 live**, via a queued
+`[CommandMethod]` bridge that gives `Editor.Command` a genuine command context (rule 26 §15/§22).
+`run_script_file` was built on the same bridge and withdrawn after two measured fix attempts —
+see rule 26 §22. `netload_assembly` was not attempted: writing it was blocked by this session's
+own safety classifier (dynamic DLL loading reads as a different risk class from queuing drawing
+commands) — needs the user's explicit go-ahead to revisit. `eval_lisp`/`load_lisp_file`/
+`list_loaded_lisp` still need actual LISP evaluation, unbuilt.
+
+**2026-08-11: 6.1 `set_render_environment` (fog) reconnaissance completed and struck**, not
+pending — see KNOWN-GAPS §B. `RenderEnvironment` has no found persistence route, and even a
+working one would be unverifiable: nothing this bank can produce renders fog. Sun turned out to
+already be shipped (`acad-lights`), undercounted in this doc until this pass found it.
 
 ### Buildable now — nothing blocking
 
@@ -214,7 +227,7 @@ reason before resurrecting any of them.**
 * `pre-commit.ps1 -All` → **0 errors**, 114 items
 * `dotnet test` → **265 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 48 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **675 tools**
+* 48 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **676 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

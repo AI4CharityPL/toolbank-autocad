@@ -933,7 +933,7 @@ one cloud, not a good one.
 
 ## Phase 5 — Data, extensibility, escape hatches (≈65 → **61** after review)
 
-### 5.1 `acad-lisp` (≈12 → **5 built, 1 struck, 6 blocked on a command context**)
+### 5.1 `acad-lisp` (≈12 → **6 built, 1 struck, 1 withdrawn, 4 blocked on a command context or LISP evaluation**)
 
 ```
 eval_lisp                   load_lisp_file             list_loaded_lisp
@@ -994,6 +994,29 @@ The six therefore split rather than standing together:
 That also corrects the earlier note here: the transaction was never the culprit, and the hang that
 forced a process kill was self-inflicted by feeding LISP to `Editor.Command`, not a defect in
 `ExecuteInCommandContextAsync`.
+
+**`run_command_sequence` BUILT 2026-08-11, 17/17 live.** The command route the paragraph above
+proved works — a queued `[CommandMethod]` via `Document.SendStringToExecute`, not
+`ExecuteInCommandContextAsync` — became `LispCommandBridge`: the application-context handler
+writes a request file, queues `ACADMCP_RUNSEQ <guid>` (the guid arrives as a queued answer to
+`Editor.GetString`, since `[CommandMethod]`s take no parameters), and polls for the response file
+the command writes once its genuinely-nested `Editor.Command` call has finished. Two further
+limits surfaced live and are now refusals rather than silent wrong answers, documented in full as
+rule 26 §22: a second command chained after the first in one call is dropped without error, and a
+command that prompts for object SELECTION (`ERASE` with both `"L"` and `"ALL"`) completes and
+reports success while changing nothing. Commands that only draw new geometry are unaffected.
+
+**`run_script_file` was ALSO built on the bridge and WITHDRAWN**, not shipped — see KNOWN-GAPS §B
+and rule 26 §22. Even a single `CIRCLE` inside a `.scr` drew nothing; the `_.NETLOAD`-style
+`FILEDIA=0` fix (this section's own suggestion below) was tried, measured to have taken effect
+correctly via a captured before/after baseline, and did not fix it. Two measured attempts is
+enough to withdraw rather than guess a third.
+
+**`netload_assembly` was not attempted** — writing the command-context fix for it was blocked by
+this session's own safety classifier, which read dynamic DLL loading as a materially different
+risk from queuing drawing commands. `run_command_sequence` alone was accepted once the
+`DynamicLinker.LoadModule` code was dropped from the same file. Needs the user's explicit
+go-ahead to revisit.
 
 **`list_loaded_applications` documents a measured limit rather than glossing it.**
 `GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does
@@ -1316,13 +1339,28 @@ The check that caught it was the most trivial-looking line in the script.
 
 **Remaining in 6.1: the sun and environment (buildable), and the renderers (mostly struck).**
 
-**Sun and environment are ready to build, 3–4 tools.** `Sun` carries `IsOn`, `Intensity`,
-`DateTime`, `SkyParameters` and `ShadowParameters`, and a sun is attached through
-**`ViewportTableRecord.SetSun(sun)`** with `SunId` on both `ViewportTableRecord` and
-`ViewTableRecord` — so a sun belongs to a VIEWPORT or VIEW, not to the drawing, and
-`set_sun_properties` has to take one. `RenderEnvironment` is constructible with `FogEnabled` and
-`FogColor`. Absent: `Sun.Color`, `Sun.DaylightSavingsTime`, `Sun.SetDatabaseDefaults`, and
+**Sun: BUILT.** `Sun` carries `IsOn`, `Intensity`, `DateTime`, `SkyParameters` and
+`ShadowParameters`, and a sun is attached through **`ViewportTableRecord.SetSun(sun)`** with
+`SunId` on both `ViewportTableRecord` and `ViewTableRecord` — so a sun belongs to a VIEWPORT or
+VIEW, not to the drawing. `get_sun_properties`/`set_sun_properties` shipped with `acad-lights`
+(this section undercounted the category for a while — it reads 6 tools above and has shipped 8
+since). Absent: `Sun.Color`, `Sun.DaylightSavingsTime`, `Sun.SetDatabaseDefaults`, and
 `SkyParameters` is not in `DatabaseServices`.
+
+**Environment (fog): reconnaissance completed 2026-08-11, and struck rather than built.**
+`RenderEnvironment` compiles as a real `DBObject` with `FogEnabled` and `FogColor` — genuinely
+more than the earlier note here implied, since it means the type is persistable in principle. But
+finding WHERE it persists took three probe rounds and came up empty: `Database.RenderEnvironment`
+does not exist, and neither does `RenderEnvironmentId` on `ViewportTableRecord` or
+`ViewTableRecord`, which is where `Sun` lives — the same shape that worked for Sun does not work
+here. More importantly, the reachability question turned out not to be the one that mattered.
+**Fog is a property a RENDERER resolves, and this bank's only image route -
+`files.export_file`'s shaded-viewport capture via `View.GetSnapShot` - does not render fog at
+all**, the same way it does not resolve materials or shadows photorealistically. Even a working
+`set_render_environment` would set a value nothing here could ever be shown to affect - the exact
+"settings for a renderer that cannot be invoked are settings for nothing" reasoning already used
+to strike `set_render_preset`/`set_render_quality`/`set_exposure`/`list_render_history` below.
+Struck for the same reason, not left pending.
 
 **THE RENDERER QUESTION IS SETTLED, and the answer strikes most of the six.** Asked before
 building rather than after, which is what 5.1 taught:
@@ -1345,12 +1383,10 @@ is blocked on the command context. `set_render_preset`, `set_render_quality`, `s
 `list_render_history` follow the same fate — settings for a renderer that cannot be invoked are
 settings for nothing.
 
-**Realistic remaining scope for 6.1 is therefore the sun and environment**, which takes the phase
-to about 16 of 26 with the rest struck on recorded grounds rather than pending.
-
-**Suggested split for the next session:** materials first (8 tools, no open questions, verifiable
-by reading assignments back), then lights (7, after one probe for the light-type enum), then the
-sun and environment, and the renderers LAST and only once the command-context question is answered.
+**6.1 is now complete at 14 of 26** — materials (6), lights (6) and sun (2, inside `acad-lights`)
+built and verified; environment (fog) and the renderers all struck on recorded grounds, not
+pending. Nothing remains buildable in this phase without the command-context question (renderers)
+or a texture/`.ies`/`.adsklib` file (material maps, web lights) being answered first.
 
 ### 6.2 `acad-animation` (≈14)
 
@@ -1464,9 +1500,9 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **69** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half) built 2026-08-11, 7 tools |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **44** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
-| 6 | Visualisation — render, animation | 40 → **26** | **14** | 6.2 has no managed API; 6.1 materials, lights AND sun done (`get_sun_properties`/`set_sun_properties` ship in `acad-lights`, undercounted here until now), environment and renderers outstanding |
-| | **Total** | **813** | **675** | **83 %** |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **45** | 5 struck: data extraction is a wizard, property sets are AEC-only; `run_command_sequence` built 2026-08-11 (command-context bridge, rule 26 §22); `run_script_file` withdrawn on the same trap; `netload_assembly` not attempted (blocked by the safety classifier, not the API); `eval_lisp`/`load_lisp_file`/`list_loaded_lisp` still need LISP evaluation |
+| 6 | Visualisation — render, animation | 40 → **26** | **14** | **6.1 complete** — materials, lights and sun done (`get_sun_properties`/`set_sun_properties` ship in `acad-lights`, undercounted here until now); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
+| | **Total** | **813** | **676** | **83 %** |
 
 **Built column refreshed 2026-08-11.** Counted from `toolbank-manifests/` directly (48 manifests
 summed via `pre-commit.ps1`), not from this table's own arithmetic — the table had drifted to 666

@@ -9,15 +9,35 @@
 // permanent change to the AutoCAD installation rather than to a drawing, so it is out of scope for
 // this bank rather than merely unbuilt.
 //
-// SIX MORE ARE WITHDRAWN, all on ONE measured root cause - eval_lisp, load_lisp_file,
-// list_loaded_lisp, run_command_sequence, run_script_file and netload_assembly. Application.Invoke,
-// Editor.Command and DynamicLinker.LoadModule all answer eInvalidInput when called from where this
-// plugin dispatches. They require a COMMAND context; the plugin runs in APPLICATION context, on the
-// UI thread inside a document lock and an open transaction. This is not a naming problem and not
-// fixable by trying a different LISP form - it was tried three ways and failed identically each
-// time. The documented fix is DocumentCollection.ExecuteInCommandContextAsync, which needs an async
-// runner this plugin does not yet have, and that is the next tranche. The plugin handlers stay
-// registered so the finding stays reproducible; they are simply not offered in the bank.
+// ONE IS FIXED, 2026-08-11: run_command_sequence now goes through LispCommandBridge - a real
+// [CommandMethod] queued via Document.SendStringToExecute (safe from application context, because
+// it only queues) that writes its result to a file once it has run SYNCHRONOUSLY in a genuine
+// COMMAND context. ExecuteInCommandContextAsync, the fix rule 26 §15 originally pointed at, was
+// tried separately and HUNG AutoCAD; this bridge avoids it entirely. Two further limits were
+// MEASURED live rather than assumed and are now refusals, not silent wrong answers: a second
+// command chained after the first in one call is dropped without error, and a command that
+// prompts for object SELECTION (ERASE, MOVE, ...) completes and reports success while changing
+// nothing. See the tool's own description and rule 26 §22.
+//
+// run_script_file was ALSO built on the same bridge and WITHDRAWN, 2026-08-11: even a single
+// CIRCLE inside a .scr ran through _.SCRIPT reports entitiesAdded=0 - nothing is drawn. Two
+// measured attempts, both wrong: the obvious cause (SCRIPT opens a file-picker dialog unless
+// FILEDIA=0) was tried and confirmed NOT to be it - FILEDIA is forced to 0 and correctly restored
+// afterward, and the script still does nothing. The likely cause is the same "only one command's
+// worth of input survives nesting" limit that dropped a second chained command in
+// run_command_sequence, this time inside SCRIPT's own internal line-by-line replay rather than
+// at the outer Editor.Command call - but that is a hypothesis, not a measurement, and shipping a
+// script runner that silently runs nothing is exactly the failure this bank exists to refuse.
+//
+// FOUR REMAIN WITHDRAWN. netload_assembly needs the same command-context fix as
+// run_command_sequence but is deliberately not attempted in this tranche - dynamic assembly
+// loading is a materially different risk from queuing drawing commands. eval_lisp,
+// load_lisp_file and list_loaded_lisp need actual LISP EVALUATION, which neither Editor.Command
+// (tokenises command input; a parenthesised expression is invalid to it) nor Application.Invoke
+// (unusable from this plugin in any context) provides - the remaining candidate is
+// SendStringToExecute with the expression wrapped to write its value to a file, unbuilt. The
+// plugin handlers for all five stay registered so each finding stays reproducible; they are
+// simply not offered in the bank.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,4 +95,16 @@ public static class LispTools
         RequiresPlugin = true)]
     public static Task<LispPurgeResult> PurgeRegapps(IPluginGateway gw, LispPurgeArgs args, CancellationToken ct)
         => LispProxy.CallAsync<LispPurgeArgs, LispPurgeResult>(gw, "acad.lisp.purge_regapps", args, T_NORMAL, ct);
+
+    [McpTool("run_command_sequence", "Run ONE AutoCAD command with its answers, one token each - for example [\"_.CIRCLE\", \"0,0\", \"10\"]. Underscore-dot prefixes keep it working on a non-English AutoCAD and immune to a redefined command name. Runs in a genuine COMMAND context (rule 26 §15) via a queued [CommandMethod], NOT the application context every other tool in this bank dispatches from - Editor.Command throws from there. TWO MEASURED LIMITS, both refused rather than silently wrong: a second command chained after the first in one call is dropped without error, so only one command per call is accepted; and commands that prompt for object SELECTION (ERASE, MOVE, COPY and similar - not an exhaustive list) complete and report success while changing nothing, so the common ones are refused by name. Commands that only draw new geometry (CIRCLE, LINE, RECTANG, PLINE, ...) work reliably. Editor.Command returns VOID, so the count of model-space entities before and after is the evidence this tool can honestly report. A sequence that runs out of answers leaves AutoCAD waiting for one it will never get - this tool then TIMES OUT rather than hanging forever, and says to check the AutoCAD window, because it cannot see what is on screen.", "lisp",
+        Intent = new[] { "run a command sequence", "drive a command from the command line",
+                         "uruchom sekwencje polecen", "run this autocad command with answers",
+                         "wykonaj sekwencje polecen", "send a command sequence",
+                         "type this command for me" },
+        RequiresPlugin = true)]
+    public static Task<LispCommandResult> RunCommandSequence(IPluginGateway gw, LispCommandArgs args, CancellationToken ct)
+        => LispProxy.CallAsync<LispCommandArgs, LispCommandResult>(gw, "acad.lisp.run_command_sequence", args, T_SLOW, ct);
+
+    // run_script_file is WITHDRAWN - see the header comment. Two measured fix attempts, both
+    // wrong; not exposed here, matching eval_lisp/load_lisp_file/list_loaded_lisp/netload_assembly.
 }

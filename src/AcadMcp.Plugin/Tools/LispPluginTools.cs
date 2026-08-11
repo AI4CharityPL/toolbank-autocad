@@ -41,6 +41,15 @@ internal static class LispPluginTools
         DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
     };
 
+    // Not exhaustive - see the refusal message in RunCommandSequence for why these specific
+    // verbs are refused rather than guessed at further.
+    private static readonly HashSet<string> SelectionBasedCommands = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ERASE", "MOVE", "COPY", "ROTATE", "SCALE", "MIRROR", "ARRAY", "TRIM", "EXTEND",
+        "FILLET", "CHAMFER", "EXPLODE", "STRETCH", "BREAK", "JOIN", "CHPROP", "CHANGE",
+        "HATCH", "LENGTHEN", "MATCHPROP",
+    };
+
     public static void Register(ToolHost host)
     {
         host.Register("acad.lisp.eval_lisp",                EvalLisp);
@@ -377,86 +386,111 @@ internal static class LispPluginTools
 
     // ─────────── commands and scripts ───────────
 
-    private static Task<ToolDispatchResult> RunCommandSequence(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.run_command_sequence", args, ct, (doc, db, tr) =>
+    // MEASURED (rule 26 §15): Editor.Command throws eInvalidInput from THIS dispatch context
+    // (application, not command) - direct calls here are what got these two withdrawn the first
+    // time. Both now go through LispCommandBridge, which queues a real [CommandMethod] via
+    // SendStringToExecute and waits for the response FILE it writes from genuine command context.
+    private static async Task<ToolDispatchResult> RunCommandSequence(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.run_command_sequence";
+        var a = Read<LispCommandArgsDto>(args);
+        if (a.Tokens is null || a.Tokens.Count == 0)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "tokens is required: the command and its answers, one element each - for example " +
+                "[\"_.CIRCLE\", \"0,0\", \"10\"]. Underscore-dot prefixes keep it working on a " +
+                "non-English AutoCAD and immune to a redefined command."));
+
+        // MEASURED live, 2026-08-11: a SECOND command chained after the first inside one
+        // Editor.Command call is silently DROPPED rather than run - no error, entitiesAdded
+        // undercounts by exactly the missing command. Refused rather than shipped as a false
+        // success; call this tool once per command instead.
+        var cmdTokens = a.Tokens.Where(t => t.StartsWith("_.", StringComparison.Ordinal)).ToList();
+        if (cmdTokens.Count > 1)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "This looks like " + cmdTokens.Count + " separate commands in one call (" +
+                string.Join(", ", cmdTokens) + "). MEASURED: a second command chained after the " +
+                "first is silently dropped rather than run, with no error - call " +
+                "run_command_sequence once per command instead."));
+
+        // MEASURED live, 2026-08-11: a command that prompts for object SELECTION (ERASE with
+        // both "L" and "ALL" tested) completes and reports success while selecting and changing
+        // NOTHING - no exception, entitiesAdded correctly stays 0 because nothing happened, which
+        // is indistinguishable from a legitimate no-op edit. This list is not exhaustive - it is
+        // the common verbs most likely to be reached for, refused because a false "success" here
+        // is worse than an absent tool. Commands that only draw NEW geometry are unaffected.
+        var firstCmd = a.Tokens[0].TrimStart('_', '.', '*').Trim().ToUpperInvariant();
+        if (SelectionBasedCommands.Contains(firstCmd))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "'" + firstCmd + "' prompts for object selection. MEASURED live: a selection " +
+                "prompt (tried with both \"L\" and \"ALL\") does not work through this route - " +
+                "the command completes and reports success while selecting and changing nothing, " +
+                "with no error of any kind - so it is refused here rather than reported as a " +
+                "false success. Commands that only draw new geometry (CIRCLE, LINE, RECTANG, " +
+                "PLINE, ...) are unaffected and work reliably."));
+
+        var req = new JsonObject { ["tokens"] = new JsonArray(a.Tokens.Select(t => (JsonNode)t!).ToArray()) };
+        var result = await LispCommandBridge.RunAsync("ACADMCP_RUNSEQ", req, 20_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        var resp = result.Response!;
+        if (resp["ok"]?.GetValue<bool>() != true)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "The command sequence failed at AutoCAD with " + resp["error"] +
+                ". A sequence that runs out of answers leaves the command waiting, so check the " +
+                "token list is complete; a modal dialog cannot be answered this way at all."));
+
+        return new ToolDispatchResult(true, Wrap(new
         {
-            var a = Read<LispCommandArgsDto>(args);
-            if (a.Tokens is null || a.Tokens.Count == 0)
-                throw new ArgumentException(
-                    "tokens is required: the command and its answers, one element each - for " +
-                    "example [\"_.CIRCLE\", \"0,0\", \"10\"]. Underscore-dot prefixes keep it " +
-                    "working on a non-English AutoCAD and immune to a redefined command.");
+            tokens = a.Tokens,
+            entitiesBefore = resp["entitiesBefore"]!.GetValue<int>(),
+            entitiesAfter = resp["entitiesAfter"]!.GetValue<int>(),
+            entitiesAdded = resp["entitiesAdded"]!.GetValue<int>(),
+            note = "Run through a genuine COMMAND context via SendStringToExecute + a " +
+                   "[CommandMethod], because Editor.Command throws from an ordinary tool handler " +
+                   "(rule 26 §15). Editor.Command itself returns VOID, so the count of " +
+                   "model-space entities before and after is the evidence this tool can " +
+                   "honestly offer - a sequence that changes existing objects rather than " +
+                   "adding any will correctly report 0 added; check such edits by reading the " +
+                   "objects back.",
+        }), null);
+    }
 
-            int before = CountModelSpace(db, tr);
-            var ed = doc.Editor;
-            var boxed = a.Tokens.Cast<object>().ToArray();
-            try
-            {
-                // SYNCHRONOUS: this returns when the command has finished, unlike
-                // SendStringToExecute which returns immediately and leaves nothing to observe.
-                ed.Command(boxed);
-            }
-            catch (AcadRt.Exception ex)
-            {
-                throw new ArgumentException(
-                    "The command sequence failed at AutoCAD with " + ex.ErrorStatus +
-                    ". A sequence that runs out of answers leaves the command waiting, so check " +
-                    "the token list is complete; a modal dialog cannot be answered this way at all.");
-            }
-            int after = CountModelSpace(db, tr);
+    private static async Task<ToolDispatchResult> RunScriptFile(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.run_script_file";
+        var a = Read<LispLoadArgsDto>(args);
+        if (string.IsNullOrWhiteSpace(a.Path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "path is required: the .scr script file to run."));
+        var path = Path.GetFullPath(a.Path!);
+        if (!File.Exists(path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException("No file at " + path + "."));
 
-            return Wrap(new
-            {
-                tokens = a.Tokens,
-                entitiesBefore = before,
-                entitiesAfter = after,
-                entitiesAdded = after - before,
-                note = "Editor.Command returns VOID - AutoCAD does not say whether a command " +
-                       "sequence achieved anything - so the count of model-space entities before " +
-                       "and after is measured here instead, and that is the only evidence this " +
-                       "tool can honestly offer. A sequence that changes existing objects rather " +
-                       "than adding any will correctly report 0 added; check such edits by " +
-                       "reading the objects back. This runs synchronously, so by the time you " +
-                       "read this the command has finished.",
-            });
-        });
+        var req = new JsonObject { ["path"] = path };
+        var result = await LispCommandBridge.RunAsync("ACADMCP_RUNSCRIPT", req, 20_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        var resp = result.Response!;
+        if (resp["ok"]?.GetValue<bool>() != true)
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "AutoCAD refused to run the script with " + resp["error"] +
+                ". A .scr is a list of command-line input, so a line that leaves a command " +
+                "waiting for an answer stalls the rest of the file."));
 
-    private static Task<ToolDispatchResult> RunScriptFile(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.run_script_file", args, ct, (doc, db, tr) =>
+        return new ToolDispatchResult(true, Wrap(new
         {
-            var a = Read<LispLoadArgsDto>(args);
-            if (string.IsNullOrWhiteSpace(a.Path))
-                throw new ArgumentException("path is required: the .scr script file to run.");
-            var path = Path.GetFullPath(a.Path!);
-            if (!File.Exists(path))
-                throw new ArgumentException("No file at " + path + ".");
-
-            int before = CountModelSpace(db, tr);
-            try
-            {
-                doc.Editor.Command("_.SCRIPT", path);
-            }
-            catch (AcadRt.Exception ex)
-            {
-                throw new ArgumentException(
-                    "AutoCAD refused to run the script with " + ex.ErrorStatus +
-                    ". A .scr is a list of command-line input, so a line that leaves a command " +
-                    "waiting for an answer stalls the rest of the file.");
-            }
-            int after = CountModelSpace(db, tr);
-
-            return Wrap(new
-            {
-                path,
-                entitiesBefore = before,
-                entitiesAfter = after,
-                entitiesAdded = after - before,
-                note = "Run through _.SCRIPT with Editor.Command, which returns when the script " +
-                       "is finished - NOT through SendStringToExecute, which would queue it and " +
-                       "leave nothing to report. As with run_command_sequence the entity count is " +
-                       "the evidence, because AutoCAD returns no status of its own.",
-            });
-        });
+            path,
+            entitiesBefore = resp["entitiesBefore"]!.GetValue<int>(),
+            entitiesAfter = resp["entitiesAfter"]!.GetValue<int>(),
+            entitiesAdded = resp["entitiesAdded"]!.GetValue<int>(),
+            note = "Run through _.SCRIPT inside a genuine COMMAND context (rule 26 §15) via the " +
+                   "same bridge as run_command_sequence - NOT through a bare SendStringToExecute, " +
+                   "which would queue it and leave nothing to report. The entity count is the " +
+                   "evidence, because AutoCAD returns no status of its own.",
+        }), null);
+    }
 
     private static int CountModelSpace(Database db, Transaction tr)
     {

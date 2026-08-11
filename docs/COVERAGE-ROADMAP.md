@@ -1184,7 +1184,7 @@ property is an `ObjectId` pointing at a background object, and what creates one 
 
 Lowest priority for a production-drawing agent; highest for anything client-facing.
 
-### 6.1 `acad-render` (≈26)
+### 6.1 `acad-render` (≈26) — asked of the compiler 2026-08-11, two rounds
 
 ```
 create_material             modify_material            assign_material
@@ -1197,6 +1197,44 @@ set_geographic_sun          render_view                render_region
 render_to_file              set_render_preset          set_render_quality
 set_exposure                set_shadow_display         list_render_history
 ```
+
+**Reconnaissance, so the next session starts with the expensive part paid for.**
+
+**Materials are the cleanest part and could be built today.** Present: `Database.MaterialDictionaryId`
+and a `Material` with `Name`, `Description`, `Diffuse`, `Specular`, `Reflection`, `Opacity`,
+`Bump`, `Refraction`, `SelfIllumination`, `Translucence`, `Mode`, `IlluminationModel` and
+`ChannelFlags`; and `Entity.MaterialId` is settable with `Entity.Material` to read it back — which
+makes `assign_material` verifiable the way this project likes, by reading the assignment off the
+entity through a different property from the one that wrote it. **`Material.Shininess` does NOT
+exist**; shininess lives inside the `Specular` channel.
+
+**Lights are buildable with two naming corrections.** Present: `Light` with `Name`, `Position`,
+`TargetLocation`, `Intensity`, `LightColor`, `HasTarget`, `PhysicalIntensity`,
+`PhysicalIntensityMethod`, `Attenuation`, `LampColorType`, `LampColorTemp`, and **`IsOn`** — not
+`On`, which does not exist. `HotspotAngle` and `FalloffAngle` are **READ-ONLY** and are set
+together through **`SetHotspotAndFalloff(hotspot, falloff)`**, which is the only route. `LightType`
+exists but the enum naming it is neither `DrawableType` nor `DrawableLightType`; one more probe
+will name it. Absent: `ShadowDisplay`, `ShadowParameters`, `LampColorRgb`.
+
+**The sun does not hang off the Database.** `Database.SunId` does not exist, and neither does
+`Database.GetSun()`. `Sun` itself is present with `IsOn` (again not `On`), `Intensity`, `DateTime`
+and `SkyParameters` — and phase 5.4's probe found **`ViewTableRecord.SunId`**, so a sun belongs to
+a VIEW rather than to the drawing. That is worth knowing before writing `set_sun_properties`,
+which the roadmap implicitly assumed was drawing-wide.
+
+**Rendering itself is the open question, and it is the one to settle first.** The types
+`RenderGlobal`, `RenderEnvironment` and `RenderSettings` exist, but `MentalRayRenderSettings` does
+not, and none of `Database.RenderSettingsDictionaryId`, `RenderGlobalDictionaryId` or
+`RenderEnvironmentDictionaryId` exists — so the settings are reached through the named objects
+dictionary, not through named properties. More importantly, **producing an image may need the
+RENDER command**, and rule 26 §15 says `Editor.Command` does not work from where this plugin
+dispatches. Settle that with one cheap experiment before building `render_view`, `render_region`
+or `render_to_file`: the mistake to avoid is building the whole category and discovering the six
+tools that justify it cannot run, which is exactly what happened in 5.1.
+
+**Suggested split for the next session:** materials first (8 tools, no open questions, verifiable
+by reading assignments back), then lights (7, after one probe for the light-type enum), then the
+sun and environment, and the renderers LAST and only once the command-context question is answered.
 
 ### 6.2 `acad-animation` (≈14)
 

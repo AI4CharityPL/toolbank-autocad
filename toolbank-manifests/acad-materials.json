@@ -1,0 +1,191 @@
+{
+  "id": "acad-materials",
+  "name": "acad-materials",
+  "description": "Render materials: creating them, changing their colours and finish, listing them, and putting them on and off entities. A material carries a DIFFUSE colour (the base colour), a SPECULAR colour with a gloss from 0 (matt) to 1 (mirror-sharp), and an opacity from 0 (clear) to 1 (solid). MEASURED and worth knowing because it is the property everyone reaches for first: there is no Material.Shininess in the AutoCAD API - shininess is the GLOSS of the specular component. Assignments are confirmed by reading the entity's material NAME back, a different property from the id that was written. 'No material' is not a null state but the ByLayer material, which is what unassign_material sets. Texture maps and material libraries are not here yet: they need a texture file and an .adsklib to be verifiable, and this bank does not ship what it cannot demonstrate.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-materials.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "assign",
+    "autocad",
+    "cad",
+    "create",
+    "delete",
+    "dwg",
+    "list",
+    "material",
+    "materials",
+    "modify",
+    "unassign"
+  ],
+  "intent_examples": [
+    "add a material to the drawing",
+    "adjust material opacity",
+    "apply a material to an entity",
+    "assign this material to these objects",
+    "change this material",
+    "clean up materials",
+    "clear the material assignment",
+    "create a material",
+    "define a new render material",
+    "delete this material",
+    "edit a material's colour",
+    "find a material by name",
+    "get rid of an unused material",
+    "give these solids a material",
+    "jakie materialy sa w rysunku",
+    "list the materials",
+    "lista materialow",
+    "make a glass material",
+    "make a red shiny material",
+    "make the material shinier",
+    "modyfikuj material w rysunku",
+    "nadaj material encjom rysunku",
+    "odlacz material od encji",
+    "paint these with a material",
+    "przypisz material do obiektow",
+    "purge a material",
+    "remove a material from the drawing",
+    "remove the material from these objects",
+    "reset material to bylayer",
+    "set the material on this object",
+    "set these back to no material",
+    "show all render materials",
+    "skasuj material",
+    "stworz material dla rysunku",
+    "unassign a material",
+    "update material properties",
+    "usun material z obiektow",
+    "usun material z rysunku",
+    "utworz material",
+    "what materials are in this drawing",
+    "which materials exist",
+    "zmien material"
+  ],
+  "tools_summary": [
+    {
+      "name": "assign_material",
+      "description": "Put a material onto one or more entities. Confirmed by reading Entity.Material - the NAME - back afterwards, which is a DIFFERENT property from the MaterialId that was written, so an assignment that did not take cannot look like one that did. Each entity's previous material is reported, so the change can be undone; unassign_material puts them back to ByLayer.",
+      "tags": [
+        "assign",
+        "material"
+      ],
+      "intent": [
+        "assign this material to these objects",
+        "apply a material to an entity",
+        "przypisz material do obiektow",
+        "give these solids a material",
+        "nadaj material encjom rysunku",
+        "set the material on this object",
+        "paint these with a material"
+      ]
+    },
+    {
+      "name": "create_material",
+      "description": "Create a render material: a diffuse colour (the base colour), a specular colour with a gloss from 0 (matt) to 1 (mirror-sharp), and an opacity from 0 (clear) to 1 (solid). A material is not attached to anything until assign_material puts it on an entity. NOTE the property most people reach for first does not exist: there is no Material.Shininess in the AutoCAD API - shininess is the GLOSS of the specular component, which is what this tool's `gloss` sets. Refuses a name already in use, because replacing a material silently would restyle every object already using it. Read back through a fresh dictionary lookup after creation.",
+      "tags": [
+        "create",
+        "material"
+      ],
+      "intent": [
+        "create a material",
+        "make a red shiny material",
+        "utworz material",
+        "define a new render material",
+        "stworz material dla rysunku",
+        "add a material to the drawing",
+        "make a glass material"
+      ]
+    },
+    {
+      "name": "delete_material",
+      "description": "Delete a material from the drawing. REFUSES when entities are still using it, listing their handles, because deleting would leave them pointing at a material that is gone - unassign them first, or pass `force` if that is really what you mean. AutoCAD's own Global, ByLayer and ByBlock materials are refused outright: they are what an entity falls back to when nothing else is assigned. Removed from the dictionary AND erased, since removing the name alone would leave an orphan in the drawing.",
+      "tags": [
+        "delete",
+        "material"
+      ],
+      "intent": [
+        "delete this material",
+        "remove a material from the drawing",
+        "usun material z rysunku",
+        "get rid of an unused material",
+        "skasuj material",
+        "clean up materials",
+        "purge a material"
+      ]
+    },
+    {
+      "name": "list_materials",
+      "description": "List the materials in the drawing with their diffuse and specular colours, gloss and opacity. Read-only. Every drawing has a material called Global, plus ByLayer and ByBlock, which are what an entity uses when nothing else is assigned - so a small count is an empty drawing rather than a broken tool. gloss comes from the specular component, there being no Material.Shininess in the API.",
+      "tags": [
+        "list",
+        "materials"
+      ],
+      "intent": [
+        "list the materials",
+        "what materials are in this drawing",
+        "lista materialow",
+        "show all render materials",
+        "jakie materialy sa w rysunku",
+        "find a material by name",
+        "which materials exist"
+      ]
+    },
+    {
+      "name": "modify_material",
+      "description": "Change a material's colours, gloss, opacity or description. Only the channels named are touched; the rest are rebuilt from what was already there, because each channel is a struct that has to be written back whole. IMPORTANT: every object already using this material changes appearance with it - that is what a material is for, and worth knowing before editing a shared one. The previous values are reported so a change can be undone, and the new ones are read back rather than echoed.",
+      "tags": [
+        "modify",
+        "material"
+      ],
+      "intent": [
+        "change this material",
+        "make the material shinier",
+        "zmien material",
+        "edit a material's colour",
+        "modyfikuj material w rysunku",
+        "adjust material opacity",
+        "update material properties"
+      ]
+    },
+    {
+      "name": "unassign_material",
+      "description": "Clear the material from entities, setting them back to ByLayer - which is what 'no material' means in AutoCAD. There is no null state, and clearing the id outright would leave the entity in a condition AutoCAD does not expect, which is why this sets ByLayer rather than nothing. The material itself is untouched and still in the drawing; delete_material is what removes it.",
+      "tags": [
+        "unassign",
+        "material"
+      ],
+      "intent": [
+        "remove the material from these objects",
+        "clear the material assignment",
+        "usun material z obiektow",
+        "set these back to no material",
+        "odlacz material od encji",
+        "reset material to bylayer",
+        "unassign a material"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "materials",
+    "tool_count_target": 6,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-11T08:44:12.9889339Z"
+  }
+}

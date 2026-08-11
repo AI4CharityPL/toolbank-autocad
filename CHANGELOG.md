@@ -77,6 +77,32 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 6.1, first tranche — `acad-materials`, 6 tools, 37/37 first run.** New category, bank
+  654 → 660. `create_material`, `modify_material`, `list_materials`, `assign_material`,
+  `unassign_material`, `delete_material`.
+
+  **Three API surprises, all caught by probing before writing.** Every material CHANNEL is a
+  `GraphicsInterface` type — `MaterialColor`, `MaterialMap`, `MaterialDiffuseComponent` — not a
+  `DatabaseServices` one, so looking for them beside `Material` finds nothing. `MaterialColor`
+  takes an `EntityColor`, not a `Color`. And **`Material.Shininess` does not exist**: shininess is
+  the `Gloss` of the specular component, which is the property everyone reaches for first, so the
+  description says so.
+
+  **A channel is a struct read and written WHOLE** — `m.Diffuse` hands back a copy, so every
+  setter reads, rebuilds and writes back. That shapes the verification: the natural bug is
+  clobbering a neighbour channel, so `modify_material` changes one and the others are asserted
+  unchanged, in both directions.
+
+  Test values chosen so a wrong answer cannot hide: diffuse (200, 30, 40) and specular
+  (10, 220, 90) share no component and neither is grey; gloss 0.25 and opacity 0.75 are different
+  fractions away from 0, 0.5 and 1. `assign_material` reads back through `Entity.Material` (the
+  name) rather than the id written, with a second box that must stay unassigned. `delete_material`
+  is refused while in use and succeeds once unassigned, proving the guard counts real users.
+
+  `remove_material` from the roadmap split into two honestly different tools — `unassign_material`
+  and `delete_material` — because one verb for both would hide which had happened. Texture maps
+  and libraries wait for a texture file and an `.adsklib`.
+
 - **Phase 5.3 — `acad-geo`, 7 tools, 44/44.** New category, bank 647 → 654.
   `set_geographic_location`, `get_geographic_location`, `remove_geolocation`,
   `convert_wcs_to_geo`, `convert_geo_to_wcs`, `place_geo_marker`, `list_geo_markers`.

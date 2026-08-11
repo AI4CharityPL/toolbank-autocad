@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 46 categories, 654 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 47 categories, 660 tools total.
 
 ## Categories
 
@@ -26,6 +26,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-layouts](#acad-layouts) (8 tools)
 - [acad-lisp](#acad-lisp) (5 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
+- [acad-materials](#acad-materials) (6 tools)
 - [acad-mechanical](#acad-mechanical) (14 tools)
 - [acad-mesh](#acad-mesh) (10 tools)
 - [acad-modify](#acad-modify) (19 tools)
@@ -517,6 +518,17 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `clear_events` | Discard all currently buffered events (does not affect future capture, only the backlog). Use this to reset state, e.g. at the start of a design_iterate loop so old noise doesn't show up in the first poll. |
 | `livestream_status` | Report the event ring buffer's current size, capacity (2000), the highest sequence number issued so far (headSeq), how many older events have been dropped to stay within capacity, and how many documents currently have event hooks attached. |
 | `poll_events` | Return entity-change and command-lifecycle events captured since sinceSeq (default 0 = from the start of the current buffer, which holds the most recent 2000 events). Each event has a monotonic seq -- pass the previous response's nextSeq back in as sinceSeq to get only what happened since your last poll. maxCount caps how many are returned in one call (default 200). Events are captured live via AutoCAD Database.ObjectAppended/Modified/Erased and Document.CommandWillStart/CommandEnded hooks, not by re-scanning the drawing. |
+
+## acad-materials
+
+| Tool | Description |
+|---|---|
+| `assign_material` | Put a material onto one or more entities. Confirmed by reading Entity.Material - the NAME - back afterwards, which is a DIFFERENT property from the MaterialId that was written, so an assignment that did not take cannot look like one that did. Each entity's previous material is reported, so the change can be undone; unassign_material puts them back to ByLayer. |
+| `create_material` | Create a render material: a diffuse colour (the base colour), a specular colour with a gloss from 0 (matt) to 1 (mirror-sharp), and an opacity from 0 (clear) to 1 (solid). A material is not attached to anything until assign_material puts it on an entity. NOTE the property most people reach for first does not exist: there is no Material.Shininess in the AutoCAD API - shininess is the GLOSS of the specular component, which is what this tool's `gloss` sets. Refuses a name already in use, because replacing a material silently would restyle every object already using it. Read back through a fresh dictionary lookup after creation. |
+| `delete_material` | Delete a material from the drawing. REFUSES when entities are still using it, listing their handles, because deleting would leave them pointing at a material that is gone - unassign them first, or pass `force` if that is really what you mean. AutoCAD's own Global, ByLayer and ByBlock materials are refused outright: they are what an entity falls back to when nothing else is assigned. Removed from the dictionary AND erased, since removing the name alone would leave an orphan in the drawing. |
+| `list_materials` | List the materials in the drawing with their diffuse and specular colours, gloss and opacity. Read-only. Every drawing has a material called Global, plus ByLayer and ByBlock, which are what an entity uses when nothing else is assigned - so a small count is an empty drawing rather than a broken tool. gloss comes from the specular component, there being no Material.Shininess in the API. |
+| `modify_material` | Change a material's colours, gloss, opacity or description. Only the channels named are touched; the rest are rebuilt from what was already there, because each channel is a struct that has to be written back whole. IMPORTANT: every object already using this material changes appearance with it - that is what a material is for, and worth knowing before editing a shared one. The previous values are reported so a change can be undone, and the new ones are read back rather than echoed. |
+| `unassign_material` | Clear the material from entities, setting them back to ByLayer - which is what 'no material' means in AutoCAD. There is no null state, and clearing the id outright would leave the entity in a condition AutoCAD does not expect, which is why this sets ByLayer rather than nothing. The material itself is untouched and still in the drawing; delete_material is what removes it. |
 
 ## acad-mechanical
 

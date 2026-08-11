@@ -1232,6 +1232,34 @@ dispatches. Settle that with one cheap experiment before building `render_view`,
 or `render_to_file`: the mistake to avoid is building the whole category and discovering the six
 tools that justify it cannot run, which is exactly what happened in 5.1.
 
+**MATERIALS BUILT 2026-08-11: 6 tools, 37/37 live, first run, one AutoCAD restart.** Ships as
+`acad-materials`: `create_material`, `modify_material`, `list_materials`, `assign_material`,
+`unassign_material`, `delete_material`.
+
+Three of the roadmap's eight are held back rather than shipped: `set_material_map` and
+`set_material_mapping` need a texture file to be verifiable, and `load_material_library` an
+`.adsklib` — this bank does not ship what it cannot demonstrate. `remove_material` split into two
+honestly different tools, `unassign_material` (take it off an entity) and `delete_material` (take
+it out of the drawing), because one verb for both would hide which had happened.
+
+**The struct-channel shape is what the verification is built around.** Since `m.Diffuse` returns a
+COPY and every setter must rebuild the component whole, the natural bug is clobbering a neighbour
+channel — so `modify_material` changes one channel and the others are asserted unchanged, in both
+directions. Nothing else would find that.
+
+The test values are chosen so a wrong answer cannot hide: diffuse (200, 30, 40) and specular
+(10, 220, 90) share no component and neither is grey, so a channel mix-up or a red/blue swap
+fails; gloss 0.25 and opacity 0.75 are different fractions, both away from 0, 0.5 and 1, which is
+where a defaulting implementation lands. `assign_material` is read back through `Entity.Material`
+— the NAME, a different property from the `MaterialId` written — with a second box that must stay
+unassigned, since a tool assigning globally would pass a single-entity check perfectly. And
+`delete_material` is refused while in use, then succeeds once the entity is unassigned, which
+proves the guard counts real users rather than refusing blindly.
+
+**Remaining in 6.1: lights (7), sun and environment, and the renderers.** The order and the open
+question are unchanged — settle whether an image can be produced at all before building the tools
+that produce one.
+
 **Suggested split for the next session:** materials first (8 tools, no open questions, verifiable
 by reading assignments back), then lights (7, after one probe for the light-type enum), then the
 sun and environment, and the renderers LAST and only once the command-context question is answered.
@@ -1349,11 +1377,11 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **44** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
-| 6 | Visualisation — render, animation | 40 → **26** | 0 | 6.2 has no managed API |
-| | **Total** | **813** | **654** | **80 %** |
+| 6 | Visualisation — render, animation | 40 → **26** | **6** | 6.2 has no managed API; 6.1 materials done, lights and renderers outstanding |
+| | **Total** | **813** | **660** | **81 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 642 (337 + 75 + 71 + 62 + 53 + 44)
-while the bank measures **654**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 661 (337 + 88 + 71 + 62 + 53 + 44 + 6)
+while the bank measures **660**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

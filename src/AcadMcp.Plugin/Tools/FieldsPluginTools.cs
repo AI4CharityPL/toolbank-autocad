@@ -164,7 +164,13 @@ internal static class FieldsPluginTools
         {
             var a = Read<FieldDateArgsDto>(args);
             var fmt = string.IsNullOrWhiteSpace(a.Format) ? "yyyy-MM-dd" : a.Format;
-            // "Date" is NOT a valid AcVar name - it renders #### (recognised, unevaluable).
+            // "Date" is NOT a valid AcVar name - it renders ####.
+            //
+            // CORRECTED 2026-08-11: an earlier version of this comment read "####
+            // (recognised, unevaluable)". The first half is wrong. #### means UNEVALUABLE
+            // and nothing more: an invented field code and an invented field PREFIX both
+            // render #### too, measured over ten candidates. So #### cannot be used to
+            // tell a real field code from one that was made up.
             // Measured against live AutoCAD: CreateDate and SaveDate both evaluate. Which one a
             // title block wants differs, so the caller picks; CreateDate is the default because
             // it is the one that does not move every time somebody saves.

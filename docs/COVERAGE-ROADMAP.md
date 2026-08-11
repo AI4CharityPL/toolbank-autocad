@@ -1306,7 +1306,7 @@ should happen before any of phases 3–5 is started, not while it is being built
 | Phase | Focus | Planned | Built | Status |
 |---|---|---:|---:|---|
 | — | Pre-existing at the time this was written | 337 | 337 | — |
-| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **partial** — 88 shipped and verified; the ONE tool still genuinely missing is `insert_field_sheet_set_property`, and it is no longer blocked |
+| 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **88 shipped, 1 withheld.** `insert_field_sheet_set_property` is not built: `AcSm` fields resolve against the sheet set open in the Sheet Set Manager, which nothing here can establish, so a valid code cannot be told from an invented one |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
@@ -1370,10 +1370,32 @@ withheld with a recorded reason each in [KNOWN-GAPS.md](KNOWN-GAPS.md) section B
 
 **Counted afresh 2026-08-11 and the heading was wrong.** `insert_field_sheet_set_property` was
 recorded in three places as existing-but-blocked, and a comment in `SheetSetsTools.cs` said it had
-shipped. It had not: `acad-fields` holds 17 tools and that is not one of them. Its dependency,
-`get_sheet_property`, shipped with phase 2.1, so nothing blocks it now. Phase 1 closes when that
-one tool is built and verified — it needs a field-expression experiment of the kind rule 26 §12c
-describes, since the `AcSm` field syntax for a sheet-set property is not guessable.
+shipped. It had not: `acad-fields` holds 17 tools and that is not one of them.
+
+**And the recorded dependency was the wrong one.** The plan said the blocker was
+`get_sheet_property`, which shipped with phase 2.1. The experiment says otherwise. Seventeen
+candidate `AcSm` expressions were inserted through `insert_field_expression` and read back through
+`list_fields`, across two rounds — the second with AutoCAD's own Architectural sample sheet set
+loaded and one of its sheets open. **Every single one rendered `####`, including two deliberate
+controls: an invented code (`Nonsense.NotAThing`) and an invented prefix (`AcNonsense`).**
+
+Two things follow. First, **`####` means UNEVALUABLE and nothing more** — it does not mean
+"recognised", which a comment in `FieldsPluginTools` claimed and which is now corrected. It cannot
+distinguish a real field code from one that was invented, so it is useless as a discriminator.
+Second, **the real blocker is that `AcSm` fields resolve against the sheet set open in the Sheet
+Set Manager**, a UI state that reading a `.dst` from disk does not establish and that nothing in
+this bank can set. `get_sheet_property` reads the file; it never opens the set.
+
+So the tool is **not shipped, and not because it is hard to write** — the expression is one line.
+It is not shipped because its correctness cannot be demonstrated here: a valid code and an
+invented one are indistinguishable in this environment, and shipping a field whose syntax was
+guessed is exactly what this project does not do. Phase 1 therefore stands at **88 shipped, 1
+withheld with a reason**, and the reason is now the true one rather than a dependency that had
+already been satisfied.
+
+To unblock: a way to open a sheet set in the Sheet Set Manager (the `SHEETSET` command, or the
+`AcSmSheetSetMgr` COM interface), after which the two controls become the discriminator and the
+experiment settles the syntax in one run.
 
 Two roadmap bullets turned out not to be tools at all - `bind_xref_insert` is `bind_xref` with
 `insertMode: true`, `rotate_ucs_x/y/z` is one `rotate_ucs` with an axis argument - which is why

@@ -188,7 +188,9 @@ already be shipped (`acad-lights`), undercounted in this doc until this pass fou
 | item | tools | the actual blocker |
 | --- | ---: | --- |
 | `insert_field_sheet_set_property` | 1 | `AcSm` fields resolve against the sheet set open in the **Sheet Set Manager**, which nothing here can establish. Needs the `SHEETSET` command or `AcSmSheetSetMgr` COM. **This is the last item in Phase 1.** Note the recorded blocker was wrong for months — see the changelog |
-| `acad-lisp`: the six withdrawn | 6 | `eval_lisp`, `load_lisp_file`, `list_loaded_lisp`, `run_command_sequence`, `run_script_file`, `netload_assembly`. Rule 26 §15 has the full diagnosis and the split: two need only a command context, one has an untried `_.NETLOAD` route with `FILEDIA` 0, three need LISP evaluation |
+| `acad-lisp`: `eval_lisp`, `load_lisp_file`, `list_loaded_lisp` | 3 | need actual LISP evaluation — `SendStringToExecute` wrapped to write its value to a file, then wait for the file, is the remaining candidate (rule 26 §15) |
+| `acad-lisp`: `netload_assembly` | 1 | has the same command-context fix as the now-built `run_command_sequence`, but writing it was blocked by the safety classifier (dynamic DLL loading) — needs explicit user go-ahead, not a technical blocker |
+| `acad-lisp`: `run_script_file` | 1 | **withdrawn, not blocked** — built on the working command-context bridge and still drew nothing from a one-line `.scr`; two measured fix attempts, both wrong. Rule 26 §22 |
 
 ### Struck — do not build these
 

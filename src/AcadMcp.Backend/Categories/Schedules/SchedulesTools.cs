@@ -186,7 +186,7 @@ public static class SchedulesTools
         IPluginGateway gw, GenerateRoomScheduleArgs args, CancellationToken ct)
     {
         if (args.EnsureStyle) await EnsureTableStyleAsync(gw, args.StyleName, args.TextStyle, ct).ConfigureAwait(false);
-        var rooms = await FetchRoomsAsync(gw, args.LabelLayers, args.BoundaryLayer, ct).ConfigureAwait(false);
+        var rooms = await FetchGroupedRoomsAsync(gw, args.LabelLayers, args.BoundaryLayer, ct).ConfigureAwait(false);
 
         var data = new List<IReadOnlyList<string>>
         {
@@ -205,14 +205,15 @@ public static class SchedulesTools
             {
                 var number = args.AutoNumber ? autoNum.ToString(CultureInfo.InvariantCulture) : args.EmptyPlaceholder;
                 autoNum++;
-                var areaStr = r.AreaM2.HasValue
-                    ? r.AreaM2.Value.ToString("F1", CultureInfo.InvariantCulture)
+                var area = r.MeasuredAreaM2 ?? r.LabelAreaM2;
+                var areaStr = area.HasValue
+                    ? area.Value.ToString("F1", CultureInfo.InvariantCulture)
                     : args.EmptyPlaceholder;
-                if (r.AreaM2.HasValue) totalArea += r.AreaM2.Value;
+                if (area.HasValue) totalArea += area.Value;
                 data.Add(new[]
                 {
                     number,
-                    StripMtextCodes(r.Text),
+                    r.Name,
                     areaStr,
                     "",
                 });
@@ -507,8 +508,7 @@ public static class SchedulesTools
     public static async Task<AuditAllRoomsResult> AuditAllRooms(
         IPluginGateway gw, AuditAllRoomsArgs args, CancellationToken ct)
     {
-        var rooms = await FetchRoomsAsync(gw, args.LabelLayers, null, ct, args.AllLayers).ConfigureAwait(false);
-        var candidates = rooms.Where(IsAuditCandidate).ToList();
+        var candidates = await FetchGroupedRoomsAsync(gw, args.LabelLayers, null, ct, args.AllLayers).ConfigureAwait(false);
         var openings = await FetchOpeningRefsAsync(gw, ct).ConfigureAwait(false);
         var furniture = await FetchFurnitureRefsAsync(gw, ct).ConfigureAwait(false);
 
@@ -518,13 +518,11 @@ public static class SchedulesTools
         foreach (var room in candidates)
         {
             ct.ThrowIfCancellationRequested();
-            var labelArea = ParseAreaM2(room.Text);
-            var region = await FetchRoomRegionAsync(gw, room.Position.X, room.Position.Y, ct, labelArea,
-                sealAllDoors: false, timeoutMs: T_AUDIT_REGION).ConfigureAwait(false);
-            var outline = region?.Outline ?? Array.Empty<PointXY>();
+            var labelArea = room.LabelAreaM2;
+            var outline = room.Outline;
             bool usePoly = outline.Count >= 3;
-            var bounds = region?.Bounds ?? room.Bounds;
-            double? measured = region is { Found: true } ? region.AreaM2 : null;
+            var bounds = room.Bounds;
+            double? measured = room.MeasuredAreaM2;
             double? delta = labelArea is { } la && la > 0 && measured is { } m
                 ? Math.Abs(m - la) / la * 100.0 : null;
 
@@ -549,15 +547,15 @@ public static class SchedulesTools
             }
 
             var flags = new List<string>();
-            string method = region?.Method ?? "none";
+            string method = room.RegionMethod;
             if (measured is { } mm && labelArea is { } ll && ll > 0 && mm > ll * 1.5) { flags.Add("leakSuspected"); leaks++; }
             else if (method is not "flood" || !usePoly) { flags.Add("leakSuspected"); leaks++; }
             if (delta is { } d && d > args.TolerancePct) { flags.Add("labelMismatch"); mismatches++; }
-            if (doors == 0 && !IsCorridorLike(room.Text)) { flags.Add("emptyOpenings"); emptyDoors++; }
-            if (DetectFurnitureMismatch(room.Text, furniture, outline, usePoly, bounds)) { flags.Add("furnitureMismatch"); furnitureIssues++; }
+            if (doors == 0 && !IsCorridorLike(room.Name)) { flags.Add("emptyOpenings"); emptyDoors++; }
+            if (DetectFurnitureMismatch(room.Name, furniture, outline, usePoly, bounds)) { flags.Add("furnitureMismatch"); furnitureIssues++; }
 
-            string query = ExtractRoomQuery(room.Text);
-            rows.Add(new RoomAuditRowDto(room.Handle, query, room.Layer, labelArea, measured, delta,
+            string query = room.Number ?? room.Name;
+            rows.Add(new RoomAuditRowDto(room.RepresentativeHandle, query, room.Layer, labelArea, measured, delta,
                 method, doors, windows, furn, flags));
         }
 
@@ -576,7 +574,7 @@ public static class SchedulesTools
         }
 
         return new AuditAllRoomsResult(candidates.Count, mismatches, leaks, emptyDoors, furnitureIssues, rows,
-            exportPath, $"Przeskanowano {candidates.Count} etykiet pomieszczeń.");
+            exportPath, $"Przeskanowano {candidates.Count} pomieszczeń.");
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -650,6 +648,74 @@ public static class SchedulesTools
         return t.Contains("m²", StringComparison.OrdinalIgnoreCase) ||
                t.Contains("m2", StringComparison.OrdinalIgnoreCase) ||
                t.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Length >= 2;
+    }
+
+    // MEASURED 2026-08-12: define_room places THREE separate DBText entities per room (number,
+    // name, area — all on A-ROOM-IDEN), and FetchRoomsAsync returns one RoomRow per text entity.
+    // GenerateRoomSchedule and AuditAllRooms used to iterate that raw list directly, treating
+    // each of the three lines as its own "room" — a drawing with 6 real rooms reported 18 rows
+    // and summed the (correctly-measured) area of every room three times over (144.625 m² real,
+    // 433.875 m² reported — exactly 3x). get_room_data/correct_room_area never had this bug:
+    // they already group every label whose position falls inside the SAME detected boundary
+    // polygon before extracting number/name/area. This is that grouping generalised to the
+    // WHOLE drawing in one pass, so the batch tools use the identical, already-proven algorithm
+    // instead of a second, buggy one. As a side effect it also cuts get_room_region round-trips
+    // from one-per-label to one-per-room (3x fewer for a 3-line tag).
+    private sealed record GroupedRoom(
+        string? Number, string Name, string RepresentativeHandle, string Layer, Point2dDto Position,
+        double? MeasuredAreaM2, double? LabelAreaM2, RoomBounds? Bounds, IReadOnlyList<PointXY> Outline,
+        string RegionMethod, bool RegionFound);
+
+    private static async Task<List<GroupedRoom>> FetchGroupedRoomsAsync(
+        IPluginGateway gw, IReadOnlyList<string>? labelLayers, string? boundaryLayer, CancellationToken ct,
+        bool allLayers = false)
+    {
+        var raw = await FetchRoomsAsync(gw, labelLayers, boundaryLayer, ct, allLayers).ConfigureAwait(false);
+        var candidates = raw.Where(IsAuditCandidate).ToList();
+        var assigned = new bool[candidates.Count];
+        var groups = new List<GroupedRoom>();
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (assigned[i]) continue;
+            var seed = candidates[i];
+            assigned[i] = true;
+
+            var region = await FetchRoomRegionAsync(gw, seed.Position.X, seed.Position.Y, ct,
+                ParseAreaM2(seed.Text), sealAllDoors: false, timeoutMs: T_AUDIT_REGION).ConfigureAwait(false);
+            var outline = region?.Outline ?? Array.Empty<PointXY>();
+            bool usePoly = outline.Count >= 3;
+
+            var siblingIdx = new List<int> { i };
+            if (usePoly)
+            {
+                for (int j = 0; j < candidates.Count; j++)
+                {
+                    if (assigned[j]) continue;
+                    if (RoomRegionSolver.PointInPolygon(outline, candidates[j].Position.X, candidates[j].Position.Y))
+                    {
+                        siblingIdx.Add(j);
+                        assigned[j] = true;
+                    }
+                }
+            }
+
+            var labels = siblingIdx.Select(k => StripMtextCodes(candidates[k].Text).Trim())
+                                    .Where(t => t.Length > 0)
+                                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                                    .ToList();
+            var query = ExtractRoomQuery(seed.Text);
+            var (number, name) = SplitNumberName(labels, query);
+            double? labelAreaM2 = labels.Select(ParseAreaM2).FirstOrDefault(a => a.HasValue);
+            double? measured = region is { Found: true } ? region.AreaM2 : null;
+            var bounds = region?.Bounds ?? seed.Bounds;
+
+            groups.Add(new GroupedRoom(number, name ?? query, seed.Handle, seed.Layer, seed.Position,
+                measured, labelAreaM2, bounds, outline, region?.Method ?? "none", region?.Found ?? false));
+        }
+
+        groups.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.Number ?? a.Name, b.Number ?? b.Name));
+        return groups;
     }
 
     private static bool IsCorridorLike(string text)
@@ -1061,8 +1127,16 @@ public static class SchedulesTools
     /// <summary>Split the room's labels into a number (matches a code pattern) and a human name.</summary>
     private static (string? Number, string? Name) SplitNumberName(IReadOnlyList<string> labels, string query)
     {
+        // MEASURED 2026-08-12: a pure regex match is a strictly more reliable "room number" than the
+        // query-substring fallback, so it must be tried across ALL labels FIRST. Combining both into
+        // one FirstOrDefault(a || b) let the fallback win whenever the SEED label (order is arbitrary
+        // in batch grouping, unlike a caller-supplied query) was itself an area token like "17,81 m²" -
+        // every string trivially "contains" itself, so that label matched its own query and was
+        // returned before the real number ("202") was ever reached later in the list.
         string? number = labels.FirstOrDefault(l => System.Text.RegularExpressions.Regex.IsMatch(
-            l, @"^[A-Za-z]?[-]?\d{1,4}[A-Za-z]?$") || l.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 && l.Length <= 8);
+                              l, @"^[A-Za-z]?[-]?\d{1,4}[A-Za-z]?$"))
+                          ?? labels.FirstOrDefault(l =>
+                              l.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 && l.Length <= 8);
         string? name = labels.FirstOrDefault(l => !string.Equals(l, number, StringComparison.OrdinalIgnoreCase)
             && !System.Text.RegularExpressions.Regex.IsMatch(l, @"^[\d.,\s]*m²?$"));
         return (number, name);

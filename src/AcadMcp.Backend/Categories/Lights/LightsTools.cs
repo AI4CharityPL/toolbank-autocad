@@ -73,4 +73,22 @@ public static class LightsTools
         RequiresPlugin = true)]
     public static Task<LightDeleteResult> DeleteLight(IPluginGateway gw, LightNameArgs args, CancellationToken ct)
         => LightsProxy.CallAsync<LightNameArgs, LightDeleteResult>(gw, "acad.lights.delete_light", args, T_NORMAL, ct);
+
+    [McpTool("get_sun_properties", "Read the sun of the current viewport: whether it is on, its intensity, the date and time it is set to, the sky illumination and haze, and the shadow settings. Read-only. IMPORTANT: a sun belongs to a VIEWPORT, not to the drawing - Database.SunId does not exist and ViewportTableRecord.SunId does - so this reports the sun of the current viewport configuration and another configuration can have its own. A drawing has NO sun until something attaches one, and that absence is reported as hasSun=false rather than answered with defaults that were never set.", "lights",
+        Intent = new[] { "get the sun settings", "is the sun on in this drawing",
+                         "odczytaj ustawienia slonca", "what date and time is the sun set to",
+                         "jakie sa ustawienia slonca na rysunku", "read the sun properties",
+                         "check the sunlight settings" },
+        ReadOnly = true, RequiresPlugin = true)]
+    public static Task<SunGetResult> GetSunProperties(IPluginGateway gw, LightsNoArgs args, CancellationToken ct)
+        => LightsProxy.CallAsync<LightsNoArgs, SunGetResult>(gw, "acad.lights.get_sun_properties", args, T_NORMAL, ct);
+
+    [McpTool("set_sun_properties", "Turn the sun on or off and set its intensity, date and time, sky illumination and haze. Creates the sun if the viewport has none, and says which it did. `dateTime` is 'yyyy-MM-dd HH:mm' and the DATE matters as much as the time, since the sun's height depends on the season. `haze` runs 0 (perfectly clear) to 15 (heavy); `skyIllumination` is a switch, not a level. WHERE THE SUN ACTUALLY SITS also depends on geo.set_geographic_location - without a geographic location the angle is computed for a default place, so a sun that looks wrong is usually a drawing that has not been located. Read back off the viewport afterwards rather than echoed.", "lights",
+        Intent = new[] { "turn the sun on", "set the sun date and time",
+                         "ustaw slonce", "set the sun for midday in june",
+                         "wlacz slonce na rysunku", "change the sunlight intensity",
+                         "set the haze for the sky" },
+        RequiresPlugin = true)]
+    public static Task<SunSetResult> SetSunProperties(IPluginGateway gw, SunSetArgs args, CancellationToken ct)
+        => LightsProxy.CallAsync<SunSetArgs, SunSetResult>(gw, "acad.lights.set_sun_properties", args, T_NORMAL, ct);
 }

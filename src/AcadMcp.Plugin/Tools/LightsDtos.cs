@@ -17,3 +17,10 @@ internal sealed record LightArgsDto(
     [property: JsonPropertyName("hotspotAngle")] double? HotspotAngle,
     [property: JsonPropertyName("falloffAngle")] double? FalloffAngle,
     [property: JsonPropertyName("layer")]        string? Layer);
+
+internal sealed record SunArgsDto(
+    [property: JsonPropertyName("on")]              bool? On,
+    [property: JsonPropertyName("intensity")]       double? Intensity,
+    [property: JsonPropertyName("dateTime")]        string? DateTime,
+    [property: JsonPropertyName("skyIllumination")] bool? SkyIllumination,
+    [property: JsonPropertyName("haze")]            double? Haze);

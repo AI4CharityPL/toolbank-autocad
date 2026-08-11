@@ -16,9 +16,10 @@ below is aimed at the specific way it could quietly be wrong:
                         the arithmetic, and the points are drawn and exported so the glyph is
                         actually looked at.
 """
+import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 S = {c: Session(c) for c in ("files", "styles", "geometry-2d", "view", "viewports")}

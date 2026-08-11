@@ -18,7 +18,7 @@ the same numbers as a correct one.
 import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 OUT = r"C:\tmp\polyline-verify"

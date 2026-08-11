@@ -17,9 +17,10 @@ that must actually land. The controls:
     would pass a single-entity check perfectly.
   * delete_material is attempted while the material is still in use, which must be refused.
 """
+import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 S = {c: Session(c) for c in ("files", "geometry-3d", "materials")}

@@ -17,9 +17,10 @@ Three things this has to prove, and only one of them is visible in a return code
 apply_layer_filter is not tested because it does not exist: LayerFilterTree.Current is
 get-only in the managed API and it was withheld rather than shipped as a no-op.
 """
+import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 S = {c: Session(c) for c in ("files", "styles", "layers")}

@@ -16,13 +16,15 @@
     "delete",
     "distant",
     "dwg",
+    "get",
     "light",
     "lights",
     "list",
     "point",
     "properties",
     "set",
-    "spot"
+    "spot",
+    "sun"
   ],
   "intent_examples": [
     "add a cone light",
@@ -33,6 +35,8 @@
     "add sunlight to the model",
     "adjust the spotlight cone",
     "change the light intensity",
+    "change the sunlight intensity",
+    "check the sunlight settings",
     "clean up unused lights",
     "create a distant light",
     "create a point light",
@@ -44,7 +48,10 @@
     "dodaj zrodlo swiatla do rysunku",
     "find a light by name",
     "get rid of that lamp",
+    "get the sun settings",
     "how many lights are on",
+    "is the sun on in this drawing",
+    "jakie sa ustawienia slonca na rysunku",
     "jakie zrodla swiatla sa na rysunku",
     "light everything from one direction",
     "light this object from above",
@@ -52,20 +59,29 @@
     "lista swiatel",
     "make the light brighter",
     "move a light",
+    "odczytaj ustawienia slonca",
     "parallel light rays",
     "place a light in the model",
     "put a directional light pointing here",
     "put a lamp here",
+    "read the sun properties",
     "remove a light from the drawing",
+    "set the haze for the sky",
+    "set the sun date and time",
+    "set the sun for midday in june",
     "show all the lights",
     "skasuj zrodlo swiatla z rysunku",
+    "turn the sun on",
     "turn this light off",
     "ustaw kolor swiatla na rysunku",
+    "ustaw slonce",
     "usun swiatlo",
     "utworz reflektor",
     "utworz swiatlo odlegle",
     "utworz swiatlo punktowe",
+    "what date and time is the sun set to",
     "what lights are in this drawing",
+    "wlacz slonce na rysunku",
     "zmien wlasciwosci swiatla"
   ],
   "tools_summary": [
@@ -141,8 +157,26 @@
       ]
     },
     {
+      "name": "get_sun_properties",
+      "description": "Read the sun of the current viewport: whether it is on, its intensity, the date and time it is set to, the sky illumination and haze, and the shadow settings. Read-only. IMPORTANT: a sun belongs to a VIEWPORT, not to the drawing - Database.SunId does not exist and ViewportTableRecord.SunId does - so this reports the sun of the current viewport configuration and another configuration can have its own. A drawing has NO sun until something attaches one, and that absence is reported as hasSun=false rather than answered with defaults that were never set.",
+      "tags": [
+        "get",
+        "sun",
+        "properties"
+      ],
+      "intent": [
+        "get the sun settings",
+        "is the sun on in this drawing",
+        "odczytaj ustawienia slonca",
+        "what date and time is the sun set to",
+        "jakie sa ustawienia slonca na rysunku",
+        "read the sun properties",
+        "check the sunlight settings"
+      ]
+    },
+    {
       "name": "list_lights",
-      "description": "List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API.",
+      "description": "List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; \u0060onCount\u0060 says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. \u0060on\u0060 comes from Light.IsOn - there is no Light.On in the API.",
       "tags": [
         "list",
         "lights"
@@ -174,11 +208,29 @@
         "move a light",
         "adjust the spotlight cone"
       ]
+    },
+    {
+      "name": "set_sun_properties",
+      "description": "Turn the sun on or off and set its intensity, date and time, sky illumination and haze. Creates the sun if the viewport has none, and says which it did. \u0060dateTime\u0060 is \u0027yyyy-MM-dd HH:mm\u0027 and the DATE matters as much as the time, since the sun\u0027s height depends on the season. \u0060haze\u0060 runs 0 (perfectly clear) to 15 (heavy); \u0060skyIllumination\u0060 is a switch, not a level. WHERE THE SUN ACTUALLY SITS also depends on geo.set_geographic_location - without a geographic location the angle is computed for a default place, so a sun that looks wrong is usually a drawing that has not been located. Read back off the viewport afterwards rather than echoed.",
+      "tags": [
+        "set",
+        "sun",
+        "properties"
+      ],
+      "intent": [
+        "turn the sun on",
+        "set the sun date and time",
+        "ustaw slonce",
+        "set the sun for midday in june",
+        "wlacz slonce na rysunku",
+        "change the sunlight intensity",
+        "set the haze for the sky"
+      ]
     }
   ],
   "metadata": {
     "category": "lights",
-    "tool_count_target": 6,
+    "tool_count_target": 8,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -192,6 +244,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-11T08:55:00.3910805Z"
+    "last_regenerated_utc": "2026-08-11T09:13:53.7810932Z"
   }
 }

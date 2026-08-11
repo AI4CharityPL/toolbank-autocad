@@ -24,12 +24,14 @@ from the APPLICATION context this plugin dispatches in.
 import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
-SCRATCH = r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\f077b219-34bc-4344-a383-5c4a45649d83\scratchpad"
+SCRATCH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       ".verify-tmp")
 os.makedirs(SCRATCH, exist_ok=True)
-REPO = r"C:\Users\DELL\Dev\autocad-mcp"
+os.makedirs(SCRATCH, exist_ok=True)
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 S = {c: Session(c) for c in ("files", "geometry-2d", "lisp")}
 results = []

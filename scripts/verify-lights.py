@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Live verification for roadmap 6.1, second tranche — acad-lights, 6 tools.
+"""Live verification for roadmap 6.1 — acad-lights, 8 tools including the sun.
 
 Three kinds of light that differ mainly in which fields MEAN anything, so the controls are about
 keeping them distinct rather than about arithmetic:
@@ -19,9 +19,10 @@ keeping them distinct rather than about arithmetic:
     cannot pass.
 """
 import math
+import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 S = {c: Session(c) for c in ("files", "geometry-3d", "lights")}
@@ -170,6 +171,51 @@ if isinstance(r, dict):
     check("and exactly the other two remain", names == ["TB_POINT", "TB_SPOT"], str(names))
 do("lights", "delete_light", {"name": "TB_SUN"},
    label="deleting it twice is refused", expect_fail=True)
+
+
+# ── the sun, which belongs to a VIEWPORT ────────────────────────────────────
+print("\n== get / set_sun_properties ==")
+r = do("lights", "get_sun_properties", {}, label="before any sun exists")
+check("PROVEN a drawing has NO sun until one is attached, and the absence is reported as "
+      "hasSun=false rather than answered with defaults nobody set",
+      isinstance(r, dict) and r.get("hasSun") is False, str(r)[:200])
+
+# Midsummer noon: a date and time both distinctive, so a defaulted value cannot pass.
+r = do("lights", "set_sun_properties",
+       {"on": True, "intensity": 1.4, "dateTime": "2026-06-21 12:30", "haze": 3.5})
+if isinstance(r, dict):
+    s = r.get("sun") or {}
+    check("PROVEN the sun was CREATED and says so, rather than reporting a change to something "
+          "that did not exist", r.get("created") is True, str(r)[:200])
+    check("PROVEN every value round-trips: on, intensity 1.4, midsummer noon and haze 3.5 - a "
+          "date of 21 June at 12:30 is nothing AutoCAD would default to",
+          s.get("on") is True and near(s.get("intensity"), 1.4)
+          and s.get("dateTime") == "2026-06-21 12:30" and near(s.get("haze"), 3.5), str(s)[:280])
+
+r = do("lights", "get_sun_properties", {}, label="read it back through the OTHER tool")
+check("PROVEN it reads back off the viewport through a different tool from the one that wrote it",
+      isinstance(r, dict) and r.get("hasSun") is True
+      and (r.get("sun") or {}).get("dateTime") == "2026-06-21 12:30", str(r)[:250])
+
+r = do("lights", "set_sun_properties", {"intensity": 0.6}, label="change one property only")
+if isinstance(r, dict):
+    s = r.get("sun") or {}
+    check("PROVEN the second call MODIFIES rather than creating a second sun, and the untouched "
+          "date, haze and on-state all survive",
+          r.get("created") is False and near(s.get("intensity"), 0.6)
+          and s.get("dateTime") == "2026-06-21 12:30" and near(s.get("haze"), 3.5)
+          and s.get("on") is True, str(r)[:300])
+    check("and the previous intensity is reported so it can be undone",
+          near((r.get("before") or {}).get("intensity"), 1.4), str(r.get("before"))[:180])
+
+do("lights", "set_sun_properties", {}, label="a sun call with nothing to set is refused",
+   expect_fail=True)
+do("lights", "set_sun_properties", {"haze": 99},
+   label="a haze outside 0 to 15 is refused", expect_fail=True)
+do("lights", "set_sun_properties", {"dateTime": "not a date"},
+   label="an unreadable dateTime is refused, with the format spelled out", expect_fail=True)
+do("lights", "set_sun_properties", {"intensity": -1},
+   label="a negative sun intensity is refused", expect_fail=True)
 
 passed = sum(1 for _, ok in results if ok)
 print(f"\n==== {passed}/{len(results)} checks passed ====")

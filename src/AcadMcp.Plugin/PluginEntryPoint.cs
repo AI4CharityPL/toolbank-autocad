@@ -72,6 +72,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             GeoPluginTools.Register(_toolHost);
             MaterialsPluginTools.Register(_toolHost);
             LightsPluginTools.Register(_toolHost);
+            SunPluginTools.Register(_toolHost);
             BooleanOpsPluginTools.Register(_toolHost);
             ModifyPluginTools.Register(_toolHost);
             SelectionPluginTools.Register(_toolHost);

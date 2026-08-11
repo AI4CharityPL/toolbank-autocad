@@ -14,9 +14,10 @@ rather than whether the call succeeds.
 """
 import json
 import subprocess
+import os
 import sys
 
-sys.path.insert(0, r"C:\Users\DELL\AppData\Local\Temp\claude\C--Users-DELL-agent-memory\12db232e-b1a1-4ca2-b92e-28c25e2ccd80\scratchpad")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # scripts/mcpcall.py
 from mcpcall import Session  # noqa: E402
 
 EXE = r"src\AcadMcp.Backend\bin\Debug\net8.0\AcadMcp.Backend.exe"

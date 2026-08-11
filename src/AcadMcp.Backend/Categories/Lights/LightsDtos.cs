@@ -92,3 +92,36 @@ public sealed record LightDeleteResult(
     [property: JsonPropertyName("deleted")]  bool Deleted,
     [property: JsonPropertyName("previous")] LightInfo Previous,
     [property: JsonPropertyName("note")]     string Note);
+
+// ── the sun (roadmap 6.1, third tranche) ──
+//
+// MEASURED: a sun belongs to a VIEWPORT, not to the drawing - Database.SunId does not exist and
+// ViewportTableRecord.SunId does. SkyParameters.Illumination is a BOOL, not a level.
+
+public sealed record SunSetArgs(
+    [property: JsonPropertyName("on")]              bool? On = null,
+    [property: JsonPropertyName("intensity")]       double? Intensity = null,
+    [property: JsonPropertyName("dateTime")]        string? DateTime = null,
+    [property: JsonPropertyName("skyIllumination")] bool? SkyIllumination = null,
+    [property: JsonPropertyName("haze")]            double? Haze = null);
+
+public sealed record SunInfo(
+    [property: JsonPropertyName("on")]              bool On,
+    [property: JsonPropertyName("intensity")]       double Intensity,
+    [property: JsonPropertyName("dateTime")]        string DateTime,
+    [property: JsonPropertyName("skyIllumination")] bool SkyIllumination,
+    [property: JsonPropertyName("haze")]            double Haze,
+    [property: JsonPropertyName("shadowType")]      string? ShadowType,
+    [property: JsonPropertyName("shadowMapSize")]   int ShadowMapSize,
+    [property: JsonPropertyName("handle")]          string Handle);
+
+public sealed record SunGetResult(
+    [property: JsonPropertyName("hasSun")] bool HasSun,
+    [property: JsonPropertyName("sun")]    SunInfo? Sun,
+    [property: JsonPropertyName("note")]   string Note);
+
+public sealed record SunSetResult(
+    [property: JsonPropertyName("created")] bool Created,
+    [property: JsonPropertyName("before")]  SunInfo? Before,
+    [property: JsonPropertyName("sun")]     SunInfo Sun,
+    [property: JsonPropertyName("note")]    string Note);

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD (v2025)
 
-> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: **478 tools across 39 specialized categories**, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
+> A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: **668 tools across 48 specialized categories**, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
@@ -17,6 +17,9 @@ see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
 > lesson. Nothing in it is AutoCAD-specific. Start there if you are building the same kind of
 > thing over Excel, Revit, Photoshop or anything else with a real object model and a
 > misleading command layer.
+
+
+> **Picking this up fresh, or on another machine?** Start with [docs/HANDOVER.md](docs/HANDOVER.md) — environment, the working loop, what verification means here, and exactly what is left.
 
 ## Architecture in one sentence
 

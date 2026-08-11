@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 48 categories, 666 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 48 categories, 668 tools total.
 
 ## Categories
 
@@ -24,7 +24,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
-- [acad-lights](#acad-lights) (6 tools)
+- [acad-lights](#acad-lights) (8 tools)
 - [acad-lisp](#acad-lisp) (5 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-materials](#acad-materials) (6 tools)
@@ -510,8 +510,10 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `create_point_light` | Create a point light - a bare bulb that throws light in EVERY direction from one spot. It has no target and no cone, so there is nothing to aim: create_spot_light is the one that points somewhere. Set the position, and optionally the intensity, colour and whether it starts on. Lights are addressed by NAME throughout this category, so a name already in use is refused - two lights with one name could not be told apart. Read back by searching model space after creation rather than from the object just written. |
 | `create_spot_light` | Create a spot light - aimed from a position at a target, with two cones. The HOTSPOT is the bright inner cone and the FALLOFF the dimmer outer edge, both in RADIANS, so the hotspot is always the smaller of the two and a hotspot wider than the falloff is refused as a shape a light cannot have. Defaults are about 20 and 45 degrees. The two angles are set together because both are read-only individually in the API - which is also what keeps the cone from inverting. The result is read back and the angles checked against what was asked for. |
 | `delete_light` | Delete a light from the drawing. Its previous settings are reported in full, so it can be recreated if the deletion was a mistake. Deleting a light changes what a render looks like and nothing about the geometry. Confirmed gone by searching model space again rather than assumed. |
+| `get_sun_properties` | Read the sun of the current viewport: whether it is on, its intensity, the date and time it is set to, the sky illumination and haze, and the shadow settings. Read-only. IMPORTANT: a sun belongs to a VIEWPORT, not to the drawing - Database.SunId does not exist and ViewportTableRecord.SunId does - so this reports the sun of the current viewport configuration and another configuration can have its own. A drawing has NO sun until something attaches one, and that absence is reported as hasSun=false rather than answered with defaults that were never set. |
 | `list_lights` | List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API. |
 | `set_light_properties` | Change a light: turn it on or off, set its intensity, colour, position, target, or cone angles. Only the properties named are touched and the previous values are reported, so a change can be undone. Two things worth knowing: moving the TARGET of a point light is refused, because a point light has nothing to aim; and changing ONE cone angle carries the other over from what is already set, since AutoCAD only accepts the pair together - so a new hotspot is checked against the existing falloff and refused if it would be the wider of the two. |
+| `set_sun_properties` | Turn the sun on or off and set its intensity, date and time, sky illumination and haze. Creates the sun if the viewport has none, and says which it did. `dateTime` is 'yyyy-MM-dd HH:mm' and the DATE matters as much as the time, since the sun's height depends on the season. `haze` runs 0 (perfectly clear) to 15 (heavy); `skyIllumination` is a switch, not a level. WHERE THE SUN ACTUALLY SITS also depends on geo.set_geographic_location - without a geographic location the angle is computed for a default place, so a sun that looks wrong is usually a drawing that has not been located. Read back off the viewport afterwards rather than echoed. |
 
 ## acad-lisp
 

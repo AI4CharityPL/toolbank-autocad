@@ -18,6 +18,11 @@ public class LightsTests
         // texture maps waited in acad-materials.
         "create_point_light", "create_spot_light", "create_distant_light",
         "list_lights", "set_light_properties", "delete_light",
+
+        // Third tranche: the sun, which belongs to a VIEWPORT rather than to the drawing.
+        // There is no set_render_environment: RenderEnvironment exposes three properties and has
+        // neither PostToDb nor GetRenderEnvironment, so one cannot be attached or read back.
+        "get_sun_properties", "set_sun_properties",
     };
 
     private static ToolRegistry NewRegistry() => new(new NullLogger<ToolRegistry>());

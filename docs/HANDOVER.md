@@ -217,7 +217,15 @@ The OpenAI key was granted for this project only and is to be rotated.
 
 ---
 
-## 10. If you only do one thing
+## 10. Starting a new agent
+
+`docs/AGENT-PROMPT.md` holds a copy-pasteable prompt that points a fresh agent at this document
+and sets the verification standard before it writes anything. Use it rather than describing the
+project from memory.
+
+---
+
+## 11. If you only do one thing
 
 Pick a category from §7, **probe it against the compiler before writing anything**, write the
 verification with its controls before you deploy, and deploy once. That single habit is the

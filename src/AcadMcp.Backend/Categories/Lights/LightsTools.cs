@@ -6,8 +6,10 @@
 // READ-ONLY and set together through SetHotspotAndFalloff, which is also what stops the cone being
 // inverted. ShadowMapSize, ShadowSoftness and GlyphDisplay do not exist.
 //
-// create_web_light is absent: a web light is defined by an .ies photometric file, and without one
-// there is nothing to verify.
+// create_web_light BUILT 2026-08-11: sample .ies files were found already on this machine under
+// AutoCAD's own WebFiles folder, unblocking the tool this comment used to say was withheld for
+// lack of one. Light.WebFile is the only web-specific member present - WebRotationX/Y/Z and
+// WebFlipHorizontal/Vertical were all tried and none compiled.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,6 +48,15 @@ public static class LightsTools
         RequiresPlugin = true)]
     public static Task<LightCreateResult> CreateDistantLight(IPluginGateway gw, DistantLightArgs args, CancellationToken ct)
         => LightsProxy.CallAsync<DistantLightArgs, LightCreateResult>(gw, "acad.lights.create_distant_light", args, T_NORMAL, ct);
+
+    [McpTool("create_web_light", "Create a web light - a fixture whose light distribution comes from a photometric .ies file rather than a cone you shape yourself. intensity scales the file's own distribution; it does not replace it. Refuses a missing .ies file, and is read back through the WebFile it reports afterwards, since a path that failed to attach would otherwise look identical to one that worked.", "lights",
+        Intent = new[] { "create a web light", "add a photometric fixture",
+                         "utworz swiatlo web", "add an ies light fixture",
+                         "dodaj oprawe fotometryczna", "light with an ies file",
+                         "add a real-world light fixture" },
+        RequiresPlugin = true)]
+    public static Task<LightCreateResult> CreateWebLight(IPluginGateway gw, WebLightArgs args, CancellationToken ct)
+        => LightsProxy.CallAsync<WebLightArgs, LightCreateResult>(gw, "acad.lights.create_web_light", args, T_NORMAL, ct);
 
     [McpTool("list_lights", "List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API.", "lights",
         Intent = new[] { "list the lights", "what lights are in this drawing",

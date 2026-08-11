@@ -602,8 +602,9 @@ clip_image ✔                 set_image_adjust ✔         set_image_frame ✔
 set_image_path ✔             set_image_transparency ✘   reorder_image_draworder ✘
 ```
 
-Ships as `acad-images`. The underlay half (`attach_pdf_underlay` etc., ≈13) stays
-unbuilt below - blocked on a `.dgn`/`.dwf` file, same as Phase 4.5's point clouds.
+Ships as `acad-images`. The underlay half is a separate category, `acad-underlays` - **BUILT
+2026-08-11, see below.** PDF underlays remain unbuilt - no PDF sample file was used to verify
+against in this tranche.
 
 **Two struck before anything was written, both checked against the bank rather than assumed.**
 `reorder_image_draworder` is a duplicate: `modify.set_draworder` already reorders any entity by
@@ -650,7 +651,53 @@ cases rather than prose describing a path nothing could exercise. The live check
 same 300x150 fixture twice under one name, clips only one of the two placements and asserts the
 other is untouched, then detaches one (definition survives) before the other (definition removed).
 
-**Phase 3 total: ≈96 tools, 7 built.**
+### 3.5b `acad-underlays` — **BUILT 2026-08-11, 5 tools, 42/42 live, one restart**
+
+```
+attach_dgn_underlay ✘        attach_dwf_underlay ✔      list_underlays ✔
+detach_underlay ✔            clip_underlay ✔            set_underlay_adjust ✔
+list_underlay_layers ✘       set_underlay_layer_visibility ✘  bind_underlay ✘
+```
+
+Ships as its own category, not folded into `acad-images` - the raster category's own description
+explicitly excludes underlays as "a separate mechanism," and the two entity families (`RasterImage`
+vs `UnderlayReference`) share no base type, unlike DGN/DWF which share `UnderlayReference` and
+`UnderlayDefinition` with each other. That shared base is why `list_underlays`/`detach_underlay`/
+`clip_underlay`/`set_underlay_adjust` are one implementation each rather than two.
+
+**Unblocked by files already on the machine, not supplied by the user.** 4.5's point clouds and
+this phase's underlays were both listed as "blocked on a file the user must supply." Asked
+directly, the user had none - but pointed at AutoCAD's own installation, which turned out to
+contain usable samples nobody had thought to check: DGN seed templates
+(`AutoCAD 2025\UserDataCache\Template\*.dgn`), a Sheet Set publish DWF
+(`AutoCAD 2025\Sample\Sheet Sets\*\*.dwf`), and IES photometric fixtures
+(`ProgramData\Autodesk\AutoCAD 2025\R25.0\plk\WebFiles\*.ies`) - the last of which also unblocked
+`acad-lights.create_web_light` (§6.1). Point clouds remain genuinely blocked: no `.rcp`/`.rcs`
+exists anywhere on this machine.
+
+**Three struck after 7 tried names, not a guess.** No per-layer visibility control compiles under
+any name (`GetLayers`, `SetLayer`, `IsLayerVisible`, `UnderlayLayers`, `SubItems`, `LayerNames`),
+and neither does `Bind()`. `list_underlay_layers`, `set_underlay_layer_visibility` and
+`bind_underlay` are struck. `set_underlay_contrast`/`set_underlay_monochrome` collapse into one
+`set_underlay_adjust`, the same consolidation as `acad-images.set_image_adjust`.
+
+**`attach_dgn_underlay` is withheld, not because it fails but because it cannot be proven.** Every
+`.dgn` on this machine (10 files) is a "Seed" template for exporting a new DGN, not real content,
+and every one refuses to load with `eInvalidInput` regardless of `itemName`. `attach_dwf_underlay`
+uses the identical generic code path and works cleanly against a real DWF, which is strong
+evidence the DGN implementation is correct and only the available files are unsuitable - the same
+"blocked on a file" shape as point clouds, not an API defect. The plugin handler stays registered;
+one real (non-seed) `.dgn` unblocks it.
+
+**Two real defects, found live.** (1) The first DWF tried - a very old Map2Globe VBA sample -
+failed with `eLoadFailed`; a modern Sheet Set publish DWF loaded cleanly with the same code,
+confirming the fixture was the problem, not the tool. (2) `UnderlayReference.IsClipped` reads
+`true` on a freshly attached, never-clipped entity and stays `true` after clearing the boundary -
+it is not the "has a custom clip" flag `RasterImage.IsClipped` is. Every `clipped` field here is
+now `GetClipBoundary().Length > 0` instead. Both are rule 26 §23; the `create_web_light` fix
+below is §18.
+
+**Phase 3 total: ≈96 tools, 12 built.**
 
 ---
 
@@ -1324,8 +1371,14 @@ proves the guard counts real users rather than refusing blindly.
 
 **LIGHTS BUILT 2026-08-11: 6 tools, 38/38 live.** Ships as `acad-lights`: `create_point_light`,
 `create_spot_light`, `create_distant_light`, `list_lights`, `set_light_properties`,
-`delete_light`. `create_web_light` is held back — a web light is defined by an `.ies` photometric
-file and without one there is nothing to verify.
+`delete_light`.
+
+**`create_web_light` BUILT 2026-08-11 (second pass), 7/7 of its own live checks.** Unblocked by
+real `.ies` files found under AutoCAD's own `WebFiles` folder when the user had none to supply
+directly (see §3.5b). `Light.WebFile` is the only web-specific member present — `WebRotationX/Y/Z`
+and `WebFlipHorizontal/Vertical` were all tried and none compiled. Measured live: setting
+`WebFile` before the light is appended to the database throws `eNoDatabase`, the same "append
+first" trap as `GeoLocationData.CoordinateSystem` (rule 26 §18, now with a third instance).
 
 Two probe rounds settled what the first reconnaissance left open: **`Light.LightType` is a
 `GraphicsInterface.DrawableType`** — the right name in the wrong namespace, which is why it read
@@ -1498,11 +1551,11 @@ should happen before any of phases 3–5 is started, not while it is being built
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **88 shipped, 1 withheld.** `insert_field_sheet_set_property` is not built: `AcSm` fields resolve against the sheet set open in the Sheet Set Manager, which nothing here can establish, so a valid code cannot be told from an invented one |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **69** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half) built 2026-08-11, 7 tools |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **74** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half, 7 tools) and `acad-underlays` (5 tools, `attach_dgn_underlay` withheld) both built 2026-08-11 — the latter unblocked by real DGN/DWF files found in AutoCAD's own install tree, not supplied by the user |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **45** | 5 struck: data extraction is a wizard, property sets are AEC-only; `run_command_sequence` built 2026-08-11 (command-context bridge, rule 26 §22); `run_script_file` withdrawn on the same trap; `netload_assembly` not attempted (blocked by the safety classifier, not the API); `eval_lisp`/`load_lisp_file`/`list_loaded_lisp` still need LISP evaluation |
-| 6 | Visualisation — render, animation | 40 → **26** | **14** | **6.1 complete** — materials, lights and sun done (`get_sun_properties`/`set_sun_properties` ship in `acad-lights`, undercounted here until now); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
-| | **Total** | **813** | **676** | **83 %** |
+| 6 | Visualisation — render, animation | 40 → **26** | **15** | **6.1 complete** — materials, lights, sun and `create_web_light` all done (the last two undercounted here until this session); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
+| | **Total** | **813** | **682** | **84 %** |
 
 **Built column refreshed 2026-08-11.** Counted from `toolbank-manifests/` directly (48 manifests
 summed via `pre-commit.ps1`), not from this table's own arithmetic — the table had drifted to 666

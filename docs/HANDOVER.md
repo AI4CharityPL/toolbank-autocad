@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **676 tools in 48 categories**. The product language is **English**; every tool
+pipe. There are **682 tools in 49 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -147,7 +147,16 @@ Practical rules that follow:
 
 ## 7. What is left
 
-**676 built.** Roughly 50 identified as remaining, and most of it is gated rather than hard.
+**682 built.** Roughly 45 identified as remaining, and most of it is gated rather than hard.
+
+**2026-08-11: `acad-underlays` built, 5 tools, 42/42 live**, plus `acad-lights.create_web_light`,
+7/7. Both were "blocked on a file the user must supply" until the user pointed at AutoCAD's own
+install tree instead of supplying anything: real DGN seed templates, a Sheet Set publish DWF and
+IES photometric fixtures were already sitting there, unused. `attach_dgn_underlay` stays withheld
+— the only `.dgn` files found are empty export seeds, not real content — but `attach_dwf_underlay`
+proves the shared code path is correct. Worth remembering for `4.5 acad-pointclouds`: no `.rcp`/
+`.rcs` turned up anywhere on this machine, so that one is still genuinely blocked, not just
+under-searched.
 
 **2026-08-11: `acad-images` (raster half) built, 7 tools, 48/48 live.** `attach_image`,
 `list_images`, `detach_image`, `clip_image`, `set_image_adjust`, `set_image_frame`,
@@ -178,9 +187,8 @@ already be shipped (`acad-lights`), undercounted in this doc until this pass fou
 
 | item | tools | needs |
 | --- | ---: | --- |
-| 4.5 `acad-pointclouds` | 12 | one `.rcp` or `.rcs`. The API is fine — reconnaissance is in the roadmap. ReCap is not installed here |
-| 3.5 underlays | ~8 | a `.dgn` and a `.dwf` |
-| `create_web_light` | 1 | an `.ies` photometric file |
+| 4.5 `acad-pointclouds` | 12 | one `.rcp` or `.rcs`. The API is fine — reconnaissance is in the roadmap. ReCap is not installed, and none was found anywhere on this machine either (searched 2026-08-11) |
+| `attach_dgn_underlay` | 1 | one real (non-seed) `.dgn` — every one found on this machine is an empty export template. `attach_dwf_underlay` (built) proves the code path works |
 | material maps / library | 3 | a texture image and an `.adsklib` |
 
 ### Blocked on something harder
@@ -229,7 +237,7 @@ reason before resurrecting any of them.**
 * `pre-commit.ps1 -All` → **0 errors**, 114 items
 * `dotnet test` → **265 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 48 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **676 tools**
+* 49 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **682 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

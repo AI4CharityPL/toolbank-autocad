@@ -1,0 +1,178 @@
+{
+  "id": "acad-underlays",
+  "name": "acad-underlays",
+  "description": "Attach, clip and adjust DGN and DWF underlay references (UnderlayReference/DgnReference/DwfReference entities). PDF underlays and importing underlay geometry into real entities are a separate mechanism and not covered here. Layer-level visibility within an underlay and BIND are not exposed in the managed API - confirmed absent, not merely unbuilt.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-underlays.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "adjust",
+    "attach",
+    "autocad",
+    "cad",
+    "clip",
+    "detach",
+    "dgn",
+    "dwf",
+    "dwg",
+    "list",
+    "set",
+    "underlay",
+    "underlays"
+  ],
+  "intent_examples": [
+    "adjust underlay contrast",
+    "attach a dgn reference",
+    "attach a dgn underlay",
+    "attach a dwf reference",
+    "attach a dwf underlay",
+    "clip the dwf to a rectangle",
+    "clip this underlay",
+    "crop the dgn reference",
+    "delete a dgn or dwf reference",
+    "detach this underlay",
+    "dolacz podklad dgn",
+    "dolacz podklad dwf",
+    "fade this underlay",
+    "find an underlay by name",
+    "get rid of an underlay",
+    "increase underlay fade",
+    "insert a dwf file",
+    "insert a microstation file",
+    "jakie podklady sa dolaczone",
+    "list the underlays",
+    "lista podkladow",
+    "make this underlay monochrome",
+    "obetnij podklad do wielokata",
+    "odlacz podklad od rysunku",
+    "przytnij podklad",
+    "reference a dwf sheet",
+    "reference a microstation drawing",
+    "remove a placed underlay",
+    "remove an underlay from the drawing",
+    "remove the underlay clip",
+    "show attached dgn and dwf references",
+    "turn off underlay colour",
+    "unclip this underlay",
+    "underlay a dgn file",
+    "underlay a dwf file",
+    "ustaw podklad na monochromatyczny",
+    "usun podklad z rysunku",
+    "what underlays are in this drawing",
+    "which underlay references exist",
+    "wstaw plik dgn jako podklad",
+    "wstaw plik dwf jako podklad",
+    "zmien kontrast podkladu"
+  ],
+  "tools_summary": [
+    {
+      "name": "attach_dwf_underlay",
+      "description": "Attach a DWF or DWFx file as an underlay reference. itemName selects which sheet inside the DWF to show - a DWF can hold several; omit it to use the file\u0027s default. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file and item, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - same behaviour as acad-images.attach_image.",
+      "tags": [
+        "attach",
+        "dwf",
+        "underlay"
+      ],
+      "intent": [
+        "attach a dwf underlay",
+        "insert a dwf file",
+        "dolacz podklad dwf",
+        "attach a dwf reference",
+        "wstaw plik dwf jako podklad",
+        "reference a dwf sheet",
+        "underlay a dwf file"
+      ]
+    },
+    {
+      "name": "clip_underlay",
+      "description": "Clip an underlay to a boundary given in the underlay\u0027s OWN local coordinates - (0,0) to (underlayWidth, underlayHeight) as reported by list_underlays or this tool\u0027s own result BEFORE scale is applied, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points removes the clip. Reports the entity\u0027s drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents.",
+      "tags": [
+        "clip",
+        "underlay"
+      ],
+      "intent": [
+        "clip this underlay",
+        "crop the dgn reference",
+        "przytnij podklad",
+        "clip the dwf to a rectangle",
+        "obetnij podklad do wielokata",
+        "remove the underlay clip",
+        "unclip this underlay"
+      ]
+    },
+    {
+      "name": "detach_underlay",
+      "description": "Remove one underlay reference (DGN or DWF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes.",
+      "tags": [
+        "detach",
+        "underlay"
+      ],
+      "intent": [
+        "detach this underlay",
+        "remove an underlay from the drawing",
+        "usun podklad z rysunku",
+        "delete a dgn or dwf reference",
+        "odlacz podklad od rysunku",
+        "remove a placed underlay",
+        "get rid of an underlay"
+      ]
+    },
+    {
+      "name": "list_underlays",
+      "description": "List DGN and DWF underlay references attached to the drawing: kind (dgn/dwf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only.",
+      "tags": [
+        "list",
+        "underlays"
+      ],
+      "intent": [
+        "list the underlays",
+        "what underlays are in this drawing",
+        "lista podkladow",
+        "show attached dgn and dwf references",
+        "jakie podklady sa dolaczone",
+        "find an underlay by name",
+        "which underlay references exist"
+      ]
+    },
+    {
+      "name": "set_underlay_adjust",
+      "description": "Set an underlay\u0027s contrast, fade and/or monochrome display. Only the ones given are changed; the others are read and reported unchanged. Collapses the roadmap\u0027s separate set_underlay_contrast/set_underlay_monochrome into one tool, matching acad-images.set_image_adjust and acad-materials.modify_material.",
+      "tags": [
+        "set",
+        "underlay",
+        "adjust"
+      ],
+      "intent": [
+        "adjust underlay contrast",
+        "make this underlay monochrome",
+        "zmien kontrast podkladu",
+        "fade this underlay",
+        "ustaw podklad na monochromatyczny",
+        "turn off underlay colour",
+        "increase underlay fade"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "underlays",
+    "tool_count_target": 5,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-11T11:46:36.8899562Z"
+  }
+}

@@ -6,6 +6,43 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`acad-underlays` built, 5 tools, 42/42 live, plus `acad-lights.create_web_light`, 7/7. Bank
+  676 → 682.** Both were recorded as "blocked on a file the user must supply." Asked directly,
+  the user had none of `.dgn`/`.dwf`/`.ies` to hand - but pointed at AutoCAD's own installation
+  rather than stopping there, which turned out to already contain usable samples: DGN seed
+  templates (`UserDataCache\Template\*.dgn`), a Sheet Set publish DWF
+  (`Sample\Sheet Sets\*\*.dwf`), and IES photometric fixtures
+  (`ProgramData\...\WebFiles\*.ies`). `4.5 acad-pointclouds` was checked the same way and stays
+  genuinely blocked - no `.rcp`/`.rcs` exists anywhere on this machine.
+
+  `attach_dgn_underlay`, `attach_dwf_underlay`, `list_underlays`, `detach_underlay`,
+  `clip_underlay`, `set_underlay_adjust` were probed against the compiler first: `DgnReference`/
+  `DwfReference` share a common `UnderlayReference` base (confirmed via the compiler before
+  writing anything), which is why detach/list/clip/adjust are one implementation each rather than
+  two. Per-layer visibility and `Bind()` are confirmed absent after 7 tried names, so
+  `list_underlay_layers`, `set_underlay_layer_visibility` and `bind_underlay` are struck, and
+  `set_underlay_contrast`/`set_underlay_monochrome` collapse into one `set_underlay_adjust` -
+  the same consolidation as `acad-images.set_image_adjust`.
+
+  **`attach_dgn_underlay` is withheld, not because it fails but because it cannot be proven.**
+  Every `.dgn` found (10 files) is an export seed template with no real content, and every one
+  refuses to load regardless of `itemName`. `attach_dwf_underlay` uses the identical generic code
+  path and works cleanly against a real DWF, which is strong evidence the DGN side is correct and
+  only the available files are unsuitable - the same shape as point clouds, not an API defect.
+
+  **Two real defects, found live.** The first DWF tried (a very old Map2Globe VBA sample) failed
+  with `eLoadFailed`; a modern Sheet Set DWF loaded cleanly with the same code, confirming the
+  fixture was the problem. `UnderlayReference.IsClipped` reads `true` on a freshly attached,
+  never-clipped entity and stays `true` after clearing the boundary - not the "has a custom clip"
+  flag `RasterImage.IsClipped` is. Every `clipped` field is now `GetClipBoundary().Length > 0`
+  instead. Both are documented as rule 26 §23.
+
+  **`create_web_light` hit the exact `eNoDatabase` trap already catalogued for
+  `GeoLocationData.CoordinateSystem` (rule 26 §18), just not yet recorded for `Light.WebFile`.**
+  `WebFile` was being set before the light was appended to the database; moving it after fixed
+  the throw. `WebRotationX/Y/Z` and `WebFlipHorizontal/Vertical` were all tried and none compiled
+  - `WebFile` is the only web-specific member present.
+
 - **`acad-lisp`'s `run_command_sequence` built, 17/17 live, bank 675 → 676.** A queued
   `[CommandMethod]` bridge (`LispCommandBridge`) gives `Editor.Command` a genuine COMMAND
   context — the application-context handler writes a request file, queues

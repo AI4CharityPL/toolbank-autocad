@@ -103,6 +103,7 @@ public sealed class PluginEntryPoint : AcadRuntime.IExtensionApplication
             SchedulesPluginTools.Register(_toolHost);
             LivestreamPluginTools.Register(_toolHost);
             ImagesPluginTools.Register(_toolHost);
+            UnderlaysPluginTools.Register(_toolHost);
             Log.Info($"Tools registered ({_toolHost.RegisteredTools.Count}): {string.Join(", ", _toolHost.RegisteredTools)}");
 
             var pipeName = Environment.GetEnvironmentVariable("ACADMCP_PIPE");

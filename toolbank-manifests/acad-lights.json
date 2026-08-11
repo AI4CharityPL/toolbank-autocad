@@ -24,13 +24,17 @@
     "properties",
     "set",
     "spot",
-    "sun"
+    "sun",
+    "web"
   ],
   "intent_examples": [
     "add a cone light",
     "add a directional sun light",
     "add a light bulb at this position",
+    "add a photometric fixture",
+    "add a real-world light fixture",
     "add a spotlight aimed at this point",
+    "add an ies light fixture",
     "add an omnidirectional light",
     "add sunlight to the model",
     "adjust the spotlight cone",
@@ -41,8 +45,10 @@
     "create a distant light",
     "create a point light",
     "create a spot light",
+    "create a web light",
     "delete a spotlight",
     "delete this light",
+    "dodaj oprawe fotometryczna",
     "dodaj swiatlo kierunkowe na rysunku",
     "dodaj swiatlo sloneczne do rysunku",
     "dodaj zrodlo swiatla do rysunku",
@@ -55,6 +61,7 @@
     "jakie zrodla swiatla sa na rysunku",
     "light everything from one direction",
     "light this object from above",
+    "light with an ies file",
     "list the lights",
     "lista swiatel",
     "make the light brighter",
@@ -79,6 +86,7 @@
     "utworz reflektor",
     "utworz swiatlo odlegle",
     "utworz swiatlo punktowe",
+    "utworz swiatlo web",
     "what date and time is the sun set to",
     "what lights are in this drawing",
     "wlacz slonce na rysunku",
@@ -137,6 +145,24 @@
         "dodaj swiatlo kierunkowe na rysunku",
         "add a cone light",
         "light this object from above"
+      ]
+    },
+    {
+      "name": "create_web_light",
+      "description": "Create a web light - a fixture whose light distribution comes from a photometric .ies file rather than a cone you shape yourself. intensity scales the file\u0027s own distribution; it does not replace it. Refuses a missing .ies file, and is read back through the WebFile it reports afterwards, since a path that failed to attach would otherwise look identical to one that worked.",
+      "tags": [
+        "create",
+        "web",
+        "light"
+      ],
+      "intent": [
+        "create a web light",
+        "add a photometric fixture",
+        "utworz swiatlo web",
+        "add an ies light fixture",
+        "dodaj oprawe fotometryczna",
+        "light with an ies file",
+        "add a real-world light fixture"
       ]
     },
     {
@@ -230,7 +256,7 @@
   ],
   "metadata": {
     "category": "lights",
-    "tool_count_target": 8,
+    "tool_count_target": 9,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -244,6 +270,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-11T09:13:53.7810932Z"
+    "last_regenerated_utc": "2026-08-11T11:38:07.2917624Z"
   }
 }

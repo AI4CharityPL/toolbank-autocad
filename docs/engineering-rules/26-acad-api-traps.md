@@ -514,12 +514,13 @@ this class; a count or a tolerance, where 0 is already invalid, is not.
 
 ### 18. Some properties do not stick until the object is IN the database
 
-Two independent instances, one session apart:
+Three independent instances now, across two sessions:
 
 | property | symptom |
 | --- | --- |
 | `GeoLocationData.CoordinateSystem` | throws `eNoDatabase` if set before `PostToDb` — loud |
 | `Light.HasTarget` | silently reads back `false` if set before the entity is appended — quiet |
+| `Light.WebFile` | throws `eNoDatabase` if set before the light is appended — loud, same shape as `GeoLocationData` |
 
 The second is the dangerous one. `Position`, `Intensity`, `LightColor` and the cone angles all
 survive being set on an unappended `Light`, so the object looks fine; only `HasTarget` reverts, and
@@ -649,6 +650,31 @@ path directly, unless `FILEDIA` is 0 (the precedent already recorded for `NETLOA
 correctly restored afterward. The script still drew nothing. Two measured attempts, two different
 explanations tried, both wrong reasons ruled out rather than one guess accepted — which is why
 this is withdrawn rather than shipped on the theory that the fix probably worked.
+
+### 23. `UnderlayReference.IsClipped` does not mean "has a custom clip" — `GetClipBoundary().Length` does
+
+```csharp
+var u = new DwfReference { DefinitionId = defId };
+ms.AppendEntity(u); tr.AddNewlyCreatedDBObject(u, true);
+bool a = u.IsClipped;              // TRUE - on a brand new reference, before SetClipBoundary is ever called
+u.SetClipBoundary(Array.Empty<Point2d>());
+bool b = u.IsClipped;              // STILL TRUE - clearing the boundary does not clear the flag either
+int n = u.GetClipBoundary().Length; // 0 both times - THIS is what actually says whether a clip exists
+```
+
+`RasterImage.IsClipped` behaves exactly the way the name suggests — false until a clip is set,
+false again once removed — which is what made the DGN/DWF equivalent look safe to reuse without
+checking first. It is not the same property in behaviour, only in name and type. Measured on a
+freshly-attached, never-touched `DwfReference`: `IsClipped` read `true` immediately, and stayed
+`true` after `SetClipBoundary` was called with zero points — while `GetClipBoundary().Length` read
+`0` in both cases, correctly. Every `clipped` field this bank reports for underlays is now derived
+from `GetClipBoundary().Length > 0` rather than `IsClipped`, which is not read at all.
+
+**A cube-and-sphere lesson in flag form.** The first live run's own checks caught this cleanly
+because the un-clip check asserted `clipped == false` afterward and failed — but it would have
+passed silently if the check had only looked at the drawing-space extents shrinking back to full
+size, which DID happen correctly. The boundary was genuinely cleared; only the flag lied. Assert
+the specific claim being made, not a nearby one that happens to also be true.
 
 ---
 

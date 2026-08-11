@@ -54,6 +54,7 @@ internal static class LightsPluginTools
         host.Register("acad.lights.create_point_light",   CreatePointLight);
         host.Register("acad.lights.create_spot_light",    CreateSpotLight);
         host.Register("acad.lights.create_distant_light", CreateDistantLight);
+        host.Register("acad.lights.create_web_light",     CreateWebLight);
         host.Register("acad.lights.list_lights",          ListLights);
         host.Register("acad.lights.set_light_properties", SetLightProperties);
         host.Register("acad.lights.delete_light",         DeleteLight);
@@ -107,6 +108,7 @@ internal static class LightsPluginTools
         color = new { r = (int)l.LightColor.Red, g = (int)l.LightColor.Green, b = (int)l.LightColor.Blue },
         handle = l.Handle.ToString(),
         layer = l.Layer,
+        webFile = l.LightType == GI.DrawableType.WebLight ? l.WebFile : null,
     };
 
     private static void RequireUniqueName(Database db, Transaction tr, string name)
@@ -261,6 +263,44 @@ internal static class LightsPluginTools
                        "convention rather than a place. Give a direction, or two points to define " +
                        "one. Because the rays never weaken with distance, moving a distant light " +
                        "changes nothing - only turning it changes the picture.",
+            });
+        });
+
+    private static Task<ToolDispatchResult> CreateWebLight(JsonObject args, CancellationToken ct) =>
+        Run("acad.lights.create_web_light", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<WebLightArgsDto>(args);
+            if (string.IsNullOrWhiteSpace(a.Path))
+                throw new ArgumentException("path is required: the .ies photometric file.");
+            var path = System.IO.Path.GetFullPath(a.Path!);
+            if (!System.IO.File.Exists(path))
+                throw new ArgumentException($"No file at '{path}'.");
+            if (a.Position is null)
+                throw new ArgumentException("position is required: where the fixture sits.");
+
+            var common = new LightArgsDto(a.Name, a.Position, null, null, a.Intensity, a.Color,
+                a.On, null, null, a.Layer);
+            var l = NewLight(db, tr, common, GI.DrawableType.WebLight);
+            // MEASURED live: setting WebFile before the light is in the database throws
+            // eNoDatabase - the same "append or PostToDb FIRST" trap as GeoLocationData's
+            // CoordinateSystem (rule 26 section 18), just not yet catalogued for Light.WebFile.
+            var handle = AcadEnv.Persist(db, tr, l, a.Layer);
+            // MEASURED: WebFile is the only web-specific member found present on Light after
+            // trying WebRotationX/Y/Z and WebFlipHorizontal/Vertical, all absent.
+            l.WebFile = path;
+
+            var back = RequireLight(db, tr, a.Name, OpenMode.ForRead);
+            if (string.IsNullOrEmpty(back.WebFile))
+                throw new InvalidOperationException("The light does not read back with a WebFile set.");
+            return Wrap(new
+            {
+                entity = handle,
+                light = Describe(back),
+                note = "A web light's distribution comes entirely from the .ies photometric file " +
+                       "rather than from a cone or intensity you compute - intensity here scales " +
+                       "the file's own distribution rather than replacing it. Read back through " +
+                       "WebFile after creation, since a path that failed to attach would " +
+                       "otherwise look identical to one that worked.",
             });
         });
 

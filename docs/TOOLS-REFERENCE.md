@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 49 categories, 676 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 50 categories, 682 tools total.
 
 ## Categories
 
@@ -25,7 +25,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-images](#acad-images) (7 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
-- [acad-lights](#acad-lights) (8 tools)
+- [acad-lights](#acad-lights) (9 tools)
 - [acad-lisp](#acad-lisp) (6 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-materials](#acad-materials) (6 tools)
@@ -46,6 +46,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-surfaces](#acad-surfaces) (12 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
+- [acad-underlays](#acad-underlays) (5 tools)
 - [acad-validators](#acad-validators) (11 tools)
 - [acad-verticals](#acad-verticals) (8 tools)
 - [acad-view](#acad-view) (8 tools)
@@ -522,6 +523,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `create_distant_light` | Create a distant light - the sun-like one: parallel rays of the same strength everywhere, so only their DIRECTION matters. Give a direction vector, or a position and target to define one. Because the rays never weaken with distance, MOVING a distant light changes nothing; only turning it changes the picture, which is why its position is a convention rather than a place. Use this for sunlight and a point or spot light for lamps. |
 | `create_point_light` | Create a point light - a bare bulb that throws light in EVERY direction from one spot. It has no target and no cone, so there is nothing to aim: create_spot_light is the one that points somewhere. Set the position, and optionally the intensity, colour and whether it starts on. Lights are addressed by NAME throughout this category, so a name already in use is refused - two lights with one name could not be told apart. Read back by searching model space after creation rather than from the object just written. |
 | `create_spot_light` | Create a spot light - aimed from a position at a target, with two cones. The HOTSPOT is the bright inner cone and the FALLOFF the dimmer outer edge, both in RADIANS, so the hotspot is always the smaller of the two and a hotspot wider than the falloff is refused as a shape a light cannot have. Defaults are about 20 and 45 degrees. The two angles are set together because both are read-only individually in the API - which is also what keeps the cone from inverting. The result is read back and the angles checked against what was asked for. |
+| `create_web_light` | Create a web light - a fixture whose light distribution comes from a photometric .ies file rather than a cone you shape yourself. intensity scales the file's own distribution; it does not replace it. Refuses a missing .ies file, and is read back through the WebFile it reports afterwards, since a path that failed to attach would otherwise look identical to one that worked. |
 | `delete_light` | Delete a light from the drawing. Its previous settings are reported in full, so it can be recreated if the deletion was a mistake. Deleting a light changes what a render looks like and nothing about the geometry. Confirmed gone by searching model space again rather than assumed. |
 | `get_sun_properties` | Read the sun of the current viewport: whether it is on, its intensity, the date and time it is set to, the sky illumination and haze, and the shadow settings. Read-only. IMPORTANT: a sun belongs to a VIEWPORT, not to the drawing - Database.SunId does not exist and ViewportTableRecord.SunId does - so this reports the sun of the current viewport configuration and another configuration can have its own. A drawing has NO sun until something attaches one, and that absence is reported as hasSun=false rather than answered with defaults that were never set. |
 | `list_lights` | List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API. |
@@ -855,6 +857,16 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `set_ucs_previous` | Step back to the UCS in use before the last change, like AutoCAD's UCS Previous. The history covers changes made through these tools in this session only - a UCS changed by hand in AutoCAD is not in it, and the tool says so rather than silently doing nothing. Reports how many steps remain. |
 | `set_ucs_world` | Reset the current UCS to WCS. Every tool in the bank interprets coordinates in WCS by default, so this returns the drawing to the state those tools assume. |
 | `transform_point` | Convert one point between coordinate systems. 'from' and 'to' each accept 'world', 'current', or a saved UCS name. Use this to work out WCS coordinates for the drawing tools while they are still WCS-only. |
+
+## acad-underlays
+
+| Tool | Description |
+|---|---|
+| `attach_dwf_underlay` | Attach a DWF or DWFx file as an underlay reference. itemName selects which sheet inside the DWF to show - a DWF can hold several; omit it to use the file's default. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file and item, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - same behaviour as acad-images.attach_image. |
+| `clip_underlay` | Clip an underlay to a boundary given in the underlay's OWN local coordinates - (0,0) to (underlayWidth, underlayHeight) as reported by list_underlays or this tool's own result BEFORE scale is applied, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points removes the clip. Reports the entity's drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents. |
+| `detach_underlay` | Remove one underlay reference (DGN or DWF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes. |
+| `list_underlays` | List DGN and DWF underlay references attached to the drawing: kind (dgn/dwf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only. |
+| `set_underlay_adjust` | Set an underlay's contrast, fade and/or monochrome display. Only the ones given are changed; the others are read and reported unchanged. Collapses the roadmap's separate set_underlay_contrast/set_underlay_monochrome into one tool, matching acad-images.set_image_adjust and acad-materials.modify_material. |
 
 ## acad-validators
 

@@ -13,11 +13,13 @@ public class LightsTests
 {
     private static readonly string[] ExpectedTools = new[]
     {
-        // Roadmap 6.1, second tranche. create_web_light is NOT here: a web light is defined by an
-        // .ies photometric file, and without one there is nothing to verify - the same reason
-        // texture maps waited in acad-materials.
+        // Roadmap 6.1, second tranche.
         "create_point_light", "create_spot_light", "create_distant_light",
         "list_lights", "set_light_properties", "delete_light",
+
+        // Added 2026-08-11: sample .ies files were found on this machine under AutoCAD's own
+        // WebFiles folder, unblocking what used to wait for lack of one.
+        "create_web_light",
 
         // Third tranche: the sun, which belongs to a VIEWPORT rather than to the drawing.
         // There is no set_render_environment: RenderEnvironment exposes three properties and has

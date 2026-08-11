@@ -35,6 +35,15 @@ public sealed record DistantLightArgs(
     [property: JsonPropertyName("on")]        bool? On = null,
     [property: JsonPropertyName("layer")]     string? Layer = null);
 
+public sealed record WebLightArgs(
+    [property: JsonPropertyName("name")]      string Name,
+    [property: JsonPropertyName("position")]  Point3dDto Position,
+    [property: JsonPropertyName("path")]      string Path,
+    [property: JsonPropertyName("intensity")] double? Intensity = null,
+    [property: JsonPropertyName("color")]     ColorDto? Color = null,
+    [property: JsonPropertyName("on")]        bool? On = null,
+    [property: JsonPropertyName("layer")]     string? Layer = null);
+
 public sealed record LightsNoArgs();
 
 public sealed record LightNameArgs(
@@ -67,7 +76,8 @@ public sealed record LightInfo(
     [property: JsonPropertyName("falloffAngle")] double FalloffAngle,
     [property: JsonPropertyName("color")]        LightRgb Color,
     [property: JsonPropertyName("handle")]       string Handle,
-    [property: JsonPropertyName("layer")]        string? Layer);
+    [property: JsonPropertyName("layer")]        string? Layer,
+    [property: JsonPropertyName("webFile")]      string? WebFile = null);
 
 public sealed record LightCreateResult(
     [property: JsonPropertyName("entity")]    EntityHandle Entity,

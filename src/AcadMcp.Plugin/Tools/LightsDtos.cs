@@ -18,6 +18,15 @@ internal sealed record LightArgsDto(
     [property: JsonPropertyName("falloffAngle")] double? FalloffAngle,
     [property: JsonPropertyName("layer")]        string? Layer);
 
+internal sealed record WebLightArgsDto(
+    [property: JsonPropertyName("name")]      string? Name,
+    [property: JsonPropertyName("position")]  Point3dDto? Position,
+    [property: JsonPropertyName("path")]      string? Path,
+    [property: JsonPropertyName("intensity")] double? Intensity,
+    [property: JsonPropertyName("color")]     ColorDto? Color,
+    [property: JsonPropertyName("on")]        bool? On,
+    [property: JsonPropertyName("layer")]     string? Layer);
+
 internal sealed record SunArgsDto(
     [property: JsonPropertyName("on")]              bool? On,
     [property: JsonPropertyName("intensity")]       double? Intensity,

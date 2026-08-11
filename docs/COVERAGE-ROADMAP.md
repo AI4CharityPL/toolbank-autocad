@@ -594,20 +594,63 @@ it has to re-evaluate (2 → 3) rather than remember a result.
 `select_duplicates` reports and never deletes — each group names one entity to keep — because the
 match is a bounding-box heuristic that will group two different splines sharing an extent.
 
-### 3.5 `acad-images` / `acad-underlays` (≈22)
+### 3.5 `acad-images` (raster half) — **BUILT 2026-08-11, 7 tools, 48/48 live, two restarts**
 
 ```
-attach_image                list_images                detach_image
-clip_image                  set_image_transparency     set_image_adjust
-set_image_frame             reorder_image_draworder    set_image_path
-attach_pdf_underlay         attach_dgn_underlay        attach_dwf_underlay
-list_underlays              detach_underlay            clip_underlay
-set_underlay_contrast       set_underlay_monochrome    list_underlay_layers
-set_underlay_layer_visibility import_pdf_as_geometry   set_pdf_import_options
-bind_underlay
+attach_image ✔               list_images ✔              detach_image ✔
+clip_image ✔                 set_image_adjust ✔         set_image_frame ✔
+set_image_path ✔             set_image_transparency ✘   reorder_image_draworder ✘
 ```
 
-**Phase 3 total: ≈96 tools.**
+Ships as `acad-images`. The underlay half (`attach_pdf_underlay` etc., ≈13) stays
+unbuilt below - blocked on a `.dgn`/`.dwf` file, same as Phase 4.5's point clouds.
+
+**Two struck before anything was written, both checked against the bank rather than assumed.**
+`reorder_image_draworder` is a duplicate: `modify.set_draworder` already reorders any entity by
+handle, images included, so a second name for the same operation would only give a router two
+ways to spell one action - the 3.4/6.1 pattern again. `set_image_transparency` (the background
+toggle for bitonal images) has **no managed API at all** - nine candidate names were tried
+(`IsTransparent`, `ImageTransparency`, `IsBackgroundTransparent`, `Transparent`,
+`ShowTransparent`, `RasterImageDef.IsTransparent`, `IsBitonal`, `ImageIsTransparent`,
+`DisplayOpaqueBackground`) and every one failed to compile - the same shape as `set_mtext_frame`
+and arc-aligned text.
+
+**Two real defects, both found live and both fixed within the same session.**
+
+1. **Aspect-preserve was silently wrong.** `RasterImage.Width`/`.Height` turned out to be
+   just the LENGTHS of `Orientation`'s two axis vectors - not the vectors' length times the
+   source pixel count, which is what a first version assumed. Measuring a "unit-scale"
+   placement to infer the pixel aspect ratio therefore always measured 1:1, whatever the real
+   image was, and every aspect-preserved attach came out square. The fix uses
+   `ImageWidth`/`ImageHeight` - the actual pixel counts, constant regardless of `Orientation` -
+   for the ratio, and sets the final vectors directly in one pass instead of a measure-then-
+   correct dance that never needed to exist. Caught by a 300x150 (2:1) fixture: a square bug
+   could not have hidden behind a square test image, which is the rule 26 section 14 lesson
+   again, this time on a 2D placement rather than a 3D cut.
+2. **`AssociateRasterDef` on a definition opened `ForRead` is a FATAL internal AutoCAD error**,
+   not a catchable one - `dbobji.cpp@8703: eNotOpenForWrite`, a modal "Przerwanie procesu"
+   dialog that froze the UI thread and silently timed out every call behind it for the rest of
+   the run. Reached only on the SECOND placement of a shared definition, which is exactly why a
+   test that only attaches one image per file would never have found it. Fixed by opening the
+   reused definition `ForWrite` before associating, and AutoCAD needed a restart afterward since
+   a fatal internal error is not assumed to leave the session clean.
+
+**A third, smaller correction**: `RasterImage.SetClipBoundary` refuses `ClipBoundaryType.Rectangle`
+with two input points and refuses `ClipBoundaryType.Invalid` with an empty collection - both
+`eInvalidInput`. `Rectangle` is what the type reads back as, not a shape the setter accepts;
+clipping now always goes through `Poly` with an explicitly closed ring (two corners expanded to
+four, any given polygon closed if not already), and removing a clip is `IsClipped = false` alone,
+which leaves the old boundary stored but inactive rather than trying to hand the setter nothing.
+
+**`attach_image` reuses an existing definition when the same name points at the same file**,
+rather than refusing as a duplicate - matching how AutoCAD itself lets one image be inserted more
+than once. That is not cosmetic: it is what makes `detach_image`'s "was this the last placement"
+branch and `set_image_path`'s "every entity that shares this definition" branch real, reachable
+cases rather than prose describing a path nothing could exercise. The live check attaches the
+same 300x150 fixture twice under one name, clips only one of the two placements and asserts the
+other is untouched, then detaches one (definition survives) before the other (definition removed).
+
+**Phase 3 total: ≈96 tools, 7 built.**
 
 ---
 
@@ -1419,15 +1462,18 @@ should happen before any of phases 3–5 is started, not while it is being built
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **88 shipped, 1 withheld.** `insert_field_sheet_set_property` is not built: `AcSm` fields resolve against the sheet set open in the Sheet Set Manager, which nothing here can establish, so a valid code cannot be told from an invented one |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **69** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half) built 2026-08-11, 7 tools |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **44** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
-| 6 | Visualisation — render, animation | 40 → **26** | **12** | 6.2 has no managed API; 6.1 materials and lights done, sun and renderers outstanding |
-| | **Total** | **813** | **666** | **82 %** |
+| 6 | Visualisation — render, animation | 40 → **26** | **14** | 6.2 has no managed API; 6.1 materials, lights AND sun done (`get_sun_properties`/`set_sun_properties` ship in `acad-lights`, undercounted here until now), environment and renderers outstanding |
+| | **Total** | **813** | **675** | **83 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 667 (337 + 88 + 71 + 62 + 53 + 44 + 12)
-while the bank measures **666**. The 12-tool difference is real and is left standing rather than
-forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
+**Built column refreshed 2026-08-11.** Counted from `toolbank-manifests/` directly (48 manifests
+summed via `pre-commit.ps1`), not from this table's own arithmetic — the table had drifted to 666
+before this pass found it was already 668, two tools ahead of its own record with no note of why.
+`acad-images` then added 7, landing on the measured **675**. The per-phase figures no longer sum
+to the total exactly for the same reason as before: tools have also been added outside the phase
+plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which
 `scripts/check-manifests.ps1` holds to the code.

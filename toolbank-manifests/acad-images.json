@@ -1,0 +1,220 @@
+{
+  "id": "acad-images",
+  "name": "acad-images",
+  "description": "Attach, clip, adjust and detach raster image references (PNG/JPG/TIFF/BMP). RasterImage/RasterImageDef entities, not underlays (DGN/DWF/PDF) which are a separate mechanism. set_draworder in acad-geometry-2d already reorders any entity including images; there is no separate reorder tool here.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-images.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "adjust",
+    "attach",
+    "autocad",
+    "cad",
+    "clip",
+    "detach",
+    "dwg",
+    "frame",
+    "image",
+    "images",
+    "list",
+    "path",
+    "set"
+  ],
+  "intent_examples": [
+    "add a photo to the drawing",
+    "adjust image brightness",
+    "attach an image",
+    "change the image contrast",
+    "clip the picture to a rectangle",
+    "clip this image",
+    "crop the raster image",
+    "delete a raster reference",
+    "detach this image",
+    "dolacz obraz do rysunku",
+    "fade this raster image",
+    "find an image by name",
+    "fix a broken image link",
+    "get rid of an image",
+    "hide image frames",
+    "increase image fade",
+    "insert a jpg as a reference",
+    "insert a png into the drawing",
+    "jakie obrazy sa dolaczone",
+    "list the images",
+    "lista obrazow w rysunku",
+    "make the image lighter",
+    "napraw sciezke obrazu",
+    "obetnij zdjecie do wielokata",
+    "odlacz zdjecie od rysunku",
+    "place a raster image",
+    "point the image at a new file",
+    "pokaz ramke obrazu",
+    "przytnij obraz",
+    "relink a moved image",
+    "remove a placed picture",
+    "remove an image from the drawing",
+    "remove the image clip",
+    "repath this image",
+    "set imageframe",
+    "show attached raster images",
+    "show the image border",
+    "toggle image borders",
+    "turn off image frame display",
+    "ukryj ramki obrazow",
+    "unclip this image",
+    "update image source path",
+    "ustaw kontrast zdjecia",
+    "usun obraz z rysunku",
+    "what images are in this drawing",
+    "which pictures are placed",
+    "wstaw zdjecie do autocada",
+    "zaktualizuj sciezke do zdjecia",
+    "zmien jasnosc obrazu"
+  ],
+  "tools_summary": [
+    {
+      "name": "attach_image",
+      "description": "Attach a raster image (PNG/JPG/BMP/TIFF) at a point with a given width in drawing units - height is computed to preserve the source aspect ratio unless given explicitly. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - matching how AutoCAD itself lets one image be inserted more than once. The requested width (and height, if given) are READ BACK from the placed entity and the tool refuses if they do not match, rather than trusting the placement math silently. Optional rotationDegrees and layer.",
+      "tags": [
+        "attach",
+        "image"
+      ],
+      "intent": [
+        "attach an image",
+        "insert a png into the drawing",
+        "dolacz obraz do rysunku",
+        "place a raster image",
+        "wstaw zdjecie do autocada",
+        "insert a jpg as a reference",
+        "add a photo to the drawing"
+      ]
+    },
+    {
+      "name": "clip_image",
+      "description": "Clip an image to a boundary given in IMAGE PIXEL SPACE - (0,0) to (imageWidthPx, imageHeightPx) as reported by list_images or by this tool\u0027s own result, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points (or passing an empty list) REMOVES the clip instead. Reports the entity\u0027s drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents rather than a bare success.",
+      "tags": [
+        "clip",
+        "image"
+      ],
+      "intent": [
+        "clip this image",
+        "crop the raster image",
+        "przytnij obraz",
+        "clip the picture to a rectangle",
+        "obetnij zdjecie do wielokata",
+        "remove the image clip",
+        "unclip this image"
+      ]
+    },
+    {
+      "name": "detach_image",
+      "description": "Remove one image reference from the drawing. If no other image entity still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same image remains, only this entity goes and the source stays available for it. Confirmed by re-resolving the handle afterwards rather than assumed from the erase call.",
+      "tags": [
+        "detach",
+        "image"
+      ],
+      "intent": [
+        "detach this image",
+        "remove an image from the drawing",
+        "usun obraz z rysunku",
+        "delete a raster reference",
+        "odlacz zdjecie od rysunku",
+        "remove a placed picture",
+        "get rid of an image"
+      ]
+    },
+    {
+      "name": "list_images",
+      "description": "List raster images attached to the drawing: name, source path, insertion point, size, rotation, whether clipped, and the brightness/contrast/fade adjustment. Read-only. An empty count with no image dictionary yet is reported as zero rather than an error.",
+      "tags": [
+        "list",
+        "images"
+      ],
+      "intent": [
+        "list the images",
+        "what images are in this drawing",
+        "lista obrazow w rysunku",
+        "show attached raster images",
+        "jakie obrazy sa dolaczone",
+        "find an image by name",
+        "which pictures are placed"
+      ]
+    },
+    {
+      "name": "set_image_adjust",
+      "description": "Set an image\u0027s brightness, contrast and/or fade, each 0-100. Only the ones given are changed; the others are read and reported unchanged. AutoCAD\u0027s own defaults are 50/50/0. Read back after setting rather than echoed.",
+      "tags": [
+        "set",
+        "image",
+        "adjust"
+      ],
+      "intent": [
+        "adjust image brightness",
+        "change the image contrast",
+        "zmien jasnosc obrazu",
+        "fade this raster image",
+        "ustaw kontrast zdjecia",
+        "make the image lighter",
+        "increase image fade"
+      ]
+    },
+    {
+      "name": "set_image_frame",
+      "description": "Show or hide the border AutoCAD draws around every raster image. IMPORTANT: this is the IMAGEFRAME system variable, which is DRAWING-WIDE like XCLIPFRAME - it takes no handle and affects every image in the drawing at once, not one entity. frame is 0 (no frame, and the image cannot be selected by its edge), 1 (frame shown and plotted) or 2 (frame shown but not plotted). Read back from the system variable after setting, since a rejected value would otherwise look like success.",
+      "tags": [
+        "set",
+        "image",
+        "frame"
+      ],
+      "intent": [
+        "hide image frames",
+        "show the image border",
+        "ukryj ramki obrazow",
+        "turn off image frame display",
+        "pokaz ramke obrazu",
+        "toggle image borders",
+        "set imageframe"
+      ]
+    },
+    {
+      "name": "set_image_path",
+      "description": "Repoint an image\u0027s source file to a new path - for a moved or renamed file. Every entity that shares the same source definition is affected, because the definition (not the placement) is what this changes; their handles are listed in the result. Refuses a path that does not exist. loaded reports whether AutoCAD could actually read the new file, since a repath to a bad file \u0027succeeds\u0027 at changing the string and nothing else.",
+      "tags": [
+        "set",
+        "image",
+        "path"
+      ],
+      "intent": [
+        "repath this image",
+        "fix a broken image link",
+        "napraw sciezke obrazu",
+        "point the image at a new file",
+        "zaktualizuj sciezke do zdjecia",
+        "relink a moved image",
+        "update image source path"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "images",
+    "tool_count_target": 7,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-11T10:13:22.9534858Z"
+  }
+}

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 48 categories, 668 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 49 categories, 675 tools total.
 
 ## Categories
 
@@ -22,6 +22,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-geometry-3d](#acad-geometry-3d) (36 tools)
 - [acad-grids](#acad-grids) (6 tools)
 - [acad-hatches](#acad-hatches) (8 tools)
+- [acad-images](#acad-images) (7 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
 - [acad-lights](#acad-lights) (8 tools)
@@ -463,6 +464,18 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_hatches` | Enumerate all hatch entities currently in model-space (optionally filtered by layer and/or pattern). Returns handle, layer, pattern, scale, angle, area, loop-count, associativity for each. Read-only. |
 | `list_patterns` | Enumerate available hatch patterns with their category (ANSI, ISO, AR-architectural, PN-EN) and recommended default scale/angle. Read-only. Use to discover what patterns are installed before drawing. |
 | `regenerate_hatches` | Re-evaluate one or more associative hatches after their boundaries have been edited. Scope: explicit handles, layer filter, or entire model-space. Returns the count of successfully regenerated hatches plus a list of handles that failed (e.g. open boundaries). |
+
+## acad-images
+
+| Tool | Description |
+|---|---|
+| `attach_image` | Attach a raster image (PNG/JPG/BMP/TIFF) at a point with a given width in drawing units - height is computed to preserve the source aspect ratio unless given explicitly. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - matching how AutoCAD itself lets one image be inserted more than once. The requested width (and height, if given) are READ BACK from the placed entity and the tool refuses if they do not match, rather than trusting the placement math silently. Optional rotationDegrees and layer. |
+| `clip_image` | Clip an image to a boundary given in IMAGE PIXEL SPACE - (0,0) to (imageWidthPx, imageHeightPx) as reported by list_images or by this tool's own result, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points (or passing an empty list) REMOVES the clip instead. Reports the entity's drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents rather than a bare success. |
+| `detach_image` | Remove one image reference from the drawing. If no other image entity still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same image remains, only this entity goes and the source stays available for it. Confirmed by re-resolving the handle afterwards rather than assumed from the erase call. |
+| `list_images` | List raster images attached to the drawing: name, source path, insertion point, size, rotation, whether clipped, and the brightness/contrast/fade adjustment. Read-only. An empty count with no image dictionary yet is reported as zero rather than an error. |
+| `set_image_adjust` | Set an image's brightness, contrast and/or fade, each 0-100. Only the ones given are changed; the others are read and reported unchanged. AutoCAD's own defaults are 50/50/0. Read back after setting rather than echoed. |
+| `set_image_frame` | Show or hide the border AutoCAD draws around every raster image. IMPORTANT: this is the IMAGEFRAME system variable, which is DRAWING-WIDE like XCLIPFRAME - it takes no handle and affects every image in the drawing at once, not one entity. frame is 0 (no frame, and the image cannot be selected by its edge), 1 (frame shown and plotted) or 2 (frame shown but not plotted). Read back from the system variable after setting, since a rejected value would otherwise look like success. |
+| `set_image_path` | Repoint an image's source file to a new path - for a moved or renamed file. Every entity that shares the same source definition is affected, because the definition (not the placement) is what this changes; their handles are listed in the result. Refuses a path that does not exist. loaded reports whether AutoCAD could actually read the new file, since a repath to a bad file 'succeeds' at changing the string and nothing else. |
 
 ## acad-layers
 

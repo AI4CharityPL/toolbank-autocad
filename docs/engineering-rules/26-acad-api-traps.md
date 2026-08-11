@@ -550,6 +550,53 @@ reason `quick_select_by_property` was struck in 3.4 against `filter_entities` an
 is not a reason to build; a capability the bank lacks is. The two questions are different and only
 the second one matters.
 
+### 20. `RasterImage.Width`/`.Height` are axis-vector LENGTHS, not pixel-scaled sizes
+
+```csharp
+img.Orientation = new CoordinateSystem3d(insertion, Vector3d.XAxis, Vector3d.YAxis);  // both length 1
+double baseW = img.Width, baseH = img.Height;   // BOTH read back as 1 - for ANY image, any aspect
+```
+
+The obvious way to measure a raster image's native size — place it at a unit-scale `Orientation`
+and read `Width`/`Height` back — measures nothing about the image at all. Both properties are
+simply `|Orientation.XAxis|` and `|Orientation.YAxis|`, full stop; they do not fold in the source
+pixel count the way `Width`/`Height` on, say, a viewport folds in a scale factor. A 300×150 image
+and a 150×300 image at that same unit orientation both report `Width=1, Height=1`.
+
+The pair that actually reflects the source file is `ImageWidth`/`ImageHeight` — the raw pixel
+counts, constant regardless of `Orientation` — and they are what an aspect-preserving placement
+has to divide. Once that is the ratio, the final `Orientation` vectors can be set directly, in one
+pass, to the exact requested drawing-space width and height; there is no need to measure a
+placeholder orientation first and correct it afterward. A first version of `attach_image` did the
+measure-then-correct dance and every aspect-preserved placement came out perfectly square — caught
+by a 300×150 (2:1) fixture, because a square test image cannot tell a squared bug from a correct
+one, the same lesson as the sphere-vs-cube trap in §14, applied to a 2D placement instead of a
+3D cut.
+
+### 21. `RasterImage.AssociateRasterDef` on a def opened `ForRead` is a FATAL error, not a catchable one
+
+```csharp
+var def = (RasterImageDef)tr.GetObject(defId, OpenMode.ForRead);   // compiles, looks harmless
+img.AssociateRasterDef(def);   // dbobji.cpp@8703: eNotOpenForWrite - and it is NOT a .NET exception
+```
+
+Associating an image with a definition modifies the definition's reactor list, so it needs the
+definition open `OpenMode.ForWrite`. Opening it `ForRead` instead does not throw
+`Autodesk.AutoCAD.Runtime.Exception` the way a normal API misuse does — it raises a FATAL internal
+AutoCAD error (`!dbobji.cpp@8703: eNotOpenForWrite`) behind a modal "Błąd AutoCAD. Przerwanie
+procesu." dialog, which freezes the UI thread. Every tool call queued behind it then times out
+silently for the rest of the session — `PluginToolRunner`'s own diagnostic ("a handler is blocked
+on a modal dialog inside AutoCAD") was the only way to learn what had happened; the plugin log
+itself just stops after "posting to UI thread" with no further line, because the callback never
+gets to run.
+
+**This is reached only on the SECOND placement of a shared definition** — `AssociateRasterDef` on
+a freshly-created def (opened `ForWrite` for `SetAt`/`AddNewlyCreatedDBObject` anyway) never hits
+it. A test that attaches only one image per source file will never find this; it needs a second
+entity sharing the first one's definition. Treat a fatal internal error as leaving the session
+unreliable rather than merely the one transaction — this one needed AutoCAD restarted before the
+next live run, not just the code fixed.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

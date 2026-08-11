@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 3.5, `acad-images` (raster half) — 7 tools, 48/48 live, bank 668 → 675.**
+  `attach_image`, `list_images`, `detach_image`, `clip_image`, `set_image_adjust`,
+  `set_image_frame`, `set_image_path`. Probed against the compiler first: `set_image_transparency`
+  (bitonal background toggle) has no managed API under any of nine tried names, and
+  `reorder_image_draworder` is struck as a duplicate of `modify.set_draworder`, which already
+  reorders any entity by handle.
+
+  **Two real defects, both found live and fixed within the session.** (1) Aspect-preserve was
+  silently squaring every placement: `RasterImage.Width`/`.Height` are the LENGTHS of
+  `Orientation`'s axis vectors, not the vectors' length times the source pixel count, so measuring
+  a unit-scale placement to infer the aspect ratio always measured 1:1. Fixed by using
+  `ImageWidth`/`.ImageHeight` — the real pixel counts, constant regardless of `Orientation` — and
+  setting the final vectors directly instead of measuring and correcting. Caught by a 300×150
+  (2:1) fixture; a square test image could not have found this. (2) `AssociateRasterDef` on a
+  definition opened `ForRead` is a FATAL internal AutoCAD error (`dbobji.cpp@8703:
+  eNotOpenForWrite`), not a catchable one — a modal dialog froze the UI thread and every later
+  call in the run timed out silently behind it. Reached only on the SECOND placement of a shared
+  definition, so a test attaching one image per file would never have found it; AutoCAD needed a
+  restart before the next live run rather than just the code fixed. Both are now rule 26 §20-21.
+
+  `attach_image` reuses an existing definition when the same name points at the same file, rather
+  than refusing as a duplicate — matching how AutoCAD itself lets one image be inserted more than
+  once, and the reason `detach_image`'s "was this the last placement" and `set_image_path`'s
+  "every entity sharing this definition" branches are reachable, verified cases rather than prose.
+  A third, smaller fix: `SetClipBoundary` refuses `Rectangle` with two points and refuses
+  `Invalid` with an empty collection (`eInvalidInput`) — clipping now always goes through `Poly`
+  with an explicitly closed ring, and un-clipping is `IsClipped = false` alone.
+
 ### Changed
 
 - **Renamed to ToolBank throughout, and `mcpbank-manifests/` → `toolbank-manifests/`.**

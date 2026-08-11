@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **668 tools in 48 categories**. The product language is **English**; every tool
+pipe. There are **675 tools in 48 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -147,14 +147,19 @@ Practical rules that follow:
 
 ## 7. What is left
 
-**668 built.** Roughly 60 identified as remaining, and most of it is gated rather than hard.
+**675 built.** Roughly 50 identified as remaining, and most of it is gated rather than hard.
+
+**2026-08-11: `acad-images` (raster half) built, 7 tools, 48/48 live.** `attach_image`,
+`list_images`, `detach_image`, `clip_image`, `set_image_adjust`, `set_image_frame`,
+`set_image_path`. `set_image_transparency` and `reorder_image_draworder` struck — see
+KNOWN-GAPS §B and rule 26 §20-21 for two real defects found and fixed live (a squared aspect-ratio
+bug, and a fatal `AssociateRasterDef`/`ForRead` crash that needed an AutoCAD restart mid-session).
 
 ### Buildable now — nothing blocking
 
 | item | tools | notes |
 | --- | ---: | --- |
-| 3.5 `acad-images` (raster half) | ~8 | `attach_image`, `clip_image`, transparency, frame, draw order, path. A PNG is trivial to produce, unlike the underlay formats |
-| a stale-accounting sweep | — | Phase 1's built column was wrong by 13 and a tool recorded as existing never did. **Assume other phases are stale too**; count the manifests, do not trust the plan |
+| a stale-accounting sweep | — | Phase 1's built column was wrong by 13 and a tool recorded as existing never did. This session found the roadmap's own total two tools stale before touching anything. **Assume other phases are stale too**; count the manifests, do not trust the plan |
 
 ### Blocked on a file the user must supply
 
@@ -206,10 +211,10 @@ reason before resurrecting any of them.**
 ## 9. State of the repo right now
 
 * branch `fix/tool-input-schemas`, everything committed, working tree clean
-* `pre-commit.ps1 -All` → **0 errors**, 113 items
-* `dotnet test` → **264 passed**
+* `pre-commit.ps1 -All` → **0 errors**, 114 items
+* `dotnet test` → **265 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 48 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md`
+* 48 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **675 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

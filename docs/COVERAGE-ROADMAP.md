@@ -980,7 +980,7 @@ one cloud, not a good one.
 
 ## Phase 5 — Data, extensibility, escape hatches (≈65 → **61** after review)
 
-### 5.1 `acad-lisp` (≈12 → **6 built, 1 struck, 1 withdrawn, 4 blocked on a command context or LISP evaluation**)
+### 5.1 `acad-lisp` (≈12 → **9 built, 1 struck, 1 withdrawn, 1 blocked**)
 
 ```
 eval_lisp                   load_lisp_file             list_loaded_lisp
@@ -1059,11 +1059,31 @@ and rule 26 §22. Even a single `CIRCLE` inside a `.scr` drew nothing; the `_.NE
 correctly via a captured before/after baseline, and did not fix it. Two measured attempts is
 enough to withdraw rather than guess a third.
 
-**`netload_assembly` was not attempted** — writing the command-context fix for it was blocked by
+**`eval_lisp`, `load_lisp_file` and `list_loaded_lisp` BUILT 2026-08-11 (second pass), 27/27
+live** — with the user's explicit go-ahead, since arbitrary LISP evaluation is a materially
+different risk from queuing bounded drawing commands. Architecturally SIMPLER than
+`run_command_sequence`: no `[CommandMethod]` or `GetString` relay needed, because the command
+line accepts a raw LISP form directly when typed, so the wrapper is queued as-is via
+`SendStringToExecute`. The user's expression never touches the queued text — it goes into a
+request file the wrapper reads, sidestepping LISP string-escaping entirely.
+
+**One real defect, found live and fixed: AutoLISP's `(read)` takes a STRING, not a file
+object** — unlike Common Lisp. `(read (open path "r"))` compiles into nothing (LISP has no
+compile step) and fails at runtime with `zły typ argumentu: stringp`, naming the failed
+predicate rather than the function that needed it. The fix is `(read (read-line file))`, which
+also means the request file is written as ONE line regardless of the caller's source, since
+`read-line` stops at the first newline. Rule 26 §24.
+
+**Proven with real content, not synthetic one-liners.** `load_lisp_file` was tested against
+AutoCAD's own sample `afact.lsp` (mutually recursive factorial functions), and the proof it
+genuinely loaded is calling `(fact1 5)` afterward through `eval_lisp` and getting `120` back —
+real recursive arithmetic a placeholder success could not fake. `list_loaded_lisp` is checked
+before AND after: `FACT1` absent, then present.
+
+**`netload_assembly` remains withdrawn** — writing the command-context fix for it was blocked by
 this session's own safety classifier, which read dynamic DLL loading as a materially different
-risk from queuing drawing commands. `run_command_sequence` alone was accepted once the
-`DynamicLinker.LoadModule` code was dropped from the same file. Needs the user's explicit
-go-ahead to revisit.
+risk from evaluating LISP or queuing drawing commands, and this tranche did not have the user's
+go-ahead for that specific capability.
 
 **`list_loaded_applications` documents a measured limit rather than glossing it.**
 `GetLoadedModules` returns about 25 ARX/CRX/DBX modules plus AutoCAD's own managed core, and does
@@ -1553,9 +1573,9 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **74** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half, 7 tools) and `acad-underlays` (5 tools, `attach_dgn_underlay` withheld) both built 2026-08-11 — the latter unblocked by real DGN/DWF files found in AutoCAD's own install tree, not supplied by the user |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
-| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **45** | 5 struck: data extraction is a wizard, property sets are AEC-only; `run_command_sequence` built 2026-08-11 (command-context bridge, rule 26 §22); `run_script_file` withdrawn on the same trap; `netload_assembly` not attempted (blocked by the safety classifier, not the API); `eval_lisp`/`load_lisp_file`/`list_loaded_lisp` still need LISP evaluation |
+| 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **48** | 5 struck: data extraction is a wizard, property sets are AEC-only; **5.1 acad-lisp effectively complete** — `run_command_sequence`, `eval_lisp`, `load_lisp_file`, `list_loaded_lisp` all built 2026-08-11 (rule 26 §22/§24); `run_script_file` withdrawn (two measured fix attempts, both wrong); `netload_assembly` alone remains, blocked by the safety classifier rather than the API, needs explicit go-ahead |
 | 6 | Visualisation — render, animation | 40 → **26** | **15** | **6.1 complete** — materials, lights, sun and `create_web_light` all done (the last two undercounted here until this session); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
-| | **Total** | **813** | **682** | **84 %** |
+| | **Total** | **813** | **685** | **84 %** |
 
 **Built column refreshed 2026-08-11.** Counted from `toolbank-manifests/` directly (48 manifests
 summed via `pre-commit.ps1`), not from this table's own arithmetic — the table had drifted to 666

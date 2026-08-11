@@ -108,6 +108,7 @@
     "uruchom wyrazenie autolisp",
     "ustaw zmienna systemowa",
     "usun nieuzywane nazwy aplikacji",
+    "wczytaj plik lisp",
     "wczytaj plik lsp",
     "wczytaj wtyczke .net",
     "what is the current layer variable",
@@ -127,6 +128,23 @@
     "zmien wartosc zmiennej systemowej"
   ],
   "tools_summary": [
+    {
+      "name": "eval_lisp",
+      "description": "Evaluate an AutoLISP expression and return its REAL VALUE - not an acknowledgement that something ran. This is the escape hatch: anything AutoCAD exposes to AutoLISP is reachable here, including functions a .lsp file has already defined with load_lisp_file. Runs via a queued command-line evaluation that writes its result to a file and this waits for it (rule 26 \u00A715/\u00A724) - synchronous from the caller\u0027s point of view. nil comes back as null, T as true, and a list keeps its nesting; \u0060printed\u0060 carries what LISP itself printed alongside the parsed value, for results with no JSON equivalent (an ename, a selection set). A syntax error or an undefined function name is refused with LISP\u0027s own error message rather than returned as a plausible-looking nil.",
+      "tags": [
+        "eval",
+        "lisp"
+      ],
+      "intent": [
+        "eval this lisp and give me the result",
+        "evaluate a lisp expression",
+        "wykonaj kod lisp",
+        "call a lisp function",
+        "oblicz wyrazenie lispa i podaj wynik",
+        "run autolisp code",
+        "escape hatch for something with no tool"
+      ]
+    },
     {
       "name": "get_system_variable",
       "description": "Read one AutoCAD system variable by name - CLAYER, OSMODE, INSUNITS and the rest. Read-only. Read straight from Application.GetSystemVariable rather than through LISP. The value comes back as text with its underlying CLR type named alongside, because a system variable can hold a string, an integer, a real or a point, and set_system_variable has to be given the matching one. An unknown name is refused rather than answered with an empty value; list_system_variables gives the ones this bank knows by name.",
@@ -164,6 +182,24 @@
       ]
     },
     {
+      "name": "list_loaded_lisp",
+      "description": "List the AutoLISP symbols currently defined - from (atoms-family 1), the only enumeration AutoCAD actually offers. Read-only. IMPORTANT: these are SYMBOLS, not files - AutoCAD keeps no record of which .lsp files were loaded, so this is the honest answer to \u0027what LISP is loaded\u0027, not a file list. Built-in functions are included alongside anything a .lsp defined, which is why a fresh drawing already answers with hundreds and \u0060pattern\u0060 matters. Names starting C: are the ones that can be typed at the command line, listed separately as commandSymbols.",
+      "tags": [
+        "list",
+        "loaded",
+        "lisp"
+      ],
+      "intent": [
+        "list loaded lisp functions",
+        "check a lisp routine loaded",
+        "jakie funkcje lisp sa zaladowane",
+        "is this lisp function available",
+        "lista symboli lisp",
+        "show lisp commands defined by a loaded file",
+        "what lisp is defined"
+      ]
+    },
+    {
       "name": "list_system_variables",
       "description": "List the system variables worth knowing, grouped by what they affect - drafting aids, current properties, text and dimensions, units, display, 3D, file state and plotting - each with its live value and type. Read-only. \u0060pattern\u0060 filters by name or by group. IMPORTANT: this is a CURATED list, not a complete one - AutoCAD exposes no way to enumerate system variables, there being no table to walk - so treat it as a starting point rather than a boundary: any variable not listed still works with get_system_variable and set_system_variable. Every value is read live rather than remembered, so a name this build of AutoCAD does not have is counted as not present instead of being reported with a stale value.",
       "tags": [
@@ -179,6 +215,24 @@
         "jakie sa ustawienia jednostek",
         "which sysvars control display",
         "show current drawing settings"
+      ]
+    },
+    {
+      "name": "load_lisp_file",
+      "description": "Load an AutoLISP (.lsp) file, making its functions available for eval_lisp to call. Does not search the support path - give the full path. Returns the value of the LAST expression in the file, which for a file of defuns is usually the name of the last one defined; that is the closest thing to a confirmation the loader offers, so to be sure a particular function arrived, call it with eval_lisp - an undefined name is an error there, not a silent nil.",
+      "tags": [
+        "load",
+        "lisp",
+        "file"
+      ],
+      "intent": [
+        "load a lisp file",
+        "appload a lisp file",
+        "wczytaj plik lisp",
+        "load an autolisp routine from disk",
+        "zaladuj plik lisp",
+        "load this lsp",
+        "make these lisp functions available"
       ]
     },
     {
@@ -237,7 +291,7 @@
   ],
   "metadata": {
     "category": "lisp",
-    "tool_count_target": 6,
+    "tool_count_target": 9,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -251,6 +305,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-11T11:14:18.1615730Z"
+    "last_regenerated_utc": "2026-08-11T12:18:48.9429741Z"
   }
 }

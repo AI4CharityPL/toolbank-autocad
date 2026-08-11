@@ -29,15 +29,21 @@
 // at the outer Editor.Command call - but that is a hypothesis, not a measurement, and shipping a
 // script runner that silently runs nothing is exactly the failure this bank exists to refuse.
 //
-// FOUR REMAIN WITHDRAWN. netload_assembly needs the same command-context fix as
-// run_command_sequence but is deliberately not attempted in this tranche - dynamic assembly
-// loading is a materially different risk from queuing drawing commands. eval_lisp,
-// load_lisp_file and list_loaded_lisp need actual LISP EVALUATION, which neither Editor.Command
-// (tokenises command input; a parenthesised expression is invalid to it) nor Application.Invoke
-// (unusable from this plugin in any context) provides - the remaining candidate is
-// SendStringToExecute with the expression wrapped to write its value to a file, unbuilt. The
-// plugin handlers for all five stay registered so each finding stays reproducible; they are
-// simply not offered in the bank.
+// THREE MORE FIXED, 2026-08-11 (second pass): eval_lisp, load_lisp_file and list_loaded_lisp now
+// go through LispCommandBridge.EvalAsync - the SAME queued-SendStringToExecute mechanism as
+// run_command_sequence, but WITHOUT a custom [CommandMethod]: the command line accepts a raw
+// LISP form directly when typed (that is how a human evaluates LISP interactively), so the
+// wrapper is queued as-is. The user's expression never gets embedded in the queued text - it
+// goes into a request FILE the wrapper reads with (read (open ...)), which sidesteps every LISP
+// string-escaping question. This is rule 26 §24. The old attempt used Application.Invoke (dead,
+// eInvalidInput everywhere) falling back to a bare Editor.Command(wrapped) call, which throws
+// from application context for the exact reason run_command_sequence originally did.
+//
+// netload_assembly REMAINS WITHDRAWN - it needs the identical command-context fix, but writing
+// it was deliberately not attempted: dynamic assembly loading is a materially different risk from
+// evaluating LISP or queuing drawing commands, and this tranche did not have the user's specific
+// go-ahead for that capability. The plugin handler stays registered so the finding stays
+// reproducible.
 
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,6 +56,33 @@ public static class LispTools
 {
     private const int T_NORMAL = 15_000;
     private const int T_SLOW = 60_000;
+
+    [McpTool("eval_lisp", "Evaluate an AutoLISP expression and return its REAL VALUE - not an acknowledgement that something ran. This is the escape hatch: anything AutoCAD exposes to AutoLISP is reachable here, including functions a .lsp file has already defined with load_lisp_file. Runs via a queued command-line evaluation that writes its result to a file and this waits for it (rule 26 §15/§24) - synchronous from the caller's point of view. nil comes back as null, T as true, and a list keeps its nesting; `printed` carries what LISP itself printed alongside the parsed value, for results with no JSON equivalent (an ename, a selection set). A syntax error or an undefined function name is refused with LISP's own error message rather than returned as a plausible-looking nil.", "lisp",
+        Intent = new[] { "eval this lisp and give me the result", "evaluate a lisp expression",
+                         "wykonaj kod lisp", "call a lisp function",
+                         "oblicz wyrazenie lispa i podaj wynik", "run autolisp code",
+                         "escape hatch for something with no tool" },
+        RequiresPlugin = true)]
+    public static Task<LispEvalResult> EvalLisp(IPluginGateway gw, LispEvalArgs args, CancellationToken ct)
+        => LispProxy.CallAsync<LispEvalArgs, LispEvalResult>(gw, "acad.lisp.eval_lisp", args, T_NORMAL, ct);
+
+    [McpTool("load_lisp_file", "Load an AutoLISP (.lsp) file, making its functions available for eval_lisp to call. Does not search the support path - give the full path. Returns the value of the LAST expression in the file, which for a file of defuns is usually the name of the last one defined; that is the closest thing to a confirmation the loader offers, so to be sure a particular function arrived, call it with eval_lisp - an undefined name is an error there, not a silent nil.", "lisp",
+        Intent = new[] { "load a lisp file", "appload a lisp file",
+                         "wczytaj plik lisp", "load an autolisp routine from disk",
+                         "zaladuj plik lisp", "load this lsp",
+                         "make these lisp functions available" },
+        RequiresPlugin = true)]
+    public static Task<LispLoadResult> LoadLispFile(IPluginGateway gw, LispLoadArgs args, CancellationToken ct)
+        => LispProxy.CallAsync<LispLoadArgs, LispLoadResult>(gw, "acad.lisp.load_lisp_file", args, T_NORMAL, ct);
+
+    [McpTool("list_loaded_lisp", "List the AutoLISP symbols currently defined - from (atoms-family 1), the only enumeration AutoCAD actually offers. Read-only. IMPORTANT: these are SYMBOLS, not files - AutoCAD keeps no record of which .lsp files were loaded, so this is the honest answer to 'what LISP is loaded', not a file list. Built-in functions are included alongside anything a .lsp defined, which is why a fresh drawing already answers with hundreds and `pattern` matters. Names starting C: are the ones that can be typed at the command line, listed separately as commandSymbols.", "lisp",
+        Intent = new[] { "list loaded lisp functions", "check a lisp routine loaded",
+                         "jakie funkcje lisp sa zaladowane", "is this lisp function available",
+                         "lista symboli lisp", "show lisp commands defined by a loaded file",
+                         "what lisp is defined" },
+        ReadOnly = true, RequiresPlugin = true)]
+    public static Task<LispSymbolsResult> ListLoadedLisp(IPluginGateway gw, LispSymbolsArgs args, CancellationToken ct)
+        => LispProxy.CallAsync<LispSymbolsArgs, LispSymbolsResult>(gw, "acad.lisp.list_loaded_lisp", args, T_NORMAL, ct);
 
     [McpTool("list_loaded_applications", "List the ARX, CRX and DBX modules AutoCAD has registered, together with its own managed core assemblies (accoremgd.dll, acmgd.dll). Read-only. MEASURED LIMIT, so that a short answer is not mistaken for a broken tool: this returns what DynamicLinker.GetLoadedModules reports, which on a normal session is about 25 entries and does NOT include .NET assemblies loaded with NETLOAD - a netloaded plugin will not appear here even though it is running. `pattern` filters the list by substring.", "lisp",
         Intent = new[] { "list loaded arx modules", "what modules has autocad loaded",

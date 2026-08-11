@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **682 tools in 49 categories**. The product language is **English**; every tool
+pipe. There are **685 tools in 49 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -147,7 +147,21 @@ Practical rules that follow:
 
 ## 7. What is left
 
-**682 built.** Roughly 45 identified as remaining, and most of it is gated rather than hard.
+**685 built.** Roughly 20 identified as remaining, and nearly all of it is gated rather than hard —
+this session cleared everything that wasn't.
+
+**2026-08-11: `acad-lisp`'s escape-hatch trio built, 27/27 live — `eval_lisp`, `load_lisp_file`,
+`list_loaded_lisp`, with the user's explicit go-ahead** (arbitrary LISP evaluation is a materially
+different risk from the bounded `run_command_sequence`). Architecturally simpler than that bridge:
+the command line accepts raw LISP directly when typed, so no `[CommandMethod]`/`GetString` relay
+is needed - just `SendStringToExecute` queuing a wrapper that reads the caller's expression from a
+request file (never embedded in the queued text, so no LISP string-escaping to get wrong) and
+writes the result to a response file. One real defect found live: AutoLISP's `(read)` takes a
+STRING, not a file object - the fix is `(read (read-line file))`. Rule 26 §24. Proven against real
+content, not synthetic one-liners: `load_lisp_file` loads AutoCAD's own `afact.lsp` sample and the
+proof it worked is calling the loaded `fact1(5)` afterward and getting `120` back.
+`netload_assembly` alone remains withdrawn — same fix, but blocked by the safety classifier, not
+attempted without explicit separate go-ahead.
 
 **2026-08-11: `acad-underlays` built, 5 tools, 42/42 live**, plus `acad-lights.create_web_light`,
 7/7. Both were "blocked on a file the user must supply" until the user pointed at AutoCAD's own
@@ -189,15 +203,14 @@ already be shipped (`acad-lights`), undercounted in this doc until this pass fou
 | --- | ---: | --- |
 | 4.5 `acad-pointclouds` | 12 | one `.rcp` or `.rcs`. The API is fine — reconnaissance is in the roadmap. ReCap is not installed, and none was found anywhere on this machine either (searched 2026-08-11) |
 | `attach_dgn_underlay` | 1 | one real (non-seed) `.dgn` — every one found on this machine is an empty export template. `attach_dwf_underlay` (built) proves the code path works |
-| material maps / library | 3 | a texture image and an `.adsklib` |
+| material maps / library | 3 | a texture image and an `.adsklib` — checked 2026-08-11 alongside the DGN/DWF/IES search, neither exists anywhere on this machine |
 
 ### Blocked on something harder
 
 | item | tools | the actual blocker |
 | --- | ---: | --- |
 | `insert_field_sheet_set_property` | 1 | `AcSm` fields resolve against the sheet set open in the **Sheet Set Manager**, which nothing here can establish. Needs the `SHEETSET` command or `AcSmSheetSetMgr` COM. **This is the last item in Phase 1.** Note the recorded blocker was wrong for months — see the changelog |
-| `acad-lisp`: `eval_lisp`, `load_lisp_file`, `list_loaded_lisp` | 3 | need actual LISP evaluation — `SendStringToExecute` wrapped to write its value to a file, then wait for the file, is the remaining candidate (rule 26 §15) |
-| `acad-lisp`: `netload_assembly` | 1 | has the same command-context fix as the now-built `run_command_sequence`, but writing it was blocked by the safety classifier (dynamic DLL loading) — needs explicit user go-ahead, not a technical blocker |
+| `acad-lisp`: `netload_assembly` | 1 | has the same command-context fix as the now-built `run_command_sequence`/`eval_lisp`, but writing it was blocked by the safety classifier (dynamic DLL loading) — needs explicit user go-ahead, not a technical blocker |
 | `acad-lisp`: `run_script_file` | 1 | **withdrawn, not blocked** — built on the working command-context bridge and still drew nothing from a one-line `.scr`; two measured fix attempts, both wrong. Rule 26 §22 |
 
 ### Struck — do not build these
@@ -237,7 +250,7 @@ reason before resurrecting any of them.**
 * `pre-commit.ps1 -All` → **0 errors**, 114 items
 * `dotnet test` → **265 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 49 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **682 tools**
+* 49 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **685 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

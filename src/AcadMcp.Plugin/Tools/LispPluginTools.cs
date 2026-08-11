@@ -138,83 +138,13 @@ internal static class LispPluginTools
 
     // ─────────── evaluating LISP, and how ───────────
 
-    /// MEASURED: Application.Invoke answers eInvalidInput for EVERY expression - (+ 1 2),
-    /// (read "..."), (load "...") and (atoms-family 1) alike - when called from inside the
-    /// document lock and open transaction every tool in this plugin runs in. It is kept as the
-    /// first route because it is the clean one and costs nothing to try, but it is not relied on.
-    ///
-    /// The route that works is the command line, which evaluates a parenthesised expression the
-    /// same way a user typing it does, through Editor.Command - synchronous, so it has finished
-    /// when the call returns. Its problem is that the VALUE goes to the screen rather than to the
-    /// caller, so the expression is wrapped to write the value to a file, which is then read back
-    /// here. A file rather than a USERS1 system variable because the latter caps at 255 characters
-    /// and (atoms-family 1) is far longer than that.
-    ///
-    /// The wrapper is also the guard: the file is deleted first, so a file that does not appear
-    /// means the expression did not evaluate. Without that, an expression that silently failed
-    /// would be indistinguishable from one that returned nil.
-    private static (string Text, string Route, string Diagnostics) EvalToText(Document doc, string src)
-    {
-        var notes = new List<string>();
-
-        try
-        {
-            var rb = AcadApp.Invoke(new ResultBuffer(
-                new TypedValue((int)LispDataType.Text, "read"),
-                new TypedValue((int)LispDataType.Text, src)));
-            if (rb is not null)
-            {
-                var call = new List<TypedValue> { new((int)LispDataType.Text, "eval") };
-                call.AddRange(rb.AsArray());
-                var res = AcadApp.Invoke(new ResultBuffer(call.ToArray()));
-                if (res is not null)
-                {
-                    var flat = string.Concat(res.AsArray().Select(t => t.Value?.ToString()));
-                    return (flat, "invoke", "");
-                }
-            }
-            notes.Add("invoke: returned nothing");
-        }
-        catch (System.Exception ex) { notes.Add("invoke: " + ex.Message); }
-
-        var outPath = Path.Combine(Path.GetTempPath(),
-            "acadmcp-lisp-" + Guid.NewGuid().ToString("N") + ".txt");
-        try { if (File.Exists(outPath)) File.Delete(outPath); } catch { }
-        var lispPath = outPath.Replace("\\", "/");
-
-        // vl-load-com is harmless if already loaded and is what makes vl-princ-to-string available.
-        var wrapped =
-            "(progn (vl-load-com)" +
-            "(setq %tbf (open \"" + lispPath + "\" \"w\"))" +
-            "(princ (vl-princ-to-string (progn " + src + ")) %tbf)" +
-            "(close %tbf)(setq %tbf nil)(princ))";
-
-        try
-        {
-            doc.Editor.Command(wrapped);
-        }
-        catch (System.Exception ex)
-        {
-            notes.Add("command: " + ex.Message);
-            throw new ArgumentException(
-                "LISP evaluation failed. " + string.Join(" | ", notes) +
-                " -- check the expression is balanced and that every function it names exists; " +
-                "a .lsp defining one has to be loaded first with load_lisp_file.");
-        }
-
-        if (!File.Exists(outPath))
-            throw new ArgumentException(
-                "The expression did not evaluate: AutoCAD accepted the line but nothing was " +
-                "written, which is what a LISP error looks like from here - the error goes to the " +
-                "command line rather than being raised. Check the expression is balanced and that " +
-                "every function it names exists. " + string.Join(" | ", notes));
-
-        string text;
-        try { text = File.ReadAllText(outPath); }
-        finally { try { File.Delete(outPath); } catch { } }
-
-        return (text, "command", string.Join(" | ", notes));
-    }
+    /// MEASURED: Application.Invoke answers eInvalidInput for EVERY expression from inside the
+    /// document lock and open transaction every tool in this plugin runs in - treat it as absent
+    /// (rule 26 §15). Editor.Command tokenises command input and does not take LISP at all. The
+    /// route that works is LispCommandBridge.EvalAsync: queue the raw LISP form via
+    /// SendStringToExecute (which the command line evaluates directly, the same way a human
+    /// typing it would) and wait for the response FILE it writes - not the fact that something
+    /// was queued. See rule 26 §24.
 
     /// Parses what LISP printed back into real JSON, so a list keeps its nesting. Printing and
     /// re-reading is a round trip through text, and a flattened list would otherwise be
@@ -279,110 +209,140 @@ internal static class LispPluginTools
 
     // ─────────── eval_lisp ───────────
 
-    private static Task<ToolDispatchResult> EvalLisp(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.eval_lisp", args, ct, (doc, db, tr) =>
+    private static Document RequireDoc() =>
+        AcadApp.DocumentManager.MdiActiveDocument
+        ?? throw new InvalidOperationException("No active AutoCAD document.");
+
+    private static async Task<ToolDispatchResult> EvalLisp(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.eval_lisp";
+        var a = Read<LispEvalArgsDto>(args);
+        if (string.IsNullOrWhiteSpace(a.Source))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "source is required: the LISP expression to evaluate, for example " +
+                "(+ 1 2) or (getvar \"CLAYER\")."));
+        var src = a.Source!.Trim();
+
+        var result = await LispCommandBridge.EvalAsync(RequireDoc(), src, 15_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        if (result.Status != "OK")
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "LISP evaluation failed: " + result.Body + " -- check the expression is balanced " +
+                "and that every function it names exists; a .lsp defining one has to be loaded " +
+                "first with load_lisp_file."));
+
+        var text = result.Body ?? "";
+        var value = ParseLispText(text, out var kinds);
+        return new ToolDispatchResult(true, Wrap(new
         {
-            var a = Read<LispEvalArgsDto>(args);
-            if (string.IsNullOrWhiteSpace(a.Source))
-                throw new ArgumentException(
-                    "source is required: the LISP expression to evaluate, for example " +
-                    "(+ 1 2) or (getvar \"CLAYER\").");
-            var src = a.Source!.Trim();
+            source = src,
+            value,
+            valueTypes = kinds,
+            printed = text.Trim(),
+            route = "sendstringtoexecute",
+            note = "The value above is the expression's REAL RESULT, read back from a response " +
+                   "file the queued evaluation wrote (rule 26 §15/§24) - not an acknowledgement " +
+                   "that something was queued. nil comes back as null and T as true, and a nested " +
+                   "list keeps its nesting. `printed` is what LISP itself printed, kept alongside " +
+                   "the parsed value so nothing is lost when a result has no JSON equivalent - an " +
+                   "ename or a selection set prints as a symbol. This is the escape hatch: " +
+                   "anything AutoCAD exposes to AutoLISP is reachable here, including functions a " +
+                   ".lsp file has defined.",
+        }), null);
+    }
 
-            var (text, route, diag) = EvalToText(doc, src);
-            var value = ParseLispText(text, out var kinds);
+    private static async Task<ToolDispatchResult> LoadLispFile(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.load_lisp_file";
+        var a = Read<LispLoadArgsDto>(args);
+        if (string.IsNullOrWhiteSpace(a.Path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "path is required: the .lsp file to load."));
+        var path = Path.GetFullPath(a.Path!);
+        if (!File.Exists(path))
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "No file at " + path + ". load_lisp_file does not search the support path - " +
+                "give the full path."));
 
-            return Wrap(new
-            {
-                source = src,
-                value,
-                valueTypes = kinds,
-                printed = text.Trim(),
-                route,
-                routeNotes = string.IsNullOrEmpty(diag) ? null : diag,
-                note = "Evaluated SYNCHRONOUSLY - the value above is the expression's real result " +
-                       "and not an acknowledgement that something was queued. nil comes back as " +
-                       "null and T as true, and a nested list keeps its nesting. `printed` is what " +
-                       "LISP itself printed, kept alongside the parsed value so nothing is lost " +
-                       "when a result has no JSON equivalent - an ename or a selection set prints " +
-                       "as a symbol. This is the escape hatch: anything AutoCAD exposes to " +
-                       "AutoLISP is reachable here, including functions a .lsp file has defined.",
-            });
-        });
+        // LISP wants forward slashes even on Windows: a backslash starts an escape.
+        var lispPath = path.Replace("\\", "/");
+        var result = await LispCommandBridge.EvalAsync(
+            RequireDoc(), "(load \"" + lispPath + "\")", 15_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        if (result.Status != "OK")
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "Loading " + path + " failed: " + result.Body));
 
-    private static Task<ToolDispatchResult> LoadLispFile(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.load_lisp_file", args, ct, (doc, db, tr) =>
+        var text = result.Body ?? "";
+        var value = ParseLispText(text, out var kinds);
+        return new ToolDispatchResult(true, Wrap(new
         {
-            var a = Read<LispLoadArgsDto>(args);
-            if (string.IsNullOrWhiteSpace(a.Path))
-                throw new ArgumentException("path is required: the .lsp file to load.");
-            var path = Path.GetFullPath(a.Path!);
-            if (!File.Exists(path))
-                throw new ArgumentException(
-                    "No file at " + path + ". load_lisp_file does not search the support path - " +
-                    "give the full path.");
+            path,
+            value,
+            valueTypes = kinds,
+            note = "(load) returns the value of the LAST expression in the file, which for a " +
+                   "file of defuns is the name of the last function defined - that is the " +
+                   "closest thing to a confirmation the LISP loader offers. To be sure a " +
+                   "particular function arrived, call it with eval_lisp; an undefined one is " +
+                   "an error rather than a silent nil.",
+        }), null);
+    }
 
-            // LISP wants forward slashes even on Windows: a backslash starts an escape.
-            var lispPath = path.Replace("\\", "/");
-            var (text, route, _) = EvalToText(doc, "(load \"" + lispPath + "\")");
-            var value = ParseLispText(text, out var kinds);
-            return Wrap(new
-            {
-                path,
-                value,
-                valueTypes = kinds,
-                route,
-                note = "(load) returns the value of the LAST expression in the file, which for a " +
-                       "file of defuns is the name of the last function defined - that is the " +
-                       "closest thing to a confirmation the LISP loader offers. To be sure a " +
-                       "particular function arrived, call it with eval_lisp; an undefined one is " +
-                       "an error rather than a silent nil.",
-            });
-        });
+    private static async Task<ToolDispatchResult> ListLoadedLisp(JsonObject args, CancellationToken ct)
+    {
+        const string toolKey = "acad.lisp.list_loaded_lisp";
+        var a = Read<LispSymbolsArgsDto>(args);
 
-    private static Task<ToolDispatchResult> ListLoadedLisp(JsonObject args, CancellationToken ct) =>
-        Run("acad.lisp.list_loaded_lisp", args, ct, (doc, db, tr) =>
+        // There is no API that lists loaded .lsp FILES - AutoCAD does not keep that list. What
+        // it does keep is the symbol table, and (atoms-family 1) returns every defined symbol
+        // by name. That is the honest answer to "what LISP is loaded": the functions, not the
+        // files they came from, and the tool says so rather than implying a file list.
+        var result = await LispCommandBridge.EvalAsync(
+            RequireDoc(), "(atoms-family 1)", 15_000, ct).ConfigureAwait(false);
+        if (!result.Completed)
+            return new ToolDispatchResult(false, null,
+                new ErrorInfo(AcadErrorCode.Timeout, result.TimeoutNote ?? "timed out"));
+        if (result.Status != "OK")
+            return AcadErrorMapper.Fail(toolKey, new ArgumentException(
+                "(atoms-family 1) failed: " + result.Body));
+
+        var parsed = ParseLispText(result.Body ?? "", out _);
+
+        var names = new List<string>();
+        if (parsed is JsonArray arr)
+            foreach (var n in arr)
+                if (n is not null) names.Add(n.ToString());
+
+        var pattern = a.Pattern?.Trim();
+        var shown = string.IsNullOrEmpty(pattern)
+            ? names
+            : names.Where(n => n.IndexOf(pattern!, StringComparison.OrdinalIgnoreCase) >= 0)
+                   .ToList();
+        shown.Sort(StringComparer.OrdinalIgnoreCase);
+
+        // C: prefixed symbols are the ones typed at the command line as commands.
+        var commands = shown.Where(n => n.StartsWith("C:", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+        return new ToolDispatchResult(true, Wrap(new
         {
-            var a = Read<LispSymbolsArgsDto>(args);
-
-            // There is no API that lists loaded .lsp FILES - AutoCAD does not keep that list. What
-            // it does keep is the symbol table, and (atoms-family 1) returns every defined symbol
-            // by name. That is the honest answer to "what LISP is loaded": the functions, not the
-            // files they came from, and the tool says so rather than implying a file list.
-            var (text, _, _) = EvalToText(doc, "(atoms-family 1)");
-            var parsed = ParseLispText(text, out _);
-
-            var names = new List<string>();
-            if (parsed is JsonArray arr)
-                foreach (var n in arr)
-                    if (n is not null) names.Add(n.ToString());
-
-            var pattern = a.Pattern?.Trim();
-            var shown = string.IsNullOrEmpty(pattern)
-                ? names
-                : names.Where(n => n.IndexOf(pattern!, StringComparison.OrdinalIgnoreCase) >= 0)
-                       .ToList();
-            shown.Sort(StringComparer.OrdinalIgnoreCase);
-
-            // C: prefixed symbols are the ones typed at the command line as commands.
-            var commands = shown.Where(n => n.StartsWith("C:", StringComparison.OrdinalIgnoreCase))
-                                .ToList();
-
-            return Wrap(new
-            {
-                total = names.Count,
-                count = shown.Count,
-                symbols = shown.Take(a.Limit is > 0 ? a.Limit!.Value : 500).ToList(),
-                commandSymbols = commands,
-                truncated = shown.Count > (a.Limit is > 0 ? a.Limit!.Value : 500),
-                note = "These are SYMBOLS, not files. AutoCAD keeps no list of which .lsp files " +
-                       "were loaded, so the honest answer to 'what LISP is loaded' is what is " +
-                       "defined - from (atoms-family 1). Built-in functions are in here as well " +
-                       "as anything a .lsp defined, which is why `pattern` matters: a fresh " +
-                       "drawing already answers with hundreds. Names starting C: are the ones " +
-                       "that can be typed at the command line, listed separately above.",
-            });
-        });
+            total = names.Count,
+            count = shown.Count,
+            symbols = shown.Take(a.Limit is > 0 ? a.Limit!.Value : 500).ToList(),
+            commandSymbols = commands,
+            truncated = shown.Count > (a.Limit is > 0 ? a.Limit!.Value : 500),
+            note = "These are SYMBOLS, not files. AutoCAD keeps no list of which .lsp files " +
+                   "were loaded, so the honest answer to 'what LISP is loaded' is what is " +
+                   "defined - from (atoms-family 1). Built-in functions are in here as well " +
+                   "as anything a .lsp defined, which is why `pattern` matters: a fresh " +
+                   "drawing already answers with hundreds. Names starting C: are the ones " +
+                   "that can be typed at the command line, listed separately above.",
+        }), null);
+    }
 
     // ─────────── commands and scripts ───────────
 

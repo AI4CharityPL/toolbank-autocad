@@ -6,6 +6,36 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`acad-lisp`'s escape-hatch trio built, 27/27 live, bank 682 → 685: `eval_lisp`,
+  `load_lisp_file`, `list_loaded_lisp`.** Built with the user's explicit go-ahead - arbitrary LISP
+  evaluation is a materially different risk from `run_command_sequence`'s bounded drawing
+  commands, and this session asked before writing it.
+
+  Architecturally simpler than the command-sequence bridge, not harder: AutoCAD's command line
+  accepts a raw LISP form directly when typed, so no `[CommandMethod]` or `Editor.GetString`
+  relay is needed - the wrapper is queued as-is via `Document.SendStringToExecute`. The caller's
+  expression never touches the queued text itself; it goes into a request file the wrapper reads,
+  which sidesteps every LISP string-escaping question entirely.
+
+  **One real defect, found live and fixed: AutoLISP's `(read)` takes a STRING, not a file
+  object** - unlike Common Lisp. `(read (open path "r"))` fails at runtime with `zły typ
+  argumentu: stringp`, naming the failed type predicate rather than the function that needed it.
+  Fixed to `(read (read-line file))`, which also means the request file is now written as ONE
+  line regardless of the caller's source, since `read-line` stops at the first newline - LISP
+  does not care about whitespace inside an expression, so collapsing is free. Now rule 26 §24.
+
+  **Proven against real content.** `load_lisp_file` loads AutoCAD's own sample `afact.lsp`
+  (mutually recursive factorial functions), and the proof it genuinely loaded is calling the
+  loaded `fact1(5)` afterward through `eval_lisp` and getting `120` back - real recursive
+  arithmetic a placeholder success could not fake. `list_loaded_lisp` is checked before AND
+  after: `FACT1` absent, then present. `eval_lisp` itself is cross-checked against
+  `get_system_variable` reading the same `CLAYER` through a completely different code path, and
+  a nested list `(list 1 (list 2 3) 4)` proves the LISP-to-JSON parser preserves structure rather
+  than flattening it.
+
+  `netload_assembly` remains withdrawn - same command-context fix, but writing it was blocked by
+  this session's own safety classifier and not attempted without a separate, specific go-ahead.
+
 - **`acad-underlays` built, 5 tools, 42/42 live, plus `acad-lights.create_web_light`, 7/7. Bank
   676 → 682.** Both were recorded as "blocked on a file the user must supply." Asked directly,
   the user had none of `.dgn`/`.dwf`/`.ies` to hand - but pointed at AutoCAD's own installation

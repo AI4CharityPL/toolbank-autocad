@@ -25,12 +25,18 @@ public class LispTests
         // APPLICATION context every other tool dispatches from.
         "run_command_sequence",
 
-        // STILL WITHDRAWN: run_script_file was built on the same bridge but even a single
-        // CIRCLE inside a .scr draws nothing - two measured fix attempts, both wrong (see
-        // LispTools.cs). netload_assembly needs the same command-context fix but is
-        // deliberately out of this tranche - dynamic assembly loading is a different risk from
-        // queuing drawing commands. eval_lisp, load_lisp_file and list_loaded_lisp need actual
-        // LISP EVALUATION, which neither Editor.Command nor Application.Invoke provides.
+        // FIXED 2026-08-11, second pass: eval_lisp, load_lisp_file and list_loaded_lisp now go
+        // through the same queued-SendStringToExecute mechanism, WITHOUT a [CommandMethod] - the
+        // command line accepts LISP directly when typed, so the wrapper is queued as-is and the
+        // user's expression travels through a request FILE rather than being embedded in it.
+        "eval_lisp", "load_lisp_file", "list_loaded_lisp",
+
+        // STILL WITHDRAWN: run_script_file was built on the run_command_sequence bridge but even
+        // a single CIRCLE inside a .scr draws nothing - two measured fix attempts, both wrong
+        // (see LispTools.cs). netload_assembly needs the same command-context fix as
+        // run_command_sequence but is deliberately out of scope - dynamic assembly loading is a
+        // different risk from evaluating LISP or queuing drawing commands, and this session did
+        // not have the user's go-ahead for that specific capability.
 
         // define_command_alias is struck: AutoCAD exposes no API for command aliases, and the only
         // route is editing the user's global acad.pgp and reloading it with RE_INIT - a permanent

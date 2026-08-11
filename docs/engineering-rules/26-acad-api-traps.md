@@ -676,6 +676,39 @@ passed silently if the check had only looked at the drawing-space extents shrink
 size, which DID happen correctly. The boundary was genuinely cleared; only the flag lied. Assert
 the specific claim being made, not a nearby one that happens to also be true.
 
+### 24. AutoLISP's `(read)` takes a STRING, not a file object — `SendStringToExecute` queues LISP directly, no `[CommandMethod]` needed
+
+Two findings, both from getting `eval_lisp` working after §15 identified the route but not the
+exact shape.
+
+**`SendStringToExecute` queues a raw LISP form exactly as a human typing it would evaluate one.**
+Unlike `run_command_sequence`, `eval_lisp` needed no custom `[CommandMethod]` and no
+`Editor.GetString`-based relay for passing data in - the command line accepts a parenthesised
+expression directly (`Editor.Command` does not; it tokenises command input and rejects LISP,
+per §15). This makes `eval_lisp` architecturally simpler than the command bridge, not harder,
+once the read/write trap below is out of the way.
+
+```csharp
+// looks reasonable, is not:
+"(setq X (read (open \"C:/path/req.txt\" \"r\")))"
+// zly typ argumentu: stringp #<file ...>  -- read wanted a STRING and named the failed predicate,
+// not the file object it actually got
+```
+
+**AutoLISP's `read` has no form that reads directly from an open file** — unlike Common Lisp,
+where `(read stream)` is normal. The fix is `(read (read-line <file>))`: `read-line` pulls one
+line as a string, then `read` parses that string. This also means the request file must be
+written as **one line** regardless of whether the caller's source had embedded newlines -
+`read-line` stops at the first one, silently truncating anything after it. LISP does not care
+about whitespace inside an expression (parens define structure, not line breaks), so collapsing
+multi-line input to one line before writing it is free and loses nothing.
+
+The whole exchange — request written, `SendStringToExecute` queues the wrapper, wrapper reads the
+request file, evaluates, writes `OK`/`ERROR` plus the printed result to a response file, caller
+polls for it — never embeds the user's expression in the queued LISP text itself, which sidesteps
+every string-escaping question a naive implementation would have to solve: no matter what
+characters the expression contains, they are never concatenated into a LISP string literal.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

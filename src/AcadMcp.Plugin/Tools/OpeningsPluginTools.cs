@@ -529,6 +529,13 @@ internal static class OpeningsPluginTools
             if (string.IsNullOrWhiteSpace(number) && a.AutoNumber)
                 number = NextNumber(db, tr, "D");
 
+            WallCutOutcome? wallOpening = null;
+            if (!string.IsNullOrWhiteSpace(a.WallHandle))
+            {
+                var (j1, j2) = OpeningAxisJambs(a.Position, a.RotationDeg, a.WidthMm);
+                wallOpening = CutWallCore(db, tr, a.WallHandle!, j1, j2);
+            }
+
             var attrs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["NUMBER"]      = number ?? "",
@@ -550,9 +557,23 @@ internal static class OpeningsPluginTools
             return Wrap(new
             {
                 entity = r.Handle, blockName = r.BlockName, created = r.Created, number,
-                widthMm = r.WidthMm, heightMm = r.HeightMm,
+                widthMm = r.WidthMm, heightMm = r.HeightMm, wallOpening,
             });
         });
+
+    /// <summary>
+    /// Opening blocks are authored centred at local origin (jamb ticks at ±w/2 along local X -
+    /// see BuildBlockGeometry's "centred at origin" comment), so in world space the jambs sit at
+    /// position ± (widthMm/2) rotated by rotationDeg. Shared by insert_door and insert_window's
+    /// optional wallHandle cut.
+    /// </summary>
+    private static (Point2dDto Jamb1, Point2dDto Jamb2) OpeningAxisJambs(Point2dDto position, double rotationDeg, double widthMm)
+    {
+        double rad = rotationDeg * Math.PI / 180.0;
+        double half = widthMm / 2.0;
+        double cx = Math.Cos(rad) * half, cy = Math.Sin(rad) * half;
+        return (new Point2dDto(position.X - cx, position.Y - cy), new Point2dDto(position.X + cx, position.Y + cy));
+    }
 
     // ─────────── InsertWindow ───────────
 
@@ -566,6 +587,13 @@ internal static class OpeningsPluginTools
             string? number = a.Number;
             if (string.IsNullOrWhiteSpace(number) && a.AutoNumber)
                 number = NextNumber(db, tr, "W");
+
+            WallCutOutcome? wallOpening = null;
+            if (!string.IsNullOrWhiteSpace(a.WallHandle))
+            {
+                var (j1, j2) = OpeningAxisJambs(a.Position, a.RotationDeg, a.WidthMm);
+                wallOpening = CutWallCore(db, tr, a.WallHandle!, j1, j2);
+            }
 
             var attrs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -588,7 +616,7 @@ internal static class OpeningsPluginTools
             return Wrap(new
             {
                 entity = r.Handle, blockName = r.BlockName, created = r.Created, number,
-                widthMm = r.WidthMm, heightMm = r.HeightMm,
+                widthMm = r.WidthMm, heightMm = r.HeightMm, wallOpening,
             });
         });
 
@@ -667,77 +695,85 @@ internal static class OpeningsPluginTools
         RunW("acad.openings.cut_wall_for_opening", args, ct, (doc, db, tr) =>
         {
             var a = Read<OpeningsCutWallDto>(args);
-            var id = AcadEnv.ResolveHandle(db, a.WallHandle);
-            var ent = (Entity)tr.GetObject(id, OpenMode.ForWrite);
-
-            Point3d start, end;
-            string wallLayer;
-            switch (ent)
-            {
-                case Line line:
-                    start = line.StartPoint;
-                    end = line.EndPoint;
-                    wallLayer = line.Layer;
-                    break;
-                case Polyline pl:
-                    if (pl.NumberOfVertices != 2)
-                        throw new ArgumentException(
-                            $"cut_wall_for_opening: polyline has {pl.NumberOfVertices} vertices; only 2-vertex polylines supported in D5. Use D6 'split_wall_at_opening' for multi-segment walls.");
-                    start = pl.GetPoint3dAt(0);
-                    end = pl.GetPoint3dAt(1);
-                    wallLayer = pl.Layer;
-                    break;
-                default:
-                    throw new ArgumentException($"cut_wall_for_opening: entity type {ent.GetType().Name} not supported. Provide a Line or 2-vertex Polyline handle.");
-            }
-
-            var j1 = AcadEnv.ToPoint3d(a.Jamb1);
-            var j2 = AcadEnv.ToPoint3d(a.Jamb2);
-
-            double ProjectParam(Point3d p)
-            {
-                var v = end - start;
-                double len2 = v.X * v.X + v.Y * v.Y;
-                if (len2 < 1e-9) return 0;
-                return ((p.X - start.X) * v.X + (p.Y - start.Y) * v.Y) / len2;
-            }
-
-            double t1 = ProjectParam(j1);
-            double t2 = ProjectParam(j2);
-            if (t1 > t2) (t1, t2) = (t2, t1);
-            if (t1 < -1e-6 || t2 > 1 + 1e-6)
-                throw new ArgumentException(
-                    $"cut_wall_for_opening: jambs project outside the wall segment (t1={t1:F3}, t2={t2:F3}). Provide jambs that lie on the wall axis.");
-
-            Point3d LerpP(double t) =>
-                new(start.X + (end.X - start.X) * t, start.Y + (end.Y - start.Y) * t, 0);
-
-            var cut1 = LerpP(Math.Max(0, t1));
-            var cut2 = LerpP(Math.Min(1, t2));
-            double dx = cut2.X - cut1.X, dy = cut2.Y - cut1.Y;
-            double gap = Math.Sqrt(dx * dx + dy * dy);
-
-            // Erase original.
-            ent.Erase();
-
-            EntityHandle? leftH = null, rightH = null;
-            if ((cut1 - start).Length > 1) // left survives
-            {
-                leftH = AcadEnv.Persist(db, tr, new Line(start, cut1), wallLayer);
-            }
-            if ((end - cut2).Length > 1) // right survives
-            {
-                rightH = AcadEnv.Persist(db, tr, new Line(cut2, end), wallLayer);
-            }
-
-            return Wrap(new
-            {
-                originalHandle = a.WallHandle,
-                leftHandle = leftH?.Handle,
-                rightHandle = rightH?.Handle,
-                gapLengthMm = gap,
-            });
+            return Wrap(CutWallCore(db, tr, a.WallHandle, a.Jamb1, a.Jamb2));
         });
+
+    /// <summary>
+    /// Splits a wall (Line or 2-vertex Polyline) into two segments with a gap between the given
+    /// jamb points, projected onto the wall axis. Shared core behind cut_wall_for_opening AND
+    /// insert_door/insert_window's own optional wallHandle (2026-08-12) - called directly with an
+    /// already-open transaction rather than through a second IPC round trip to itself.
+    /// </summary>
+    private static WallCutOutcome CutWallCore(Database db, Transaction tr, string wallHandle,
+        Point2dDto jamb1, Point2dDto jamb2)
+    {
+        var id = AcadEnv.ResolveHandle(db, wallHandle);
+        var ent = (Entity)tr.GetObject(id, OpenMode.ForWrite);
+
+        Point3d start, end;
+        string wallLayer;
+        switch (ent)
+        {
+            case Line line:
+                start = line.StartPoint;
+                end = line.EndPoint;
+                wallLayer = line.Layer;
+                break;
+            case Polyline pl:
+                if (pl.NumberOfVertices != 2)
+                    throw new ArgumentException(
+                        $"cut_wall_for_opening: polyline has {pl.NumberOfVertices} vertices; only 2-vertex polylines supported in D5. Use D6 'split_wall_at_opening' for multi-segment walls.");
+                start = pl.GetPoint3dAt(0);
+                end = pl.GetPoint3dAt(1);
+                wallLayer = pl.Layer;
+                break;
+            default:
+                throw new ArgumentException($"cut_wall_for_opening: entity type {ent.GetType().Name} not supported. Provide a Line or 2-vertex Polyline handle.");
+        }
+
+        var j1 = AcadEnv.ToPoint3d(jamb1);
+        var j2 = AcadEnv.ToPoint3d(jamb2);
+
+        double ProjectParam(Point3d p)
+        {
+            var v = end - start;
+            double len2 = v.X * v.X + v.Y * v.Y;
+            if (len2 < 1e-9) return 0;
+            return ((p.X - start.X) * v.X + (p.Y - start.Y) * v.Y) / len2;
+        }
+
+        double t1 = ProjectParam(j1);
+        double t2 = ProjectParam(j2);
+        if (t1 > t2) (t1, t2) = (t2, t1);
+        if (t1 < -1e-6 || t2 > 1 + 1e-6)
+            throw new ArgumentException(
+                $"cut_wall_for_opening: jambs project outside the wall segment (t1={t1:F3}, t2={t2:F3}). Provide jambs that lie on the wall axis.");
+
+        Point3d LerpP(double t) =>
+            new(start.X + (end.X - start.X) * t, start.Y + (end.Y - start.Y) * t, 0);
+
+        var cut1 = LerpP(Math.Max(0, t1));
+        var cut2 = LerpP(Math.Min(1, t2));
+        double dx = cut2.X - cut1.X, dy = cut2.Y - cut1.Y;
+        double gap = Math.Sqrt(dx * dx + dy * dy);
+
+        // Erase original.
+        ent.Erase();
+
+        EntityHandle? leftH = null, rightH = null;
+        if ((cut1 - start).Length > 1) // left survives
+        {
+            leftH = AcadEnv.Persist(db, tr, new Line(start, cut1), wallLayer);
+        }
+        if ((end - cut2).Length > 1) // right survives
+        {
+            rightH = AcadEnv.Persist(db, tr, new Line(cut2, end), wallLayer);
+        }
+
+        return new WallCutOutcome(wallHandle, leftH?.Handle, rightH?.Handle, gap);
+    }
+
+    private sealed record WallCutOutcome(string OriginalHandle, string? LeftHandle, string? RightHandle, double GapLengthMm);
 
     // ─────────── Renumber ───────────
 

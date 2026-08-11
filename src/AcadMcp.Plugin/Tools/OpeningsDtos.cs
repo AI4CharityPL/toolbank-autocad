@@ -25,7 +25,11 @@ internal sealed record OpeningsInsertDoorDto(
     [property: JsonPropertyName("roomTo")]     string? RoomTo,
     [property: JsonPropertyName("number")]     string? Number,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber,
-    [property: JsonPropertyName("layer")]      string? Layer);
+    [property: JsonPropertyName("layer")]      string? Layer,
+    // Optional: handle of the wall (Line or 2-vertex Polyline) this door sits in. When supplied,
+    // the wall is cut at the door's own axis span (position ± widthMm/2 along rotationDeg) BEFORE
+    // the block is placed - see architecture.insert_door's WallHandle for the same rationale.
+    [property: JsonPropertyName("wallHandle")] string? WallHandle);
 
 internal sealed record OpeningsInsertWindowDto(
     [property: JsonPropertyName("position")]   Point2dDto Position,
@@ -39,7 +43,8 @@ internal sealed record OpeningsInsertWindowDto(
     [property: JsonPropertyName("room")]       string? Room,
     [property: JsonPropertyName("number")]     string? Number,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber,
-    [property: JsonPropertyName("layer")]      string? Layer);
+    [property: JsonPropertyName("layer")]      string? Layer,
+    [property: JsonPropertyName("wallHandle")] string? WallHandle);
 
 internal sealed record OpeningsInsertGenericDto(
     [property: JsonPropertyName("name")]       string Name,

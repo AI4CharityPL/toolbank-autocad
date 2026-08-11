@@ -4,6 +4,54 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Fixed
+
+- **`acad-schedules` triple-counted every room's area.** `define_room` places THREE separate text
+  entities per room (number, name, area — all on `A-ROOM-IDEN`), and `generate_room_schedule` /
+  `audit_all_rooms` / `correct_all_room_areas` iterated the raw label list directly, treating each
+  line as its own "room." Found live while auditing a real two-level test building: reported
+  `totalAreaM2: 433.875` against an actual 144.625 m² — exactly 3×, and `roomCount: 18` against 6
+  real rooms. `get_room_data`/`correct_room_area` never had this bug — they already group every
+  label whose position falls inside the same detected boundary polygon before extracting
+  number/name/area. Generalised that same algorithm to a whole-drawing batch pass (`
+  FetchGroupedRoomsAsync`) instead of leaving a second, buggy one running in parallel. As a side
+  effect, `audit_all_rooms` now calls `get_room_region`'s flood-fill once per room instead of once
+  per label line — a 3× reduction in round-trips for a 3-line tag.
+
+  **A second, related defect surfaced while verifying the first fix.** `SplitNumberName`'s
+  query-substring fallback could outrank a clean room-number match when the grouping seed
+  (enumeration order is arbitrary in batch grouping, unlike a caller-supplied query) happened to
+  be the area-token label itself — `"17,81 m²"` trivially contains itself as a substring, so it
+  won over the real `"202"` reached later in the label list. Fixed by searching every label for a
+  strict regex number match first, only falling back to the fuzzy substring heuristic when no
+  label matches cleanly. Verified live with a dedicated regression fixture
+  (`scripts/verify-schedules-room-grouping.py`, 16/16): two rooms with deliberately different
+  areas, asserting exact counts and that the extracted room numbers are the real tags, not an
+  area token.
+
+- **`openings.insert_door`/`insert_window` had no way to cut the wall they sit in.** Discovered
+  live in the same session: a caller needing both a schedule-visible door/window block AND an
+  actual wall opening had no single tool for it. `architecture.insert_door`/`insert_window` cut
+  the wall but draw primitives invisible to `list_openings_in_model` /
+  `generate_door_schedule`/`generate_window_schedule` / `audit_all_rooms` / `get_room_data` (they
+  only see block names starting with `DOOR-`/`WIN-`) — every schedule came back empty despite
+  doors and windows being clearly visible in the drawing. Both tools now take an optional
+  `wallHandle`; when supplied, the wall is cut at the opening's own axis span (`position ±
+  widthMm/2` along `rotationDeg` — opening blocks are authored centred at local origin) before the
+  block is placed, reusing `cut_wall_for_opening`'s own logic directly in the same transaction
+  rather than a second IPC round trip. Tool descriptions on both categories now cross-reference
+  each other explicitly, and `list_openings_in_model`'s description states the architecture-tool
+  blind spot as the first thing to check when it returns empty on a drawing with visible openings.
+  Verified live both ways (`scripts/verify-openings-wall-cut.py`, 18/18): the wall is genuinely
+  cut with the correct gap length and both surviving segments, the door/window is schedule-visible
+  and produces a real schedule row, and a negative control confirms omitting `wallHandle` leaves
+  the wall untouched (no regression on the existing opt-in behaviour).
+
+  Both findings came from an exploratory session that built a real, complete two-level structure
+  through this bank end to end (~15 categories in one pass, 51/53 calls succeeding on the first
+  run) specifically to test composability beyond what any single category's own verification
+  script would catch.
+
 ### Added
 
 - **`acad-underlays.attach_pdf_underlay` built, second pass, 24/24 live, bank 686 → 687.** The

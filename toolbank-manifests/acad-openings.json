@@ -180,7 +180,7 @@
     },
     {
       "name": "insert_door",
-      "description": "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes a door schedule reads. architecture.insert_door is the other one, which draws the door as plain primitives on the layer standard and carries no schedule data. Insert a door block at a wall opening. Types: \u0027single\u0027 (900x2100 hinged), \u0027double\u0027 (1600x2100 two-leaf), \u0027sliding\u0027 (1000x2100), \u0027fire\u0027 (REI 30/60/90/120 EI marker), \u0027hospital\u0027 (double-swing with trajectory arrows), \u0027lead\u0027 (radiological Pb-marker). Auto-assigns number D-001, D-002... (skipped by number= or autoNumber=false). Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, REI, LEAF_DIR, SWING_DIR, ROOM_FROM, ROOM_TO, ACOUSTIC_DB, LEAD. Layer defaults to A-DOOR (or A-DOOR-FIRE / A-DOOR-LEAD depending on type).",
+      "description": "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes generate_door_schedule / audit_all_rooms / get_room_data read. architecture.insert_door is the other one, which draws the door as plain primitives on the layer standard and is INVISIBLE to every schedule/audit tool in this bank (list_openings_in_model only finds block names starting with DOOR-/WIN-) - if the door needs to appear in a schedule or be counted by an audit, it MUST be placed with this tool, not the architecture one. Insert a door block at a wall opening. Pass wallHandle to also cut the host wall at the door\u0027s own axis span (position \u00B1 widthMm/2 along rotationDeg) before placing the block - added 2026-08-12 so this tool alone can do what previously needed architecture.insert_door for the cut and this one for the schedule entry. Types: \u0027single\u0027 (900x2100 hinged), \u0027double\u0027 (1600x2100 two-leaf), \u0027sliding\u0027 (1000x2100), \u0027fire\u0027 (REI 30/60/90/120 EI marker), \u0027hospital\u0027 (double-swing with trajectory arrows), \u0027lead\u0027 (radiological Pb-marker). Auto-assigns number D-001, D-002... (skipped by number= or autoNumber=false). Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, REI, LEAF_DIR, SWING_DIR, ROOM_FROM, ROOM_TO, ACOUSTIC_DB, LEAD. Layer defaults to A-DOOR (or A-DOOR-FIRE / A-DOOR-LEAD depending on type).",
       "tags": [
         "insert",
         "door"
@@ -216,7 +216,7 @@
     },
     {
       "name": "insert_window",
-      "description": "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes a window schedule reads. architecture.insert_window is the other one, which draws the window as plain primitives on the layer standard and carries no schedule data. Insert a window block at a wall opening. Types: \u0027fixed\u0027 (non-opening), \u0027casement\u0027 (side-hung), \u0027tilt\u0027 (tilt \u0026 turn), \u0027hospital\u0027 (fire-rated E/EI30/EI60), \u0027fire\u0027 (EI30/EI60/EI120). Burglary rating (RC 1..6 per PN-EN 1627) and fire class supported per type. Auto-assigns W-001, W-002... Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, SILL_MM, RC, FIRE_CLASS, ROOM. Layer defaults to A-GLAZ.",
+      "description": "THE OPENINGS ONE: places a numbered BLOCK carrying the attributes generate_window_schedule / audit_all_rooms / get_room_data read. architecture.insert_window is the other one, which draws the window as plain primitives on the layer standard and is INVISIBLE to every schedule/audit tool in this bank (list_openings_in_model only finds block names starting with DOOR-/WIN-) - if the window needs to appear in a schedule or be counted by an audit, it MUST be placed with this tool, not the architecture one. Insert a window block at a wall opening. Pass wallHandle to also cut the host wall at the window\u0027s own axis span (position \u00B1 widthMm/2 along rotationDeg) before placing the block - added 2026-08-12 so this tool alone can do what previously needed architecture.insert_window for the cut and this one for the schedule entry. Types: \u0027fixed\u0027 (non-opening), \u0027casement\u0027 (side-hung), \u0027tilt\u0027 (tilt \u0026 turn), \u0027hospital\u0027 (fire-rated E/EI30/EI60), \u0027fire\u0027 (EI30/EI60/EI120). Burglary rating (RC 1..6 per PN-EN 1627) and fire class supported per type. Auto-assigns W-001, W-002... Attributes: NUMBER, TYPE, WIDTH_MM, HEIGHT_MM, SILL_MM, RC, FIRE_CLASS, ROOM. Layer defaults to A-GLAZ.",
       "tags": [
         "insert",
         "window"
@@ -252,7 +252,7 @@
     },
     {
       "name": "list_openings_in_model",
-      "description": "Enumerate all opening BlockReferences currently in model-space (block names starting with \u0027DOOR-\u0027 or \u0027WIN-\u0027). kind=\u0027doors\u0027|\u0027windows\u0027|\u0027all\u0027. Optional layerFilter. Returns handle, blockName, kind, number, type, width/height, rei, rc, fireClass, acousticDb, leadShielded, roomFrom, roomTo, position, rotation, layer. Read-only.",
+      "description": "Enumerate all opening BlockReferences currently in model-space (block names starting with \u0027DOOR-\u0027 or \u0027WIN-\u0027). kind=\u0027doors\u0027|\u0027windows\u0027|\u0027all\u0027. Optional layerFilter. Returns handle, blockName, kind, number, type, width/height, rei, rc, fireClass, acousticDb, leadShielded, roomFrom, roomTo, position, rotation, layer. Read-only. Returns COUNT 0 for doors/windows drawn with architecture.insert_door/insert_window (or draw_door_by_points/draw_window_by_points) - those draw plain primitives, not blocks, and are invisible here by design, not a bug. If this comes back empty on a drawing you can SEE doors/windows in, that is almost always the cause.",
       "tags": [
         "list",
         "openings",
@@ -300,6 +300,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-09T12:45:50.2857229Z"
+    "last_regenerated_utc": "2026-08-11T16:59:49.1503134Z"
   }
 }

@@ -45,7 +45,12 @@ public sealed record InsertDoorArgs(
     [property: JsonPropertyName("roomTo")]     string? RoomTo = null,
     [property: JsonPropertyName("number")]     string? Number = null,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber = true,
-    [property: JsonPropertyName("layer")]      string? Layer = null);
+    [property: JsonPropertyName("layer")]      string? Layer = null,
+    // Optional: handle of the wall (Line or 2-vertex Polyline) this door sits in. When supplied,
+    // the wall is cut at the door's own axis span (position ± widthMm/2 along rotationDeg) BEFORE
+    // the block is placed - 2026-08-12, closing the gap that made architecture.insert_door the
+    // only way to get BOTH a cut wall and a placed opening in one call.
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
 
 public sealed record InsertWindowArgs(
     [property: JsonPropertyName("position")]   Point2dDto Position,
@@ -59,7 +64,8 @@ public sealed record InsertWindowArgs(
     [property: JsonPropertyName("room")]       string? Room = null,
     [property: JsonPropertyName("number")]     string? Number = null,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber = true,
-    [property: JsonPropertyName("layer")]      string? Layer = null);
+    [property: JsonPropertyName("layer")]      string? Layer = null,
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
 
 public sealed record InsertOpeningGenericArgs(
     [property: JsonPropertyName("name")]       string Name,
@@ -154,7 +160,8 @@ public sealed record OpeningInsertResult(
     [property: JsonPropertyName("created")]    bool Created,
     [property: JsonPropertyName("number")]     string? Number,
     [property: JsonPropertyName("widthMm")]    double WidthMm,
-    [property: JsonPropertyName("heightMm")]   double HeightMm);
+    [property: JsonPropertyName("heightMm")]   double HeightMm,
+    [property: JsonPropertyName("wallOpening")] CutWallForOpeningResult? WallOpening = null);
 
 public sealed record SketchResult(
     [property: JsonPropertyName("entities")] IReadOnlyList<EntityHandle> Entities);

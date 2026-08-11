@@ -1256,9 +1256,25 @@ unassigned, since a tool assigning globally would pass a single-entity check per
 `delete_material` is refused while in use, then succeeds once the entity is unassigned, which
 proves the guard counts real users rather than refusing blindly.
 
-**Remaining in 6.1: lights (7), sun and environment, and the renderers.** The order and the open
-question are unchanged — settle whether an image can be produced at all before building the tools
-that produce one.
+**LIGHTS BUILT 2026-08-11: 6 tools, 38/38 live.** Ships as `acad-lights`: `create_point_light`,
+`create_spot_light`, `create_distant_light`, `list_lights`, `set_light_properties`,
+`delete_light`. `create_web_light` is held back — a web light is defined by an `.ies` photometric
+file and without one there is nothing to verify.
+
+Two probe rounds settled what the first reconnaissance left open: **`Light.LightType` is a
+`GraphicsInterface.DrawableType`** — the right name in the wrong namespace, which is why it read
+as absent — with members `PointLight`, `SpotLight`, `DistantLight`, `WebLight`.
+
+**One defect found live, and it is now rule 26 §18: `HasTarget` does not stick when set before the
+light is in the database.** It reads back `false` while `Position`, `Intensity` and the cone
+angles all survive — so the object looks fine and the spot light simply is not aimed at anything.
+Spot and distant lights are now persisted FIRST and aimed afterwards, with a read-back assertion.
+The check that caught it was the most trivial-looking line in the script.
+
+**Remaining in 6.1: the sun and environment, and the renderers.** The order and the open question
+are unchanged — settle whether an image can be produced at all before building the tools that
+produce one. Note from 5.4's probe that the sun hangs off a VIEW (`ViewTableRecord.SunId`), not
+the database.
 
 **Suggested split for the next session:** materials first (8 tools, no open questions, verifiable
 by reading assignments back), then lights (7, after one probe for the light-type enum), then the
@@ -1377,11 +1393,11 @@ should happen before any of phases 3–5 is started, not while it is being built
 | 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **62** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **44** | 5 struck: data extraction is a wizard, property sets are AEC-only; 5.1 part-built, 6 tools blocked on a command context (rule 26 §15) |
-| 6 | Visualisation — render, animation | 40 → **26** | **6** | 6.2 has no managed API; 6.1 materials done, lights and renderers outstanding |
-| | **Total** | **813** | **660** | **81 %** |
+| 6 | Visualisation — render, animation | 40 → **26** | **12** | 6.2 has no managed API; 6.1 materials and lights done, sun and renderers outstanding |
+| | **Total** | **813** | **666** | **82 %** |
 
-**Built column refreshed 2026-08-08.** The per-phase figures sum to 661 (337 + 88 + 71 + 62 + 53 + 44 + 6)
-while the bank measures **660**. The 12-tool difference is real and is left standing rather than
+**Built column refreshed 2026-08-08.** The per-phase figures sum to 667 (337 + 88 + 71 + 62 + 53 + 44 + 12)
+while the bank measures **666**. The 12-tool difference is real and is left standing rather than
 forced to agree: tools have also been added outside the phase plan — `draw_mline` pulled forward
 from 2.3, the six `acad-router` entries, and several one-offs raised by the hospital review. The
 measured number is the one to trust; it comes from `toolbank-manifests/`, which

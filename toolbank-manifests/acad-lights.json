@@ -1,0 +1,197 @@
+{
+  "id": "acad-lights",
+  "name": "acad-lights",
+  "description": "Render lights: point lights (a bare bulb throwing light everywhere), spot lights (aimed, with a bright inner cone and a dimmer outer one) and distant lights (sun-like parallel rays where only the DIRECTION matters, so moving one changes nothing). Also listing them, changing any property, and deleting. Lights are addressed by NAME here, so names must be unique. Cone angles are in RADIANS and the hotspot is always the smaller of the pair - AutoCAD makes both read-only individually and takes them together, which is what stops a cone being inverted. A light that is off is still listed, because it is still in the drawing. Web lights are not here: one is defined by an .ies photometric file, and without one there is nothing to verify.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-lights.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "cad",
+    "create",
+    "delete",
+    "distant",
+    "dwg",
+    "light",
+    "lights",
+    "list",
+    "point",
+    "properties",
+    "set",
+    "spot"
+  ],
+  "intent_examples": [
+    "add a cone light",
+    "add a directional sun light",
+    "add a light bulb at this position",
+    "add a spotlight aimed at this point",
+    "add an omnidirectional light",
+    "add sunlight to the model",
+    "adjust the spotlight cone",
+    "change the light intensity",
+    "clean up unused lights",
+    "create a distant light",
+    "create a point light",
+    "create a spot light",
+    "delete a spotlight",
+    "delete this light",
+    "dodaj swiatlo kierunkowe na rysunku",
+    "dodaj swiatlo sloneczne do rysunku",
+    "dodaj zrodlo swiatla do rysunku",
+    "find a light by name",
+    "get rid of that lamp",
+    "how many lights are on",
+    "jakie zrodla swiatla sa na rysunku",
+    "light everything from one direction",
+    "light this object from above",
+    "list the lights",
+    "lista swiatel",
+    "make the light brighter",
+    "move a light",
+    "parallel light rays",
+    "place a light in the model",
+    "put a directional light pointing here",
+    "put a lamp here",
+    "remove a light from the drawing",
+    "show all the lights",
+    "skasuj zrodlo swiatla z rysunku",
+    "turn this light off",
+    "ustaw kolor swiatla na rysunku",
+    "usun swiatlo",
+    "utworz reflektor",
+    "utworz swiatlo odlegle",
+    "utworz swiatlo punktowe",
+    "what lights are in this drawing",
+    "zmien wlasciwosci swiatla"
+  ],
+  "tools_summary": [
+    {
+      "name": "create_distant_light",
+      "description": "Create a distant light - the sun-like one: parallel rays of the same strength everywhere, so only their DIRECTION matters. Give a direction vector, or a position and target to define one. Because the rays never weaken with distance, MOVING a distant light changes nothing; only turning it changes the picture, which is why its position is a convention rather than a place. Use this for sunlight and a point or spot light for lamps.",
+      "tags": [
+        "create",
+        "distant",
+        "light"
+      ],
+      "intent": [
+        "create a distant light",
+        "add sunlight to the model",
+        "utworz swiatlo odlegle",
+        "add a directional sun light",
+        "dodaj swiatlo sloneczne do rysunku",
+        "parallel light rays",
+        "light everything from one direction"
+      ]
+    },
+    {
+      "name": "create_point_light",
+      "description": "Create a point light - a bare bulb that throws light in EVERY direction from one spot. It has no target and no cone, so there is nothing to aim: create_spot_light is the one that points somewhere. Set the position, and optionally the intensity, colour and whether it starts on. Lights are addressed by NAME throughout this category, so a name already in use is refused - two lights with one name could not be told apart. Read back by searching model space after creation rather than from the object just written.",
+      "tags": [
+        "create",
+        "point",
+        "light"
+      ],
+      "intent": [
+        "create a point light",
+        "add a light bulb at this position",
+        "utworz swiatlo punktowe",
+        "put a lamp here",
+        "dodaj zrodlo swiatla do rysunku",
+        "add an omnidirectional light",
+        "place a light in the model"
+      ]
+    },
+    {
+      "name": "create_spot_light",
+      "description": "Create a spot light - aimed from a position at a target, with two cones. The HOTSPOT is the bright inner cone and the FALLOFF the dimmer outer edge, both in RADIANS, so the hotspot is always the smaller of the two and a hotspot wider than the falloff is refused as a shape a light cannot have. Defaults are about 20 and 45 degrees. The two angles are set together because both are read-only individually in the API - which is also what keeps the cone from inverting. The result is read back and the angles checked against what was asked for.",
+      "tags": [
+        "create",
+        "spot",
+        "light"
+      ],
+      "intent": [
+        "create a spot light",
+        "add a spotlight aimed at this point",
+        "utworz reflektor",
+        "put a directional light pointing here",
+        "dodaj swiatlo kierunkowe na rysunku",
+        "add a cone light",
+        "light this object from above"
+      ]
+    },
+    {
+      "name": "delete_light",
+      "description": "Delete a light from the drawing. Its previous settings are reported in full, so it can be recreated if the deletion was a mistake. Deleting a light changes what a render looks like and nothing about the geometry. Confirmed gone by searching model space again rather than assumed.",
+      "tags": [
+        "delete",
+        "light"
+      ],
+      "intent": [
+        "delete this light",
+        "remove a light from the drawing",
+        "usun swiatlo",
+        "get rid of that lamp",
+        "skasuj zrodlo swiatla z rysunku",
+        "clean up unused lights",
+        "delete a spotlight"
+      ]
+    },
+    {
+      "name": "list_lights",
+      "description": "List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API.",
+      "tags": [
+        "list",
+        "lights"
+      ],
+      "intent": [
+        "list the lights",
+        "what lights are in this drawing",
+        "lista swiatel",
+        "show all the lights",
+        "jakie zrodla swiatla sa na rysunku",
+        "find a light by name",
+        "how many lights are on"
+      ]
+    },
+    {
+      "name": "set_light_properties",
+      "description": "Change a light: turn it on or off, set its intensity, colour, position, target, or cone angles. Only the properties named are touched and the previous values are reported, so a change can be undone. Two things worth knowing: moving the TARGET of a point light is refused, because a point light has nothing to aim; and changing ONE cone angle carries the other over from what is already set, since AutoCAD only accepts the pair together - so a new hotspot is checked against the existing falloff and refused if it would be the wider of the two.",
+      "tags": [
+        "set",
+        "light",
+        "properties"
+      ],
+      "intent": [
+        "turn this light off",
+        "change the light intensity",
+        "zmien wlasciwosci swiatla",
+        "make the light brighter",
+        "ustaw kolor swiatla na rysunku",
+        "move a light",
+        "adjust the spotlight cone"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "lights",
+    "tool_count_target": 6,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "scaffolded",
+    "last_regenerated_utc": "2026-08-11T08:55:00.3910805Z"
+  }
+}

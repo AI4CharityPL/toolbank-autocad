@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 47 categories, 660 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 48 categories, 666 tools total.
 
 ## Categories
 
@@ -24,6 +24,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-hatches](#acad-hatches) (8 tools)
 - [acad-layers](#acad-layers) (20 tools)
 - [acad-layouts](#acad-layouts) (8 tools)
+- [acad-lights](#acad-lights) (6 tools)
 - [acad-lisp](#acad-lisp) (5 tools)
 - [acad-livestream](#acad-livestream) (3 tools)
 - [acad-materials](#acad-materials) (6 tools)
@@ -500,6 +501,17 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | `list_paper_sizes` | Enumerate every paper size supported by a plotter (plotter=null -> the current layout's plotter or the first registered device). Returns the canonical media names (what configure_plot needs) plus the locale-facing display name. Call this before configure_plot if you're unsure which media strings the installed plotter accepts — especially for non-standard devices (e.g. 'DWG To PDF.pc3', 'Microsoft Print to PDF', pen plotters, PublishToWeb PNG). configure_plot accepts canonical / locale / fuzzy names (e.g. 'A0', 'ISO A0'); use this tool when even fuzzy resolution fails. |
 | `rename_layout` | Rename a paper-space layout. The Model tab cannot be renamed; the new name must be unique and valid as an AutoCAD symbol name. |
 | `set_current_layout` | Switch the active layout to the named tab (use "Model" to return to model space). All subsequent draw / viewport tools target this layout. |
+
+## acad-lights
+
+| Tool | Description |
+|---|---|
+| `create_distant_light` | Create a distant light - the sun-like one: parallel rays of the same strength everywhere, so only their DIRECTION matters. Give a direction vector, or a position and target to define one. Because the rays never weaken with distance, MOVING a distant light changes nothing; only turning it changes the picture, which is why its position is a convention rather than a place. Use this for sunlight and a point or spot light for lamps. |
+| `create_point_light` | Create a point light - a bare bulb that throws light in EVERY direction from one spot. It has no target and no cone, so there is nothing to aim: create_spot_light is the one that points somewhere. Set the position, and optionally the intensity, colour and whether it starts on. Lights are addressed by NAME throughout this category, so a name already in use is refused - two lights with one name could not be told apart. Read back by searching model space after creation rather than from the object just written. |
+| `create_spot_light` | Create a spot light - aimed from a position at a target, with two cones. The HOTSPOT is the bright inner cone and the FALLOFF the dimmer outer edge, both in RADIANS, so the hotspot is always the smaller of the two and a hotspot wider than the falloff is refused as a shape a light cannot have. Defaults are about 20 and 45 degrees. The two angles are set together because both are read-only individually in the API - which is also what keeps the cone from inverting. The result is read back and the angles checked against what was asked for. |
+| `delete_light` | Delete a light from the drawing. Its previous settings are reported in full, so it can be recreated if the deletion was a mistake. Deleting a light changes what a render looks like and nothing about the geometry. Confirmed gone by searching model space again rather than assumed. |
+| `list_lights` | List the lights in model space with their type, position, target, intensity, colour, cone angles and whether each is on. Read-only. A light that is OFF is still listed, because it is still in the drawing and is usually the one you were looking for; `onCount` says how many are actually lit. The cone angles are in radians and mean nothing for a point or distant light. `on` comes from Light.IsOn - there is no Light.On in the API. |
+| `set_light_properties` | Change a light: turn it on or off, set its intensity, colour, position, target, or cone angles. Only the properties named are touched and the previous values are reported, so a change can be undone. Two things worth knowing: moving the TARGET of a point light is refused, because a point light has nothing to aim; and changing ONE cone angle carries the other over from what is already set, since AutoCAD only accepts the pair together - so a new hotspot is checked against the existing falloff and refused if it would be the wider of the two. |
 
 ## acad-lisp
 

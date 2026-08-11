@@ -512,6 +512,28 @@ latitude is refused"*, was one line in that list and the least dramatic of them.
 must not be indistinguishable from a valid one. Coordinates, angles, indices and scales are all in
 this class; a count or a tolerance, where 0 is already invalid, is not.
 
+### 18. Some properties do not stick until the object is IN the database
+
+Two independent instances, one session apart:
+
+| property | symptom |
+| --- | --- |
+| `GeoLocationData.CoordinateSystem` | throws `eNoDatabase` if set before `PostToDb` — loud |
+| `Light.HasTarget` | silently reads back `false` if set before the entity is appended — quiet |
+
+The second is the dangerous one. `Position`, `Intensity`, `LightColor` and the cone angles all
+survive being set on an unappended `Light`, so the object looks fine; only `HasTarget` reverts, and
+a spot light that is not aimed at anything renders as though it were switched off. Nothing in the
+result says so.
+
+**The rule: append or `PostToDb` FIRST, then set anything relational** — a target, a coordinate
+system, an association with another object. Plain scalar fields can go either way, which is
+precisely why the failure is hard to spot: most of the object works.
+
+**And assert it.** The check that caught this was a one-liner that looked redundant next to the
+cone arithmetic — *"a spot light DOES have a target"*. It was the only thing between the bank and
+a spot light that silently pointed nowhere.
+
 ---
 
 If you hit a new trap, add it here in the same form (section + minimal repro snippet) BEFORE landing the workaround in code. That's the whole point of this rule.

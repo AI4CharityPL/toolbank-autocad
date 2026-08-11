@@ -77,6 +77,31 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Phase 6.1, second tranche — `acad-lights`, 6 tools, 38/38.** New category, bank 660 → 666.
+  `create_point_light`, `create_spot_light`, `create_distant_light`, `list_lights`,
+  `set_light_properties`, `delete_light`. `create_web_light` is held back: a web light is defined
+  by an `.ies` photometric file and without one there is nothing to verify.
+
+  **`Light.LightType` is a `GraphicsInterface.DrawableType`** — the right name in the wrong
+  namespace, which is why the first reconnaissance read it as absent. It is `IsOn`, not `On`. And
+  `HotspotAngle`/`FalloffAngle` are read-only, set only as a pair through `SetHotspotAndFalloff`,
+  which is also what makes an inverted cone impossible to store.
+
+  **One defect found live, now rule 26 §18: `HasTarget` does not stick when set before the light
+  is in the database.** It reads back `false` while `Position`, `Intensity` and the cone angles all
+  survive — so the object looks correct and the spot light simply is not aimed at anything, which
+  renders as though it were switched off. Spot and distant lights are now persisted FIRST and
+  aimed afterwards, with a read-back assertion. Same family as `GeoLocationData.CoordinateSystem`
+  needing `PostToDb`, but silent where that one throws.
+
+  The check that caught it was the most trivial-looking line in the script — *"a spot light DOES
+  have a target"*, sitting next to the cone arithmetic that looked far more searching.
+
+  Two controls worth keeping: all three light kinds are created in ONE drawing and listed
+  together, so a tool building the same object whatever was asked fails there having passed every
+  single-light check; and the inverted-cone guard is tested by changing only ONE angle to a value
+  that inverts it against the STORED other, which a per-call check would let through.
+
 - **Phase 6.1, first tranche — `acad-materials`, 6 tools, 37/37 first run.** New category, bank
   654 → 660. `create_material`, `modify_material`, `list_materials`, `assign_material`,
   `unassign_material`, `delete_material`.

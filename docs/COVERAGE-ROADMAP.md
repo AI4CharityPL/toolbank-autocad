@@ -603,8 +603,8 @@ set_image_path ✔             set_image_transparency ✘   reorder_image_drawor
 ```
 
 Ships as `acad-images`. The underlay half is a separate category, `acad-underlays` - **BUILT
-2026-08-11, see below.** PDF underlays remain unbuilt - no PDF sample file was used to verify
-against in this tranche.
+2026-08-11, see below.** PDF underlays were also unbuilt as of that first pass, then built in a
+second pass the same day once a fixture existed - see below.
 
 **Two struck before anything was written, both checked against the bank rather than assumed.**
 `reorder_image_draworder` is a duplicate: `modify.set_draworder` already reorders any entity by
@@ -651,12 +651,13 @@ cases rather than prose describing a path nothing could exercise. The live check
 same 300x150 fixture twice under one name, clips only one of the two placements and asserts the
 other is untouched, then detaches one (definition survives) before the other (definition removed).
 
-### 3.5b `acad-underlays` — **BUILT 2026-08-11, 5 tools, 42/42 live, one restart**
+### 3.5b `acad-underlays` — **BUILT 2026-08-11 (two passes), 6 tools, 66/66 live, two restarts**
 
 ```
-attach_dgn_underlay ✘        attach_dwf_underlay ✔      list_underlays ✔
-detach_underlay ✔            clip_underlay ✔            set_underlay_adjust ✔
-list_underlay_layers ✘       set_underlay_layer_visibility ✘  bind_underlay ✘
+attach_dgn_underlay ✘        attach_dwf_underlay ✔      attach_pdf_underlay ✔
+list_underlays ✔             detach_underlay ✔          clip_underlay ✔
+set_underlay_adjust ✔        list_underlay_layers ✘     set_underlay_layer_visibility ✘
+bind_underlay ✘
 ```
 
 Ships as its own category, not folded into `acad-images` - the raster category's own description
@@ -697,7 +698,22 @@ it is not the "has a custom clip" flag `RasterImage.IsClipped` is. Every `clippe
 now `GetClipBoundary().Length > 0` instead. Both are rule 26 §23; the `create_web_light` fix
 below is §18.
 
-**Phase 3 total: ≈96 tools, 12 built.**
+**`attach_pdf_underlay` BUILT 2026-08-11, second pass, 24/24 live.** The first pass withheld it
+for lack of a PDF to test against - not an API problem. A zero-cost compiler probe (the
+`_ApiProbe.cs`/`ACADMCP_API_PROBE` pattern, no AutoCAD needed) confirmed `PdfReference`/
+`PdfDefinition` mirror
+`DgnReference`/`DwfReference` exactly, so this reuses the same `AttachUnderlay<TDef,TRef>` generic
+path with one more branch on `DictKeyFor`/`KindOf` - no new API surface, no new restart cost
+beyond the one deploy. The fixture (`scripts/fixtures/pdf-underlay-test/sample.pdf`) is generated
+by this bank's OWN already-verified `files.export_file`, never a personal document off the
+machine - a 300x100 rectangle with a circle near one corner, deliberately non-square (rule 26
+§14). **One thing measured wrong on the first run of the verification, not a code defect:** the
+exporter fits the drawing onto a default page (US Letter, `612 792`) rather than cropping to
+content, so the underlay's real aspect is the page's 0.773, not the drawing's 3:1 - the script now
+reads the PDF's own `/MediaBox` at runtime as ground truth instead of assuming a ratio, which is
+the more honest check anyway.
+
+**Phase 3 total: ≈96 tools, 13 built.**
 
 ---
 
@@ -1586,11 +1602,11 @@ should happen before any of phases 3–5 is started, not while it is being built
 | — | Pre-existing at the time this was written | 337 | 337 | — |
 | 1 | Blocking a real project — xrefs, UCS, viewports, fields, annotative | 98 | **88** | **88 shipped, 1 withheld.** `insert_field_sheet_set_property` is not built: `AcSm` fields resolve against the sheet set open in the Sheet Set Manager, which nothing here can establish, so a valid code cannot be told from an invented one |
 | 2 | Issuing the set — sheet sets, publish, styles, standards | 84 → **71** | **71** | **Complete.** 2.1 finished 2026-08-06: 23 tools, 194 live checks. `add_sheet_view` is deliberately not built (see KNOWN-GAPS B) and `open_sheet_set`/`close_sheet_set` were dropped by rule 45; `resave_all_sheets` ships with a plan-first design, being the only tool here that writes .DWG files |
-| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **74** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half, 7 tools) and `acad-underlays` (5 tools, `attach_dgn_underlay` withheld) both built 2026-08-11 — the latter unblocked by real DGN/DWF files found in AutoCAD's own install tree, not supplied by the user |
+| 3 | 2D completeness — geometry, dimensions, text, selection, images | 96 → **90** | **75** | 2 struck as unbuildable, 2 needing re-scope; `draw_mline` already pulled forward; `acad-images` (raster half, 7 tools) and `acad-underlays` (6 tools, `attach_dgn_underlay` withheld) both built 2026-08-11 — the latter unblocked first by real DGN/DWF files found in AutoCAD's own install tree, then by a self-generated PDF fixture for `attach_pdf_underlay` in a second pass the same day |
 | 4 | Real 3D — solids, surfaces, mesh, sections, point clouds | 92 → **86** | **53** | 5 already exist in `acad-modify`, which shipped 3D-capable; 4.1–4.4 complete, 4.5 outstanding |
 | 5 | Data + escape hatches — LISP, xdata, geolocation, views | 66 → **61** | **49** | 5 struck: data extraction is a wizard, property sets are AEC-only; **5.1 acad-lisp COMPLETE** — all 10 buildable tools shipped 2026-08-11 (rule 26 §22/§24), `netload_assembly` last with the user's explicit go-ahead; `run_script_file` withdrawn (two measured fix attempts, both wrong), `define_command_alias` struck (no API) |
 | 6 | Visualisation — render, animation | 40 → **26** | **15** | **6.1 complete** — materials, lights, sun and `create_web_light` all done (the last two undercounted here until this session); environment (fog) struck 2026-08-11, unreachable through the same route as Sun and unverifiable regardless since nothing here renders fog; renderers struck; 6.2 has no managed API |
-| | **Total** | **813** | **685** | **84 %** |
+| | **Total** | **813** | **687** | **85 %** |
 
 **Built column refreshed 2026-08-11.** Counted from `toolbank-manifests/` directly (48 manifests
 summed via `pre-commit.ps1`), not from this table's own arithmetic — the table had drifted to 666

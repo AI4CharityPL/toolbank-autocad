@@ -20,6 +20,7 @@
     "dwf",
     "dwg",
     "list",
+    "pdf",
     "set",
     "underlay",
     "underlays"
@@ -30,6 +31,8 @@
     "attach a dgn underlay",
     "attach a dwf reference",
     "attach a dwf underlay",
+    "attach a pdf reference",
+    "attach a pdf underlay",
     "clip the dwf to a rectangle",
     "clip this underlay",
     "crop the dgn reference",
@@ -37,12 +40,14 @@
     "detach this underlay",
     "dolacz podklad dgn",
     "dolacz podklad dwf",
+    "dolacz podklad pdf",
     "fade this underlay",
     "find an underlay by name",
     "get rid of an underlay",
     "increase underlay fade",
     "insert a dwf file",
     "insert a microstation file",
+    "insert a pdf file as a reference",
     "jakie podklady sa dolaczone",
     "list the underlays",
     "lista podkladow",
@@ -52,6 +57,7 @@
     "przytnij podklad",
     "reference a dwf sheet",
     "reference a microstation drawing",
+    "reference a pdf page",
     "remove a placed underlay",
     "remove an underlay from the drawing",
     "remove the underlay clip",
@@ -60,12 +66,14 @@
     "unclip this underlay",
     "underlay a dgn file",
     "underlay a dwf file",
+    "underlay a pdf file",
     "ustaw podklad na monochromatyczny",
     "usun podklad z rysunku",
     "what underlays are in this drawing",
     "which underlay references exist",
     "wstaw plik dgn jako podklad",
     "wstaw plik dwf jako podklad",
+    "wstaw plik pdf jako podklad",
     "zmien kontrast podkladu"
   ],
   "tools_summary": [
@@ -88,6 +96,24 @@
       ]
     },
     {
+      "name": "attach_pdf_underlay",
+      "description": "Attach a PDF file as an underlay reference. itemName selects which page inside the PDF to show - a multi-page PDF holds several; omit it to use the file\u0027s default. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file and item, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - same behaviour as attach_dwf_underlay/attach_image.",
+      "tags": [
+        "attach",
+        "pdf",
+        "underlay"
+      ],
+      "intent": [
+        "attach a pdf underlay",
+        "insert a pdf file as a reference",
+        "dolacz podklad pdf",
+        "attach a pdf reference",
+        "wstaw plik pdf jako podklad",
+        "reference a pdf page",
+        "underlay a pdf file"
+      ]
+    },
+    {
       "name": "clip_underlay",
       "description": "Clip an underlay to a boundary given in the underlay\u0027s OWN local coordinates - (0,0) to (underlayWidth, underlayHeight) as reported by list_underlays or this tool\u0027s own result BEFORE scale is applied, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points removes the clip. Reports the entity\u0027s drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents.",
       "tags": [
@@ -106,7 +132,7 @@
     },
     {
       "name": "detach_underlay",
-      "description": "Remove one underlay reference (DGN or DWF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes.",
+      "description": "Remove one underlay reference (DGN, DWF or PDF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes.",
       "tags": [
         "detach",
         "underlay"
@@ -123,7 +149,7 @@
     },
     {
       "name": "list_underlays",
-      "description": "List DGN and DWF underlay references attached to the drawing: kind (dgn/dwf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only.",
+      "description": "List DGN, DWF and PDF underlay references attached to the drawing: kind (dgn/dwf/pdf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only.",
       "tags": [
         "list",
         "underlays"
@@ -159,7 +185,7 @@
   ],
   "metadata": {
     "category": "underlays",
-    "tool_count_target": 5,
+    "tool_count_target": 6,
     "requires_plugin": true,
     "supported_acad_versions": [
       "2020",
@@ -173,6 +199,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-11T11:46:36.8899562Z"
+    "last_regenerated_utc": "2026-08-11T15:14:07.0324807Z"
   }
 }

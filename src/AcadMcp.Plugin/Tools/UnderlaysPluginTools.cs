@@ -4,12 +4,14 @@
 // Rules: 10 (UI thread), 11 (transactions), 12 (error mapping), 19 (impl pattern), 26 (traps).
 //
 // MEASURED API shape - see the header comment in the backend's UnderlaysTools.cs for the full
-// probe trail. DgnReference/DwfReference share a common UnderlayReference base (Position,
-// Rotation, ScaleFactors, Contrast, Fade, Monochrome, GetClipBoundary/SetClipBoundary as
-// Point2d[] - NOT Point2dCollection, unlike RasterImage's clip API - IsClipped, Width, Height),
-// and DgnDefinition/DwfDefinition share UnderlayDefinition (SourceFileName, ItemName,
-// ActiveFileName, Load(password)). Layer-level visibility and Bind are confirmed ABSENT - seven
-// candidate names tried, none compiled - so this category has no list_underlay_layers,
+// probe trail. DgnReference/DwfReference/PdfReference all share a common UnderlayReference base
+// (Position, Rotation, ScaleFactors, Contrast, Fade, Monochrome, GetClipBoundary/SetClipBoundary
+// as Point2d[] - NOT Point2dCollection, unlike RasterImage's clip API - IsClipped, Width, Height),
+// and DgnDefinition/DwfDefinition/PdfDefinition share UnderlayDefinition (SourceFileName,
+// ItemName, ActiveFileName, Load(password)). PdfReference/PdfDefinition were confirmed to mirror
+// the shape exactly via a zero-cost compiler probe before being wired in (2026-08-11) - same
+// pattern, third type. Layer-level visibility and Bind are confirmed ABSENT - seven candidate
+// names tried, none compiled - so this category has no list_underlay_layers,
 // set_underlay_layer_visibility or bind_underlay.
 
 using System;
@@ -36,11 +38,13 @@ internal static class UnderlaysPluginTools
 
     private const string DgnDictKey = "ACAD_DGN_DEFINITIONS";
     private const string DwfDictKey = "ACAD_DWF_DEFINITIONS";
+    private const string PdfDictKey = "ACAD_PDF_DEFINITIONS";
 
     public static void Register(ToolHost host)
     {
         host.Register("acad.underlays.attach_dgn_underlay", AttachDgnUnderlay);
         host.Register("acad.underlays.attach_dwf_underlay", AttachDwfUnderlay);
+        host.Register("acad.underlays.attach_pdf_underlay", AttachPdfUnderlay);
         host.Register("acad.underlays.list_underlays",       ListUnderlays);
         host.Register("acad.underlays.detach_underlay",      DetachUnderlay);
         host.Register("acad.underlays.clip_underlay",        ClipUnderlay);
@@ -90,8 +94,18 @@ internal static class UnderlaysPluginTools
         return (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], mode);
     }
 
-    private static string DictKeyFor(UnderlayReference u) => u is DgnReference ? DgnDictKey : DwfDictKey;
-    private static string KindOf(UnderlayReference u) => u is DgnReference ? "dgn" : "dwf";
+    private static string DictKeyFor(UnderlayReference u) => u switch
+    {
+        DgnReference => DgnDictKey,
+        PdfReference => PdfDictKey,
+        _ => DwfDictKey,
+    };
+    private static string KindOf(UnderlayReference u) => u switch
+    {
+        DgnReference => "dgn",
+        PdfReference => "pdf",
+        _ => "dwf",
+    };
 
     private static UnderlayReference RequireUnderlay(Database db, Transaction tr, string? handle, OpenMode mode)
     {
@@ -99,7 +113,7 @@ internal static class UnderlaysPluginTools
             throw new ArgumentException("handle is required: which underlay.");
         var id = AcadEnv.ResolveHandle(db, handle!);
         if (tr.GetObject(id, mode) is not UnderlayReference u)
-            throw new ArgumentException($"Handle '{handle}' is not an underlay reference (DGN or DWF).");
+            throw new ArgumentException($"Handle '{handle}' is not an underlay reference (DGN, DWF or PDF).");
         return u;
     }
 
@@ -149,6 +163,11 @@ internal static class UnderlaysPluginTools
         AttachUnderlay("acad.underlays.attach_dwf_underlay", args, ct, DwfDictKey,
             path => new DwfDefinition { SourceFileName = path },
             () => new DwfReference());
+
+    private static Task<ToolDispatchResult> AttachPdfUnderlay(JsonObject args, CancellationToken ct) =>
+        AttachUnderlay("acad.underlays.attach_pdf_underlay", args, ct, PdfDictKey,
+            path => new PdfDefinition { SourceFileName = path },
+            () => new PdfReference());
 
     private static Task<ToolDispatchResult> AttachUnderlay(
         string toolKey, JsonObject args, CancellationToken ct, string dictKey,
@@ -238,8 +257,10 @@ internal static class UnderlaysPluginTools
         {
             var dgnDictId = DictId(db, tr, DgnDictKey);
             var dwfDictId = DictId(db, tr, DwfDictKey);
+            var pdfDictId = DictId(db, tr, PdfDictKey);
             DBDictionary? dgnDict = dgnDictId.IsNull ? null : (DBDictionary)tr.GetObject(dgnDictId, OpenMode.ForRead);
             DBDictionary? dwfDict = dwfDictId.IsNull ? null : (DBDictionary)tr.GetObject(dwfDictId, OpenMode.ForRead);
+            DBDictionary? pdfDict = pdfDictId.IsNull ? null : (DBDictionary)tr.GetObject(pdfDictId, OpenMode.ForRead);
 
             var found = new List<object>();
             var ms = ModelSpace(db, tr, OpenMode.ForRead);
@@ -247,7 +268,15 @@ internal static class UnderlaysPluginTools
             {
                 if (eid.IsErased) continue;                        // rule 26 section 8
                 if (tr.GetObject(eid, OpenMode.ForRead) is UnderlayReference u)
-                    found.Add(DescribeUnderlay(tr, u, u is DgnReference ? dgnDict : dwfDict));
+                {
+                    var dict = u switch
+                    {
+                        DgnReference => dgnDict,
+                        PdfReference => pdfDict,
+                        _ => dwfDict,
+                    };
+                    found.Add(DescribeUnderlay(tr, u, dict));
+                }
             }
             return Wrap(new
             {

@@ -1,6 +1,6 @@
 # ToolBank AutoCAD — Full Tool Reference
 
-Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 50 categories, 686 tools total.
+Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-reference.py`. 50 categories, 687 tools total.
 
 ## Categories
 
@@ -46,7 +46,7 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 - [acad-styles](#acad-styles) (32 tools)
 - [acad-surfaces](#acad-surfaces) (12 tools)
 - [acad-ucs](#acad-ucs) (15 tools)
-- [acad-underlays](#acad-underlays) (5 tools)
+- [acad-underlays](#acad-underlays) (6 tools)
 - [acad-validators](#acad-validators) (11 tools)
 - [acad-verticals](#acad-verticals) (8 tools)
 - [acad-view](#acad-view) (8 tools)
@@ -867,9 +867,10 @@ Auto-generated from `toolbank-manifests/acad-*.json` by `scripts/generate-tools-
 | Tool | Description |
 |---|---|
 | `attach_dwf_underlay` | Attach a DWF or DWFx file as an underlay reference. itemName selects which sheet inside the DWF to show - a DWF can hold several; omit it to use the file's default. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file and item, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - same behaviour as acad-images.attach_image. |
+| `attach_pdf_underlay` | Attach a PDF file as an underlay reference. itemName selects which page inside the PDF to show - a multi-page PDF holds several; omit it to use the file's default. Refuses a missing file. A name already in use is refused UNLESS it points at the exact same file and item, in which case this is a second placement sharing the existing definition (reusedDefinition: true) - same behaviour as attach_dwf_underlay/attach_image. |
 | `clip_underlay` | Clip an underlay to a boundary given in the underlay's OWN local coordinates - (0,0) to (underlayWidth, underlayHeight) as reported by list_underlays or this tool's own result BEFORE scale is applied, NOT drawing (WCS) coordinates. Exactly two points clip to the rectangle between them; three or more clip to that polygon. Omitting points removes the clip. Reports the entity's drawing-space extents before and after, so a clip that changed nothing shows up as unchanged extents. |
-| `detach_underlay` | Remove one underlay reference (DGN or DWF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes. |
-| `list_underlays` | List DGN and DWF underlay references attached to the drawing: kind (dgn/dwf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only. |
+| `detach_underlay` | Remove one underlay reference (DGN, DWF or PDF) from the drawing. If no other reference still uses the same source definition, the definition is removed too and defRemoved is true; if another placement of the same file/item remains, only this entity goes. |
+| `list_underlays` | List DGN, DWF and PDF underlay references attached to the drawing: kind (dgn/dwf/pdf), source path, item name, insertion point, rotation, scale, whether clipped, and the contrast/fade/monochrome adjustment. Read-only. |
 | `set_underlay_adjust` | Set an underlay's contrast, fade and/or monochrome display. Only the ones given are changed; the others are read and reported unchanged. Collapses the roadmap's separate set_underlay_contrast/set_underlay_monochrome into one tool, matching acad-images.set_image_adjust and acad-materials.modify_material. |
 
 ## acad-validators

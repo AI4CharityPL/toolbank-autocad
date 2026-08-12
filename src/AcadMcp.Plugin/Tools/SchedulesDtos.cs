@@ -79,6 +79,28 @@ internal sealed record RoomRegionResultDto(
     [property: JsonPropertyName("boundsMaxY")] double? BoundsMaxY,
     [property: JsonPropertyName("outline")] IReadOnlyList<OutlinePointDto> Outline);
 
+// ─────────── resize_room_boundary ───────────
+// 2026-08-12: correct_room_area could rewrite a room label's TEXT but left the boundary
+// polyline it was labelling exactly where it was drawn - a wall edit could leave a
+// numerically-correct label sitting over a visually wrong (too small/large) outline. This
+// primitive finds the boundary polygon by containment (same point-in-polygon test the flood
+// fallback already uses) rather than by handle, since correct_room_area only ever has the
+// room's label POSITION to hand, not the boundary's own handle.
+
+internal sealed record ResizeRoomBoundaryDto(
+    [property: JsonPropertyName("x")] double X,
+    [property: JsonPropertyName("y")] double Y,
+    [property: JsonPropertyName("vertices")] IReadOnlyList<Point2dDto> Vertices,
+    [property: JsonPropertyName("boundaryLayer")] string? BoundaryLayer = null);
+
+internal sealed record ResizeRoomBoundaryResultDto(
+    [property: JsonPropertyName("found")]        bool Found,
+    [property: JsonPropertyName("oldHandle")]    string? OldHandle,
+    [property: JsonPropertyName("newHandle")]    string? NewHandle,
+    [property: JsonPropertyName("areaBeforeMm2")] double? AreaBeforeMm2,
+    [property: JsonPropertyName("areaAfterMm2")]  double? AreaAfterMm2,
+    [property: JsonPropertyName("note")]         string Note);
+
 internal sealed record FindScheduleTablesArgsDto(
     [property: JsonPropertyName("titleContains")] string? TitleContains = null,
     [property: JsonPropertyName("layerFilter")]   string? LayerFilter = null);

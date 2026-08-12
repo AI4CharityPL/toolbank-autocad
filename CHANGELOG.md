@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Added
+
+- **`acad-schedules.correct_room_area` / `correct_all_room_areas` gained an opt-in `syncBoundary`
+  parameter that also redraws the room's boundary polygon, not just its area label.**
+
+  Found live during a deliberate "living document" test: `define_room`'s boundary polygon (the
+  closed polyline on `A-ROOM-BNDY`) is a separate, non-parametric entity that does NOT move when
+  the walls it represents are edited. `correct_room_area` already fixed the LABEL TEXT after a
+  wall stretch (10,64 → 14 m²) but left the drawn outline exactly where it was, confirmed by
+  reading the polygon's own bbox directly — a numerically-correct label sitting over a visually
+  stale (too-small) shape.
+
+  `syncBoundary=true` (default `false`, so existing callers keep the original text-only contract)
+  now also replaces the boundary polygon with the flood-fill's own measured outline whenever the
+  label is corrected. New plugin primitive `acad.schedules.resize_room_boundary` finds the
+  boundary by CONTAINMENT (the room label's own position, point-in-polygon against candidates on
+  the boundary layer) rather than by handle, since `correct_room_area` never had the boundary's
+  handle to hand — only the label's position. A vertex-count mismatch between the old boundary
+  and the new measured outline is expected (a flood-filled shape has no reason to share a vertex
+  count with a hand-authored one), so the primitive erases and persists a replacement rather than
+  remapping points 1:1, the same "replace, don't patch" approach `cut_wall_for_opening` uses for
+  a wall split.
+
+  Verified live both directions (`scripts/verify-correct-room-area-sync-boundary.py`, 25/25): with
+  `syncBoundary=true` the new boundary polygon's own geometry, read directly (not inferred from
+  the tool's success report), matches the larger room; with the default `false`, the boundary is
+  provably untouched — the opt-in changes nothing for existing callers.
+
+  The companion finding from the same test — dimensions placed by `dimension_wall` do not
+  auto-update after a geometry edit — was left as a documented characteristic rather than "fixed":
+  true associative dimensioning is a materially different, much larger undertaking than resyncing
+  a boundary polygon, and the existing tools already cover the practical case (`auto_dim_walls`
+  reads live wall geometry on every call, so re-running it after an edit produces a correct
+  chain — the gap is only in the previously-placed dimension entity, not in what the tool can do
+  when called again).
+
 ### Fixed
 
 - **Two `acad-validators` rules found by a deliberate-violation test session, both confirmed live

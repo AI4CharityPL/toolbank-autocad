@@ -107,7 +107,7 @@
     },
     {
       "name": "correct_all_room_areas",
-      "description": "Batch wrapper around correct_room_area: scans every room label and rewrites the m\u00B2 token when the measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. Modifies the drawing only when apply=true.",
+      "description": "Batch wrapper around correct_room_area: scans every room label and rewrites the m\u00B2 token when the measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. Modifies the drawing only when apply=true. syncBoundary is forwarded to each call - see correct_room_area\u0027s own syncBoundary for what it does.",
       "tags": [
         "correct",
         "all",
@@ -125,7 +125,7 @@
     },
     {
       "name": "correct_room_area",
-      "description": "Verify and, if needed, CORRECT a space\u0027s stated area on its label. Measures the REAL area with the wall-aware boundary detector (get_room_region) and compares it to the area written on the label (e.g. \u0027200 m\u00B2\u0027). When they differ by more than tolerancePct (or when explicitAreaM2 is supplied), it rewrites the \u0027N m\u00B2\u0027 token on the label text in place (reusing update_dbtext/update_mtext). Use apply=false for a dry-run that only reports the discrepancy. Works on ALL layers and is space-agnostic (room, office, garden, \u2026). Modifies the drawing only when a correction is applied.",
+      "description": "Verify and, if needed, CORRECT a space\u0027s stated area on its label. Measures the REAL area with the wall-aware boundary detector (get_room_region) and compares it to the area written on the label (e.g. \u0027200 m\u00B2\u0027). When they differ by more than tolerancePct (or when explicitAreaM2 is supplied), it rewrites the \u0027N m\u00B2\u0027 token on the label text in place (reusing update_dbtext/update_mtext). Use apply=false for a dry-run that only reports the discrepancy. Works on ALL layers and is space-agnostic (room, office, garden, \u2026). Modifies the drawing only when a correction is applied. syncBoundary=true (default false, opt-in) ALSO replaces the room\u0027s boundary polygon (the closed polyline on boundaryLayer / A-ROOM-BNDY) with the measured outline when the label is corrected \u2014 otherwise only the text changes and the drawn outline is left exactly where it was, which after a wall edit means a numerically-correct label can sit over a visually wrong (stale-shaped) outline. Confirmed live: define_room\u0027s boundary is a separate, non-parametric entity that does not move when walls do.",
       "tags": [
         "correct",
         "room",
@@ -253,6 +253,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:32.6519063Z"
+    "last_regenerated_utc": "2026-08-12T09:38:10.1621136Z"
   }
 }

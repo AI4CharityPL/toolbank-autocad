@@ -37,6 +37,7 @@ internal static class SchedulesPluginTools
         host.Register("acad.schedules.list_room_labels",       ListRoomLabels);
         host.Register("acad.schedules.get_room_region",        GetRoomRegion);
         host.Register("acad.schedules.find_schedule_tables",   FindScheduleTables);
+        host.Register("acad.schedules.resize_room_boundary",   ResizeRoomBoundary);
     }
 
     private static T Read<T>(JsonObject args) => JsonSerializer.Deserialize<T>(args, Opts)
@@ -250,6 +251,70 @@ internal static class SchedulesPluginTools
 
             return Wrap(new RoomRegionResultDto(false, "none", null, null, null, null, null,
                 Array.Empty<OutlinePointDto>()));
+        });
+
+    // ─────────── resize_room_boundary ───────────
+    //
+    // correct_room_area could rewrite a room label's TEXT but left the boundary polyline
+    // exactly where it was drawn - a wall edit could leave a numerically-correct label sitting
+    // over a visually wrong (too small/large) outline. This finds the boundary polygon by
+    // CONTAINMENT (same point-in-polygon test the polyline fallback already uses), not by
+    // handle, since correct_room_area only ever has the room label's POSITION to hand.
+    //
+    // Vertex count of the new outline need not match the old one (a flood-filled shape has no
+    // reason to have the same vertex count as the hand-authored boundary), so this erases the
+    // old polyline and persists a new one rather than trying to remap points 1:1 - the same
+    // "replace, don't patch" approach cut_wall_for_opening uses for a wall split.
+
+    private static Task<ToolDispatchResult> ResizeRoomBoundary(JsonObject args, CancellationToken ct) =>
+        RunW("acad.schedules.resize_room_boundary", args, ct, (doc, db, tr) =>
+        {
+            var a = Read<ResizeRoomBoundaryDto>(args);
+            if (a.Vertices is null || a.Vertices.Count < 3)
+                throw new ArgumentException("vertices needs at least 3 points to form a closed room boundary.");
+            string boundaryLayer = string.IsNullOrWhiteSpace(a.BoundaryLayer) ? "A-ROOM-BNDY" : a.BoundaryLayer!;
+
+            var pWorld = new Point3d(a.X, a.Y, 0.0);
+            Polyline? found = null;
+            double foundArea = 0.0;
+            foreach (var pl in EnumerateModelSpace<Polyline>(db, tr))
+            {
+                if (!string.Equals(pl.Layer, boundaryLayer, StringComparison.OrdinalIgnoreCase)) continue;
+                if (!pl.Closed) continue;
+                double area;
+                try { area = pl.Area; } catch { continue; }
+                if (area <= 0.0) continue;
+                if (!PointInsidePolygonBbox(pl, pWorld)) continue;
+                if (found is null || area < foundArea) { found = pl; foundArea = area; }
+            }
+
+            if (found is null)
+            {
+                return Wrap(new ResizeRoomBoundaryResultDto(false, null, null, null, null,
+                    $"No closed polyline on layer '{boundaryLayer}' contains ({a.X},{a.Y}) - " +
+                    "boundary left untouched."));
+            }
+
+            string layer = found.Layer;
+            string oldHandle = found.Handle.ToString();
+            double areaBeforeM2 = foundArea / 1_000_000.0;
+
+            var replacement = new Polyline();
+            for (int i = 0; i < a.Vertices.Count; i++)
+                replacement.AddVertexAt(i, new Point2d(a.Vertices[i].X, a.Vertices[i].Y), 0, 0, 0);
+            replacement.Closed = true;
+
+            found.UpgradeOpen();
+            found.Erase();
+            var newHandle = AcadEnv.Persist(db, tr, replacement, layer);
+
+            double areaAfterM2;
+            try { areaAfterM2 = replacement.Area / 1_000_000.0; } catch { areaAfterM2 = 0.0; }
+
+            return Wrap(new ResizeRoomBoundaryResultDto(true, oldHandle, newHandle.Handle,
+                areaBeforeM2, areaAfterM2,
+                $"Boundary polygon replaced: {areaBeforeM2:F1} m² -> {areaAfterM2:F1} m² " +
+                $"({a.Vertices.Count} vertices)."));
         });
 
     private static List<OutlinePointDto> RectOutline(ResolvedBounds b) => new()

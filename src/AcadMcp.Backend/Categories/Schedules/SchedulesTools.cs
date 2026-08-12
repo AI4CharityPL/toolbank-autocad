@@ -361,7 +361,12 @@ public static class SchedulesTools
         "(e.g. '200 m²'). When they differ by more than tolerancePct (or when explicitAreaM2 is supplied), it " +
         "rewrites the 'N m²' token on the label text in place (reusing update_dbtext/update_mtext). Use apply=false " +
         "for a dry-run that only reports the discrepancy. Works on ALL layers and is space-agnostic (room, office, " +
-        "garden, …). Modifies the drawing only when a correction is applied.",
+        "garden, …). Modifies the drawing only when a correction is applied. syncBoundary=true (default false, " +
+        "opt-in) ALSO replaces the room's boundary polygon (the closed polyline on boundaryLayer / A-ROOM-BNDY) " +
+        "with the measured outline when the label is corrected — otherwise only the text changes and the drawn " +
+        "outline is left exactly where it was, which after a wall edit means a numerically-correct label can sit " +
+        "over a visually wrong (stale-shaped) outline. Confirmed live: define_room's boundary is a separate, " +
+        "non-parametric entity that does not move when walls do.",
         "schedules",
         Intent = new[]
         {
@@ -445,8 +450,39 @@ public static class SchedulesTools
                 : "Nie udało się zaktualizować etykiety (nieobsługiwany typ encji).";
         }
 
+        bool boundaryResynced = false;
+        string? boundaryOldHandle = null, boundaryNewHandle = null, boundaryNote = null;
+        if (changed && args.SyncBoundary)
+        {
+            var outline = region?.Outline;
+            if (outline is null || outline.Count < 3)
+            {
+                boundaryNote = "syncBoundary requested but no measured outline (3+ points) was " +
+                               "available - boundary polygon left untouched.";
+            }
+            else
+            {
+                var vertices = outline.Select(p => new Point2dDto(p.X, p.Y)).ToList();
+                var resizeArgs = new JsonObject
+                {
+                    ["x"] = editTarget.Position.X,
+                    ["y"] = editTarget.Position.Y,
+                    ["vertices"] = JsonSerializer.SerializeToNode(vertices, Opts),
+                };
+                if (!string.IsNullOrWhiteSpace(args.BoundaryLayer)) resizeArgs["boundaryLayer"] = args.BoundaryLayer;
+
+                var resp = await gw.InvokeAsync("acad.schedules.resize_room_boundary", resizeArgs, T_NORMAL, ct)
+                    .ConfigureAwait(false);
+                boundaryResynced = resp?["found"]?.GetValue<bool>() ?? false;
+                boundaryOldHandle = resp?["oldHandle"]?.GetValue<string>();
+                boundaryNewHandle = resp?["newHandle"]?.GetValue<string>();
+                boundaryNote = resp?["note"]?.GetValue<string>();
+            }
+        }
+
         return new CorrectRoomAreaResult(true, editTarget.Handle, editTarget.Text,
-            changed ? newText : editTarget.Text, labelArea, measured, target, region?.Method, changed, note);
+            changed ? newText : editTarget.Text, labelArea, measured, target, region?.Method, changed, note,
+            boundaryResynced, boundaryOldHandle, boundaryNewHandle, boundaryNote);
     }
 
     /// <summary>Update a room label's text via the matching annotation primitive (dbtext/mtext).</summary>
@@ -584,7 +620,8 @@ public static class SchedulesTools
     [McpTool("correct_all_room_areas",
         "Batch wrapper around correct_room_area: scans every room label and rewrites the m² token when the " +
         "measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. " +
-        "Modifies the drawing only when apply=true.",
+        "Modifies the drawing only when apply=true. syncBoundary is forwarded to each call - see " +
+        "correct_room_area's own syncBoundary for what it does.",
         "schedules",
         Intent = new[]
         {
@@ -612,7 +649,7 @@ public static class SchedulesTools
 
             var result = await CorrectRoomArea(gw,
                 new CorrectRoomAreaArgs(row.Query, null, args.TolerancePct, args.Apply, args.Decimals,
-                    args.AllLayers, args.LabelLayers, null), ct).ConfigureAwait(false);
+                    args.AllLayers, args.LabelLayers, null, args.SyncBoundary), ct).ConfigureAwait(false);
             entries.Add(new CorrectAllRoomAreasEntry(row.Query, result.Changed, result.LabelAreaM2,
                 result.MeasuredAreaM2, result.Note));
             if (result.Changed) changed++;

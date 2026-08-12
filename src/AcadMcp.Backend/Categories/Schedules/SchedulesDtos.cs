@@ -129,7 +129,13 @@ public sealed record CorrectRoomAreaArgs(
     [property: JsonPropertyName("decimals")]       int Decimals = 0,
     [property: JsonPropertyName("allLayers")]      bool AllLayers = true,
     [property: JsonPropertyName("labelLayers")]    IReadOnlyList<string>? LabelLayers = null,
-    [property: JsonPropertyName("boundaryLayer")]  string? BoundaryLayer = null);
+    [property: JsonPropertyName("boundaryLayer")]  string? BoundaryLayer = null,
+    // When true and the label text is corrected, ALSO replace the boundary polygon (the closed
+    // polyline on boundaryLayer / A-ROOM-BNDY containing this room) with the flood-fill's own
+    // measured outline - so the drawing's visible outline agrees with the corrected number
+    // instead of a numerically-right label sitting over a stale shape. Opt-in: false preserves
+    // this tool's original text-only contract for existing callers.
+    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false);
 
 public sealed record CorrectRoomAreaResult(
     [property: JsonPropertyName("found")]          bool Found,
@@ -141,7 +147,11 @@ public sealed record CorrectRoomAreaResult(
     [property: JsonPropertyName("appliedAreaM2")]  double? AppliedAreaM2,
     [property: JsonPropertyName("method")]         string? Method,
     [property: JsonPropertyName("changed")]        bool Changed,
-    [property: JsonPropertyName("note")]           string? Note);
+    [property: JsonPropertyName("note")]           string? Note,
+    [property: JsonPropertyName("boundaryResynced")] bool BoundaryResynced = false,
+    [property: JsonPropertyName("boundaryOldHandle")] string? BoundaryOldHandle = null,
+    [property: JsonPropertyName("boundaryNewHandle")] string? BoundaryNewHandle = null,
+    [property: JsonPropertyName("boundaryNote")]      string? BoundaryNote = null);
 
 // ─────────── audit_all_rooms (read-only batch) ───────────
 
@@ -185,7 +195,9 @@ public sealed record CorrectAllRoomAreasArgs(
     [property: JsonPropertyName("allLayers")]      bool AllLayers = true,
     [property: JsonPropertyName("labelLayers")]    IReadOnlyList<string>? LabelLayers = null,
     // When true, only rows flagged labelMismatch by audit logic are corrected.
-    [property: JsonPropertyName("onlyMismatches")] bool OnlyMismatches = true);
+    [property: JsonPropertyName("onlyMismatches")] bool OnlyMismatches = true,
+    // Forwarded to each correct_room_area call - see its own syncBoundary for what it does.
+    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false);
 
 public sealed record CorrectAllRoomAreasEntry(
     [property: JsonPropertyName("query")]          string Query,

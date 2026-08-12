@@ -1,0 +1,18 @@
+id: hospital.rooms.icu-room-min-area
+name: ICU bed bays must be at least 15 m^2
+discipline: architectural
+severity: error
+description: |
+  Per HOSPITAL-2026 masterplan §13 and rule 64 (furniture-density-per-room,
+  preset 'icu-room' minimum footprint 3,600x4,200 mm): an ICU bed bay must
+  have a net floor area of at least 15 m^2 to fit the bed, head-monitor box,
+  and clear access on both sides. Scope by calling define_room with
+  boundaryLayer='A-ROOM-BNDY-ICU' for every ICU bay.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+  - .cursor/rules/64-furniture-density-per-room.md
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-ICU]
+checks:
+  - { type: area_at_least, value: 15000000 }

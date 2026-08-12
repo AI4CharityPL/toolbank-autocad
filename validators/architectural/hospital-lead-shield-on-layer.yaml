@@ -1,0 +1,24 @@
+id: hospital.walls.lead-shield-on-layer
+name: Radiation-shielding walls must live on A-WALL-LEAD
+discipline: architectural
+severity: error
+description: |
+  Every wall face that carries lead shielding (RTG/CT rooms, per HOSPITAL-2026
+  masterplan §13 and Prawo atomowe + Rozp. MZ 2006) must sit on layer
+  'A-WALL-LEAD', not the generic A-WALL. This is what lets rule 62's hatching
+  policy find and hatch these walls in the hard-locked 'lead-shield' magenta
+  so a vision reviewer can verify shielding continuity by colour alone.
+  Common offenders are legacy names like LEAD, RTG-SHIELD, SHIELD-LEAD from
+  hand-drawn walls that were never migrated to the hospital layer key.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+  - .cursor/rules/62-hatching-material-policy.md
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(LEAD|RTG[-_]?SHIELD|SHIELD[-_]?LEAD|A[-_]?WALL[-_]?LEAD[-_]?(NEW|OLD)?)$"
+checks:
+  - { type: layer_equals, value: A-WALL-LEAD }
+fix:
+  type: move_to_layer
+  layer: A-WALL-LEAD
+  create_if_missing: true

@@ -177,7 +177,7 @@
     },
     {
       "name": "insert_furniture",
-      "description": "Insert any catalog furniture block by its canonical name (e.g. \u0027FURN-BED-STD\u0027, \u0027FURN-CHAIR-OFFICE\u0027). Generic entry-point used after list_furniture_catalog; most callers prefer the specialised insert_bed/insert_chair/... tools that infer a type.",
+      "description": "Insert any catalog furniture block by its canonical name (e.g. \u0027FURN-BED-STD\u0027, \u0027FURN-CHAIR-OFFICE\u0027). Generic entry-point used after list_furniture_catalog; most callers prefer the specialised insert_bed/insert_chair/... tools that infer a type. There is no specialised tool for the \u0027equipment\u0027 category (CT/MRI/C-arm/OR light/crash cart/ventilator/monitor) - this is the only way to place FURN-EQP-* blocks.",
       "tags": [
         "insert",
         "furniture"
@@ -225,7 +225,7 @@
     },
     {
       "name": "list_furniture_catalog",
-      "description": "Enumerate the built-in furniture block catalog (hospital \u002B office \u002B residential). Read-only. Returns name, category (bed/chair/desk/cabinet/sofa/table/misc), domain (hospital/office/residential), default width/depth in mm, and a one-line description.",
+      "description": "Enumerate the built-in furniture block catalog (hospital \u002B office \u002B residential). Read-only. Returns name, category (bed/chair/desk/cabinet/sofa/table/equipment/misc), domain (hospital/office/residential), default width/depth in mm, and a one-line description. \u0027equipment\u0027 covers medical imaging/OR gear - CT, MRI, C-arm, OR light, crash cart, ventilator, patient monitor.",
       "tags": [
         "list",
         "furniture",
@@ -293,6 +293,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-09T12:47:03.0987511Z"
+    "last_regenerated_utc": "2026-08-12T11:04:16.1954507Z"
   }
 }

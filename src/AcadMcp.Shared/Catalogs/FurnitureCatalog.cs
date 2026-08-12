@@ -59,6 +59,14 @@ public static class FurnitureCatalog
         new("FURN-SOFA-3",     "sofa",  "residential", 2200,  800, "3-seat lounge sofa, cushioned"),
         new("FURN-SOFA-CLN-2", "sofa",  "hospital",    1800,  700, "2-seat clinic waiting sofa (vinyl)"),
         new("FURN-SOFA-CLN-3", "sofa",  "hospital",    2200,  700, "3-seat clinic waiting sofa (vinyl)"),
+        // medical imaging / OR equipment (2026-08-12, Hospital2026 PRIME)
+        new("FURN-EQP-CT",     "equipment", "hospital", 2100, 1600, "CT scanner: gantry ring + integrated patient table"),
+        new("FURN-EQP-MRI",    "equipment", "hospital", 2800, 2000, "MRI 3T: bore + cryostat housing, shielded-room equipment"),
+        new("FURN-EQP-CARM",   "equipment", "hospital", 2000, 2000, "Biplane C-arm / angiography unit base footprint"),
+        new("FURN-EQP-LIGHT",  "equipment", "hospital",  700,  700, "OR ceiling-mounted surgical light head"),
+        new("FURN-EQP-CRASH",  "equipment", "hospital",  500,  600, "Crash cart / defibrillator trolley, mobile"),
+        new("FURN-EQP-VENT",   "equipment", "hospital",  400,  500, "Ventilator on mobile stand"),
+        new("FURN-EQP-MON",    "equipment", "hospital",  350,  400, "Patient monitor on mobile stand"),
     };
 
     /// <summary>

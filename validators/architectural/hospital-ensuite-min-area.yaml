@@ -1,0 +1,19 @@
+id: hospital.rooms.ensuite-min-area
+name: Patient-room ensuite bathrooms must be at least 4.5 m^2
+discipline: architectural
+severity: error
+description: |
+  Per HOSPITAL-2026 masterplan §13 (Rozp. MZ 2019, Dz.U. 2019 poz. 595): the
+  ensuite bathroom attached to a single-bed patient room must have a net
+  floor area of at least 4.5 m^2 - enough for a wall-hung WC, basin, and
+  walk-in shower per the 'bathroom-hospital-patient' plumbing preset (rule
+  63). Scope by calling define_room with boundaryLayer='A-ROOM-BNDY-ENSUITE'
+  for every patient ensuite.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+  - .cursor/rules/63-sanitary-fixtures-catalog.md
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-ENSUITE]
+checks:
+  - { type: area_at_least, value: 4500000 }

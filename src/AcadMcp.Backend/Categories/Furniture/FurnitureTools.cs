@@ -22,7 +22,7 @@ public static class FurnitureTools
     private const int T_SLOW = 30_000;
 
     [McpTool("list_furniture_catalog",
-        "Enumerate the built-in furniture block catalog (hospital + office + residential). Read-only. Returns name, category (bed/chair/desk/cabinet/sofa/table/misc), domain (hospital/office/residential), default width/depth in mm, and a one-line description.",
+        "Enumerate the built-in furniture block catalog (hospital + office + residential). Read-only. Returns name, category (bed/chair/desk/cabinet/sofa/table/equipment/misc), domain (hospital/office/residential), default width/depth in mm, and a one-line description. 'equipment' covers medical imaging/OR gear - CT, MRI, C-arm, OR light, crash cart, ventilator, patient monitor.",
         "furniture",
         Intent = new[]
         {
@@ -35,7 +35,7 @@ public static class FurnitureTools
         => FurnitureProxy.CallAsync<ListFurnitureCatalogArgs, ListFurnitureCatalogResult>(gw, "acad.furniture.list_furniture_catalog", args, T_FAST, ct);
 
     [McpTool("insert_furniture",
-        "Insert any catalog furniture block by its canonical name (e.g. 'FURN-BED-STD', 'FURN-CHAIR-OFFICE'). Generic entry-point used after list_furniture_catalog; most callers prefer the specialised insert_bed/insert_chair/... tools that infer a type.",
+        "Insert any catalog furniture block by its canonical name (e.g. 'FURN-BED-STD', 'FURN-CHAIR-OFFICE'). Generic entry-point used after list_furniture_catalog; most callers prefer the specialised insert_bed/insert_chair/... tools that infer a type. There is no specialised tool for the 'equipment' category (CT/MRI/C-arm/OR light/crash cart/ventilator/monitor) - this is the only way to place FURN-EQP-* blocks.",
         "furniture",
         Intent = new[]
         {

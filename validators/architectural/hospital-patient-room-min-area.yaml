@@ -1,0 +1,19 @@
+id: hospital.rooms.patient-room-min-area
+name: Single-bed patient rooms must be at least 15 m^2
+discipline: architectural
+severity: error
+description: |
+  Per HOSPITAL-2026 masterplan §13 (Rozp. MZ 2019, Dz.U. 2019 poz. 595): a
+  single-bed inpatient room must have a net floor area of at least 15 m^2,
+  excluding its ensuite bathroom (checked separately by
+  hospital.rooms.ensuite-min-area). Scope this rule at a room's boundary by
+  calling define_room with boundaryLayer='A-ROOM-BNDY-WARD' for every
+  patient-bed room; rooms left on the generic A-ROOM-BNDY layer are not
+  checked here.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-WARD]
+checks:
+  - { type: area_at_least, value: 15000000 }

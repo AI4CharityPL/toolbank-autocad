@@ -1,0 +1,18 @@
+id: hospital.rooms.or-min-area
+name: Operating rooms must be at least 36 m^2
+discipline: architectural
+severity: error
+description: |
+  Per HOSPITAL-2026 masterplan §13: operating rooms range from 36 m^2
+  (OR-3, endoscopic) through 48 m^2 (OR-1/OR-2, general) to 72 m^2 (OR-4,
+  hybrid with biplane C-arm). This rule enforces the floor shared by every
+  OR type - 36 m^2 - so it never false-positives on the smallest legitimate
+  room while still catching a genuinely undersized operating room. Scope by
+  calling define_room with boundaryLayer='A-ROOM-BNDY-OR' for every OR.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-OR]
+checks:
+  - { type: area_at_least, value: 36000000 }

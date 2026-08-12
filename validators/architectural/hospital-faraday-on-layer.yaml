@@ -1,0 +1,24 @@
+id: hospital.walls.faraday-on-layer
+name: MRI Faraday-cage walls must live on A-WALL-FARA
+discipline: architectural
+severity: error
+description: |
+  Every wall face that forms part of an MRI room's Faraday cage (per
+  HOSPITAL-2026 masterplan §13, MRI 3T suite) must sit on layer
+  'A-WALL-FARA', not the generic A-WALL. This is what lets rule 62's
+  hatching policy find and hatch these walls in the hard-locked 'faraday'
+  green so a vision reviewer can verify cage continuity by colour alone.
+  Common offenders are legacy names like FARADAY, MRI-SHIELD, RF-SHIELD from
+  hand-drawn walls that were never migrated to the hospital layer key.
+references:
+  - docs/HOSPITAL-2026-MASTERPLAN.md#13
+  - .cursor/rules/62-hatching-material-policy.md
+scope:
+  entity_types: [Line, Polyline]
+  layer_pattern: "^(FARADAY|MRI[-_]?SHIELD|RF[-_]?SHIELD|A[-_]?WALL[-_]?FARA[-_]?(NEW|OLD)?)$"
+checks:
+  - { type: layer_equals, value: A-WALL-FARA }
+fix:
+  type: move_to_layer
+  layer: A-WALL-FARA
+  create_if_missing: true

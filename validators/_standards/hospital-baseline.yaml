@@ -1,0 +1,17 @@
+id: hospital-baseline
+name: Hospital architectural baseline (HOSPITAL-2026 PRIME)
+description: |
+  Hospital-specific numeric rules extracted from the HOSPITAL-2026 masterplan's
+  §13 compliance matrix (Rozp. MZ 2019, Prawo atomowe + Rozp. MZ 2006, rule 62
+  hatching policy) - room-area minimums for patient/ICU/OR/ensuite rooms, plus
+  radiation- and RF-shielding layer discipline for lead and Faraday walls.
+  This is the standard the masterplan itself flagged as deferred work; it does
+  not replace the general polish-arch-baseline, which still applies to the
+  same drawing for layer hygiene, title block, and door tagging.
+rules:
+  - hospital.rooms.patient-room-min-area
+  - hospital.rooms.icu-room-min-area
+  - hospital.rooms.or-min-area
+  - hospital.rooms.ensuite-min-area
+  - hospital.walls.lead-shield-on-layer
+  - hospital.walls.faraday-on-layer

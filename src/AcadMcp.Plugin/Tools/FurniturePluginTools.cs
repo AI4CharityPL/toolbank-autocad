@@ -170,6 +170,14 @@ internal static class FurniturePluginTools
             case "FURN-SOFA-3":     DrawSofa(tr, btr, e.WidthMm, e.DepthMm, seats: 3, clinical: false); break;
             case "FURN-SOFA-CLN-2": DrawSofa(tr, btr, e.WidthMm, e.DepthMm, seats: 2, clinical: true); break;
             case "FURN-SOFA-CLN-3": DrawSofa(tr, btr, e.WidthMm, e.DepthMm, seats: 3, clinical: true); break;
+            // medical imaging / OR equipment
+            case "FURN-EQP-CT":     DrawEquipmentCt(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-MRI":    DrawEquipmentMri(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-CARM":   DrawEquipmentCarm(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-LIGHT":  DrawEquipmentOrLight(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-CRASH":  DrawEquipmentCrashCart(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-VENT":   DrawEquipmentVentilator(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-EQP-MON":    DrawEquipmentMonitor(tr, btr, e.WidthMm, e.DepthMm); break;
             default:
                 throw new InvalidOperationException($"No factory registered for fixed block '{e.Name}'.");
         }
@@ -501,6 +509,95 @@ internal static class FurniturePluginTools
         Append(tr, btr, Seg(-w / 2.0, d / 2.0 - d * 0.22, w / 2.0, d / 2.0 - d * 0.22));
         // paper-roll slot at head edge
         Append(tr, btr, Seg(-w / 2.0 + 150, d / 2.0, w / 2.0 - 150, d / 2.0));
+    }
+
+    // ─────────── EQUIPMENT factories (2026-08-12, Hospital2026 PRIME) ───────────
+
+    private static void DrawEquipmentCt(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        // gantry housing footprint
+        Append(tr, btr, Rectangle(w, d));
+        // bore ring, offset toward one end (the end the table enters from)
+        double ringR = Math.Min(w, d) * 0.32;
+        double ringY = d / 2.0 - ringR - d * 0.08;
+        Append(tr, btr, new Circle(new Point3d(0, ringY, 0), Vector3d.ZAxis, ringR));
+        Append(tr, btr, new Circle(new Point3d(0, ringY, 0), Vector3d.ZAxis, ringR * 0.55));
+        // patient table centreline running through the bore, full depth
+        Append(tr, btr, Seg(0, d / 2.0, 0, -d / 2.0));
+    }
+
+    private static void DrawEquipmentMri(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        // cryostat housing footprint - double outline (heavier unit than CT)
+        Append(tr, btr, Rectangle(w, d));
+        Append(tr, btr, Rectangle(w - 150, d - 150));
+        // bore, deeper tunnel than CT (longer ring pair) - two concentric circles offset toward one end
+        double ringR = Math.Min(w, d) * 0.30;
+        double ringY = d / 2.0 - ringR - d * 0.10;
+        Append(tr, btr, new Circle(new Point3d(0, ringY, 0), Vector3d.ZAxis, ringR));
+        Append(tr, btr, new Circle(new Point3d(0, ringY, 0), Vector3d.ZAxis, ringR * 0.45));
+        // patient table centreline
+        Append(tr, btr, Seg(0, d / 2.0, 0, -d / 2.0));
+    }
+
+    private static void DrawEquipmentCarm(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        // base/pedestal footprint
+        Append(tr, btr, Rectangle(w * 0.55, d * 0.55));
+        // the C-shaped gantry arc, swept ~270 degrees around the table position
+        double armR = Math.Min(w, d) * 0.42;
+        Append(tr, btr, new Arc(Point3d.Origin, armR, -Math.PI * 0.75, Math.PI * 0.75));
+        Append(tr, btr, new Arc(Point3d.Origin, armR * 0.85, -Math.PI * 0.75, Math.PI * 0.75));
+        // patient table through the centre of the C
+        Append(tr, btr, Seg(-w / 2.0, 0, w / 2.0, 0));
+    }
+
+    private static void DrawEquipmentOrLight(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        // ceiling-mounted light head: concentric rings (lamp face) + boom arm tick
+        double r = Math.Min(w, d) / 2.0;
+        Append(tr, btr, new Circle(Point3d.Origin, Vector3d.ZAxis, r));
+        Append(tr, btr, new Circle(Point3d.Origin, Vector3d.ZAxis, r * 0.6));
+        Append(tr, btr, new Circle(Point3d.Origin, Vector3d.ZAxis, r * 0.2));
+        Append(tr, btr, Seg(0, 0, r, r)); // boom-arm indicator
+    }
+
+    private static void DrawEquipmentCrashCart(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // shelf lines (drawer stack)
+        Append(tr, btr, Seg(-w / 2.0, -d / 6.0, w / 2.0, -d / 6.0));
+        Append(tr, btr, Seg(-w / 2.0, d / 6.0, w / 2.0, d / 6.0));
+        // medical cross marker, centred
+        double armL = Math.Min(w, d) * 0.22;
+        Append(tr, btr, Seg(-armL, 0, armL, 0));
+        Append(tr, btr, Seg(0, -armL, 0, armL));
+    }
+
+    private static void DrawEquipmentVentilator(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // breathing-circuit loop indicator (small circle, offset toward the patient-facing edge)
+        double r = Math.Min(w, d) * 0.22;
+        Append(tr, btr, new Circle(new Point3d(0, d / 2.0 - r - 40, 0), Vector3d.ZAxis, r));
+        // mobile stand base cross
+        Append(tr, btr, Seg(-w / 2.0 + 40, -d / 2.0 + 40, w / 2.0 - 40, -d / 2.0 + 40));
+    }
+
+    private static void DrawEquipmentMonitor(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // waveform trace across the screen (simple zig-zag polyline)
+        var trace = new Polyline();
+        double hw = w / 2.0 - 40, y0 = d * 0.05;
+        trace.AddVertexAt(0, new Point2d(-hw, y0), 0, 0, 0);
+        trace.AddVertexAt(1, new Point2d(-hw * 0.4, y0 + d * 0.2), 0, 0, 0);
+        trace.AddVertexAt(2, new Point2d(0, y0 - d * 0.2), 0, 0, 0);
+        trace.AddVertexAt(3, new Point2d(hw * 0.4, y0 + d * 0.15), 0, 0, 0);
+        trace.AddVertexAt(4, new Point2d(hw, y0), 0, 0, 0);
+        Append(tr, btr, trace);
+        // mobile stand base
+        Append(tr, btr, Seg(-w / 2.0 + 40, -d / 2.0 + 40, w / 2.0 - 40, -d / 2.0 + 40));
     }
 
     // ─────────── BlockReference insertion + attributes ───────────

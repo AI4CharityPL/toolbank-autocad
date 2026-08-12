@@ -6,6 +6,35 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **New `FURN-EQP-*` medical-imaging/OR equipment blocks (CT, MRI 3T, biplane C-arm, OR ceiling
+  light, crash cart, ventilator, patient monitor) and a new `hospital-baseline` validator standard
+  — Phase 0 of the from-scratch HospitalPrime2026 project.**
+
+  The furniture catalog had beds, exam tables, and cabinets but nothing for the equipment a
+  diagnostic or OR room actually needs — no CT, MRI, or C-arm block existed anywhere in
+  `FurnitureCatalog.cs`. Added 7 entries to the `Fixed` list plus matching `DrawEquipmentXxx`
+  factories in `FurniturePluginTools.cs`, following the existing `DrawTableExam` pattern exactly
+  (gantry rings for CT/MRI as concentric circles offset toward the table-entry end, a swept `Arc`
+  pair for the C-arm's C-shaped gantry, a waveform polyline for the patient monitor). No new
+  `[McpTool]` was needed — `insert_furniture`/`list_furniture_catalog` already resolve any
+  `FurnitureCatalog` entry by name; only their descriptions were extended to mention the new
+  `equipment` category. `CatalogContractTests` (27/27) picked up the new entries automatically
+  with no test changes. Verified live (`scripts/verify-phase0-hospital-equipment-validators.py`,
+  21/21): every block inserted,
+  and its bounding box read back via `get_entity` matched the catalog's published width/depth
+  exactly — not just the tool's own success report.
+
+  Also closed the gap the HOSPITAL-2026 masterplan's own §11 flagged as deferred work: a
+  hospital-specific validator standard never existed. Added 6 rules under
+  `validators/architectural/hospital-*.yaml` (patient-room/ICU/OR/ensuite minimum areas from the
+  masterplan's §13 compliance matrix, plus lead-shield and Faraday-cage wall layer discipline
+  feeding rule 62's hard-locked hatch colors) and a `hospital-baseline` standard bundle. Verified
+  live that each rule actually catches what it claims to, not just that it loads: built a
+  deliberately undersized room or a wall on a legacy shielding-layer name for each of the 6 rules,
+  confirmed `validate_with_rule` flags every one, then confirmed a compliant room does NOT get
+  swept in by the same rule (no false positive). `--validators-self-check` passes clean (40 rules,
+  0 load errors).
+
 - **`acad-schedules` room-area tools gained an opt-in `cellMm` parameter — measurement accuracy
   no longer silently degrades as a drawing gets larger.**
 

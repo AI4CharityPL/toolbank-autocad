@@ -60,7 +60,12 @@ public sealed record GenerateRoomScheduleArgs(
     [property: JsonPropertyName("boundaryLayer")]   string? BoundaryLayer = "A-ROOM-BNDY",
     [property: JsonPropertyName("ensureStyle")]     bool EnsureStyle = true,
     [property: JsonPropertyName("autoNumber")]      bool AutoNumber = true,
-    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—");
+    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—",
+    // Overrides the flood-fill's automatic raster cell size (mm), which scales with the extent
+    // of EVERY wall in the model, not the room being measured - on a large, multi-floor drawing
+    // this can silently lose 5-10%+ accuracy on an individual room. Pass a small explicit value
+    // (e.g. 50-100mm) for tighter accuracy on a big model; null (default) keeps automatic sizing.
+    [property: JsonPropertyName("cellMm")]          double? CellMm = null);
 
 public sealed record GenerateRoomScheduleResult(
     [property: JsonPropertyName("summary")]   ScheduleGenerationSummary Summary,
@@ -77,7 +82,9 @@ public sealed record GetRoomDataArgs(
     [property: JsonPropertyName("labelLayers")]    IReadOnlyList<string>? LabelLayers = null,
     [property: JsonPropertyName("boundaryLayer")]  string? BoundaryLayer = null,
     // Margin (mm) added around the room bbox when assigning openings/furniture that sit on/near a wall.
-    [property: JsonPropertyName("marginMm")]       double MarginMm = 250.0);
+    [property: JsonPropertyName("marginMm")]       double MarginMm = 250.0,
+    // See GenerateRoomScheduleArgs.CellMm - same override, same reason.
+    [property: JsonPropertyName("cellMm")]         double? CellMm = null);
 
 public sealed record RoomOpeningDto(
     [property: JsonPropertyName("handle")]   string Handle,
@@ -135,7 +142,9 @@ public sealed record CorrectRoomAreaArgs(
     // measured outline - so the drawing's visible outline agrees with the corrected number
     // instead of a numerically-right label sitting over a stale shape. Opt-in: false preserves
     // this tool's original text-only contract for existing callers.
-    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false);
+    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false,
+    // See GenerateRoomScheduleArgs.CellMm - same override, same reason.
+    [property: JsonPropertyName("cellMm")]         double? CellMm = null);
 
 public sealed record CorrectRoomAreaResult(
     [property: JsonPropertyName("found")]          bool Found,
@@ -161,7 +170,11 @@ public sealed record AuditAllRoomsArgs(
     [property: JsonPropertyName("tolerancePct")]   double TolerancePct = 10.0,
     [property: JsonPropertyName("marginMm")]       double MarginMm = 250.0,
     // Optional path to write CSV; defaults to %LOCALAPPDATA%\\AcadMcp\\reports\\ when set to "auto".
-    [property: JsonPropertyName("exportCsvPath")]  string? ExportCsvPath = null);
+    [property: JsonPropertyName("exportCsvPath")]  string? ExportCsvPath = null,
+    // See GenerateRoomScheduleArgs.CellMm - same override, same reason. MEASURED live: a 75-room,
+    // 5-floor drawing of otherwise identical rooms reported labelMismatch on 60/75 purely from
+    // automatic cell sizing scaling with the whole model's extent.
+    [property: JsonPropertyName("cellMm")]         double? CellMm = null);
 
 public sealed record RoomAuditRowDto(
     [property: JsonPropertyName("handle")]         string Handle,
@@ -197,7 +210,9 @@ public sealed record CorrectAllRoomAreasArgs(
     // When true, only rows flagged labelMismatch by audit logic are corrected.
     [property: JsonPropertyName("onlyMismatches")] bool OnlyMismatches = true,
     // Forwarded to each correct_room_area call - see its own syncBoundary for what it does.
-    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false);
+    [property: JsonPropertyName("syncBoundary")]   bool SyncBoundary = false,
+    // See GenerateRoomScheduleArgs.CellMm - same override, same reason.
+    [property: JsonPropertyName("cellMm")]         double? CellMm = null);
 
 public sealed record CorrectAllRoomAreasEntry(
     [property: JsonPropertyName("query")]          string Query,

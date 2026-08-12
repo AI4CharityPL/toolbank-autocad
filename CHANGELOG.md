@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`acad-schedules` room-area tools gained an opt-in `cellMm` parameter — measurement accuracy
+  no longer silently degrades as a drawing gets larger.**
+
+  Found live during a deliberate scale test: `get_room_region`'s flood-fill picks an automatic
+  raster cell size that scales with the extent of EVERY wall in the model, not the room being
+  measured (`Clamp(wholeModelExtent / 600, 50, 500)mm`). Built 75 identical rooms across 5
+  "floors" laid out side by side — the SAME room shape (6.6975 m² by construction) measured
+  differently depending only on which floor it sat on (5.97–6.19 m², up to 11% off), enough to
+  false-flag 60 of 75 rooms as `labelMismatch` under the default 10% tolerance. No tool exposed
+  any way to compensate.
+
+  `audit_all_rooms`, `correct_room_area`, `correct_all_room_areas`, `generate_room_schedule` and
+  `get_room_data` all now accept `cellMm` (default `null` = automatic, unchanged), threaded down
+  to the same `get_room_region` call each of them already makes. Verified live both directions on
+  the identical 75-room drawing (`scripts/verify-schedules-cellmm-scale.py`, 3/3): without an
+  override the false mismatches are still there (default behaviour genuinely unchanged, not just
+  a different default that happens to look better), and `cellMm=50` on the same drawing brings
+  mismatches to zero.
+
 - **`acad-schedules.correct_room_area` / `correct_all_room_areas` gained an opt-in `syncBoundary`
   parameter that also redraws the room's boundary polygon, not just its area label.**
 

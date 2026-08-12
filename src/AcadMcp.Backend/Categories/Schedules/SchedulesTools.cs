@@ -171,7 +171,7 @@ public static class SchedulesTools
     // ─────────────────────────────────────────────────────────────
 
     [McpTool("generate_room_schedule",
-        "Build a room schedule table (ZESTAWIENIE POMIESZCZEŃ) from every DBText/MText label on the configured room-label layers (default A-ROOM-IDEN / A-ANNO-ROOM). If boundaryLayer is set, each room's area (m²) is computed from the closed polyline on that layer that contains the label. Auto-numbers rows 101, 102, … when autoNumber=true.",
+        "Build a room schedule table (ZESTAWIENIE POMIESZCZEŃ) from every DBText/MText label on the configured room-label layers (default A-ROOM-IDEN / A-ANNO-ROOM). If boundaryLayer is set, each room's area (m²) is computed from the closed polyline on that layer that contains the label. Auto-numbers rows 101, 102, … when autoNumber=true. cellMm overrides the flood-fill's automatic raster cell size, which scales with the extent of EVERY wall in the model - useful on a large or dense drawing where the default sizing may lose accuracy on an individual room.",
         "schedules",
         Intent = new[]
         {
@@ -186,7 +186,8 @@ public static class SchedulesTools
         IPluginGateway gw, GenerateRoomScheduleArgs args, CancellationToken ct)
     {
         if (args.EnsureStyle) await EnsureTableStyleAsync(gw, args.StyleName, args.TextStyle, ct).ConfigureAwait(false);
-        var rooms = await FetchGroupedRoomsAsync(gw, args.LabelLayers, args.BoundaryLayer, ct).ConfigureAwait(false);
+        var rooms = await FetchGroupedRoomsAsync(gw, args.LabelLayers, args.BoundaryLayer, ct,
+            cellMm: args.CellMm).ConfigureAwait(false);
 
         var data = new List<IReadOnlyList<string>>
         {
@@ -237,7 +238,8 @@ public static class SchedulesTools
         "detection method, and every door, window and furniture/equipment item that lies inside the room (furniture " +
         "tested against the traced outline, openings against the perimeter). Scans labels on ALL layers by default " +
         "(not just A-ROOM-*). Use this to gather accurate data BEFORE drawing a schedule or generating a " +
-        "visualization. Does NOT modify the drawing.",
+        "visualization. Does NOT modify the drawing. cellMm overrides the flood-fill's automatic raster cell " +
+        "size - see audit_all_rooms's cellMm for why a large or dense model may need a smaller explicit value.",
         "schedules",
         Intent = new[]
         {
@@ -278,7 +280,8 @@ public static class SchedulesTools
 
         // Detect region first (uses label area to reject corridor leaks during flood-fill).
         double? matchLabelArea = ParseAreaM2(match.Text);
-        var region = await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct, matchLabelArea).ConfigureAwait(false);
+        var region = await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct, matchLabelArea,
+            cellMm: args.CellMm).ConfigureAwait(false);
         var bounds = region?.Bounds ?? match.Bounds;
         var outline = region?.Outline ?? Array.Empty<PointXY>();
         bool usePolygon = outline.Count >= 3;
@@ -366,7 +369,9 @@ public static class SchedulesTools
         "with the measured outline when the label is corrected — otherwise only the text changes and the drawn " +
         "outline is left exactly where it was, which after a wall edit means a numerically-correct label can sit " +
         "over a visually wrong (stale-shaped) outline. Confirmed live: define_room's boundary is a separate, " +
-        "non-parametric entity that does not move when walls do.",
+        "non-parametric entity that does not move when walls do. cellMm overrides the flood-fill's automatic " +
+        "raster cell size (see audit_all_rooms) - pass a small explicit value on a large or dense model if " +
+        "measured/label deltas seem larger than the room's own geometry would explain.",
         "schedules",
         Intent = new[]
         {
@@ -395,7 +400,8 @@ public static class SchedulesTools
             return new CorrectRoomAreaResult(false, null, null, null, null, null, null, null, false,
                 $"Nie znaleziono sali pasującej do '{query}'.");
 
-        var regionPreview = await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct, ParseAreaM2(match.Text)).ConfigureAwait(false);
+        var regionPreview = await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct, ParseAreaM2(match.Text),
+            cellMm: args.CellMm).ConfigureAwait(false);
         var outlinePreview = regionPreview?.Outline ?? Array.Empty<PointXY>();
         bool usePolygon = outlinePreview.Count >= 3;
 
@@ -409,7 +415,8 @@ public static class SchedulesTools
                          ?? siblings.FirstOrDefault(s => ParseAreaM2(s.Text).HasValue)
                          ?? match;
 
-        var region = regionPreview ?? await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct, ParseAreaM2(editTarget.Text)).ConfigureAwait(false);
+        var region = regionPreview ?? await FetchRoomRegionAsync(gw, match.Position.X, match.Position.Y, ct,
+            ParseAreaM2(editTarget.Text), cellMm: args.CellMm).ConfigureAwait(false);
         double? measured = region is { Found: true } ? region.AreaM2 : null;
         double? labelArea = ParseAreaM2(editTarget.Text);
         double? target = args.ExplicitAreaM2 ?? measured;
@@ -529,7 +536,12 @@ public static class SchedulesTools
         "READ-ONLY batch audit of every room label in the drawing. For each label, measures the REAL area " +
         "(get_room_region), compares to the stated m² on the label, counts doors/windows/furniture in the " +
         "detected region, and flags leaks, label mismatches, missing doors and furniture type conflicts. " +
-        "Optional exportCsvPath (use 'auto' for %LOCALAPPDATA%\\AcadMcp\\reports\\). Does NOT modify the drawing.",
+        "Optional exportCsvPath (use 'auto' for %LOCALAPPDATA%\\AcadMcp\\reports\\). Does NOT modify the drawing. " +
+        "cellMm overrides the flood-fill's automatic raster cell size, which scales with the extent of EVERY " +
+        "wall in the model, not the room being measured - confirmed live on a 75-room, 5-floor drawing of " +
+        "otherwise-identical rooms: automatic sizing measured the SAME room shape differently depending on " +
+        "which floor it sat on, enough to false-flag 60 of 75 as labelMismatch. Pass a small explicit value " +
+        "(e.g. 50-100mm) for tighter accuracy on a large or dense model.",
         "schedules",
         Intent = new[]
         {
@@ -544,7 +556,8 @@ public static class SchedulesTools
     public static async Task<AuditAllRoomsResult> AuditAllRooms(
         IPluginGateway gw, AuditAllRoomsArgs args, CancellationToken ct)
     {
-        var candidates = await FetchGroupedRoomsAsync(gw, args.LabelLayers, null, ct, args.AllLayers).ConfigureAwait(false);
+        var candidates = await FetchGroupedRoomsAsync(gw, args.LabelLayers, null, ct, args.AllLayers,
+            args.CellMm).ConfigureAwait(false);
         var openings = await FetchOpeningRefsAsync(gw, ct).ConfigureAwait(false);
         var furniture = await FetchFurnitureRefsAsync(gw, ct).ConfigureAwait(false);
 
@@ -620,8 +633,8 @@ public static class SchedulesTools
     [McpTool("correct_all_room_areas",
         "Batch wrapper around correct_room_area: scans every room label and rewrites the m² token when the " +
         "measured area diverges from the label by more than tolerancePct. Use apply=false for dry-run. " +
-        "Modifies the drawing only when apply=true. syncBoundary is forwarded to each call - see " +
-        "correct_room_area's own syncBoundary for what it does.",
+        "Modifies the drawing only when apply=true. syncBoundary and cellMm are forwarded to each call - see " +
+        "correct_room_area's own syncBoundary/cellMm for what they do.",
         "schedules",
         Intent = new[]
         {
@@ -637,7 +650,7 @@ public static class SchedulesTools
         IPluginGateway gw, CorrectAllRoomAreasArgs args, CancellationToken ct)
     {
         var audit = await AuditAllRooms(gw,
-            new AuditAllRoomsArgs(args.AllLayers, args.LabelLayers, args.TolerancePct), ct)
+            new AuditAllRoomsArgs(args.AllLayers, args.LabelLayers, args.TolerancePct, CellMm: args.CellMm), ct)
             .ConfigureAwait(false);
         var entries = new List<CorrectAllRoomAreasEntry>();
         int changed = 0, skipped = 0;
@@ -649,7 +662,7 @@ public static class SchedulesTools
 
             var result = await CorrectRoomArea(gw,
                 new CorrectRoomAreaArgs(row.Query, null, args.TolerancePct, args.Apply, args.Decimals,
-                    args.AllLayers, args.LabelLayers, null, args.SyncBoundary), ct).ConfigureAwait(false);
+                    args.AllLayers, args.LabelLayers, null, args.SyncBoundary, args.CellMm), ct).ConfigureAwait(false);
             entries.Add(new CorrectAllRoomAreasEntry(row.Query, result.Changed, result.LabelAreaM2,
                 result.MeasuredAreaM2, result.Note));
             if (result.Changed) changed++;
@@ -705,7 +718,7 @@ public static class SchedulesTools
 
     private static async Task<List<GroupedRoom>> FetchGroupedRoomsAsync(
         IPluginGateway gw, IReadOnlyList<string>? labelLayers, string? boundaryLayer, CancellationToken ct,
-        bool allLayers = false)
+        bool allLayers = false, double? cellMm = null)
     {
         var raw = await FetchRoomsAsync(gw, labelLayers, boundaryLayer, ct, allLayers).ConfigureAwait(false);
         var candidates = raw.Where(IsAuditCandidate).ToList();
@@ -719,7 +732,7 @@ public static class SchedulesTools
             assigned[i] = true;
 
             var region = await FetchRoomRegionAsync(gw, seed.Position.X, seed.Position.Y, ct,
-                ParseAreaM2(seed.Text), sealAllDoors: false, timeoutMs: T_AUDIT_REGION).ConfigureAwait(false);
+                ParseAreaM2(seed.Text), sealAllDoors: false, timeoutMs: T_AUDIT_REGION, cellMm: cellMm).ConfigureAwait(false);
             var outline = region?.Outline ?? Array.Empty<PointXY>();
             bool usePoly = outline.Count >= 3;
 
@@ -1050,10 +1063,18 @@ public static class SchedulesTools
     /// </summary>
     private static async Task<RoomRegionData?> FetchRoomRegionAsync(
         IPluginGateway gw, double x, double y, CancellationToken ct, double? labelAreaM2 = null,
-        bool sealAllDoors = true, int? timeoutMs = null)
+        bool sealAllDoors = true, int? timeoutMs = null, double? cellMm = null)
     {
         var args = new JsonObject { ["x"] = x, ["y"] = y, ["sealAllDoors"] = sealAllDoors };
         if (labelAreaM2 is { } la && la > 0) args["labelAreaM2"] = la;
+        // MEASURED 2026-08-12: the flood-fill's automatic cell size scales with the extent of
+        // EVERY wall in the model, not the room being measured - Clamp(wholeModelExtent / 600,
+        // 50, 500)mm. A 75-room, 5-floor drawing (identical room geometry throughout) measured
+        // the SAME room at 5.97-6.19 m2 depending only on which floor it sat on, against a true
+        // 6.70 m2 - up to 11% off, enough to trip audit_all_rooms's default 10% tolerance on 60
+        // of 75 rooms. Precision silently degrades as the building grows; a caller working on a
+        // large model can now ask for a smaller cell explicitly instead.
+        if (cellMm is { } cm && cm > 0) args["cellMm"] = cm;
         JsonNode? resp;
         try
         {

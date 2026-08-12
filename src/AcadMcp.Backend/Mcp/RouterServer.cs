@@ -551,6 +551,7 @@ public sealed class RouterServer : ICategoryServer, IJsonRpcDispatcher
         AddIf("dimensions", "dimension", "wymiar");
         AddIf("hatches", "hatch", "kreskowanie");
         AddIf("architecture", "wall", "floor plan", "rzut", "scian", "pietro");
+        AddIf("structural", "steel column", "steel beam", "lintel", "steel profile", "HEB", "HEA", "IPE", "slup stalowy", "belka", "nadproze", "profil stalowy", "dwuteownik");
         AddIf("openings", "door", "window", "drzwi", "okno", "otwor");
         AddIf("schedules", "schedule", "zestawienie", "stolark", "legenda", "wykaz");
         AddIf("furniture", "furniture", "bed", "table", "meble", "lozko", "stol");

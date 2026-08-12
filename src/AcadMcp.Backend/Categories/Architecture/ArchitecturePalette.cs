@@ -31,11 +31,16 @@ internal static class ArchitecturePalette
     public const string LayerAnnoDims        = "A-ANNO-DIMS";
     public const string LayerAnnoNotes       = "A-ANNO-NOTE";
 
-    // Structural layers (S-*) referenced from architectural plans.
+    // Structural layers (S-*) referenced from architectural plans. Also consumed by
+    // acad-structural (columns/beams/lintels) - this stays the single S-* key for both
+    // categories rather than forking a second one; see rule 72 §1 for why.
     public const string LayerColumns         = "S-COLS";
     public const string LayerColumnsCtrl     = "S-COLS-CTRL";
     public const string LayerSlab            = "S-SLAB";
     public const string LayerSlabHatch       = "S-SLAB-HATCH";
+    public const string LayerBeam            = "S-BEAM";
+    public const string LayerBeamCtrl        = "S-BEAM-CTRL";
+    public const string LayerLintel          = "S-LINTEL";
 
     /// <summary>One descriptor per layer in the AIA-style architectural key.</summary>
     public sealed record Spec(string Name, int AciColor, string Linetype, string Purpose, bool Structural);
@@ -58,6 +63,9 @@ internal static class ArchitecturePalette
         new(LayerColumnsCtrl,     8, "CENTER",     "column centre-marks",                 true),
         new(LayerSlab,            7, "Continuous", "floor slab outlines",                 true),
         new(LayerSlabHatch,       8, "Continuous", "slab fill hatch",                     true),
+        new(LayerBeam,            1, "DASHED",     "beam plan-projection outline",        true),
+        new(LayerBeamCtrl,        8, "CENTER",     "beam centrelines",                    true),
+        new(LayerLintel,          1, "DASHED",     "lintel plan-projection over openings (heuristic sizing, not a structural calculation - rule 72)", true),
     };
 
     /// <summary>

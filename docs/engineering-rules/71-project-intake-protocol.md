@@ -32,7 +32,11 @@ pointed out the mistake) — see the "What went wrong" section below for the inc
 
 4. **Structural grid first.** Fix axis coordinates before any wall exists. Every wall endpoint
    lands on a grid line or a documented fixed offset from one — never an accumulated running
-   total of neighbouring room widths with no shared skeleton.
+   total of neighbouring room widths with no shared skeleton. Once the grid is fixed, size
+   columns/beams from `acad-structural` (`list_steel_profiles`, `insert_steel_column`,
+   `insert_beam`) rather than a generic rectangle when a real profile matters — see rule 72.
+   Lintels over openings (`insert_lintel`, rule 72 §8) are heuristic sizing, not a structural
+   calculation; say so wherever the result is surfaced.
 
 5. **Adjacency / bubble diagram before detailed geometry.** List every zone/department and
    confirm the adjacency graph is connected — every zone reachable from every other, generally

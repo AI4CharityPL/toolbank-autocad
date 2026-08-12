@@ -69,7 +69,7 @@ hospital/lead) and `leadShielded=true` (which forces `DOOR-LEAD`).
 
 ## 4. Attribute contract
 
-Every opening `BlockReference` carries THESE EXACT 14 TAGS (empty string
+Every opening `BlockReference` carries THESE EXACT 15 TAGS (empty string
 when irrelevant for the kind):
 
 | Tag           | Visible | Doors | Windows | Notes                                       |
@@ -88,6 +88,7 @@ when irrelevant for the kind):
 | `LEAD`        | no      | "0" / "1" (doors only)                       |
 | `ROOM_FROM`   | no      | room code the door passes FROM               |
 | `ROOM_TO`     | no      | room code the door passes TO                 |
+| `LINTEL_TYPE` | no      | lintel/beam-over-opening type tag (e.g. `RC-150x250`, `HEB160`), blank if not set - see rule 72. Written by passing `lintelType` to `insert_door`/`insert_window`; `acad-structural.insert_lintel` computes the tag but never writes it itself (that tool never touches an opening block) |
 
 Rules:
 - `NUMBER` is the ONLY visible attribute so plans stay readable at 1:100.
@@ -161,7 +162,7 @@ reads attributes and emits one row per opening. The canonical CSV header
 `BLOCK`, `LAYER`, `HANDLE`):
 
 ```
-NUMBER,KIND,BLOCK,TYPE,WIDTH_MM,HEIGHT_MM,REI,RC,FIRE_CLASS,LEAF_DIR,SWING_DIR,SILL_MM,ACOUSTIC_DB,LEAD,ROOM_FROM,ROOM_TO,LAYER,HANDLE
+NUMBER,KIND,BLOCK,TYPE,WIDTH_MM,HEIGHT_MM,REI,RC,FIRE_CLASS,LEAF_DIR,SWING_DIR,SILL_MM,ACOUSTIC_DB,LEAD,ROOM_FROM,ROOM_TO,LINTEL_TYPE,LAYER,HANDLE
 ```
 
 JSON format is the same fields as an array of objects. `outputPath` is

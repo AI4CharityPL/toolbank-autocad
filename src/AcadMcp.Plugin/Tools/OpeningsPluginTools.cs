@@ -363,7 +363,7 @@ internal static class OpeningsPluginTools
     {
         "NUMBER", "TYPE", "WIDTH_MM", "HEIGHT_MM",
         "REI", "RC", "FIRE_CLASS", "LEAF_DIR", "SWING_DIR",
-        "SILL_MM", "ACOUSTIC_DB", "LEAD", "ROOM_FROM", "ROOM_TO"
+        "SILL_MM", "ACOUSTIC_DB", "LEAD", "ROOM_FROM", "ROOM_TO", "LINTEL_TYPE"
     };
 
     private static void AddStandardAttributes(Transaction tr, BlockTableRecord btr, double wMm)
@@ -552,6 +552,7 @@ internal static class OpeningsPluginTools
                 ["LEAD"]        = a.LeadShielded ? "1" : "0",
                 ["ROOM_FROM"]   = a.RoomFrom ?? "",
                 ["ROOM_TO"]     = a.RoomTo ?? "",
+                ["LINTEL_TYPE"] = a.LintelType ?? "",
             };
             var r = InsertBlockCore(db, tr, name, a.Position, a.RotationDeg, a.Layer, attrs);
             return Wrap(new
@@ -611,6 +612,7 @@ internal static class OpeningsPluginTools
                 ["LEAD"]        = "0",
                 ["ROOM_FROM"]   = a.Room ?? "",
                 ["ROOM_TO"]     = "",
+                ["LINTEL_TYPE"] = a.LintelType ?? "",
             };
             var r = InsertBlockCore(db, tr, name, a.Position, a.RotationDeg, a.Layer, attrs);
             return Wrap(new
@@ -861,6 +863,7 @@ internal static class OpeningsPluginTools
                 bool lead = GetAttr(br, "LEAD") == "1";
                 string? rFrom = GetAttr(br, "ROOM_FROM");
                 string? rTo   = GetAttr(br, "ROOM_TO");
+                string? lintelType = GetAttr(br, "LINTEL_TYPE");
 
                 openings.Add(new
                 {
@@ -873,6 +876,7 @@ internal static class OpeningsPluginTools
                     acousticDb = acoustic,
                     leadShielded = lead,
                     roomFrom = rFrom, roomTo = rTo,
+                    lintelType,
                     position = new Point2dDto(br.Position.X, br.Position.Y),
                     rotationDeg = br.Rotation * 180.0 / Math.PI,
                     layer = br.Layer,
@@ -892,7 +896,8 @@ internal static class OpeningsPluginTools
     private static readonly string[] s_csvHeaders =
     {
         "NUMBER","KIND","BLOCK","TYPE","WIDTH_MM","HEIGHT_MM","REI","RC","FIRE_CLASS",
-        "LEAF_DIR","SWING_DIR","SILL_MM","ACOUSTIC_DB","LEAD","ROOM_FROM","ROOM_TO","LAYER","HANDLE"
+        "LEAF_DIR","SWING_DIR","SILL_MM","ACOUSTIC_DB","LEAD","ROOM_FROM","ROOM_TO",
+        "LINTEL_TYPE","LAYER","HANDLE"
     };
 
     private static Task<ToolDispatchResult> ExportSchedule(JsonObject args, CancellationToken ct) =>
@@ -929,6 +934,7 @@ internal static class OpeningsPluginTools
                     ["LEAD"]       = GetAttr(br, "LEAD") ?? "",
                     ["ROOM_FROM"]  = GetAttr(br, "ROOM_FROM") ?? "",
                     ["ROOM_TO"]    = GetAttr(br, "ROOM_TO") ?? "",
+                    ["LINTEL_TYPE"]= GetAttr(br, "LINTEL_TYPE") ?? "",
                     ["LAYER"]      = br.Layer,
                     ["HANDLE"]     = br.Handle.ToString(),
                 };

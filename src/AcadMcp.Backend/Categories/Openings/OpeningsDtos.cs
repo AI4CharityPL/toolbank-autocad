@@ -50,7 +50,11 @@ public sealed record InsertDoorArgs(
     // the wall is cut at the door's own axis span (position ± widthMm/2 along rotationDeg) BEFORE
     // the block is placed - 2026-08-12, closing the gap that made architecture.insert_door the
     // only way to get BOTH a cut wall and a placed opening in one call.
-    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null,
+    // Optional: the lintelTypeTag from acad-structural.insert_lintel (e.g. "RC-150x250" or a
+    // steel designation like "HEB160"). Purely a schedule tag, written to LINTEL_TYPE -
+    // rule 65 §4, rule 72 §6.
+    [property: JsonPropertyName("lintelType")] string? LintelType = null);
 
 public sealed record InsertWindowArgs(
     [property: JsonPropertyName("position")]   Point2dDto Position,
@@ -65,7 +69,8 @@ public sealed record InsertWindowArgs(
     [property: JsonPropertyName("number")]     string? Number = null,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber = true,
     [property: JsonPropertyName("layer")]      string? Layer = null,
-    [property: JsonPropertyName("wallHandle")] string? WallHandle = null);
+    [property: JsonPropertyName("wallHandle")] string? WallHandle = null,
+    [property: JsonPropertyName("lintelType")] string? LintelType = null);
 
 public sealed record InsertOpeningGenericArgs(
     [property: JsonPropertyName("name")]       string Name,
@@ -134,6 +139,7 @@ public sealed record OpeningInfo(
     [property: JsonPropertyName("leadShielded")] bool LeadShielded,
     [property: JsonPropertyName("roomFrom")]   string? RoomFrom,
     [property: JsonPropertyName("roomTo")]     string? RoomTo,
+    [property: JsonPropertyName("lintelType")] string? LintelType,
     [property: JsonPropertyName("position")]   Point2dDto Position,
     [property: JsonPropertyName("rotationDeg")] double RotationDeg,
     [property: JsonPropertyName("layer")]      string Layer);

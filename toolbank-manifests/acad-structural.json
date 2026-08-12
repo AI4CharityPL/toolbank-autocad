@@ -1,0 +1,160 @@
+{
+  "id": "acad-structural",
+  "name": "acad-structural",
+  "description": "Structural columns, beams and lintels for AutoCAD floor plans. Insert real hot-rolled steel I/H-section columns (HEA/HEB/IPE, a representative EN 10365 catalog subset) with an accurate flange-and-web cross-section instead of a plain rectangle, draw beam plan-projection symbols in steel or explicit RC/timber widths, and compute a span-based lintel size over a wall opening with an explicit disclaimer that it is a heuristic, not a structural calculation. Shares the S-* layer key with acad-architecture rather than a separate one, and never cuts or otherwise mutates existing wall geometry.",
+  "transport": {
+    "type": "stdio",
+    "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-structural.cmd",
+    "args": [],
+    "env": {}
+  },
+  "lazy_mode": true,
+  "tags": [
+    "autocad",
+    "beam",
+    "cad",
+    "column",
+    "dwg",
+    "ensure",
+    "insert",
+    "layers",
+    "lintel",
+    "list",
+    "profiles",
+    "steel",
+    "structural"
+  ],
+  "intent_examples": [
+    "beam plan symbol",
+    "belka IPE200",
+    "belka nadprozowa",
+    "co mamy w katalogu stali",
+    "create beam and lintel layers",
+    "draw HEA column",
+    "draw RC beam outline",
+    "ensure structural layers",
+    "insert beam",
+    "insert lintel",
+    "insert steel column",
+    "katalog HEB HEA IPE",
+    "kolumna HEB200",
+    "lintel over door opening",
+    "list steel profiles",
+    "lista profili stalowych",
+    "narysuj belke stalowa",
+    "policz nadproze nad otworem",
+    "przygotuj warstwy konstrukcyjne",
+    "setup S-COLS S-BEAM layers",
+    "show steel section catalog",
+    "size a lintel for this span",
+    "structural steel H-section column",
+    "utworz warstwy strukturalne",
+    "wstaw belke",
+    "wstaw dwuteownik jako slup",
+    "wstaw nadproze",
+    "wstaw slup stalowy",
+    "wypisz przekroje stalowe"
+  ],
+  "tools_summary": [
+    {
+      "name": "ensure_structural_layers",
+      "description": "Idempotent: create every S-* structural layer (S-COLS, S-COLS-CTRL, S-SLAB, S-SLAB-HATCH, S-BEAM, S-BEAM-CTRL, S-LINTEL) that does not already exist in the drawing. Same shared layer key acad-architecture\u0027s ensure_architectural_layers already creates - this exists purely so an agent working only in acad-structural does not need to know to call the architecture tool first.",
+      "tags": [
+        "ensure",
+        "structural",
+        "layers"
+      ],
+      "intent": [
+        "utworz warstwy strukturalne",
+        "ensure structural layers",
+        "setup S-COLS S-BEAM layers",
+        "create beam and lintel layers",
+        "przygotuj warstwy konstrukcyjne"
+      ]
+    },
+    {
+      "name": "insert_beam",
+      "description": "Insert a beam PLAN-PROJECTION symbol (dashed outline \u002B centreline) between two points - this bank is 2D-plan-symbolic only (no wall-height/elevation datum anywhere), so this draws what a beam looks like from above, not a real 3D member. Give either \u0027designation\u0027 (a steel profile from list_steel_profiles, whose width sets the plan width) or an explicit \u0027widthMm\u0027 (for RC/timber beams not in the steel catalog - keeps this typology-agnostic). Layer S-BEAM (outline) / S-BEAM-CTRL (centreline).",
+      "tags": [
+        "insert",
+        "beam"
+      ],
+      "intent": [
+        "wstaw belke",
+        "insert beam",
+        "narysuj belke stalowa",
+        "beam plan symbol",
+        "draw RC beam outline",
+        "belka IPE200"
+      ]
+    },
+    {
+      "name": "insert_lintel",
+      "description": "Compute a span-based lintel (nadproze) size and optionally draw its plan-projection symbol over a wall opening. HEURISTIC SIZING ONLY - not a structural calculation; the result carries an explicit \u0027disclaimer\u0027 field, and a qualified engineer must verify before construction. Give either (\u0027position\u0027\u002B\u0027rotationDeg\u0027\u002B\u0027spanMm\u0027) or a jamb pair (\u0027jamb1\u0027\u002B\u0027jamb2\u0027, matching cut_wall_for_opening\u0027s own jamb contract) to derive them. materialHint=\u0027rc\u0027 sizes a reinforced-concrete lintel by depth only; materialHint=\u0027steel\u0027 additionally suggests the shallowest catalog profile (list_steel_profiles) tall enough. Never cuts or otherwise modifies the wall - purely additive schedule data plus an optional dashed plan symbol on layer S-LINTEL.",
+      "tags": [
+        "insert",
+        "lintel"
+      ],
+      "intent": [
+        "wstaw nadproze",
+        "insert lintel",
+        "policz nadproze nad otworem",
+        "lintel over door opening",
+        "belka nadprozowa",
+        "size a lintel for this span"
+      ]
+    },
+    {
+      "name": "insert_steel_column",
+      "description": "Insert a real hot-rolled steel I/H-section column profile (e.g. \u0027HEB200\u0027) on layer S-COLS plus a crosshair centre-mark on S-COLS-CTRL - same layers insert_rect_column/insert_round_column already use, just with a real profile outline (12-vertex, flange\u002Bweb, no root radius) instead of a rectangle. Names accepted are exactly those returned by list_steel_profiles.",
+      "tags": [
+        "insert",
+        "steel",
+        "column"
+      ],
+      "intent": [
+        "wstaw slup stalowy",
+        "insert steel column",
+        "kolumna HEB200",
+        "structural steel H-section column",
+        "wstaw dwuteownik jako slup",
+        "draw HEA column"
+      ]
+    },
+    {
+      "name": "list_steel_profiles",
+      "description": "List the built-in steel I/H-section catalog (HEA/HEB/IPE, a representative EN 10365 subset - not the full standard range). Read-only, no AutoCAD document required. Returns designation, series, height/width/web/flange thickness in mm, weight per metre, nominal cross-sectional area (computed without root radius - see insert_steel_column), and the cited standard.",
+      "tags": [
+        "list",
+        "steel",
+        "profiles"
+      ],
+      "intent": [
+        "lista profili stalowych",
+        "katalog HEB HEA IPE",
+        "list steel profiles",
+        "show steel section catalog",
+        "co mamy w katalogu stali",
+        "wypisz przekroje stalowe"
+      ]
+    }
+  ],
+  "metadata": {
+    "category": "structural",
+    "tool_count_target": 5,
+    "requires_plugin": true,
+    "supported_acad_versions": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "supported_lt": false,
+    "owner": "ToolBank AutoCAD",
+    "version": "0.1.0",
+    "phase": "implemented",
+    "last_regenerated_utc": "2026-08-12T15:27:08.3872378Z"
+  }
+}

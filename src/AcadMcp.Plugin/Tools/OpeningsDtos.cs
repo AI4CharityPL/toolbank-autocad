@@ -29,7 +29,10 @@ internal sealed record OpeningsInsertDoorDto(
     // Optional: handle of the wall (Line or 2-vertex Polyline) this door sits in. When supplied,
     // the wall is cut at the door's own axis span (position ± widthMm/2 along rotationDeg) BEFORE
     // the block is placed - see architecture.insert_door's WallHandle for the same rationale.
-    [property: JsonPropertyName("wallHandle")] string? WallHandle);
+    [property: JsonPropertyName("wallHandle")] string? WallHandle,
+    // Optional: the LintelTypeTag from a acad-structural.insert_lintel call (e.g. "RC-150x250"
+    // or a steel designation like "HEB160"). Purely a schedule tag - rule 65 §4, rule 72 §6.
+    [property: JsonPropertyName("lintelType")] string? LintelType = null);
 
 internal sealed record OpeningsInsertWindowDto(
     [property: JsonPropertyName("position")]   Point2dDto Position,
@@ -44,7 +47,8 @@ internal sealed record OpeningsInsertWindowDto(
     [property: JsonPropertyName("number")]     string? Number,
     [property: JsonPropertyName("autoNumber")] bool AutoNumber,
     [property: JsonPropertyName("layer")]      string? Layer,
-    [property: JsonPropertyName("wallHandle")] string? WallHandle);
+    [property: JsonPropertyName("wallHandle")] string? WallHandle,
+    [property: JsonPropertyName("lintelType")] string? LintelType = null);
 
 internal sealed record OpeningsInsertGenericDto(
     [property: JsonPropertyName("name")]       string Name,

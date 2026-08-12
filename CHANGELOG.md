@@ -6,6 +6,68 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **New `acad-structural` category — real steel column/beam profiles and span-based lintel
+  sizing, closing the two biggest LOD gaps a real-drawing comparison surfaced.**
+
+  A real professional ArchiCAD-exported drawing this bank was compared against (see the
+  reference-drawing analysis artifact) had 24 columns tagged with real steel profile
+  designations (HEB) and 174 individually-sized lintels — roughly one per opening — while this
+  bank could only draw a plain rectangular column and had no lintel tooling at all.
+
+  Added `src/AcadMcp.Shared/Catalogs/SteelProfileCatalog.cs`: 19 real HEA/HEB/IPE sections
+  (a representative EN 10365 subset, not the full standard range), each field-sourced from a
+  named technical reference and confidence-tagged in the new rule 72 §9 (Confirmed from a
+  named secondary source; not cross-checked against a mill certificate or primary standard
+  text — the same honesty discipline `docs/knowledge-base/residential/STANDARDS.md` already
+  established for legal citations, extended here to engineering data). `AreaCm2` is computed
+  from height/width/web/flange thickness with no root radius, matching exactly what
+  `insert_steel_column` draws, so a live area check on the drawn polygon can be compared
+  directly against the catalog value.
+
+  5 new tools: `list_steel_profiles` (pure in-memory catalog read, no plugin call, works before
+  AutoCAD is even open), `insert_steel_column` (a real 12-vertex I/H cross-section instead of a
+  rectangle), `insert_beam` (plan-projection symbol — this bank is 2D-plan-symbolic throughout,
+  confirmed by direct inspection of the openings code: no wall-height/elevation datum exists
+  anywhere, so a beam is drawn as what it looks like from above, not a fabricated 3D member),
+  `insert_lintel` (span-based heuristic sizing with an explicit `disclaimer` field carried in
+  the JSON result itself, not just the tool description — *"Heuristic span/depth sizing only.
+  This is NOT a substitute for a structural engineer's calculation... Verify before
+  construction."* — and a hard invariant, verified live: it never cuts or otherwise mutates the
+  wall it sits over), and `ensure_structural_layers`. 3 new layers (`S-BEAM`, `S-BEAM-CTRL`,
+  `S-LINTEL`) extend the *existing* `S-*` key in `ArchitecturePalette.cs` rather than forking a
+  parallel one — a real Polish multi-branża numbered layer key (`410-K`, `440-K`, ...) exists in
+  the reference drawing this gap was found in, and stays documentation-only
+  (`docs/knowledge-base/hospital/GRID-AND-LAYERS.md`) rather than becoming a second authoring
+  convention this bank writes in.
+
+  Also extended the door/window schedule contract (rule 65) with a 15th attribute tag,
+  `LINTEL_TYPE` — purely a schedule tag; `insert_lintel` computes a type string like `HEB160` or
+  `RC-150x250` but never writes it itself, the caller passes it to
+  `insert_door`/`insert_window(..., lintelType=...)` explicitly, keeping sizing and recording as
+  separate responsibilities.
+
+  New `docs/engineering-rules/72-structural-domain-traps.md` (rule 53's 60-79 band, following
+  rules 36-39's pattern) documents all of the above plus the one thing worth remembering across
+  future sessions: `acad-structural` is deliberately almost plugin-free — `insert_steel_column`/
+  `insert_beam`/`ensure_structural_layers` compose already-deployed `ArchitectureProxy` verbs
+  (`DrawPolylineAsync`, `EnsureLayerAsync`, ...), so only the `LINTEL_TYPE` attribute change
+  needed a plugin rebuild and AutoCAD restart — one restart for the whole category, not one per
+  tool.
+
+  Verified live (`scripts/verify-structural-category.py`, 17/17): `list_steel_profiles` returns
+  19 entries including `HEB200`; `ensure_structural_layers` creates all 7 `S-*` layers once and
+  0 on a repeat call; `insert_steel_column("HEB200")`'s drawn polygon has a perimeter matching
+  the 12-edge I/H outline to the millimetre (`2h + 4w - 2tw = 1182mm`, hand-derived and
+  confirmed against the live geometry) and an area matching the catalog's `AreaCm2` exactly
+  while sitting at under 20% of the bounding rectangle's area — proof the flange/web cutout is
+  real geometry, not a solid block with a label; `insert_lintel` correctly computes
+  `RC-120x250` for a 1200mm span and, at a deliberately non-round 1450mm span chosen to land at
+  a catalog boundary, correctly selects `HEA160` as the shallowest steel profile clearing the
+  computed depth; a wall's geometry was read via `get_entity` immediately before and after an
+  `insert_lintel` call over it and found byte-identical, proving the invariant; and a door
+  inserted with `lintelType="RC-120x250"` produced that exact string in `export_schedule`'s
+  own JSON output.
+
 - **New `docs/knowledge-base/` — a typology-agnostic grounding scheme (legal citations, room
   program, structural grid/layers, area convention) that rule 71 reads before a new project
   starts, proven end-to-end on two new typologies (residential, office) with real validator

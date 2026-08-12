@@ -1,0 +1,18 @@
+id: residential.rooms.bathroom-min-area
+name: Residential bathrooms must be at least 3.52 m^2
+discipline: architectural
+severity: error
+description: |
+  Per docs/engineering-rules/63-sanitary-fixtures-wt.md preset 'bathroom-residential'
+  (1600x2200mm, WT-2019 §82): a residential bathroom must have a net floor area of at least
+  3.52 m^2 to fit a WC, basin, and bathtub-or-shower with the clearances that preset assumes.
+  This reuses the already-cited figure from rule 63 rather than re-researching it. Scope by
+  calling define_room with boundaryLayer='A-ROOM-BNDY-BATH-RES' for every residential bathroom.
+references:
+  - docs/engineering-rules/63-sanitary-fixtures-wt.md
+  - docs/knowledge-base/residential/STANDARDS.md
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-BATH-RES]
+checks:
+  - { type: area_at_least, value: 3520000 }

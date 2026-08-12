@@ -1,0 +1,12 @@
+id: residential-baseline
+name: Residential (multi-family apartment) architectural baseline
+description: |
+  Residential-specific numeric rules from docs/knowledge-base/residential/STANDARDS.md (WT,
+  Rozdział 7, and rule 63's already-cited bathroom preset) - kitchen and bathroom minimum
+  areas. Deliberately smaller than hospital-baseline: this pass could not confirm a per-bedroom
+  or per-living-room area minimum in Polish WT (see STANDARDS.md's confidence table), and did
+  not invent one. This standard does not replace polish-arch-baseline, which still applies for
+  general layer hygiene, title block, and door tagging.
+rules:
+  - residential.rooms.kitchen-min-area
+  - residential.rooms.bathroom-min-area

@@ -67,6 +67,10 @@ public static class FurnitureCatalog
         new("FURN-EQP-CRASH",  "equipment", "hospital",  500,  600, "Crash cart / defibrillator trolley, mobile"),
         new("FURN-EQP-VENT",   "equipment", "hospital",  400,  500, "Ventilator on mobile stand"),
         new("FURN-EQP-MON",    "equipment", "hospital",  350,  400, "Patient monitor on mobile stand"),
+        // kitchen appliances (residential, 2026-08-12, knowledge-base proof-of-concept)
+        new("FURN-KIT-HOB",    "kitchen", "residential", 600,  600, "Kitchen hob / cooktop, 4-burner indicator"),
+        new("FURN-KIT-FRIDGE", "kitchen", "residential", 600,  650, "Refrigerator, freestanding"),
+        new("FURN-KIT-SINK",   "kitchen", "residential", 600,  600, "Kitchen sink cabinet with basin outline"),
     };
 
     /// <summary>
@@ -86,6 +90,9 @@ public static class FurnitureCatalog
         new("FURN-TBL-ROUND",  "table",   "office",      1200, 1200, "Round table (W=D=diameter)"),
         new("FURN-TBL-SQ",     "table",   "office",      1000, 1000, "Square table"),
         new("FURN-TBL-EXAM",   "table",   "hospital",    1900,  700, "Medical exam table with pillow + paper-roll slot"),
+        new("FURN-KIT-COUNTER", "kitchen", "residential", 2400,  600, "Kitchen counter run with cabinet-front lines"),
+        new("FURN-BED-RES",    "bed",     "residential", 1600, 2000, "Residential bed (double by default; -900-2000 for single)"),
+        new("FURN-CBT-NST",    "cabinet", "residential",  450,  400, "Nightstand"),
     };
 
     /// <summary>Exactly what <c>list_furniture_catalog</c> publishes, filters applied.</summary>

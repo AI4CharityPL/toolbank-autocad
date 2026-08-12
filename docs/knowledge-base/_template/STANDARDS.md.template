@@ -1,0 +1,39 @@
+# <Typology> — legal & code standards
+
+> **Normy bazowe:** <one-line list of the base standards this typology is checked against,
+> e.g. "WT 2024 (Dz.U. 2022 poz. 1225) · PN-EN 12464-1 · ...">
+
+Format follows `docs/HOSPITAL-2026-MASTERPLAN.md` §13 — replicate the STRUCTURE, not its content.
+
+## Legal-hierarchy table
+
+Every row needs an exact `Dz.U. <year> poz. <number>` locator (or equivalent primary-source
+citation for non-Polish standards) — not "the relevant regulation."
+
+| Skrót | Pełna nazwa | Rola w projekcie |
+|---|---|---|
+| **<ABBR>** | <act name, date, exact Dz.U. locator + amendment chain if any> | <what it governs here> |
+
+## PN-EN / PN-ISO / PN-B standards table
+
+| Standard | Subject | Which layer/system it governs |
+|---|---|---|
+| **<PN-EN NNNNN>** | <subject> | <layer/system> |
+
+## Inline requirements (cite the specific paragraph next to the decision it justifies)
+
+Pull the concrete, checkable numbers out into their own subsections — minimum room areas,
+corridor widths, fire-zone limits, whatever this typology's code actually constrains. Each
+number gets its own `§` citation, e.g.:
+
+> Minimum bedroom area: **X m²** (WT § NNN ust. N pkt N).
+
+Numbers that later become a validator rule (`validators/_standards/<typology>-baseline.yaml`)
+should be flagged as such here, so the rule's own `description` can point back to this file.
+
+## Sourcing note
+
+Record HOW each citation was obtained: a real reference drawing's own annotations, an existing
+project document already in this repo, or web research against the primary source (not a
+secondary summary). Never leave a citation that was invented from general recollection without
+verifying the actual text.

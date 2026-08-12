@@ -6,6 +6,98 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **New `docs/knowledge-base/` — a typology-agnostic grounding scheme (legal citations, room
+  program, structural grid/layers, area convention) that rule 71 reads before a new project
+  starts, proven end-to-end on two new typologies (residential, office) with real validator
+  rules and catalog entries, not just documentation.**
+
+  Scaffolded `docs/knowledge-base/_template/` (four files every typology follows:
+  `STANDARDS.md`, `ROOM-PROGRAM.md`, `GRID-AND-LAYERS.md`, `AREA-CONVENTION.md`) and populated
+  three typology folders: `hospital/` (reorganized from this repo's own prior
+  `HOSPITAL-2026-MASTERPLAN.md` research, plus a new cross-reference table decoding the real
+  Polish multi-branża layer key found in a user-supplied reference DWG against this bank's own
+  AIA-style key); `residential/` and `office/` (both newly researched this session via web
+  search against Polish WT / BHP regulation text, with every figure tagged Confirmed / Probable /
+  Unconfirmed by how directly it was verified — several commonly-repeated figures, like a
+  16 m² minimum-bedroom rule and specific bedroom width numbers, appeared in early search results
+  but did not reproduce when the actual regulation chapter was fetched directly, and are recorded
+  as unconfirmed rather than used).
+
+  Added 3 new validator rules grounded in that research and wired into 2 new standards
+  (`validators/_standards/residential-baseline.yaml`, `office-baseline.yaml`), following the
+  exact rule-33 format `hospital-baseline`'s 6 rules already established this session:
+  `residential.rooms.kitchen-min-area` (≥1.8 m², WT), `residential.rooms.bathroom-min-area`
+  (≥3.52 m², reusing rule 63's already-cited WT-2019 §82 figure rather than re-researching it),
+  `office.rooms.private-office-min-area` (≥6.72 m², reusing rule 64's existing `office` preset
+  footprint). Two requirements that came up in research were deliberately NOT turned into
+  validator rules and are documented as gaps instead: a per-employee floor-area minimum (BHP
+  §19, office) and a whole-apartment total-area minimum (WT §94, residential) — both are
+  per-person or per-apartment sums the check-primitive vocabulary
+  (`docs/engineering-rules/33-validators-rule-format.md` §5) has no way to compute from a single
+  room's own geometry, the same class of limitation that already excluded a fire-zone-total-area
+  rule from `hospital-baseline`.
+
+  Added 6 new furniture catalog entries (`FURN-KIT-HOB`, `FURN-KIT-FRIDGE`, `FURN-KIT-SINK`,
+  `FURN-KIT-COUNTER`, `FURN-BED-RES`, `FURN-CBT-NST`) and 3 new `populate_room` presets
+  (`bedroom`, `kitchen`, `living-room-res`) to `FurnitureCatalog.cs` / `FurniturePluginTools.cs`,
+  following the exact `DrawXxx` pattern established for the hospital equipment blocks earlier
+  this session. Caught and fixed one real naming bug before it shipped: a first attempt named the
+  nightstand entry `FURN-NST`, which `CatalogNaming.TrySplitSized` silently rejects for any
+  sized-suffix form (`FURN-NST-450-400`) because the parser requires ≥5 dash-separated tokens
+  (`PREFIX-FAMILY-SUBTYPE-W-D`) and `FURN-NST` only supplies 2 — the exact class of catalog/
+  resolver mismatch `FurnitureCatalog`'s own doc comment already warns about ("11 of 26 published
+  names were uninsertable"). Renamed to `FURN-CBT-NST` (nightstand as a cabinet subtype,
+  consistent with the existing `FURN-CBT-*` family) and reverified live.
+
+  Verified live (`scripts/verify-knowledge-base-residential-office.py`, 20/20): every new
+  catalog entry inserts with `insert_furniture`-reported dimensions matching the catalog exactly,
+  and independently re-measured via `get_entity`'s own bbox — which surfaced a second, unrelated
+  finding along the way: every furniture block's `BlockReference` bbox (old equipment blocks
+  included, confirmed live on `FURN-EQP-CT`) legitimately extends past its own footprint in the
+  depth direction, because `AddStandardAttributes` places a visible `INV_ID` label above the
+  block's top edge — not a defect, but a reason a bbox-equality check against catalog dimensions
+  was always the wrong test for this bank's blocks; the verification script now checks exact
+  width plus a depth *lower bound* with a label-height allowance instead. All 3 new `populate_room`
+  presets place their items with zero warnings; all 3 new validator rules were proven against a
+  deliberately undersized room (flagged) and a compliant one built right after (not flagged,
+  same discipline as `hospital-baseline`'s false-positive check).
+
+- **New rule `71-project-intake-protocol.md` — a mandatory six-step grounding sequence before
+  any new building project's first wall gets drawn.**
+
+  Triggered by a from-scratch hospital build (this session) that invented its entire room
+  program with no real reference, no structural-grid discipline, and no area-measurement
+  convention: `define_room` boundaries were drawn on wall centrelines while flood-fill
+  measurement (`audit_all_rooms`/`get_room_data`) measures to the wall face, producing a
+  systematic 15-25% area overstatement across ~90 rooms that surfaced only near the end of the
+  build (one operating room measured below its own code minimum once corrected honestly); four
+  sub-corridor "bands" were built with mismatched total widths sharing one boundary wall drawn
+  only to the narrower band's extent, leaving a real un-walled gap in the building envelope; the
+  build's own verification script checked non-existent top-level fields
+  (`row.get("leakSuspected")`) instead of the real `flags: string[]` array, so `audit_all_rooms`
+  silently reported "0 leaks" across 4 zones that in fact had dozens of flagged rows; and five
+  zones were built as independently closed blocks with zero connecting doors between them,
+  caught only when the user asked directly whether the zones connected.
+
+  Rule 71 codifies the six checks that would each have caught one of these cheaply instead of
+  after ~130 rooms existed: identify typology → check for a real reference drawing (extract its
+  grid/program/layers via `acad.validators.collect_entities`, the method already used in
+  `docs/HOSPITAL-2026-GEOMETRY-TARGET.md`) or research and record `docs/knowledge-base/<typology>/`
+  before inventing anything → declare the area-measurement convention explicitly before the
+  first `define_room` call → fix the structural grid before any wall → confirm the
+  zone/department adjacency graph is connected before elaborating any single zone → pick and
+  justify `audit_all_rooms`'s `marginMm`/`cellMm` for the drawing's own convention, and check any
+  home-grown verification script against the tool's real response schema, not assumed field
+  names.
+
+  Also updated `53-rules-update-mandate.md` §2: the documented rule-numbering scheme claimed
+  `60-69 = testing` / `70-79 = deployment`, but rules 60-70 have in practice held architectural
+  drafting/compliance standards (fidelity rubric, lineweight, hatching, sanitary fixtures,
+  furniture density, door/window schedules, dimension chains, grid axes, callouts, sections) for
+  a long time. Documented the drift honestly and reserved 68 (the one open slot) plus 71+
+  (starting with this rule) as the continuation of that band, instead of leaving new
+  compliance-process rules with nowhere documented to go.
+
 - **New `FURN-EQP-*` medical-imaging/OR equipment blocks (CT, MRI 3T, biplane C-arm, OR ceiling
   light, crash cart, ventilator, patient monitor) and a new `hospital-baseline` validator standard
   — Phase 0 of the from-scratch HospitalPrime2026 project.**

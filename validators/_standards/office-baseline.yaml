@@ -1,0 +1,12 @@
+id: office-baseline
+name: Office architectural baseline
+description: |
+  Office-specific numeric rule from docs/knowledge-base/office/STANDARDS.md and rule 64's
+  existing 'office' furniture preset - private office minimum area. The per-employee floor-area
+  requirement from Rozp. MPiPS BHP §19 (>=2 m^2 per employee) is not directly checkable by this
+  engine's per-room area primitive without an occupant-count input - see
+  docs/knowledge-base/office/AREA-CONVENTION.md for why, rather than an approximation presented
+  as a real check. This standard does not replace polish-arch-baseline, which still applies for
+  general layer hygiene, title block, and door tagging.
+rules:
+  - office.rooms.private-office-min-area

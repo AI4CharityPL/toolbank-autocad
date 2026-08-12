@@ -1,0 +1,34 @@
+# <Typology> — structural grid & layer conventions
+
+## Typical structural grid
+
+Typical bay spacing for this typology and why (span driven by what — parking below, room
+depths, structural system). This is what rule 71 step 4 means by "fix the grid before any
+wall" — record the DEFAULT this tool bank should reach for absent a real reference drawing
+overriding it.
+
+- Typical bay: **<W> × <D> mm**
+- Driven by: <reasoning>
+
+## This tool bank's own CAD layer key (unchanged, do not fork per typology)
+
+This bank draws everything on its existing AIA-style key (`A-WALL`, `A-ROOM-BNDY`, `A-DOOR`,
+...) regardless of typology — dozens of validator rules assume it, and forking it per typology
+would be a breaking change (rule 02). Typology-specific layers (if any) extend the existing key
+with a typology prefix, e.g. `hospital.walls.lead-shield-on-layer` scoping to `A-WALL-LEAD`, not
+a wholesale replacement.
+
+## Reading a REAL reference drawing in this typology (if supplied)
+
+Real drawings for this typology may use a different layer convention entirely (a firm's own
+CAD manual, a BIM export naming scheme, etc.). Record the cross-reference here once discovered,
+so the next real drawing of this typology doesn't require re-discovering the mapping by hand:
+
+| Real drawing's layer name (example seen) | Meaning | Maps to this bank's layer |
+|---|---|---|
+| <e.g. found layer name> | <meaning> | <e.g. A-WALL> |
+
+## Sourcing note
+
+Grid spacing and the real-drawing cross-reference table should come from an actual reference
+drawing when one exists (extracted via `acad.validators.collect_entities`), not invented.

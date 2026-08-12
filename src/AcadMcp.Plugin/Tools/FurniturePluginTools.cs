@@ -178,6 +178,10 @@ internal static class FurniturePluginTools
             case "FURN-EQP-CRASH":  DrawEquipmentCrashCart(tr, btr, e.WidthMm, e.DepthMm); break;
             case "FURN-EQP-VENT":   DrawEquipmentVentilator(tr, btr, e.WidthMm, e.DepthMm); break;
             case "FURN-EQP-MON":    DrawEquipmentMonitor(tr, btr, e.WidthMm, e.DepthMm); break;
+            // kitchen appliances
+            case "FURN-KIT-HOB":    DrawKitchenHob(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-KIT-FRIDGE": DrawKitchenFridge(tr, btr, e.WidthMm, e.DepthMm); break;
+            case "FURN-KIT-SINK":   DrawKitchenSink(tr, btr, e.WidthMm, e.DepthMm); break;
             default:
                 throw new InvalidOperationException($"No factory registered for fixed block '{e.Name}'.");
         }
@@ -198,6 +202,9 @@ internal static class FurniturePluginTools
             case "FURN-TBL-ROUND": DrawTableRound(tr, btr, Math.Min(wMm, dMm) / 2.0); break;
             case "FURN-TBL-SQ":    DrawTableRect(tr, btr, wMm, wMm); break;
             case "FURN-TBL-EXAM":  DrawTableExam(tr, btr, wMm, dMm); break;
+            case "FURN-KIT-COUNTER": DrawKitchenCounter(tr, btr, wMm, dMm); break;
+            case "FURN-BED-RES":   DrawBedResidential(tr, btr, wMm, dMm); break;
+            case "FURN-CBT-NST":   DrawNightstand(tr, btr, wMm, dMm); break;
             default:
                 throw new ArgumentException($"Unknown sized-family '{family}'.");
         }
@@ -600,6 +607,68 @@ internal static class FurniturePluginTools
         Append(tr, btr, Seg(-w / 2.0 + 40, -d / 2.0 + 40, w / 2.0 - 40, -d / 2.0 + 40));
     }
 
+    // ─────────── KITCHEN factories (2026-08-12, knowledge-base proof-of-concept) ───────────
+
+    private static void DrawKitchenHob(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // 4-burner indicator, one circle per quadrant
+        double r = Math.Min(w, d) * 0.16;
+        foreach (var (sx, sy) in new[] { (-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0) })
+            Append(tr, btr, new Circle(new Point3d(sx * w * 0.22, sy * d * 0.22, 0), Vector3d.ZAxis, r));
+    }
+
+    private static void DrawKitchenFridge(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // door split line (fridge/freezer) two-thirds up
+        Append(tr, btr, Seg(-w / 2.0, d * 0.17, w / 2.0, d * 0.17));
+        // door swing arc, hinge at one front corner
+        Append(tr, btr, new Arc(new Point3d(-w / 2.0, -d / 2.0, 0), w * 0.6, 0, Math.PI / 2.0));
+    }
+
+    private static void DrawKitchenSink(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // basin outline, inset rectangle
+        Append(tr, btr, Rectangle(w * 0.7, d * 0.55));
+        // tap marker
+        Append(tr, btr, Seg(0, d / 2.0 - 40, 0, d / 2.0 - 120));
+    }
+
+    private static void DrawKitchenCounter(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // cabinet-front division lines every ~600mm along the run
+        int bays = Math.Max(1, (int)Math.Round(w / 600.0));
+        for (int i = 1; i < bays; i++)
+        {
+            double x = -w / 2.0 + i * (w / bays);
+            Append(tr, btr, Seg(x, -d / 2.0, x, d / 2.0));
+        }
+    }
+
+    // ─────────── RESIDENTIAL BED / NIGHTSTAND factories ───────────
+
+    private static void DrawBedResidential(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // pillow strip at head (top)
+        double pillowH = d * 0.16;
+        Append(tr, btr, Seg(-w / 2.0, d / 2.0 - pillowH, w / 2.0, d / 2.0 - pillowH));
+        // duvet mid-seam
+        Append(tr, btr, Seg(-w / 2.0 + 50, 0, w / 2.0 - 50, 0));
+        // headboard line
+        Append(tr, btr, Seg(-w / 2.0, d / 2.0, w / 2.0, d / 2.0));
+    }
+
+    private static void DrawNightstand(Transaction tr, BlockTableRecord btr, double w, double d)
+    {
+        Append(tr, btr, Rectangle(w, d));
+        // single drawer line
+        Append(tr, btr, Seg(-w / 2.0 + 40, 0, w / 2.0 - 40, 0));
+    }
+
     // ─────────── BlockReference insertion + attributes ───────────
 
     private static (EntityHandle H, string BlockName, bool Created, double W, double D) InsertBlockCore(
@@ -927,8 +996,31 @@ internal static class FurniturePluginTools
                     items.Add(new("FURN-CBT-MED-800-450", max.X - 400, max.Y - 300, 180, "medical", 800, 450));
                     break;
                 }
+            case "bedroom":
+                {
+                    items.Add(new("FURN-BED-RES", cx, min.Y + 900, 0, "residential"));
+                    items.Add(new("FURN-CBT-NST-450-400", min.X + 350, min.Y + 300, 0, "nightstand", 450, 400));
+                    items.Add(new("FURN-CBT-NST-450-400", max.X - 350, min.Y + 300, 0, "nightstand", 450, 400));
+                    items.Add(new("FURN-CBT-WDR-1200-600", cx, max.Y - 300, 180, "wardrobe", 1200, 600));
+                    break;
+                }
+            case "kitchen":
+                {
+                    items.Add(new("FURN-KIT-COUNTER-2400-600", cx, min.Y + 300, 0, "counter", 2400, 600));
+                    items.Add(new("FURN-KIT-HOB", cx - w * 0.25, min.Y + 300, 0, "hob"));
+                    items.Add(new("FURN-KIT-SINK", cx + w * 0.25, min.Y + 300, 0, "sink"));
+                    items.Add(new("FURN-KIT-FRIDGE", max.X - 400, max.Y - 400, 0, "fridge"));
+                    break;
+                }
+            case "living-room-res":
+                {
+                    items.Add(new("FURN-SOFA-3", cx, min.Y + 500, 0, "lounge"));
+                    items.Add(new("FURN-TBL-RECT-1200-800", cx, cy, 0, "coffee", 1200, 800));
+                    items.Add(new("FURN-CHAIR-ARM", max.X - 500, max.Y - 500, 180, "armchair"));
+                    break;
+                }
             default:
-                warnings.Add($"Unknown preset '{preset}' — no items placed. Valid: ward-room / icu-room / or-room / office / reception / waiting / consult.");
+                warnings.Add($"Unknown preset '{preset}' — no items placed. Valid: ward-room / icu-room / or-room / office / reception / waiting / consult / bedroom / kitchen / living-room-res.");
                 break;
         }
 

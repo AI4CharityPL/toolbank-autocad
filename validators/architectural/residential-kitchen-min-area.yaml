@@ -1,0 +1,18 @@
+id: residential.rooms.kitchen-min-area
+name: Apartment kitchens must be at least 1.8 m^2
+discipline: architectural
+severity: error
+description: |
+  Per docs/knowledge-base/residential/STANDARDS.md (WT, Rozdział 7): a kitchen must be at
+  least 1.8 m^2 in a single-room apartment, rising to 2.4 m^2 in a multi-room apartment. This
+  rule enforces the floor shared by both apartment types - 1.8 m^2 - so it never
+  false-positives on a legitimate single-room-apartment kitchen while still catching a
+  genuinely undersized one. Scope by calling define_room with
+  boundaryLayer='A-ROOM-BNDY-KITCHEN' for every kitchen.
+references:
+  - docs/knowledge-base/residential/STANDARDS.md
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-KITCHEN]
+checks:
+  - { type: area_at_least, value: 1800000 }

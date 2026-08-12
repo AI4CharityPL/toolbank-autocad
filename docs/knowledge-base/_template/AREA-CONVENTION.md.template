@@ -1,0 +1,31 @@
+# <Typology> — area-measurement convention
+
+This is the decision rule 71 step 3 requires be made explicitly BEFORE the first `define_room`
+call. Getting this wrong is exactly what caused the hospital build's systematic 15-25% area
+mismatch, discovered only after ~90 rooms already existed with the wrong convention baked into
+their boundary polygons.
+
+## Decision
+
+- **Convention:** <net internal (to face-of-finish) | gross (to structural axis)> — pick one.
+- **Citation:** <e.g. PN-ISO 9836 for Polish net/gross definitions, or the typology's own code if
+  it defines area differently for compliance purposes (e.g. a minimum-area rule that explicitly
+  means net clear floor area, not gross)>.
+
+## Practical consequence for `define_room`
+
+- Wall thickness in this typology's typical construction: **<X> mm** (informs the inset).
+- `define_room`'s boundary polygon vertices must be drawn **<inset by half the wall thickness
+  from the wall centreline | on the wall centreline, matching a gross convention>** — state which,
+  explicitly, so it's not rediscovered by comparing a label to a flood-fill measurement after
+  the fact.
+- Any validator rule checking a minimum area for this typology (`area_at_least` in
+  `validators/_standards/<typology>-baseline.yaml`) is checking the BOUNDARY POLYGON's own area,
+  not the flood-fill measurement — so if the polygon isn't drawn to this convention, the
+  validator rule silently checks the wrong number even after `correct_room_area(syncBoundary=true)`
+  fixes the label text. Get the polygon right at construction time.
+
+## Sourcing note
+
+State whether this typology's minimum-area citations (in `STANDARDS.md`) were written assuming
+net or gross area — if the source document doesn't say, that's itself worth recording as a gap.

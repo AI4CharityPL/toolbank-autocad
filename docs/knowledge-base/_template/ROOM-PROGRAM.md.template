@@ -1,0 +1,37 @@
+# <Typology> — typical room program
+
+## Zones / departments
+
+List every functional zone this typology typically breaks into (e.g. for a hospital: public,
+ED, diagnostics, OR+PACU, back-of-house). One row per zone.
+
+| Zone | Purpose | Typical share of gross area |
+|---|---|---|
+| <A> | <purpose> | <~X%> |
+
+## Rooms per zone
+
+Per zone, the typical room list with a typical net area and the citation (if any) that sets its
+*minimum*, not just its typical value — a typical value with no minimum behind it is a design
+suggestion, not a requirement, and doesn't belong in a validator rule.
+
+| Nr | Nazwa | m² typowe | m² minimum (cytat) | Uwaga |
+|---|---|---:|---:|---|
+| <A-001> | <name> | <typical> | <minimum, `§` cite, or "—" if none> | <note> |
+
+## Adjacency / connectivity requirements
+
+This is the bubble-diagram step from rule 71 step 5, written down instead of only checked live.
+List which zones MUST be directly connected (a real door, not just proximity) and why — this is
+what a future build checks its own connectivity graph against before elaborating detailed
+geometry.
+
+| Zone A | Zone B | Connection requirement | Why |
+|---|---|---|---|
+| <public> | <diagnostics> | direct, public-facing | patients arrive from public zone |
+
+## Sourcing note
+
+Same discipline as `STANDARDS.md` — record whether this program came from a real reference
+drawing, an existing project document, or web research, and don't present a typical/suggested
+number as if it were a code minimum.

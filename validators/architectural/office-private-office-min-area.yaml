@@ -1,0 +1,18 @@
+id: office.rooms.private-office-min-area
+name: Private offices must be at least 6.72 m^2
+discipline: architectural
+severity: error
+description: |
+  Per docs/knowledge-base/office/AREA-CONVENTION.md: this bank's existing 'office' furniture
+  preset (rule 64, 2400x2800mm = 6.72 m^2) is the floor a single-occupant private office must
+  clear - comfortably above the implied minimum from Rozp. MPiPS BHP §19 ust. 2 (>=2 m^2 free
+  floor per employee plus furniture clearance). Scope by calling define_room with
+  boundaryLayer='A-ROOM-BNDY-OFFICE' for every private office.
+references:
+  - docs/engineering-rules/64-furniture-density-per-room.md
+  - docs/knowledge-base/office/STANDARDS.md
+scope:
+  entity_types: [Polyline]
+  layer_in: [A-ROOM-BNDY-OFFICE]
+checks:
+  - { type: area_at_least, value: 6720000 }

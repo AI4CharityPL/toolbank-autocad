@@ -197,21 +197,23 @@ by closing the dental-fixture catalog gap first since it affects the most criter
 - ~~`configure_plot(paperSize="A1")` resolves to the wrong media~~ — **fixed** (see the defect
   list above): `configure_plot` now receives `"ISOA1"`, confirmed live via `list_layouts`
   reporting `psk:ISOA1`.
-- **New, still open**: `acad.files.export_file` renders a BLANK area where the viewport's own
-  content should be, for any layout whose locked viewport has been through a genuine save+reload
-  (confirmed after a full AutoCAD process restart too — not a stale-session artifact). The
-  viewport's own properties (scale, center, width, lock) read back correctly immediately before
-  every failing export; this is a rendering-pipeline bug, not data corruption — re-verified by
-  opening fresh copies of the saved file with zero `export_file` calls in between, which always
-  show correct properties. A user's own live AutoCAD Print Preview screenshot is what first
-  surfaced this (a near-blank plot, not just a wrong paper size). Tried and ruled out as fixes:
-  `scope="Window"` vs `"Extents"`, locked vs. unlocked, a full AutoCAD restart, and a native
-  `REGENALL` command immediately before export — none changed the result. Flagged as a follow-up
-  task (`task_65805cb0`) for dedicated C# investigation of `FilesPluginTools.PlotToDevice`; not
-  fixed here. **Practical effect on this project**: the rendered PNG exports used earlier in this
-  session's own visual verification are trustworthy (captured in the same unbroken AutoCAD
-  session as the build itself, before any close/reopen) — but this bug means nobody should trust
-  a NEW export of this specific saved file without first confirming the fix above landed.
+- ~~`acad.files.export_file` renders a BLANK area where the viewport's own content should be~~ —
+  **root-caused and fixed** (2026-08-13, fourth pass), after a false start: `scope="Window"` vs
+  `"Extents"`, locked vs. unlocked, a full AutoCAD restart, and a native `REGENALL` command were
+  all tried first and none of them fixed it — because none of them addressed the real cause.
+  `ViewportsPluginTools.AllViewports`'s filter for excluding a layout's required "overall"
+  paperspace viewport (AutoCAD's own reserved Number 1) used `vp.Width > 0`, on the false premise
+  that the overall viewport always has zero width — it can carry a real nonzero width (observed
+  live: 17mm, an AutoCAD-computed default on a freshly created layout). The width filter let it
+  through as an ordinary "phantom", and this project's own cleanup step (delete every viewport
+  except the one just created) was deleting AutoCAD's REQUIRED viewport, not an extra one —
+  corrupting the layout badly enough that `export_file` rendered blank. Fixed by filtering on
+  `vp.Number != 1` instead (confirmed live: viewport Numbers are assigned correctly and
+  distinctly on creation — an old code comment's premise that they stay "unassigned" until a
+  layout is UI-activated no longer holds, if it ever did), with `delete_viewport` also refusing
+  outright to delete Number 1 regardless of how the caller obtained the handle. Confirmed fixed
+  end-to-end: rebuilt this project from scratch, saved, closed, reopened fresh, and exported —
+  the sheet renders correctly every time now, not just on the first export after a build.
 - Vision review and plot-style CTB: same best-effort/skipped state as apartment-120-test, same
   reasons (sidecar not running this session; no `.ctb` file supplied).
 

@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **Root-caused and fixed the `export_file` blank-viewport bug flagged earlier as a follow-up
+  task, instead of leaving it open.** `ViewportsPluginTools.AllViewports`'s own filter for
+  excluding a layout's required "overall" paperspace viewport (AutoCAD's own reserved ID 1,
+  DXF group 69) used `vp.Width > 0` on the theory that the overall viewport always has zero
+  width — confirmed false live: on a freshly created layout it can carry a real nonzero width
+  (observed: 17mm, an AutoCAD-computed default). The width filter let it through as an ordinary
+  "phantom", and both proof build scripts' own cleanup step (delete every viewport except the
+  one just created) deleted AutoCAD's REQUIRED viewport, not an extra one — corrupting the
+  layout's structural integrity badly enough that `export_file` rendered a blank area where that
+  viewport's content should be, and its own scale sometimes read back wrong after a plot. Fixed
+  by filtering on `vp.Number != 1` instead (confirmed live: Numbers are assigned correctly and
+  distinctly on creation, contradicting an old comment's premise that they stay "unassigned"
+  until a layout is UI-activated), with `delete_viewport` also refusing outright to delete
+  Number 1 regardless of how the caller obtained the handle. Confirmed fixed end-to-end on both
+  proof projects: rebuilt, saved, closed, reopened fresh, and exported — the building now
+  renders correctly through the viewport every time, not just on the first export after a build.
 - **Replaced one-eyeballed-export verification with a systematic bbox sweep** (every annotation
   layer checked pairwise against every other, cross-space pairs filtered out) after a user's live
   AutoCAD screenshot caught a north-arrow/scale-bar overlap the earlier spot-checks had missed.

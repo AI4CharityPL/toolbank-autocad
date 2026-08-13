@@ -560,6 +560,17 @@ internal static class ViewportsPluginTools
         {
             var a = Read<VpHandleArgsDto>(args);
             var vp = OpenVp(db, tr, a.Handle, OpenMode.ForWrite);
+            // Number 1 is AutoCAD's own reserved ID for the layout's required "overall"
+            // paperspace viewport - deleting it corrupts the layout's structural integrity
+            // (confirmed live: this is what a blank export_file render and a viewport's own
+            // scale mutating after a plot were actually symptoms of). list_viewports already
+            // excludes it from what callers see, but guard here too regardless of how the
+            // caller got the handle - refusing is far cheaper than the multi-hour live
+            // investigation that found this the first time.
+            if (vp.Number == 1)
+                throw new ArgumentException(
+                    $"Handle '{a.Handle}' is the layout's own required overall viewport (Number 1), " +
+                    "not a deletable floating viewport - refusing to delete it.");
             if (!vp.NonRectClipEntityId.IsNull)
             {
                 try
@@ -589,12 +600,22 @@ internal static class ViewportsPluginTools
             var btr = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForRead);
             foreach (ObjectId id in btr)
             {
-                // Not filtered on Number: it is unassigned (1 or -1) until AutoCAD activates
-                // the layout, so filtering on it hides every viewport an agent just created -
-                // the same unreliable signal that had to come out of OpenVp. The layout's own
-                // pseudo-viewport is instead identified structurally: it is the first Viewport
-                // in the block table record and the only one with no width.
-                if (tr.GetObject(id, OpenMode.ForRead) is Viewport vp && vp.Width > 0)
+                // Excludes the layout's own required "overall" paperspace viewport - ID 1 is
+                // reserved for it by AutoCAD's own invariant (DXF group 69), never a real
+                // content viewport, and it must never be deleted or it corrupts the layout's
+                // structural integrity. A previous version of this filter used Width > 0
+                // instead, on the theory that Number is unassigned (1 or -1) until AutoCAD
+                // "activates" the layout. Confirmed wrong live (rule 74 C.4 investigation): on a
+                // freshly created layout, the overall viewport can carry a real nonzero width
+                // (observed: 17mm, an AutoCAD-computed default, not zero) - the width filter let
+                // it through as a "phantom" and a caller's own cleanup step (delete every
+                // viewport except the one it just created) deleted the REQUIRED overall
+                // viewport, not an extra one. That is what a blank export_file render and a
+                // viewport's own scale mutating after a plot were actually symptoms of - not a
+                // rendering-pipeline bug. Numbers were observed assigned correctly and
+                // immediately (1, 2, 3, ...) on viewport creation in this same investigation, not
+                // stuck at "unassigned" - the old premise no longer holds, if it ever did.
+                if (tr.GetObject(id, OpenMode.ForRead) is Viewport vp && vp.Number != 1)
                     yield return vp;
             }
         }

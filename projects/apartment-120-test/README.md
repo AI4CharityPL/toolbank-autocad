@@ -199,17 +199,19 @@ that would still take, not a hidden shortfall.
   names earlier was luck, not a working convention. `configure_plot` now receives `PLOT_MEDIA =
   "ISOA1"` (kept as a separate constant from `SHEET = "A1"`, which is a different namespace —
   this bank's own `CalloutsPalette.Sheets` key, not the plotter's media name).
-- **New, still open**: `acad.files.export_file` renders a BLANK area where the viewport's own
-  content should be, for any layout whose locked viewport has been through a genuine save+reload
-  — confirmed reproducible on THIS project too (not dental-clinic-test-specific), including after
-  a full AutoCAD process restart. The viewport's own properties (scale, center, width, lock) read
-  back correctly immediately before every failing export — this is a rendering-pipeline bug, not
-  data corruption. See `dental-clinic-test`'s own README for the full investigation (scope
-  Window vs. Extents, locked vs. unlocked, a native `REGENALL` — none fixed it) and follow-up
-  task `task_65805cb0`. **Practical effect on this project**: earlier exports in this session
-  were captured in the same unbroken AutoCAD session as their own build (before any close/reopen)
-  and are trustworthy; a fresh export of this saved file should not be trusted until that task
-  lands.
+- ~~`acad.files.export_file` renders a BLANK area where the viewport's own content should be~~ —
+  **root-caused and fixed** (2026-08-13, fourth pass). Real cause:
+  `ViewportsPluginTools.AllViewports`'s filter for excluding a layout's required "overall"
+  paperspace viewport (AutoCAD's own reserved Number 1) used `vp.Width > 0`, on the false premise
+  that the overall viewport always has zero width — it can carry a real nonzero width (observed
+  live: 17mm). The width filter let it through as an ordinary "phantom", and this project's own
+  cleanup step (delete every viewport except the one just created) was deleting AutoCAD's
+  REQUIRED viewport, not an extra one — corrupting the layout badly enough that `export_file`
+  rendered blank. Fixed by filtering on `vp.Number != 1` instead, with `delete_viewport` also
+  refusing outright to delete Number 1. Confirmed fixed end-to-end: rebuilt, saved, closed,
+  reopened fresh, and exported — the sheet now renders correctly every time, not just on the
+  first export after a build. Every earlier "known limitation" note about this bug in this
+  README was accurate for its time and is now superseded.
 - Vision review (rule 74 item 9): sidecar port file present but the sidecar itself was not
   running this session — health-check skipped, scored `/v1/architect-review` call not attempted.
   Per the user's standing instruction this session, the API key configuration is left alone.

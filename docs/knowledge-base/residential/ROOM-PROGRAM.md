@@ -34,6 +34,17 @@ itself the basic repeating unit.
 | Kitchen | Living room | adjacent or combined (aneks kuchenny) permitted | §93 ust. 4 explicitly allows a kitchen annex opening onto a living room in multi-room apartments |
 | Bathroom | Bedroom corridor | reachable without crossing the living room in larger units (typical practice, not a cited requirement) | privacy convention, not a WT citation — flagged as a convention, not a code minimum |
 
+## Wzorzec stref i cyrkulacji
+
+Within a single apartment: a day/night cluster split, not a single-row layout. The **day
+cluster** (living room, kitchen/kitchenette, entry hall) sits nearest the entry and the facade
+with the best daylight exposure, since §93 requires daylight for living rooms and kitchens
+anyway. The **night cluster** (bedrooms, bathroom) sits deeper in the plan, reached through a
+short internal corridor that acts as the buffer rule 73 step 3 calls for — bedrooms should not be
+directly off the entry hall or require crossing the living room. This is the pattern a
+"kulfon"-style single-row layout violates by construction: everything on one corridor with no
+day/night distinction at all.
+
 ## Sourcing note
 
 Room list and typical areas are this session's own reasonable defaults grounded in the confirmed

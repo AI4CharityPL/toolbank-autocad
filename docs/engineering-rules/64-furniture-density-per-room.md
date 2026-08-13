@@ -52,6 +52,9 @@ enumeration.
 | FURN-SOFA-3       | sofa     | residential   | 2200 × 800  | 3-seat lounge |
 | FURN-SOFA-CLN-2   | sofa     | hospital      | 1800 × 700  | 2-seat clinic (vinyl) |
 | FURN-SOFA-CLN-3   | sofa     | hospital      | 2200 × 700  | 3-seat clinic (vinyl) |
+| FURN-KIT-HOB      | kitchen  | residential   |  600 × 600  | hob / cooktop, 4-burner indicator |
+| FURN-KIT-FRIDGE   | kitchen  | residential   |  600 × 650  | freestanding refrigerator |
+| FURN-KIT-SINK     | kitchen  | residential   |  600 × 600  | sink cabinet with basin outline |
 
 ### Sized families (must stay in sync with `s_sizedFamilies`)
 
@@ -68,6 +71,9 @@ enumeration.
 | FURN-TBL-ROUND   | 1200 × 1200        | round (W = D = diameter) |
 | FURN-TBL-SQ      | 1000 × 1000        | square |
 | FURN-TBL-EXAM    | 1900 × 700         | medical exam + paper-roll slot |
+| FURN-KIT-COUNTER | 2400 × 600         | kitchen counter run + cabinet-front lines |
+| FURN-BED-RES     | 1600 × 2000        | residential bed (double default; use `-900-2000` for single) |
+| FURN-CBT-NST     |  450 × 400         | nightstand |
 
 Any new family MUST also extend `BuildSizedBlock` + catalog + this table in the
 same commit, or rule-40 (pre-commit gates) will flag it.
@@ -128,6 +134,16 @@ These are the only preset strings accepted. Alias? Add to the preset switch in
 | reception  | reception desk (2400×800) + 2 swivels + 3-seat clinic sofa           | 3000 × 4500 |
 | waiting    | 2× 3-seat clinic sofa face-to-face + round coffee table              | 3000 × 3500 |
 | consult    | desk + swivel + armchair + exam table + medical cabinet              | 3500 × 4500 |
+| bedroom    | 1× double bed (FURN-BED-RES) + 2× nightstand + 1× wardrobe           | 2800 × 3600 |
+| kitchen    | counter run + hob + sink + fridge                                    | 2800 × 2400 |
+| living-room-res | 3-seat sofa + coffee table + armchair                           | 3600 × 4000 |
+
+`bedroom`/`kitchen`/`living-room-res` were added 2026-08-12 (residential knowledge-base
+proof-of-concept) and were never backfilled into this table at the time — their minimums above
+are derived the same way as the other seven: from the fixed offsets `BuildPopulationPlan` places
+each item at (not enforced programmatically; see the `w<1500 || h<1500` generic warning below),
+not from a WT-2019 citation. If a future change wants a code-cited minimum for these three, add
+it to `docs/knowledge-base/residential/STANDARDS.md` and cross-reference it here.
 
 If the requested bbox is smaller than the minimum, `populate_room` returns a
 warning (but still places what fits — caller decides whether to abort). The

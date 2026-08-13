@@ -54,6 +54,17 @@ Every zone in the program above must appear in a connected adjacency graph befor
 geometry starts — a zone with zero planned connections to the rest of the building is a defect
 to fix at the bubble-diagram stage, not something to discover in a finished drawing.
 
+## Wzorzec stref i cyrkulacji
+
+Linear zone spine with a strict clean/dirty and public/staff separation: **Public (A)** sits at
+the building entry and feeds directly into **SOR/Emergency (B)** (walk-in access) and into
+**Diagnostics (C)** (outpatient referrals) without either needing to cross the other. **OR+PACU
+(D)** sits deepest in the plan, staff-only, reached from Diagnostics (intraoperative imaging) and
+resupplied from **Back-of-house (E)**'s sterilization suite via a dedicated sterile corridor —
+never via the public corridor. This is the pattern rule 73 step 3 generalizes: public/day-facing
+zones near the entry, the most private/controlled zone (D) furthest from it, connected through
+zones that mediate rather than directly.
+
 ## Sourcing note
 
 Room list and areas are this repo's own prior research (`HOSPITAL-2026-MASTERPLAN.md` §1-2),

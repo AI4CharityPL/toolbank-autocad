@@ -30,6 +30,17 @@
 | Open workstation area | Meeting rooms | directly adjacent | daily use pattern |
 | Server/IT room | Open workstation area | NOT required to be adjacent — often isolated for HVAC/security | flagged as a deliberate exception to "every zone reachable," still must be reachable via corridor for maintenance access (rule 71 step 5's connectivity check still applies, just not via direct adjacency) |
 
+## Wzorzec stref i cyrkulacji
+
+Reception sits at the entry, public-facing, with every other zone reachable from it without
+crossing a private office (the same access-control logic rule 60 §1a criterion 18 checks).
+Open-plan workstation area occupies the largest, best-daylit floor plate (window walls), with
+enclosed private offices and meeting rooms typically ringing its perimeter or occupying a
+secondary daylight band — daylight is a workplace-quality driver here even though BHP does not
+mandate it the way WT's residential §93 does. Support spaces (break room, server/IT, storage)
+sit furthest from the public entry, server/IT often deliberately isolated from daily foot traffic
+for security/HVAC reasons (see the Adjacency table's own exception note above).
+
 ## Sourcing note
 
 Room list is a reasonable default combining this repo's already-existing `office`/`reception`/

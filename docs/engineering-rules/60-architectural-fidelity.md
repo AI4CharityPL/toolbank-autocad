@@ -1,6 +1,6 @@
 # 60. Architectural fidelity rubric
 
-Architectural fidelity rubric — the 17-criterion scorecard that `senior-architect-reviewer` (Vision persona) applies to every floor-plan deliverable before it can be called a wykonawczy / tender-ready drawing. READ BEFORE generating a full project, regenerating Hospital2026, or wiring a new persona/validator that scores architectural quality.
+Architectural fidelity rubric — the 17-criterion scorecard that `senior-architect-reviewer` (Vision persona) applies to every floor-plan deliverable before it can be called a wykonawczy / tender-ready drawing, PLUS a separate 3-criterion spatial-quality gate (§1a, criteria 18-20) that is checked programmatically rather than by the vision LLM. READ BEFORE generating a full project, regenerating Hospital2026, or wiring a new persona/validator that scores architectural quality.
 
 Every floor-plan that ships from this repo (Hospital2026, future clinic /
 office / residential projects) is graded against a **17-criterion
@@ -49,6 +49,38 @@ Threshold policy:
 - **14-15/17** — executive-grade but missing optional axis; sign-off
   allowed with remark.
 - **16-17/17** — full rysunek wykonawczy; clear for export.
+
+## 1a. Spatial-quality gate — criteria 18-20 (programmatic, PASS/FAIL, not vision-scored)
+
+Added 2026-08-12, triggered by the "kulfon" incident: a Zone-0.2 test build scored well against
+the 17-criterion rubric above (correct hatching, doors, dimensions, schedules...) while being a
+single row of boxes along one corridor — no day/night split, no daylight logic, no room sized
+from its furniture. **The 17-criterion rubric above evaluates drafting-standard compliance; it
+does not evaluate whether the LAYOUT ITSELF is any good.** A drawing can score 17/17 and still be
+a "kulfon."
+
+Criteria 18-20 close that gap. They are deliberately kept OUT of the vision-LLM's 17-point score
+(`ARCHITECT_REVIEW_CRITERIA` in `acadmcp_vision/schemas.py`) rather than appended as an 18th row
+to it: unlike hatching-correctness or dimension-chain-presence, all three are objectively
+checkable by a tool call against the drawing's own data — asking a vision LLM to eyeball them
+would add guessing noise where a deterministic check already exists. They are a separate
+PASS/FAIL gate, checked the same session a project claims to follow rule 73's space-planning
+method, not scored 0/0.5/1 and not blended into the 17-criterion total.
+
+| # | Criterion | Check | Evidence tool |
+|---|---|---|---|
+| 18 | Public/day-zone rooms reach the entry without crossing a private/night zone | Walk the adjacency graph (see #20) from the entry room; every room tagged `zone=public` or `zone=day` in the project's `ROOM-PROGRAM.md` must be reachable without transiting a room tagged `zone=private`/`zone=night` | `acad.openings.list_openings_in_model` (`roomFrom`/`roomTo` per door) + the project's own zone tags |
+| 19 | Every room the programme declares as requiring daylight actually sits on an exterior wall with a window | For each room in `ROOM-PROGRAM.md` marked "wymaga światła dziennego" / daylight-required, confirm at least one of its boundary edges coincides with an exterior wall carrying ≥1 window | `acad.openings.list_openings_in_model kind=windows` matched against room boundary geometry |
+| 20 | Built adjacency graph matches the declared `ROOM-PROGRAM.md` Adjacency table | Every "MUST be directly connected" pair in the typology's `ROOM-PROGRAM.md` Adjacency table has a real door between those two rooms in the drawing (`roomFrom`/`roomTo` on some door) | `acad.openings.list_openings_in_model` compared row-by-row against `docs/knowledge-base/<typology>/ROOM-PROGRAM.md`'s Adjacency table |
+
+**Gate policy:** all three must PASS before a drawing is considered rule-73-compliant, independent
+of its 17-criterion score. A 17/17 drawing that fails #18-20 is drafted correctly but planned
+badly — do not let a high vision-rubric score substitute for actually checking these three. A
+failure on any one is a build defect to fix (rearrange the zone/room in question), not a rubric
+technicality to argue about.
+
+See `docs/engineering-rules/73-space-planning-method.md` step 9 for when in the build sequence
+this gate runs, and rule 71 for the broader project-intake process it fits into.
 
 ## 2. How the persona uses this rubric
 
@@ -110,6 +142,9 @@ guess where to start:
 - Rule **61**: lineweight policy — referenced by criterion 12.
 - Rule **50** (task flow): architectural tasks that touch ≥ 5 criteria
   MUST cite this rule in the task description ("target ≥ 15/17").
+- Rule **73** (space-planning method): defines the 9-step sequence that criteria 18-20 (§1a) are
+  the exit check for — a project that skipped rule 73's zone-first steps is exactly the shape of
+  project #18-20 are designed to catch.
 
 ## 5. Additions / removals
 
@@ -124,3 +159,9 @@ DO NOT add an 18th criterion without:
 
 A criterion can be **removed** only when its generator + validator are
 both deleted (e.g. if Poland permanently drops a compliance rule).
+
+Criteria 18-20 (§1a) are exempt from steps 2-3 above (they are not in
+`ARCHITECT_REVIEW_CRITERIA` / the vision persona prompt / the `/v1/architect-review` JSON schema
+by design — see §1a's own rationale) but still require step 1 (record the gap) and step 4 (this
+document) when changed. A 21st spatial-quality criterion follows §1a's own pattern, not the
+vision-rubric's steps 1-4.

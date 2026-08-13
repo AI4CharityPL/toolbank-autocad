@@ -6,6 +6,75 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **New rule 73 (space-planning method) + rule 60 §1a spatial-quality gate — a general 9-step
+  zone-first process, proven live on two typologies, closing the "kulfon" gap the user called
+  out directly: a build can pass every existing drafting-standard check and still be a crude
+  single-row layout with no zoning, daylight, or adjacency logic.**
+
+  Root-caused via two Explore-agent investigations rather than assumed: `acad-grids.draw_grid`
+  already supported non-uniform 2D bay spacing and `define_room` already accepted arbitrary
+  `boundaryLayer`/`tagLayer` overrides usable for a zone entity — the single-row pattern every
+  prior build in this repo used (including the Zone-0.2 Administration test earlier this session)
+  was a habit of the build process, not a tool-bank limitation. New
+  `docs/engineering-rules/73-space-planning-method.md` codifies the fix: functional programme →
+  adjacency diagram → 2D zone placement relative to entry/daylight → structural grid fitted to
+  zone boundaries → room size checked against a furniture preset minimum BEFORE any wall →
+  detailed walls/openings → structural elements → furniture → a spatial-quality verification
+  gate. `docs/engineering-rules/60-architectural-fidelity.md` gained §1a: three new criteria
+  (18-20 — public-zone entry access without crossing a private zone, daylight-declared rooms
+  actually on an exterior wall with a window, built adjacency graph matches the declared
+  `ROOM-PROGRAM.md` table) kept deliberately OUT of the vision-LLM's 17-criterion score, since all
+  three are objectively tool-checkable rather than a matter of visual judgement — a separate
+  PASS/FAIL gate, not blended into the drafting-fidelity total.
+
+  Two real, root-caused `audit_all_rooms` findings surfaced while verifying the proof builds
+  (documented in rule 73, not filed away as "not yet root-caused" the way an earlier session's
+  ~12% mismatch was): `RoomRegionSolver.SolveFlood` blocks a disc around every door/window
+  (`r = max(widthMm/2 + 1.5*cellMm, 2*cellMm)`) before flood-filling, which (a) legitimately
+  shrinks measured area near openings — worse for door-dense small rooms, e.g. an apartment
+  corridor with 6 doors lost 18.5% against its net-internal label while a single-door bathroom
+  lost only 8.5% — and (b) can push a door/window's own centre point outside a too-small
+  `marginMm`, producing a false `emptyOpenings` flag (confirmed live: `marginMm=400` read 0
+  openings on every room in a 9-room, 14-opening apartment; `marginMm=1700`, sized from the
+  widest opening's own seal radius, read every opening correctly). A separate, unrelated
+  `audit_all_rooms` display bug (the `query` field showing a room's area text instead of its
+  declared number for alphabetic room numbers like `"PUB.1"`, confirmed on 11/11 rooms in the
+  dental-clinic build while purely-numeric room numbers like `"0.1"` displayed correctly in the
+  apartment build) was flagged as a background follow-up task rather than root-caused in place.
+
+  `docs/engineering-rules/64-furniture-density-per-room.md` gained the 3 residential presets
+  (`bedroom`, `kitchen`, `living-room-res`) and their block names/minimums that a prior session
+  added to `BuildPopulationPlan` but never backfilled into this rule's own tables — a
+  documentation debt closed as part of this pass, not a new capability.
+
+  Three new knowledge-base typologies (`docs/knowledge-base/{dental-clinic,automotive-showroom,
+  airport}/`, each the full four-file `STANDARDS`/`ROOM-PROGRAM`/`AREA-CONVENTION`/
+  `GRID-AND-LAYERS` shape with the same Confirmed/Probable/Unconfirmed sourcing discipline
+  `residential/` and `office/` already established) plus a new "Wzorzec stref i cyrkulacji"
+  (zone/circulation pattern) section added to all five typologies' `ROOM-PROGRAM.md` (the three
+  new ones plus hospital/residential/office). Airport's `STANDARDS.md` is explicit that no
+  Polish or ICAO/IATA source sets a prescriptive terminal-room-area minimum — every figure in
+  that typology is tagged industry-typical, not a code minimum, rather than presented with false
+  confidence.
+
+  Two full live proof builds, each verified against the new rule 60 §1a gate and
+  `audit_all_rooms` (with the corrected `marginMm`): `projects/apartment-120-test/` (123.5 m²
+  gross, day/buffer/night zoning via a non-uniform `draw_grid` 3×2 bay grid, 12 steel columns +
+  1 beam, 9 doors + 5 windows each with its own `insert_lintel`-sized lintel, furniture placed
+  only after each room's net footprint was checked against its rule-64 preset minimum) and
+  `projects/dental-clinic-test/` (~139 m² gross, an 8-vertex L/Z-shaped envelope with a genuinely
+  T-shaped 2D corridor system — a horizontal arm plus a vertical spine, open to each other at a
+  real T-junction rather than a doored connection — proving hospital-derived capability
+  (`A-WALL-LEAD` radiation shielding, reused rather than reinvented for the point dental X-ray
+  room's primary-beam wall) transfers to a much smaller, different typology). A real construction
+  bug was caught and fixed live during the dental-clinic build: a door placed on a wall its room
+  didn't actually border failed `cut_wall_for_opening` with "jambs project outside the wall
+  segment" — exactly the failure mode rule 73 step 5's discipline exists to catch before it
+  compounds. The remaining three typologies (car showroom, hospital, airport) are treated at
+  program/zone/grid level only per this session's agreed scope — real researched functional
+  programmes and adjacency tables, no live wall construction — explicitly framed as a future
+  session's starting point, not a finished project.
+
 - **New `acad-structural` category — real steel column/beam profiles and span-based lintel
   sizing, closing the two biggest LOD gaps a real-drawing comparison surfaced.**
 

@@ -363,10 +363,16 @@ print(" side in one flat model space.)")
 # style: window schedule 8 rows -> 123.5mm actual vs 80mm requested, door 11 rows -> 161mm vs
 # 110mm, room 11 rows -> 153.5mm vs 88mm - all ~1.5x inflated). Combined real stack height is
 # ~438mm plus 2x20mm gaps = ~478mm, which needs A1 (841x594mm).
-SHEET = "A1"
+SHEET = "A1"           # this bank's own CalloutsPalette.Sheets key (insert_title_block's sheetSize)
+PLOT_MEDIA = "ISOA1"   # the PLOTTER's own canonical media name (configure_plot's paperSize) -
+# a DIFFERENT namespace from SHEET above, confirmed live via list_paper_sizes after "A1" silently
+# resolved to "NorthAmericaNumber10Envelope" on this project too (no match found, fell back to
+# the device's first entry) - caught from a user's own Print Preview screenshot on the dental
+# clinic sibling project; every custom-bounded PNG export this project's own verification used
+# bypasses configure_plot's paperSize entirely, so it could never have caught this on its own.
 call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
-call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": SHEET},
-     label=f"configure_plot A-101 ({SHEET}) - no CTB applied, none supplied under assets/plotstyles/")
+call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": PLOT_MEDIA},
+     label=f"configure_plot A-101 ({PLOT_MEDIA}) - no CTB applied, none supplied under assets/plotstyles/")
 rVp = call("viewports", "create_viewport", {
     "layoutName": "A-101", "center": P(300, 300), "width": 550, "height": 400, "scale": 0.01,
 }, label="create_viewport (1:100, left portion of the A1 sheet)")
@@ -442,8 +448,29 @@ os.makedirs(os.path.join(REPO, "projects", "apartment-120-test"), exist_ok=True)
 # never-saved new_document needs save_document_as instead, or the file silently never lands
 # where you asked (confirmed live: the {"path": ...} arg was ignored, ".../Apartment120Test.dwg"
 # never appeared on disk).
-call("files", "save_document_as", {"path": os.path.join(REPO, "projects", "apartment-120-test", "Apartment120Test.dwg")},
-     label="save_document_as")
+save_path = os.path.join(REPO, "projects", "apartment-120-test", "Apartment120Test.dwg")
+call("files", "save_document_as", {"path": save_path}, label="save_document_as")
+
+# Round-trip verification (rule 74 C.4, hardening): the dental-clinic-test sibling project's own
+# locked viewport was caught by a user's live Print Preview drifting from 0.01 (1:100) at
+# creation to 10.4 by the time the saved file was reopened. This project's own viewport did NOT
+# show that drift on the same close/reopen pattern before - checked here defensively anyway,
+# since "didn't happen last time" is not the same as "provably can't happen."
+call("files", "close_document", {"save": False}, label="close active document (round-trip check)")
+call("files", "open_document", {"path": save_path}, label="reopen (round-trip check)")
+rVpRt = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports after reopen")
+rtScale = rVpRt["viewports"][0]["customScale"]
+if abs(rtScale - 0.01) > 1e-6:
+    print(f"  VIEWPORT SCALE DRIFTED after save+reopen: {rtScale} (expected 0.01) - correcting and re-saving")
+    rtHandle = rVpRt["viewports"][0]["handle"]
+    call("viewports", "set_viewport_scale", {"handle": rtHandle, "scale": 0.01}, label="correct drifted scale")
+    call("files", "save_document_as", {"path": save_path}, label="re-save with corrected scale")
+    rVpRt2 = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports after correction")
+    if abs(rVpRt2["viewports"][0]["customScale"] - 0.01) > 1e-6:
+        raise SystemExit("viewport scale still wrong after explicit correction - do not ship, investigate further")
+    print("  corrected scale confirmed 1:100 after re-save")
+else:
+    print(f"  viewport scale confirmed 1:{1 / rtScale:.0f} after a genuine close+reopen round trip")
 
 print(f"\nDoors: 9   Windows: 6   Lintels: {lintel_count}   Columns: {len(grid_xs) * len(grid_ys)}   Beams: 1   Rooms: {len(rooms)}")
 

@@ -304,26 +304,38 @@ print("=" * 70)
 print("\n-- zone entities (rule 73 step 3a, now mandatory) --")
 # 4 zones matching this project's own docstring rows (PUBLIC/CORRIDOR-H/TREATMENT/STAFF) -
 # TREATMENT's own bounding rect includes the COR.V spine, matching how the docstring itself
-# describes CORRIDOR-V as part of the treatment row, not a 5th zone. tagPosition explicit near
-# each zone's own outer corner, same fix apartment-120-test needed for its own zone tags.
+# describes CORRIDOR-V as part of the treatment row, not a 5th zone.
+#
+# tagPosition is in the WEST MARGIN (x=-4200), outside the building envelope entirely, not
+# "near a corner" inside it. A user's own live screenshot caught the corner-offset approach
+# (the same pattern that worked for apartment-120-test's 2 zones) producing a REAL bbox overlap
+# between ZONE-STAFF's tag and a room tag here - confirmed live via get_entity, not assumed from
+# the screenshot alone. Root cause: a define_room zone tag is a 3-line block (number/name/area)
+# that can be 2000-3400mm WIDE, and this building's own zones are narrow enough (the corridor is
+# barely wider than its own room's footprint) that no corner offset inside the zone is safely
+# clear of every room tag - the fix that worked once for a wider apartment doesn't generalise.
+# Placing tags outside the building (x<0) makes them provably clear of every room tag by
+# construction, not by a hopeful offset - verified live against every room-tag bbox before this
+# was accepted as the fix, not just re-guessed once more.
+ZONE_TAG_X = -4200
 call("architecture", "define_room", {
     "vertices": [P(0, 0), P(9500, 0), P(9500, 4000), P(0, 4000)],
-    "number": "ZONE-PUBLIC", "name": "Strefa publiczna", "tagPosition": P(200, 200),
+    "number": "ZONE-PUBLIC", "name": "Strefa publiczna", "tagPosition": P(ZONE_TAG_X, 2000),
     "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
 }, label="zone entity: PUBLIC")
 call("architecture", "define_room", {
     "vertices": [P(0, 4000), P(14000, 4000), P(14000, 5500), P(0, 5500)],
-    "number": "ZONE-COR-H", "name": "Korytarz zabiegowy", "tagPosition": P(200, 4200),
+    "number": "ZONE-COR-H", "name": "Korytarz zabiegowy", "tagPosition": P(ZONE_TAG_X, 4750),
     "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
 }, label="zone entity: CORRIDOR-H")
 call("architecture", "define_room", {
     "vertices": [P(0, 5500), P(14000, 5500), P(14000, 9500), P(0, 9500)],
-    "number": "ZONE-TREATMENT", "name": "Strefa zabiegowa", "tagPosition": P(200, 5700),
+    "number": "ZONE-TREATMENT", "name": "Strefa zabiegowa", "tagPosition": P(ZONE_TAG_X, 7500),
     "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
 }, label="zone entity: TREATMENT")
 call("architecture", "define_room", {
     "vertices": [P(0, 9500), P(7750, 9500), P(7750, 11500), P(0, 11500)],
-    "number": "ZONE-STAFF", "name": "Strefa personelu", "tagPosition": P(200, 9700),
+    "number": "ZONE-STAFF", "name": "Strefa personelu", "tagPosition": P(ZONE_TAG_X, 10500),
     "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
 }, label="zone entity: STAFF")
 
@@ -390,10 +402,18 @@ print("(A1 sheet from the first attempt, not A3/A2 - apartment-120-test's own re
 print(" both too small once title block + schedules + a locked viewport all need to coexist,")
 print(" and AutoCAD's Table.GenerateLayout clamps row heights well above what SchedulesTools'")
 print(" own row-count math predicts, so schedule stacks need real measured headroom.)")
-SHEET = "A1"
+SHEET = "A1"           # this bank's own CalloutsPalette.Sheets key (insert_title_block's sheetSize)
+PLOT_MEDIA = "ISOA1"   # the PLOTTER's own canonical media name (configure_plot's paperSize) -
+# a DIFFERENT namespace from SHEET above, confirmed live via list_paper_sizes after "A1" silently
+# resolved to "NorthAmericaNumber10Envelope" (no match found, fell back to the device's first
+# entry) - "A2"/"A3" happening to match their own plain names earlier was luck, not a working
+# convention. Caught live from a user's own Print Preview screenshot: a wrong/tiny configured
+# paper size makes the ACTUAL plot output show almost nothing, even though every custom-bounded
+# PNG export this project's own verification used looked correct - that export path bypasses
+# configure_plot's paperSize entirely, so it could never have caught this on its own.
 call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
-call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": SHEET},
-     label=f"configure_plot A-101 ({SHEET}) - no CTB applied, none supplied under assets/plotstyles/")
+call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": PLOT_MEDIA},
+     label=f"configure_plot A-101 ({PLOT_MEDIA}) - no CTB applied, none supplied under assets/plotstyles/")
 rVp = call("viewports", "create_viewport", {
     "layoutName": "A-101", "center": P(300, 270), "width": 550, "height": 450, "scale": 0.01,
 }, label="create_viewport (1:100, left portion of the A1 sheet)")
@@ -450,6 +470,30 @@ call("layouts", "set_current_layout", {"name": "Model"}, label="switch back to M
 os.makedirs(os.path.join(REPO, "projects", "dental-clinic-test"), exist_ok=True)
 save_path = os.path.join(REPO, "projects", "dental-clinic-test", "DentalClinicTest.dwg")
 call("files", "save_document_as", {"path": save_path}, label="save_document_as")
+
+# Round-trip verification, not a same-session re-assertion: a user's own live Print Preview
+# screenshot caught this exact viewport's LOCKED scale silently drifting from 0.01 (1:100) at
+# creation to 10.4 by the time the saved file was reopened in a later session -
+# apartment-120-test's own viewport did NOT drift the same way on the same close/reopen pattern,
+# so this is a real, confirmed, but not universal AutoCAD quirk, and set_viewport_lock alone did
+# not prevent it. Checking the IN-MEMORY scale right after creation (as a first attempt at this
+# check did) would have shown the correct value and missed the bug entirely - it only shows up
+# after a genuine close+reopen, so that is what this check does.
+call("files", "close_document", {"save": False}, label="close active document (round-trip check)")
+call("files", "open_document", {"path": save_path}, label="reopen (round-trip check)")
+rVpRt = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports after reopen")
+rtScale = rVpRt["viewports"][0]["customScale"]
+if abs(rtScale - 0.01) > 1e-6:
+    print(f"  VIEWPORT SCALE DRIFTED after save+reopen: {rtScale} (expected 0.01) - correcting and re-saving")
+    rtHandle = rVpRt["viewports"][0]["handle"]
+    call("viewports", "set_viewport_scale", {"handle": rtHandle, "scale": 0.01}, label="correct drifted scale")
+    call("files", "save_document_as", {"path": save_path}, label="re-save with corrected scale")
+    rVpRt2 = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports after correction")
+    if abs(rVpRt2["viewports"][0]["customScale"] - 0.01) > 1e-6:
+        raise SystemExit("viewport scale still wrong after explicit correction - do not ship, investigate further")
+    print("  corrected scale confirmed 1:100 after re-save")
+else:
+    print(f"  viewport scale confirmed 1:{1 / rtScale:.0f} after a genuine close+reopen round trip")
 
 n_cols = sum(1 for gx in grid_xs for gy in grid_ys if in_building(gx, gy))
 print(f"\nDoors: 12   Lintels: {lintel_count}   Columns: {n_cols} (of {len(grid_xs) * len(grid_ys)} grid intersections, "

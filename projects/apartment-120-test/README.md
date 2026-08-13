@@ -175,12 +175,23 @@ that would still take, not a hidden shortfall.
   supplied, Vision sidecar not running — both expected, see below). This needed BOTH the plugin
   `anySpace` fix and the second, independent Backend-DTO fix it surfaced (see the defect list
   above) — the plugin redeploy alone was not enough, confirmed live before concluding it worked.
-- `configure_plot(layoutName="A-101", paperSize="A1")` silently resolved to
-  `psk:NorthAmericaNumber10Envelope` instead of an ISO A1 media name (unlike `"A2"`/`"A3"`, which
-  both resolved correctly) — the actual title block/border/viewport geometry is unaffected (sized
-  from this bank's own `CalloutsPalette.Sheets["A1"]` constant, not from the plotter's media
-  table), so nothing about the drawing itself is wrong, but a real print/PDF plot from this layout
-  would need the paper size corrected first (`list_paper_sizes` + the correct locale string).
+- ~~`configure_plot(layoutName="A-101", paperSize="A1")` silently resolved to
+  `NorthAmericaNumber10Envelope`~~ — **fixed** (2026-08-13, second pass): the correct locale
+  string is `"ISOA1"`, confirmed via `list_paper_sizes` — `"A2"`/`"A3"` matching their own plain
+  names earlier was luck, not a working convention. `configure_plot` now receives `PLOT_MEDIA =
+  "ISOA1"` (kept as a separate constant from `SHEET = "A1"`, which is a different namespace —
+  this bank's own `CalloutsPalette.Sheets` key, not the plotter's media name).
+- **New, still open**: `acad.files.export_file` renders a BLANK area where the viewport's own
+  content should be, for any layout whose locked viewport has been through a genuine save+reload
+  — confirmed reproducible on THIS project too (not dental-clinic-test-specific), including after
+  a full AutoCAD process restart. The viewport's own properties (scale, center, width, lock) read
+  back correctly immediately before every failing export — this is a rendering-pipeline bug, not
+  data corruption. See `dental-clinic-test`'s own README for the full investigation (scope
+  Window vs. Extents, locked vs. unlocked, a native `REGENALL` — none fixed it) and follow-up
+  task `task_65805cb0`. **Practical effect on this project**: earlier exports in this session
+  were captured in the same unbroken AutoCAD session as their own build (before any close/reopen)
+  and are trustworthy; a fresh export of this saved file should not be trusted until that task
+  lands.
 - Vision review (rule 74 item 9): sidecar port file present but the sidecar itself was not
   running this session — health-check skipped, scored `/v1/architect-review` call not attempted.
   Per the user's standing instruction this session, the API key configuration is left alone.

@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **A user's own live screenshots caught two more real defects in `dental-clinic-test`'s rule-74
+  sheet that this bank's own verification (bbox-only checks, one export per rebuild) had missed**:
+  (1) a zone tag's text genuinely overlapped a room tag's own bbox — the corner-offset placement
+  that worked for `apartment-120-test`'s 2 wide zones didn't generalise to this building's much
+  narrower ones; fixed by moving every zone tag into the west margin (x=-4200, outside the
+  building envelope), verified against all 36 room-tag bbox lines (0 overlaps), not re-guessed.
+  (2) `configure_plot(paperSize="A1")` resolving to `NorthAmericaNumber10Envelope` (the correct
+  locale string is `"ISOA1"`) was previously called "cosmetic" — a live AutoCAD Print Preview
+  screenshot showing a near-blank plot proved it is a real defect for anyone who actually prints
+  from the layout, not just plotter metadata. Fixed in both proof projects' build scripts.
+- **New, confirmed, NOT yet fixed**: investigating that same Print Preview screenshot surfaced a
+  third, deeper bug — `acad.files.export_file` renders a blank area where a layout's locked
+  viewport content should be, for any viewport that has been through a genuine save+reload
+  (confirmed after a full AutoCAD process restart, not a stale-session artifact; reproducible on
+  both proof projects). The viewport's own properties read back correctly immediately before
+  every failing export - this is a rendering-pipeline bug, not data corruption, and does not
+  affect the saved files themselves (re-verified via fresh-path copies with zero `export_file`
+  calls in between). Ruled out as fixes: `scope="Window"` vs `"Extents"`, locked vs. unlocked, a
+  full AutoCAD restart, a native `REGENALL`. Flagged as a follow-up task for dedicated C#
+  investigation of `FilesPluginTools.PlotToDevice`, not fixed in this session.
 - **`AcadEnv.Persist` (the plugin's single "append entity" choke point, used by every
   `acad.geometry2d.*`/`acad.annotations.*` primitive) was hardcoded to `*Model_Space` regardless
   of which layout was current — a real, previously-undiscovered capability gap, not a script bug,

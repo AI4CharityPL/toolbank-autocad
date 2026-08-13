@@ -116,9 +116,26 @@ sheet (`A-101`, A1, learned directly from the apartment retrofit rather than re-
 A3→A2→A1 sizing problem) with a locked 1:100 viewport, title block, and 2 schedule tables
 (room + door — no window schedule, this typology has no windows by design).
 
-No new defect classes beyond what apartment-120-test's own retrofit already found and fixed —
-confirms those were real, general capability gaps (not apartment-specific), not something to
-re-diagnose per project.
+No new defect CLASSES beyond what apartment-120-test's own retrofit already found and fixed —
+confirms those were real, general capability gaps, not apartment-specific. Two new INSTANCES of
+already-known-shaped problems were found live from a user's own screenshots of this exact
+project, and fixed the same way (root-caused, not patched):
+
+1. **Zone-tag text collided with a room tag** (confirmed live via `get_entity` bbox math, not
+   just the screenshot: `ZONE-STAFF`'s tag genuinely overlapped a room tag's own bbox). The
+   corner-offset placement that worked for apartment-120-test's 2 wide zones did not generalise
+   to this building's much narrower zones (the corridor is barely wider than its own room). Fixed
+   by moving every zone tag into the WEST MARGIN (x=-4200, outside the building envelope
+   entirely) rather than re-guessing another corner offset — provably clear of every room tag by
+   construction, verified against all 36 room-tag bbox lines (0 overlaps), not just re-eyeballed.
+2. **`configure_plot(paperSize="A1")` resolved to `NorthAmericaNumber10Envelope`** — same root
+   cause as apartment-120-test (the correct locale string is `"ISOA1"`, confirmed via
+   `list_paper_sizes`), but this time caught from a live AutoCAD Print Preview screenshot showing
+   a genuinely broken, near-blank plot output — this was previously (wrongly) called "cosmetic"
+   before that screenshot; it is a real defect for anyone who actually prints from this layout.
+
+Investigating the Print Preview screenshot further also surfaced a THIRD, deeper, still-open
+issue — see "Known limitations."
 
 ## Vision review — rule 60 §1 17-criterion scorecard (2026-08-13, Path B)
 
@@ -161,10 +178,24 @@ by closing the dental-fixture catalog gap first since it affects the most criter
   a second, independent fix beyond the plugin's `anySpace` parameter — see
   `apartment-120-test`'s own README for the full writeup (a Backend-side DTO hop was silently
   dropping the new field before it ever reached the plugin).
-- `configure_plot(paperSize="A1")` resolves to `psk:NorthAmericaNumber10Envelope` instead of an
-  ISO A1 media name (same as apartment-120-test) — cosmetic to the plotter's own media table only,
-  the drawn geometry is sized from this bank's own `CalloutsPalette.Sheets["A1"]` constant and is
-  unaffected.
+- ~~`configure_plot(paperSize="A1")` resolves to the wrong media~~ — **fixed** (see the defect
+  list above): `configure_plot` now receives `"ISOA1"`, confirmed live via `list_layouts`
+  reporting `psk:ISOA1`.
+- **New, still open**: `acad.files.export_file` renders a BLANK area where the viewport's own
+  content should be, for any layout whose locked viewport has been through a genuine save+reload
+  (confirmed after a full AutoCAD process restart too — not a stale-session artifact). The
+  viewport's own properties (scale, center, width, lock) read back correctly immediately before
+  every failing export; this is a rendering-pipeline bug, not data corruption — re-verified by
+  opening fresh copies of the saved file with zero `export_file` calls in between, which always
+  show correct properties. A user's own live AutoCAD Print Preview screenshot is what first
+  surfaced this (a near-blank plot, not just a wrong paper size). Tried and ruled out as fixes:
+  `scope="Window"` vs `"Extents"`, locked vs. unlocked, a full AutoCAD restart, and a native
+  `REGENALL` command immediately before export — none changed the result. Flagged as a follow-up
+  task (`task_65805cb0`) for dedicated C# investigation of `FilesPluginTools.PlotToDevice`; not
+  fixed here. **Practical effect on this project**: the rendered PNG exports used earlier in this
+  session's own visual verification are trustworthy (captured in the same unbroken AutoCAD
+  session as the build itself, before any close/reopen) — but this bug means nobody should trust
+  a NEW export of this specific saved file without first confirming the fix above landed.
 - Vision review and plot-style CTB: same best-effort/skipped state as apartment-120-test, same
   reasons (sidecar not running this session; no `.ctb` file supplied).
 

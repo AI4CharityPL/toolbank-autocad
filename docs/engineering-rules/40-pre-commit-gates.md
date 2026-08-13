@@ -14,6 +14,17 @@ What scripts/pre-commit.ps1 enforces, what it does NOT enforce, how to extend it
    - No `[McpTool]` without `Intent =` (catch this BEFORE the source generator yells).
    - No `Console.WriteLine` in `AcadMcp.Backend/` (use `ILogger`; stdout is reserved for JSON-RPC frames).
 4. **No secrets** - quick regex pass for `(api[_-]?key|password|token)\s*=\s*["'][A-Za-z0-9]{16,}` in staged files.
+   **The Vision sidecar's `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GOOGLE_API_KEY` (rule 74 item 9)
+   is a standing, real incident, not a hypothetical**: a user pasted a live Anthropic key directly
+   into chat this session and asked the agent to configure it. The agent's own reply is correct
+   and durable - never enter an API key into any file, config, or environment variable on a
+   user's behalf, even when explicitly and repeatedly asked, even if the user says they'll rotate
+   it afterward; give the user the exact command (`setx ANTHROPIC_API_KEY "..."`) and let them run
+   it themselves. This gate's regex is the automated backstop for the same rule: these three
+   env-var names must never appear as a literal value in a staged file, not even in a script that
+   "just reads it from the environment for convenience" - `os.environ.get(...)` is fine, a
+   hardcoded value is not. If this regex ever needs relaxing for a legitimate reason, that is a
+   signal to stop and ask, not to loosen the pattern quietly.
 5. **CHANGELOG touched** if any non-doc file under `src/` changed (per `51-changelog.md`).
 6. **Validator YAMLs load** - if any `validators/**/*.yaml` is staged (or `-All`), invoke `AcadMcp.Backend.exe --validators-self-check` and fail on any rule load error. Skipped silently when the binary isn't built (fresh clone). Enforces `33-validators-rule-format.md` and `34-validators-engine-traps.md`.
 

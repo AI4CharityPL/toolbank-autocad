@@ -96,7 +96,9 @@ file — it was wrong the first time this rule's own history checked it). Needs 
 `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GOOGLE_API_KEY` set in ITS environment — **never enter an
 API key into any file, config, or environment variable on a user's behalf, even if explicitly
 asked and even if the user says they'll rotate it afterward; give the user the exact command
-(`setx ANTHROPIC_API_KEY "..."`) and let them run it themselves.** Once configured (verified via
+(`setx ANTHROPIC_API_KEY "..."`) and let them run it themselves.** The pre-commit secret-scan
+gate (rule 40 item 4) enforces the repo side of this same rule — these three env-var names must
+never appear as a literal value in a staged file. Once configured (verified via
 the sidecar's own `/health`, not assumed from a user's report), this is a REQUIRED step: export
 the layout to an image, call `/v1/architect-review`, record `score`/`criteria[]`/`fatal_gaps` in
 the project's README. `score < 15` (rule 60's own threshold) blocks "wykonawczy" status — fix the

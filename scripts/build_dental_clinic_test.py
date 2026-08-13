@@ -50,7 +50,7 @@ REPO = r"C:\Users\DELL\Dev\autocad-mcp"
 sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
-CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules"]
+CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -96,8 +96,27 @@ for d in X_SPACINGS:
 grid_ys = [0.0]
 for d in Y_SPACINGS:
     grid_ys.append(grid_ys[-1] + d)
+
+
+def in_building(x, y):
+    # The building is L/Z-shaped (see PERIMETER below), not a plain rectangle - a plain
+    # rectangular grid product places some intersections outside the actual envelope. A live
+    # check_overlaps pass caught this only after the fact (3 of 12 columns floating outside any
+    # wall); this filter is the fix, applied BEFORE insertion rather than discovered after.
+    if 0 <= y <= 4000:
+        return 0 <= x <= 9500
+    if 4000 <= y <= 9500:
+        return 0 <= x <= 14000
+    if 9500 <= y <= 11500:
+        return 0 <= x <= 7750
+    return False
+
+
 for gx in grid_xs:
     for gy in grid_ys:
+        if not in_building(gx, gy):
+            print(f"skip column @ ({gx:.0f},{gy:.0f}) - outside the L-shaped envelope")
+            continue
         call("structural", "insert_steel_column", {"designation": "HEA100", "center": P(gx, gy)},
              label=f"column HEA100 @ ({gx:.0f},{gy:.0f})")
 call("structural", "insert_beam", {
@@ -178,8 +197,21 @@ print("\n" + "=" * 70)
 print("STEP 6 cont'd + STEP 7: doors, each with a rule-72 lintel. Multi-door walls (y4000, x6250)")
 print("cut in increasing-position order so the right-remnant handle threading stays valid.")
 print("=" * 70)
-lintel_and_door("south_pub", P(4500, 0), 0, 1000, "EXT", "PUB.1", "D-01")
-lintel_and_door("x2000", P(2000, 2000), 90, 900, "PUB.1", "PUB.2", "D-02")
+# D-01 moved from x=4500 (its original centred position): a live check_overlaps pass
+# (S-COLS vs A-DOOR) found the front door swung straight into the structural column at
+# x=4667 on this same wall - the door and the grid were placed independently and nobody
+# cross-checked the two against each other until this verification pass. Moving it to
+# x=3200 cleared the column but put it in the path of the "waiting" preset's own sofa
+# (FURN-SOFA-CLN-3, centred on the room and spanning x3400-5600) - caught on the SAME
+# rebuild's overlap pass, moved further west to x=2800 to clear both independently-placed
+# elements, re-verified clean.
+lintel_and_door("south_pub", P(2800, 0), 0, 1000, "EXT", "PUB.1", "D-01")
+# D-02 moved from y=2000 (its original centred position, width narrowed 900->700mm): a live
+# check_overlaps pass (A-DOOR vs A-PLMB-BSN) found the door swing overlapping WC pacjentow's
+# own basin, placed by populate_bathroom's wc-accessible preset formula at a fixed offset from
+# the room's own corner - re-centred into the gap between the basin (y<=1574) and the WC bowl
+# (y>=2570), re-verified clean.
+lintel_and_door("x2000", P(2000, 2100), 90, 700, "PUB.1", "PUB.2", "D-02")
 lintel_and_door("x7000", P(7000, 2000), 90, 900, "PUB.1", "PUB.3", "D-03")
 lintel_and_door("y4000", P(4500, 4000), 0, 900, "PUB.1", "COR.H", "D-04")
 lintel_and_door("y4000", P(8250, 4000), 0, 900, "PUB.3", "COR.H", "D-05")
@@ -190,7 +222,11 @@ lintel_and_door("x6250", P(6250, 6750), 90, 900, "TRT.STR", "COR.V", "D-06")
 # outside the wall segment, which is what a door on a wall the room doesn't actually touch looks
 # like from the tool's side.
 lintel_and_door("y5500a", P(1500, 5500), 0, 900, "TRT.1", "COR.H", "D-07")
-lintel_and_door("x6250", P(6250, 10500), 90, 800, "STF.WC", "COR.V", "D-08")
+# D-08 moved from y=10500 (its original centred position): a live check_overlaps pass
+# (A-DOOR vs A-PLMB-BSN) found the door swing clipping WC personelu's own basin+WC bowl,
+# both placed near the room's south end by populate_bathroom's wc-public preset formula -
+# shifted north, clear of both fixtures (which top out around y=10285), re-verified clean.
+lintel_and_door("x6250", P(6250, 10900), 90, 800, "STF.WC", "COR.V", "D-08")
 lintel_and_door("x7750", P(7750, 7500), 90, 900, "TRT.2", "COR.V", "D-09")
 lintel_and_door("y5500b", P(12440, 5500), 0, 900, "TRT.RTG", "COR.H", "D-10")
 lintel_and_door("y8000", P(4700, 8000), 0, 800, "TRT.STR", "TRT.MAG", "D-11")
@@ -262,7 +298,9 @@ os.makedirs(os.path.join(REPO, "projects", "dental-clinic-test"), exist_ok=True)
 save_path = os.path.join(REPO, "projects", "dental-clinic-test", "DentalClinicTest.dwg")
 call("files", "save_document_as", {"path": save_path}, label="save_document_as")
 
-print(f"\nDoors: 12   Lintels: {lintel_count}   Columns: {len(grid_xs) * len(grid_ys)}   Beams: 1   Rooms: {len(rooms)}")
+n_cols = sum(1 for gx in grid_xs for gy in grid_ys if in_building(gx, gy))
+print(f"\nDoors: 12   Lintels: {lintel_count}   Columns: {n_cols} (of {len(grid_xs) * len(grid_ys)} grid intersections, "
+      f"{len(grid_xs) * len(grid_ys) - n_cols} outside the L-shaped envelope, skipped)   Beams: 1   Rooms: {len(rooms)}")
 
 print("\n" + "=" * 70)
 print("STEP 9: verification - audit_all_rooms + rule 60 SS1a criteria 18-20")
@@ -300,5 +338,27 @@ built = set(edges)
 print(f"  declared - built (missing): {declared - built}")
 print(f"  built - declared (unexpected): {built - declared}")
 print(f"  adjacency graph matches declared table exactly: {declared == built}")
+
+print("\n" + "=" * 70)
+print("STEP 9 cont'd: GEOMETRIC overlap check (acad.validators.check_overlaps) - rule 73's own")
+print("gap: logical/adjacency checks alone missed real physical collisions the first time this")
+print("build ran (a column outside the L-shaped envelope, a door through a column, two doors")
+print("swinging into WC fixtures). These categories catch coordination failures between")
+print("independently-placed element types.")
+print("=" * 70)
+overlap_pairs = [
+    (["S-COLS"], ["A-DOOR"], "columns vs doors"),
+    (["S-COLS"], ["A-FURN-SFA", "A-FURN-TBL"], "columns vs furniture"),
+    (["S-COLS"], ["A-PLMB-WC", "A-PLMB-BSN"], "columns vs plumbing fixtures"),
+    (["A-DOOR"], ["A-PLMB-WC", "A-PLMB-BSN"], "doors vs plumbing fixtures"),
+    (["A-DOOR"], ["A-FURN-SFA", "A-FURN-TBL"], "doors vs furniture"),
+]
+total_overlaps = 0
+for a, b, label in overlap_pairs:
+    _, r = S["validators"].call("check_overlaps", {"layersA": a, "layersB": b, "mode": "bbox_intersect"})
+    n = len(r.get("overlaps", []))
+    total_overlaps += n
+    print(f"  {label}: {n} overlap(s)" + (f"  -> {json.dumps(r['overlaps'], ensure_ascii=False)[:400]}" if n else ""))
+print(f"\n  TOTAL cross-category geometric overlaps found: {total_overlaps} (0 = clean)")
 
 print("\n==== dental-clinic-test build complete ====")

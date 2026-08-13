@@ -52,6 +52,31 @@ placed on a wall the room doesn't touch looks like from the tool's side — caug
 routing Gabinet 1's door onto its real shared wall (Korytarz-H) instead, before the room labels
 or furniture went in.
 
+## Real defects found live and fixed (not caught by criteria 18-20 or audit_all_rooms)
+
+Same lesson as the apartment build, found by adding `acad.validators.check_overlaps` to step 9
+(now codified in rule 73's own section on this) — a build that passes every logical/adjacency
+check can still have real physical collisions between elements that were each individually valid:
+
+1. **3 of the 12 grid columns landed outside the building.** The structural grid was placed on a
+   plain rectangular 4×3 product, but this building's own envelope is L/Z-shaped (narrower at the
+   public front and the staff extension) — columns at (9333,11500), (14000,0) and (14000,11500)
+   were floating in the exterior notch cut away from those rows. Fixed with an `in_building(x,y)`
+   filter applied before insertion, not discovered after.
+2. **A structural column punched through the front door.** The column at (4667,0) sat inside
+   `D-01`'s own 1000mm-wide opening span. Fixed by moving the door to x=2800.
+3. **Fixing #2 put the door in the waiting room's sofa instead.** The `waiting` preset places its
+   sofa centred on the room; moving the door away from the column (first to x=3200) put it
+   straight into the sofa's own footprint — caught on the SAME rebuild's overlap pass, moved again
+   to x=2800 to clear both independently-placed elements.
+4. **Two doors swung into their own room's plumbing fixtures.** `D-02` (into WC pacjentów) clipped
+   the accessible-WC preset's basin; `D-08` (into WC personelu) clipped the wc-public preset's
+   basin and WC bowl. Fixed by repositioning both doors into the gap between where each preset
+   places its fixtures.
+
+Final state: `check_overlaps` across columns-vs-doors/furniture/plumbing and
+doors-vs-plumbing/furniture — **0 overlaps in every category**, re-verified after each fix.
+
 ## Verification results
 
 - `audit_all_rooms(cellMm=50, marginMm=700, tolerancePct=10)`: 11/11 rooms measured via real

@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ## [Unreleased]
 
+### Fixed
+
+- **Real geometric collisions in both rule-73 proof builds, found only after adding
+  `acad.validators.check_overlaps` cross-category checks to their own verification step — the
+  user's own follow-up review ("czy pamiętałeś o oknach") was right that the first pass was not
+  actually checked at the level the drawings needed.** Rule 60 §1a criteria 18-20 and
+  `audit_all_rooms` both operate on declared/logical data (room numbers, adjacency, areas) and
+  none of them notice that two independently-placed elements physically collide.
+  `apartment-120-test`: 2 structural columns punched through windows (grid and window positions
+  designed separately), 2 bathroom doors swung into their own room's WC bowl, and fixing those
+  cascaded into a shower-vs-column collision and then a shower-vs-door collision before every
+  pair came back clean (3 fix-then-recheck iterations). `dental-clinic-test`: 3 of 12 grid columns
+  landed outside the building's own L/Z-shaped envelope (a plain rectangular grid product doesn't
+  know the building isn't a rectangle), 1 column punched through the front door, and 2 doors swung
+  into their room's plumbing fixtures — fixing the door-vs-column collision put the door in the
+  waiting room's sofa instead, caught on the same rebuild pass. `docs/engineering-rules/
+  73-space-planning-method.md` step 9 now requires this check-overlaps battery
+  (columns/doors/furniture/fixtures, both directions) as part of every future build's own
+  verification, with the exact layer pairs and the "re-run after every fix, not just once" lesson
+  written down. Both `.dwg` files and their scripts in `projects/apartment-120-test/` and
+  `projects/dental-clinic-test/` are updated in place; both project READMEs document every
+  defect found and its fix.
+
 ### Added
 
 - **New rule 73 (space-planning method) + rule 60 §1a spatial-quality gate — a general 9-step

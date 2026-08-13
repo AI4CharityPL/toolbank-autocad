@@ -112,6 +112,37 @@ against the finished drawing, not assumed from having "followed the steps." Alon
 `audit_all_rooms` (rule 71 step 6: read the actual `flags: string[]` array, not assumed top-level
 booleans).
 
+**Logical checks are necessary but not sufficient — run a geometric coordination pass too.**
+Criteria 18-20 and `audit_all_rooms` both operate on *declared* data (room numbers, labels,
+adjacency) — none of them notice that a structural column, a window, a door swing and an
+auto-placed plumbing fixture were each positioned correctly *on their own* but collide with each
+other, because each was placed by a different tool call that has no knowledge of the others. Both
+proof builds in this rule's own history passed every criteria-18-20 check and every
+`audit_all_rooms` flag was already explained, and STILL shipped a structural column punched
+through a window, three columns floating outside the building envelope, and three doors swinging
+straight into WC fixtures — found only when `acad.validators.check_overlaps` was run afterward
+across every cross-category pair that independently-placed elements can plausibly collide on. Run
+it as part of step 9, not as an afterthought once a user asks "did you actually check this":
+
+```python
+for layersA, layersB in [
+    (["S-COLS"], ["A-GLAZ"]),                                    # structural vs windows
+    (["S-COLS"], ["A-DOOR"]),                                    # structural vs doors
+    (["S-COLS"], ["A-FURN-*", "A-PLMB-*"]),                      # structural vs furniture/fixtures
+    (["A-DOOR"], ["A-PLMB-WC", "A-PLMB-BSN", "A-PLMB-BT", "A-PLMB-SHW"]),  # door swing vs fixtures
+    (["A-DOOR"], ["A-FURN-*"]),                                  # door swing vs furniture
+]:
+    check_overlaps(layersA=layersA, layersB=layersB, mode="bbox_intersect")
+```
+
+Fixing one collision can create another — moving a door clear of a column can put it in a sofa's
+footprint; rotating a bathroom fixture cluster clear of a column (`populate_bathroom`'s own
+`orientation` param, rule 64 §8, is the right lever for this — cheaper than hand-shifting room
+geometry) can put a different fixture in the door's swing path. Re-run the full check-overlaps
+battery after EVERY fix, not just the one pair that was failing — both proof builds needed two to
+three iterations of fix-then-recheck before every pair came back clean, exactly the pattern this
+whole rule is built around: check before declaring done, not after being asked to.
+
 ## Zone as an entity — no new tool (see also rule 72 §3 for the boundary)
 
 A "zone" is not a new concept for the tool bank to implement — reuse `define_room` with

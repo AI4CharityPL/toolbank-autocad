@@ -22,8 +22,38 @@ apartment built ZONE-FIRST (day cluster / buffer corridor / night cluster), not 
 - Structural grid (3×2 non-uniform bays via `acad-grids.draw_grid`, 12× HEA140 columns + 1× IPE160
   facade beam) is deliberately independent of the partition layout — the partitions are
   non-load-bearing infill (normal multi-family slab+column construction), per rule 72 §3.
-- 9 doors + 5 windows, every opening with its own `insert_lintel`-sized RC lintel and
-  `LINTEL_TYPE` tag (14 lintels total).
+- 9 doors + 6 windows (the living room got two 1500mm windows flanking a structural column
+  instead of one 3000mm picture window — see below), every opening with its own
+  `insert_lintel`-sized RC lintel and `LINTEL_TYPE` tag (15 lintels total).
+
+## Real defects found live and fixed (not caught by criteria 18-20 or audit_all_rooms)
+
+A first pass of this build looked clean under every check above, but `acad.validators.check_overlaps`
+(added to step 9 per rule 73's own new section on this) found real physical collisions between
+independently-placed elements — the kind of thing an adjacency/area check can never catch because
+each element was individually valid, just not cross-checked against the others:
+
+1. **Two structural columns punched through windows.** The 3×2 grid and the window positions were
+   designed separately; columns at x=4333 and x=8667 landed inside the kitchen window's and living
+   room window's own spans. Fixed by moving the kitchen window and splitting the living room's
+   single wide window into two windows flanking the column instead (also a more realistic facade
+   treatment than one picture window straddling a structural member).
+2. **Two bathroom doors swung into their own room's WC bowl.** `populate_bathroom`'s preset always
+   places the WC at a fixed offset from the room corner; the doors were positioned without checking
+   where that would land. Fixed by repositioning both doors toward the corner furthest from the WC.
+3. **Fixing #1 created a new collision**: relocating the door in Łazienka 1 to clear the WC put it
+   in the path of a shower fixture instead. Then rotating the fixture cluster 180° via
+   `populate_bathroom`'s own `orientation` parameter to clear a *column* collision (below) put the
+   shower back in the door's way — fixed by nudging the door position again. Three fix-then-recheck
+   iterations total before this one room came back clean.
+4. **A shower fixture collided with a north-wall column.** Same root cause as #1 (grid and fixture
+   placement designed independently) — fixed with `populate_bathroom(orientation="south")`, which
+   rotates the whole fixture cluster around the room centroid rather than requiring the room
+   geometry itself to change.
+
+Final state: `check_overlaps` across columns-vs-windows/doors/furniture/plumbing and
+doors-vs-plumbing/furniture — **0 overlaps in every category**, re-verified after each fix, not
+assumed clean after the first one.
 
 ## Verification results
 

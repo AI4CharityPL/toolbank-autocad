@@ -39,7 +39,7 @@ REPO = r"C:\Users\DELL\Dev\autocad-mcp"
 sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
-CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules"]
+CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -170,15 +170,32 @@ lintel_and_door("x2200", P(2200, 2175), 90, 900, "0.1", "0.2", "D-02")
 lintel_and_door("x5200", P(5200, 2175), 90, 900, "0.2", "0.3", "D-03")
 lintel_and_door("y4350", P(1100, DAY_Y1), 0, 900, "0.1", "0.4", "D-04")
 lintel_and_door("y5700", P(1550, BUF_Y1), 0, 900, "0.4", "0.5", "D-05")
-lintel_and_door("y5700", P(4050, BUF_Y1), 0, 800, "0.4", "0.6", "D-06")
+# D-06/D-09 moved from their original centred positions (x=4050/12050): a live check_overlaps
+# pass (S-COLS/A-DOOR clean, but A-DOOR vs A-PLMB-WC/A-PLMB-BSN was NOT) found both original
+# positions swung the door leaf straight into the room's own WC bowl, placed by
+# populate_bathroom's own preset formula (min.X+400, min.Y+400) - a real collision between two
+# independently-placed elements that a logical/adjacency check alone never would have caught.
+# D-06 moved again, from x=4500 to x=4600: turning Bath1's fixtures 180 (see the
+# populate_bathroom call below) to clear a DIFFERENT collision (the shower vs. the north-wall
+# column) put the shower where this door used to swing - each fix was re-verified against every
+# other already-placed element, not assumed safe from one prior check.
+lintel_and_door("y5700", P(4600, BUF_Y1), 0, 800, "0.4", "0.6", "D-06")
 lintel_and_door("y5700", P(6525, BUF_Y1), 0, 900, "0.4", "0.7", "D-07")
 lintel_and_door("y5700", P(9575, BUF_Y1), 0, 900, "0.4", "0.8", "D-08")
-lintel_and_door("y5700", P(12050, BUF_Y1), 0, 800, "0.4", "0.9", "D-09")
+lintel_and_door("y5700", P(12450, BUF_Y1), 0, 800, "0.4", "0.9", "D-09")
 
 # windows - kitchen/living on the south facade, all 3 bedrooms on the north facade;
-# bathrooms deliberately windowless (mechanical ventilation, common Polish apartment practice)
-lintel_and_window("south", P(3700, 0), 0, 1500, "0.2", "W-01")
-lintel_and_window("south", P(9100, 0), 0, 3000, "0.3", "W-02")
+# bathrooms deliberately windowless (mechanical ventilation, common Polish apartment practice).
+# W-01/W-02 repositioned from their original centred spans (x=3700/x=9100 single 3000mm window):
+# a live check_overlaps pass (S-COLS vs A-GLAZ) found BOTH directly overlapped the south-wall
+# structural columns at x=4333/x=8667 - the grid was placed independently of the windows and
+# nobody cross-checked the two against each other until this verification pass. Kitchen's window
+# is shifted west of its column; the living room's single wide window is split into two bays
+# flanking its column instead, which is also a more realistic facade treatment than one picture
+# window straddling a structural column.
+lintel_and_window("south", P(3000, 0), 0, 1500, "0.2", "W-01")
+lintel_and_window("south", P(7000, 0), 0, 1500, "0.3", "W-02A")
+lintel_and_window("south", P(10500, 0), 0, 1500, "0.3", "W-02B")
 lintel_and_window("north", P(1550, NIGHT_Y1), 0, 1500, "0.5", "W-03")
 lintel_and_window("north", P(6525, NIGHT_Y1), 0, 1500, "0.7", "W-04")
 lintel_and_window("north", P(9575, NIGHT_Y1), 0, 1500, "0.8", "W-05")
@@ -240,10 +257,15 @@ call("furniture", "populate_room", {
     "bboxMin": bbox_of(rooms["0.8"])[0], "bboxMax": bbox_of(rooms["0.8"])[1],
     "preset": "bedroom", "roomName": "0.8",
 }, label="populate_room 0.8 Sypialnia dziecka 2 (preset=bedroom)")
+# orientation="south" (180deg rotation around the room centroid) moved the shower fixture from
+# this room's NE corner - found colliding with the north-wall column at x=4333 by a live
+# check_overlaps pass once columns-vs-plumbing was added to the check list - to the SW corner,
+# clear of every column. Bath2 didn't need this: its own nearest column (x=13000) already missed
+# the shower by ~55mm, confirmed by the same pass reporting only one overlap, not two.
 call("plumbing", "populate_bathroom", {
     "bboxMin": bbox_of(rooms["0.6"])[0], "bboxMax": bbox_of(rooms["0.6"])[1],
-    "preset": "bathroom-residential", "roomName": "0.6",
-}, label="populate_bathroom 0.6 Lazienka 1")
+    "preset": "bathroom-residential", "roomName": "0.6", "orientation": "south",
+}, label="populate_bathroom 0.6 Lazienka 1 (orientation=south, clears the north-wall column)")
 call("plumbing", "populate_bathroom", {
     "bboxMin": bbox_of(rooms["0.9"])[0], "bboxMax": bbox_of(rooms["0.9"])[1],
     "preset": "bathroom-residential", "roomName": "0.9",
@@ -257,7 +279,7 @@ os.makedirs(os.path.join(REPO, "projects", "apartment-120-test"), exist_ok=True)
 call("files", "save_document_as", {"path": os.path.join(REPO, "projects", "apartment-120-test", "Apartment120Test.dwg")},
      label="save_document_as")
 
-print(f"\nDoors: 9   Windows: 5   Lintels: {lintel_count}   Columns: {len(grid_xs) * len(grid_ys)}   Beams: 1   Rooms: {len(rooms)}")
+print(f"\nDoors: 9   Windows: 6   Lintels: {lintel_count}   Columns: {len(grid_xs) * len(grid_ys)}   Beams: 1   Rooms: {len(rooms)}")
 
 print("\n" + "=" * 70)
 print("STEP 9: verification - audit_all_rooms (real flags[] array) + rule 60 SS1a criteria 18-20")
@@ -302,5 +324,27 @@ built = set(edges)
 print(f"  declared - built (missing): {declared - built}")
 print(f"  built - declared (unexpected): {built - declared}")
 print(f"  adjacency graph matches declared table exactly: {declared == built}")
+
+print("\n" + "=" * 70)
+print("STEP 9 cont'd: GEOMETRIC overlap check (acad.validators.check_overlaps) - rule 73's own")
+print("gap: logical/adjacency checks alone missed real physical collisions the first time this")
+print("build ran (columns punching through windows, doors swinging into WC fixtures). These")
+print("categories catch coordination failures between independently-placed element types.")
+print("=" * 70)
+overlap_pairs = [
+    (["S-COLS"], ["A-GLAZ"], "columns vs windows"),
+    (["S-COLS"], ["A-DOOR"], "columns vs doors"),
+    (["S-COLS"], ["A-FURN-BED-RES", "A-FURN-CBT", "A-FURN-KIT", "A-FURN-SFA", "A-FURN-TBL"], "columns vs furniture"),
+    (["S-COLS"], ["A-PLMB-WC", "A-PLMB-BSN", "A-PLMB-BT", "A-PLMB-SHW"], "columns vs plumbing fixtures"),
+    (["A-DOOR"], ["A-PLMB-WC", "A-PLMB-BSN", "A-PLMB-BT", "A-PLMB-SHW"], "doors vs plumbing fixtures"),
+    (["A-DOOR"], ["A-FURN-BED-RES", "A-FURN-CBT", "A-FURN-KIT", "A-FURN-SFA", "A-FURN-TBL"], "doors vs furniture"),
+]
+total_overlaps = 0
+for a, b, label in overlap_pairs:
+    _, r = S["validators"].call("check_overlaps", {"layersA": a, "layersB": b, "mode": "bbox_intersect"})
+    n = len(r.get("overlaps", []))
+    total_overlaps += n
+    print(f"  {label}: {n} overlap(s)" + (f"  -> {json.dumps(r['overlaps'], ensure_ascii=False)[:400]}" if n else ""))
+print(f"\n  TOTAL cross-category geometric overlaps found: {total_overlaps} (0 = clean)")
 
 print("\n==== apartment-120-test build complete ====")

@@ -22,7 +22,15 @@ All notable changes to this project will be documented in this file. Format: [Ke
   (a long-standing, otherwise-correct design for a bank that had no paperspace content) and would
   false-FAIL `verify_construction_readiness.py`'s title-block/schedule checks against correctly
   paperspace-routed content; given the same additive pattern, a new opt-in `anySpace` parameter
-  (default `false`, unchanged behaviour) also scans every non-Model layout's own block.
+  (default `false`, unchanged behaviour) also scans every non-Model layout's own block. **This
+  surfaced a second, independent bug once deployed**: this bank has a two-hop DTO architecture
+  (an MCP call deserializes into a Backend-side args record, which a generic proxy re-serializes
+  to forward to the plugin over the named pipe) — a field added only to the plugin-side DTO is
+  silently dropped at the Backend hop, no error. `anySpace=true` had zero observable effect after
+  the plugin redeploy until the matching field was also added to the Backend's own `ByLayerArgs`
+  (`AcadMcp.Backend/Categories/Selection/SelectionDtos.cs`) — confirmed live before and after
+  (`select_by_layer` went from finding 0 title-block entities to 31). Both proof projects now
+  report a clean PASS from `verify_construction_readiness.py`.
 - **AutoCAD's `Table.GenerateLayout` clamps every row to a TableStyle-driven minimum well above
   the requested `RowHeight`, independent of column width/wrapping** — confirmed live (widening the
   tightest `SchedulesPalette` columns changed a table's real height not at all): an 8-row window

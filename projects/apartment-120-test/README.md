@@ -108,8 +108,16 @@ now mandatory per rule 73 step 3a), and a real paperspace sheet (layout `A-101`)
    backend args, defaulting to the old model-space behaviour everywhere so no other caller's
    behaviour changed. `verify_construction_readiness.py`'s own `select_by_layer` check inherited
    the same model-space-only scope (`acad-selection`'s long-standing, otherwise-correct design) —
-   given a matching opt-in `anySpace` parameter, same additive pattern, not yet redeployed to the
-   AutoCAD session this was verified in (see Known limitations).
+   given a matching opt-in `anySpace` parameter, same additive pattern. **This surfaced a second,
+   independent bug once the plugin was redeployed and `anySpace=true` still had zero effect**:
+   this bank has a two-hop DTO architecture (an MCP tool call deserializes into a Backend-side
+   args record, which `SelectionProxy` generically re-serializes to forward to the plugin over
+   the named pipe) — a field added only to the plugin-side `ByLayerArgsDto` is silently dropped
+   at the Backend hop before it ever reaches the plugin, no error, no warning. Fixed by adding
+   the matching `AnySpace` field to the Backend's own `ByLayerArgs` record
+   (`AcadMcp.Backend/Categories/Selection/SelectionDtos.cs`) — confirmed live, `select_by_layer`
+   now finds 31 title-block entities and 3 schedule tables where it found 0 before this second
+   fix, and `verify_construction_readiness.py` reports a clean 14/14 PASS.
 3. **Schedule tables silently 46-92% taller than `SchedulesTools`' own row-count × row-height
    math predicts.** AutoCAD's `Table.GenerateLayout` clamps every row to a TableStyle-driven
    minimum regardless of the requested `RowHeight` — confirmed live: window schedule (8 rows,
@@ -163,14 +171,10 @@ that would still take, not a hidden shortfall.
 
 ## Known limitations (documented honestly, not hidden)
 
-- `verify_construction_readiness.py`'s title-block/schedule checks (item 3 above) require the
-  AutoCAD plugin's new `select_by_layer(..., anySpace=true)` parameter, which is built and
-  compiles clean but was not redeployed to the AutoCAD session this project was last verified in
-  (deploying requires killing and relaunching AutoCAD, which proved unreliable to automate this
-  session — see rule 74 update). Title block and all 3 schedules were confirmed present, correctly
-  positioned, and non-overlapping by direct `get_entity`/bbox inspection and a rendered PNG export
-  of the `A-101` layout, not by the orchestrated script. Re-run `verify_construction_readiness.py`
-  after the next plugin redeploy to get a clean automated PASS on this item.
+- `verify_construction_readiness.py` now reports a clean **14/14 PASS** (2 SKIP: no `.ctb`
+  supplied, Vision sidecar not running — both expected, see below). This needed BOTH the plugin
+  `anySpace` fix and the second, independent Backend-DTO fix it surfaced (see the defect list
+  above) — the plugin redeploy alone was not enough, confirmed live before concluding it worked.
 - `configure_plot(layoutName="A-101", paperSize="A1")` silently resolved to
   `psk:NorthAmericaNumber10Envelope` instead of an ISO A1 media name (unlike `"A2"`/`"A3"`, which
   both resolved correctly) — the actual title block/border/viewport geometry is unaffected (sized

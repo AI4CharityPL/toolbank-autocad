@@ -118,6 +118,32 @@ Domain categories grow large. To keep `tools/list` payloads under MCP's soft
 - Tools that don't fit the cap go into specialised subcategories — the router
   knows about them.
 
+## 11. Adding a parameter to an existing tool touches TWO DTOs, not one
+
+Confirmed live (rule 74 C.4's own retrofit): the call path for a `RequiresPlugin` tool is MCP
+call → a Backend-side args record (deserialized by the `[McpTool]`-decorated method) → a generic
+proxy (`SelectionProxy.CallAsync`, `ArchitectureProxy.*Async`, or similar) that **re-serializes
+that Backend record from scratch** and forwards it to the plugin over the named pipe → a
+plugin-side args DTO deserializes it again on the AutoCAD side. A field added to ONLY the
+plugin-side DTO compiles clean, deploys clean, and is silently dropped at the Backend hop before
+it ever reaches the plugin — no exception, no warning, `System.Text.Json` just ignores an unknown
+property by default. The symptom is maximally confusing: the new parameter appears to have zero
+effect, the plugin DLL is provably the freshly-built one (matching file size/timestamp), and
+everything else about the change is correct.
+
+**When adding an optional parameter to an existing `RequiresPlugin` tool, add it to BOTH**:
+
+1. The plugin-side args DTO (`Plugin/Tools/*Dtos.cs`) and the handler that reads it.
+2. The Backend-side args record (`Backend/Categories/<Category>/*Dtos.cs`) that the
+   `[McpTool]`-decorated method actually deserializes — this is the one that's easy to forget,
+   since the plugin-side change is what actually "does" the new behaviour and gets all the
+   attention.
+
+Verify by calling the tool with the new parameter set to a value that would produce an
+OBSERVABLY DIFFERENT result if honoured (not just "no error") and confirming the result actually
+changed — a redeploy report saying "success" and a compile that says "0 errors" both mean nothing
+here, since both hops compile and deploy fine even when only one of the two DTOs was updated.
+
 ## 10. Adding a new domain category — checklist
 
 1. Write the discipline traps `.md` (rule 36 / 37 / 38 / 39 / 42 …) FIRST.

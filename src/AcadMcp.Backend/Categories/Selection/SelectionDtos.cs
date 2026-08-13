@@ -9,8 +9,15 @@ namespace AcadMcp.Backend.Categories.Selection;
 public sealed record EmptyArgs();
 
 public sealed record ByLayerArgs(
-    [property: JsonPropertyName("layer")]   string Layer,
-    [property: JsonPropertyName("frozen")]  bool? Frozen = null);
+    [property: JsonPropertyName("layer")]     string Layer,
+    [property: JsonPropertyName("frozen")]    bool? Frozen = null,
+    // Backend DTOs are a SEPARATE serialization hop from the plugin's own (SelectionProxy
+    // generically re-serializes this record to forward to acad.selection.select_by_layer) - a
+    // field added only on the plugin side is silently dropped here before it ever reaches the
+    // plugin. Confirmed live: anySpace=true had zero effect until this field was added too
+    // (verify_construction_readiness.py kept reporting 0 title-block/schedule entities even
+    // after redeploying a plugin DLL that genuinely had the anySpace parameter).
+    [property: JsonPropertyName("anySpace")]  bool AnySpace = false);
 
 public sealed record ByColorArgs(
     [property: JsonPropertyName("color")]    ColorDto Color,

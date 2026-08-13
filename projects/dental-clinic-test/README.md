@@ -156,11 +156,11 @@ by closing the dental-fixture catalog gap first since it affects the most criter
 
 ## Known limitations (documented honestly, not hidden — same items as apartment-120-test)
 
-- `verify_construction_readiness.py`'s title-block/schedule checks need the plugin's
-  `select_by_layer(..., anySpace=true)` parameter, built and compiling clean but not yet
-  redeployed to the AutoCAD session this project was verified in. Title block and both schedules
-  confirmed present and correctly composed by a rendered PNG export of the `A-101` layout, not by
-  the orchestrated script — re-run after the next plugin redeploy for a clean automated PASS.
+- `verify_construction_readiness.py` now reports a clean **13/13 PASS** (3 SKIP: no windows in
+  this typology by design, no `.ctb` supplied, Vision sidecar not running — all expected). Needed
+  a second, independent fix beyond the plugin's `anySpace` parameter — see
+  `apartment-120-test`'s own README for the full writeup (a Backend-side DTO hop was silently
+  dropping the new field before it ever reached the plugin).
 - `configure_plot(paperSize="A1")` resolves to `psk:NorthAmericaNumber10Envelope` instead of an
   ISO A1 media name (same as apartment-120-test) — cosmetic to the plotter's own media table only,
   the drawn geometry is sized from this bank's own `CalloutsPalette.Sheets["A1"]` constant and is

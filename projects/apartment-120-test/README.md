@@ -126,6 +126,41 @@ now mandatory per rule 73 step 3a), and a real paperspace sheet (layout `A-101`)
    Fixed with an explicit `fields: [{"key": "SKALA", "value": "1:100"}]` override (an explicit
    field wins over the auto-fill since `TryAdd`'s first write sticks).
 
+## Vision review — rule 60 §1 17-criterion scorecard (2026-08-13, Path B)
+
+Scored directly by the driving Claude Code session against the rendered `A-101` export (rule 74
+item 9, Path B — the sidecar wasn't running this session; see Known limitations). Cross-checked
+against the build script's own tool calls where the image alone doesn't settle it.
+
+| # | Criterion | Score | Note |
+|---|---|---|---|
+| 1 | Wall hatching | 1.0 | All 4 exterior walls, concrete, handle-based |
+| 2 | Furniture | 1.0 | Every inhabited room populated (kitchen/living/3 bedrooms/2 bathrooms) |
+| 3 | Sanitary fixtures | 1.0 | Both bathrooms fully fixtured via `bathroom-residential` |
+| 4 | Doors | 1.0 | 9 doors, jamb+swing+NUMBER+`LINTEL_TYPE`, no REI declared (not required for interior residential doors) |
+| 5 | Windows | 1.0 | 6 windows, frame+glass+sill+centre |
+| 6 | Vertical circulation | 1.0 (vacuous) | Single ground-floor unit, no shared stair/lift in scope — nothing present to be wrong |
+| 7 | Structural grid | 1.0 | Lettered/numbered axes, continuous grid lines, dimensioned |
+| 8 | Dimensioning | 0.5 | Main perimeter/partition chains present; no sub-tier dimensioning of individual door/window widths |
+| 9 | Schedules | 1.0 | Room/door/window — real paperspace Tables |
+| 10 | Callouts | 0.5 | Title block/north arrow/scale bar correct; no profile/detail (column) callout leaders |
+| 11 | Section lines | 1.0 | 1 section (A-A) with cut-plane markers |
+| 12 | Lineweight/CTB | 0.0 | No `.ctb` supplied (rule 61 §3, opt-in) |
+| 13 | Finishes legend | 0.0 | `generate_finish_legend` never called |
+| 14 | Orientation + scale | 1.0 | North arrow + scale bar present, on-plan rather than sheet-corner — valid professional convention |
+| 15 | RCP (optional) | 0.0 | Not built — rubric marks this optional, weighted accordingly in the read below |
+| 16 | Jamb/sill/lintel blow-ups | 0.0 | No `DET-XX` detail viewports |
+| 17 | Room program fidelity | 1.0 | All 9 declared rooms present, correctly labelled; `labelMismatch` flags are a flood-fill measurement artifact (documented above), not a fidelity defect |
+
+**Score: 12.0 / 17 — "technical study" band (10-13/17): OK for internal review, NOT tender/pozwolenie-ready.**
+
+`fatal_gaps` (score < 1.0, real remaining work before "wykonawczy" status): CTB/lineweight (12),
+finishes legend (13), profile/detail callouts (10), sub-tier dimensioning (8), blow-up details
+(16). RCP (15) is explicitly optional per the rubric and carries less weight than the others.
+This is an honest result for a project whose own stated purpose is proving rule 73/74's
+*process*, not shipping a tender-ready package — the gaps above are the concrete list of what
+that would still take, not a hidden shortfall.
+
 ## Known limitations (documented honestly, not hidden)
 
 - `verify_construction_readiness.py`'s title-block/schedule checks (item 3 above) require the

@@ -88,23 +88,48 @@ supplied") rather than silently skip it.**
 
 ### 9. Vision review — full step once configured, best-effort until then
 
-`POST /v1/architect-review` on the Vision sidecar (default `http://127.0.0.1:<port>/health` for
-the health-check first; port is written to `%LOCALAPPDATA%\AcadMcp\vision.port` by
-`scripts/start-vision.ps1`, do not assume the documented default 50062 without checking the port
-file — it was wrong the first time this rule's own history checked it). Needs the sidecar running
-(`scripts/start-vision.ps1 -EnsureRunning -WaitHealthy`) and one of
-`ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GOOGLE_API_KEY` set in ITS environment — **never enter an
-API key into any file, config, or environment variable on a user's behalf, even if explicitly
-asked and even if the user says they'll rotate it afterward; give the user the exact command
-(`setx ANTHROPIC_API_KEY "..."`) and let them run it themselves.** The pre-commit secret-scan
-gate (rule 40 item 4) enforces the repo side of this same rule — these three env-var names must
-never appear as a literal value in a staged file. Once configured (verified via
-the sidecar's own `/health`, not assumed from a user's report), this is a REQUIRED step: export
-the layout to an image, call `/v1/architect-review`, record `score`/`criteria[]`/`fatal_gaps` in
-the project's README. `score < 15` (rule 60's own threshold) blocks "wykonawczy" status — fix the
-worst `fatal_gaps` and re-score, don't ship a sub-15 result with a shrug. If the sidecar genuinely
-isn't reachable in a given session, the README must say so with the reason, matching step 8's
-discipline.
+Two valid paths to satisfy this step — pick whichever fits the session, and say in the project's
+README which one was used:
+
+**Path A — the Vision sidecar** (works headless: CI, a non-Claude client, no interactive agent
+driving the build). `POST /v1/architect-review` on the sidecar (default
+`http://127.0.0.1:<port>/health` for the health-check first; port is written to
+`%LOCALAPPDATA%\AcadMcp\vision.port` by `scripts/start-vision.ps1`, do not assume the documented
+default 50062 without checking the port file — it was wrong the first time this rule's own
+history checked it). Needs the sidecar running (`scripts/start-vision.ps1 -EnsureRunning
+-WaitHealthy`) and one of `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GOOGLE_API_KEY` set in ITS
+environment — **never enter an API key into any file, config, or environment variable on a
+user's behalf, even if explicitly asked and even if the user says they'll rotate it afterward;
+give the user the exact command (`setx ANTHROPIC_API_KEY "..."`) and let them run it
+themselves.** The pre-commit secret-scan gate (rule 40 item 4) enforces the repo side of this
+same rule — these three env-var names must never appear as a literal value in a staged file.
+
+**Path B — the driving agent scores it directly** (added 2026-08-13, after a user asked whether
+Claude Code could connect directly instead of every user needing their own API key — it can,
+when an interactive multimodal agent is actually the one building). If a Claude Code (or
+similarly capable) session is running the build itself, it already has a Read tool that renders
+images — export the layout to PNG (`acad.files.export_file`, `scope="Window"` with explicit
+bounds; `scope="Extents"` on a layout with a viewport has produced a duplicated-content export,
+see rule 61/74 item 8's own note) and read it directly. Score the SAME rule 60 §1 17-criterion
+table by hand (criterion-by-criterion, 0/0.5/1, citing what was actually seen in the image and,
+where useful, cross-checked against the build script's own tool calls — e.g. "criterion 13,
+finishes legend: 0, `generate_finish_legend` was never called"), producing the identical
+`score`/`criteria[]`/`fatal_gaps` shape Path A's JSON would have returned, and record it in the
+project's README the same way. No API key, no sidecar process, no port-discovery needed. The
+tradeoff against Path A: it only works when an agent capable of reading images is actually
+present and driving the session — it is not a substitute for Path A in a headless pipeline.
+Score honestly: an agent scoring its own build has an obvious incentive to inflate — treat
+"vacuously not applicable" (e.g. window-quality criterion 5 when a typology has zero windows by
+design, matching criterion 19 §1a's own vacuous-satisfaction logic) as 1.0, a genuinely optional
+criterion (15, RCP) as 0 when absent rather than silently excluded from the denominator, and
+every other absent/incomplete element scored on its real merits, not rounded up.
+
+Whichever path is used: this is a REQUIRED step, not best-effort, once either path is available.
+`score < 15` (rule 60's own threshold) blocks "wykonawczy" status — fix the worst `fatal_gaps`
+and re-score, don't ship a sub-15 result with a shrug; a proof-of-method project that openly
+states it is not yet tender-ready is honest, a proof-of-method project that hides a low score is
+not. If NEITHER path is available in a given session (no sidecar, no image-capable agent), the
+README must say so with the reason, matching step 8's discipline.
 
 ### 10. One orchestrated verification pass, not manual recall
 

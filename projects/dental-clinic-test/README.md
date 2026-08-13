@@ -120,6 +120,40 @@ No new defect classes beyond what apartment-120-test's own retrofit already foun
 confirms those were real, general capability gaps (not apartment-specific), not something to
 re-diagnose per project.
 
+## Vision review — rule 60 §1 17-criterion scorecard (2026-08-13, Path B)
+
+Scored directly by the driving Claude Code session against the rendered `A-101` export (rule 74
+item 9, Path B — the sidecar wasn't running this session; see Known limitations).
+
+| # | Criterion | Score | Note |
+|---|---|---|---|
+| 1 | Wall hatching | 1.0 | All 8 L/Z perimeter segments, concrete, handle-based |
+| 2 | Furniture | 0.0 | Only Poczekalnia furnished (`waiting` preset); Rejestracja, both Gabinety, Sterylizacja, Magazyn, RTG, Socjalne have zero furniture — a real, already-documented catalog gap (no dental-chair/small-reception preset exists yet), not hidden here either |
+| 3 | Sanitary fixtures | 0.5 | Both WCs fully fixtured; treatment rooms carry no plumbing at all (a real dental chair setup needs at minimum a basin — same catalog gap as #2) |
+| 4 | Doors | 1.0 | 12 doors, jamb+swing+NUMBER+`LINTEL_TYPE` |
+| 5 | Windows | 1.0 (vacuous) | Zero windows by declared design (WT §93 doesn't apply to this typology) — nothing present to be wrong, matches criterion 19 §1a's own vacuous-satisfaction logic |
+| 6 | Vertical circulation | 1.0 (vacuous) | Single-story clinic, no shared stair/lift in scope |
+| 7 | Structural grid | 1.0 | Axes present, dimensioned, columns filtered to the real L-shaped envelope |
+| 8 | Dimensioning | 0.5 | Main perimeter/band chains present; no sub-tier dimensioning of individual door widths |
+| 9 | Schedules | 1.0 | Room + door — real paperspace Tables (correctly no window schedule) |
+| 10 | Callouts | 0.5 | Title block/north arrow/scale bar correct; no profile/detail callout leaders |
+| 11 | Section lines | 1.0 | 1 section (A-A) with cut-plane markers |
+| 12 | Lineweight/CTB | 0.0 | No `.ctb` supplied (rule 61 §3, opt-in) |
+| 13 | Finishes legend | 0.0 | `generate_finish_legend` never called |
+| 14 | Orientation + scale | 1.0 | North arrow + scale bar present, on-plan |
+| 15 | RCP (optional) | 0.0 | Not built — explicitly optional per the rubric |
+| 16 | Jamb/sill/lintel blow-ups | 0.0 | No `DET-XX` detail viewports |
+| 17 | Room program fidelity | 1.0 | All 12 declared rooms present, correctly labelled; the `labelMismatch` flags are the same flood-fill measurement artifact as the apartment build, not a fidelity defect |
+
+**Score: 10.5 / 17 — bottom of the "technical study" band (10-13/17): OK for internal review,
+NOT tender/pozwolenie-ready.** Lower than `apartment-120-test`'s 12.0/17, and honestly so — the
+furniture/plumbing catalog gap (criteria 2-3) bites harder here, where most of the building's own
+purpose-rooms (Gabinety, Sterylizacja, RTG) sit completely empty, than in the apartment where
+every inhabited room got a real preset. `fatal_gaps`: furniture (2), sanitary fixtures (3),
+CTB/lineweight (12), finishes legend (13), profile/detail callouts (10), sub-tier dimensioning
+(8), blow-up details (16) — the concrete list of what "wykonawczy" status would still need, led
+by closing the dental-fixture catalog gap first since it affects the most criteria at once.
+
 ## Known limitations (documented honestly, not hidden — same items as apartment-120-test)
 
 - `verify_construction_readiness.py`'s title-block/schedule checks need the plugin's

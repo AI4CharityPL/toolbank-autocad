@@ -38,8 +38,12 @@ public sealed record DrawWallArgs(
     [property: JsonPropertyName("start")]      Point2dDto Start,
     [property: JsonPropertyName("end")]        Point2dDto End,
     [property: JsonPropertyName("thicknessMm")] double ThicknessMm = 200.0,
-    [property: JsonPropertyName("centerlineLayer")] string CenterlineLayer = ArchitecturePalette.LayerWallCtrl,
-    [property: JsonPropertyName("faceLayer")]  string FaceLayer = ArchitecturePalette.LayerWall);
+    // Null (the default) means "pick the default for `bearing`" - resolved in DrawWall/
+    // DrawWallsChain, not here, so an explicit caller-supplied layer always wins regardless
+    // of `bearing`. See ArchitecturePalette.LayerWallBearing (rule 74 C.1).
+    [property: JsonPropertyName("centerlineLayer")] string? CenterlineLayer = null,
+    [property: JsonPropertyName("faceLayer")]  string? FaceLayer = null,
+    [property: JsonPropertyName("bearing")]    bool Bearing = false);
 
 /// <summary>Result of drawing one wall: centreline + the two parallel faces.</summary>
 public sealed record DrawWallResult(
@@ -55,8 +59,9 @@ public sealed record DrawWallsChainArgs(
     [property: JsonPropertyName("vertices")]   IReadOnlyList<Point2dDto> Vertices,
     [property: JsonPropertyName("thicknessMm")] double ThicknessMm = 200.0,
     [property: JsonPropertyName("closed")]     bool Closed = false,
-    [property: JsonPropertyName("centerlineLayer")] string CenterlineLayer = ArchitecturePalette.LayerWallCtrl,
-    [property: JsonPropertyName("faceLayer")]  string FaceLayer = ArchitecturePalette.LayerWall);
+    [property: JsonPropertyName("centerlineLayer")] string? CenterlineLayer = null,
+    [property: JsonPropertyName("faceLayer")]  string? FaceLayer = null,
+    [property: JsonPropertyName("bearing")]    bool Bearing = false);
 
 public sealed record DrawWallsChainResult(
     [property: JsonPropertyName("centerline")] EntityHandle Centerline,

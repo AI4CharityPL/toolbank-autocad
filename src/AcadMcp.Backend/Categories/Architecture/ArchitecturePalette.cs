@@ -20,6 +20,14 @@ internal static class ArchitecturePalette
     // Architectural layers (A-*).
     public const string LayerWall            = "A-WALL";
     public const string LayerWallCtrl        = "A-WALL-CTRL";
+    // Load-bearing wall variant (rule 74 C.1) - a separate layer, not a new attribute on
+    // A-WALL, so a downstream consumer can tell nosna/dzialowa apart by SELECTING the layer
+    // (list_layers / get_entities_on_layer) the same way it already does for every other
+    // wall-type distinction in this bank (A-WALL-LEAD, A-WALL-FARA). Colour 4 (CYAN) is the
+    // "load-bearing / section cuts (thick, 0.50mm)" tier rule 61 SS2 already reserves - this is
+    // the first layer that actually uses it, not a new colour assignment.
+    public const string LayerWallBearing     = "A-WALL-BEAR";
+    public const string LayerWallBearingCtrl = "A-WALL-BEAR-CTRL";
     public const string LayerDoor            = "A-DOOR";
     public const string LayerDoorSwing       = "A-DOOR-SWING";
     public const string LayerGlazing         = "A-GLAZ";
@@ -49,6 +57,8 @@ internal static class ArchitecturePalette
     {
         new(LayerWall,            7, "Continuous", "wall faces (visible)",                false),
         new(LayerWallCtrl,        8, "CENTER",     "wall centrelines",                    false),
+        new(LayerWallBearing,     4, "Continuous", "load-bearing wall faces (rule 74 C.1)", false),
+        new(LayerWallBearingCtrl, 8, "CENTER",     "load-bearing wall centrelines",       false),
         new(LayerDoor,           30, "Continuous", "door leaves and frames",              false),
         new(LayerDoorSwing,      30, "DASHED",     "door swing arcs",                     false),
         new(LayerGlazing,         4, "Continuous", "glazing, sills, headers",             false),

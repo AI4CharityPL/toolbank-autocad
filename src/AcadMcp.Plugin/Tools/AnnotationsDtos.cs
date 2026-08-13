@@ -16,7 +16,8 @@ internal sealed record AddDBTextArgsDto(
     [property: JsonPropertyName("rotationDeg")] double RotationDeg = 0.0,
     [property: JsonPropertyName("textStyle")]   string? TextStyle = null,
     [property: JsonPropertyName("alignment")]   string? Alignment = null,
-    [property: JsonPropertyName("layer")]       string? Layer = null);
+    [property: JsonPropertyName("layer")]       string? Layer = null,
+    [property: JsonPropertyName("layoutName")]  string? LayoutName = null);
 
 internal sealed record UpdateDBTextArgsDto(
     [property: JsonPropertyName("handle")]   string Handle,
@@ -64,7 +65,8 @@ internal sealed record AddTableArgsDto(
     [property: JsonPropertyName("colWidth")]   double ColWidth = 30.0,
     [property: JsonPropertyName("data")]       IReadOnlyList<IReadOnlyList<string>>? Data = null,
     [property: JsonPropertyName("textStyle")]  string? TextStyle = null,
-    [property: JsonPropertyName("layer")]      string? Layer = null);
+    [property: JsonPropertyName("layer")]      string? Layer = null,
+    [property: JsonPropertyName("layoutName")] string? LayoutName = null);
 
 internal sealed record SetTableCellArgsDto(
     [property: JsonPropertyName("handle")]   string Handle,

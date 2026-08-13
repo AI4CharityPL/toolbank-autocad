@@ -60,6 +60,23 @@ public class ArchitectureTests
     }
 
     [Fact]
+    public void Architecture_palette_carries_the_load_bearing_wall_layer_pair()
+    {
+        // Rule 74 C.1: draw_wall/draw_walls_chain's bearing=true default resolves to these -
+        // colour 4 (CYAN) is the rule 61 §2 "load-bearing / section cuts (thick)" tier, first
+        // actually used here rather than just reserved in the table.
+        var bearing = ArchitecturePalette.All.Single(s => s.Name == "A-WALL-BEAR");
+        var bearingCtrl = ArchitecturePalette.All.Single(s => s.Name == "A-WALL-BEAR-CTRL");
+
+        Assert.Equal(4, bearing.AciColor);
+        Assert.Equal("Continuous", bearing.Linetype);
+        Assert.Equal(8, bearingCtrl.AciColor);
+        Assert.Equal("CENTER", bearingCtrl.Linetype);
+        Assert.Equal(ArchitecturePalette.LayerWallBearing, bearing.Name);
+        Assert.Equal(ArchitecturePalette.LayerWallBearingCtrl, bearingCtrl.Name);
+    }
+
+    [Fact]
     public void Architecture_health_tool_is_pluginless_and_readonly()
     {
         var registry = new ToolRegistry();

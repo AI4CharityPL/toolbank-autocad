@@ -9,15 +9,17 @@ using AcadMcp.Shared;
 namespace AcadMcp.Plugin.Tools;
 
 internal sealed record DrawLineArgsDto(
-    [property: JsonPropertyName("start")] Point2dDto Start,
-    [property: JsonPropertyName("end")]   Point2dDto End,
-    [property: JsonPropertyName("layer")] string? Layer);
+    [property: JsonPropertyName("start")]      Point2dDto Start,
+    [property: JsonPropertyName("end")]        Point2dDto End,
+    [property: JsonPropertyName("layer")]      string? Layer,
+    [property: JsonPropertyName("layoutName")] string? LayoutName = null);
 
 internal sealed record DrawPolylineArgsDto(
     [property: JsonPropertyName("vertices")]    List<Point2dDto> Vertices,
     [property: JsonPropertyName("closed")]      bool Closed,
     [property: JsonPropertyName("layer")]       string? Layer,
-    [property: JsonPropertyName("globalWidth")] double? GlobalWidth);
+    [property: JsonPropertyName("globalWidth")] double? GlobalWidth,
+    [property: JsonPropertyName("layoutName")]  string? LayoutName = null);
 
 internal sealed record DrawCircleArgsDto(
     [property: JsonPropertyName("center")] Point2dDto Center,

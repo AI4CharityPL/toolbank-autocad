@@ -113,6 +113,8 @@ require `BHATCH` repair. Order: walls → openings → join cleanup → hatches.
 | ---------------- | ------ | ------------ | ------------------------------------ |
 | `A-WALL`         | 7      | Continuous   | wall faces (visible)                 |
 | `A-WALL-CTRL`    | 8      | CENTER       | wall centrelines (frozen by default) |
+| `A-WALL-BEAR`    | 4      | Continuous   | load-bearing wall faces (rule 74 C.1) |
+| `A-WALL-BEAR-CTRL` | 8    | CENTER       | load-bearing wall centrelines        |
 | `A-DOOR`         | 30     | Continuous   | door leaves and frames               |
 | `A-DOOR-SWING`   | 30     | DASHED       | door swing arcs                      |
 | `A-GLAZ`         | 4      | Continuous   | glazing, sills, headers              |
@@ -125,6 +127,9 @@ require `BHATCH` repair. Order: walls → openings → join cleanup → hatches.
 | `S-COLS-CTRL`    | 8      | CENTER       | column centre-marks                  |
 | `S-SLAB`         | 7      | Continuous   | floor slab outlines                  |
 | `S-SLAB-HATCH`   | 8      | Continuous   | slab fill hatch                      |
+| `S-BEAM`         | 1      | DASHED       | beam plan-projection outline (rule 72) |
+| `S-BEAM-CTRL`    | 8      | CENTER       | beam centrelines                     |
+| `S-LINTEL`       | 1      | DASHED       | lintel plan-projection (heuristic sizing, rule 72) |
 | `A-ANNO-DIMS`    | 2      | Continuous   | dimensions                           |
 | `A-ANNO-NOTE`    | 2      | Continuous   | text notes, leaders                  |
 

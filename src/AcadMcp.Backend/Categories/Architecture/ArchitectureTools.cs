@@ -75,7 +75,7 @@ public static class ArchitectureTools
     // ─────────── walls ───────────
 
     [McpTool("draw_wall",
-        "Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset ±thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default — connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs.",
+        "Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset ±thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default — connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs. Set bearing=true for a load-bearing wall to draw on A-WALL-BEAR/A-WALL-BEAR-CTRL instead (colour 4/CYAN, the rule 61 §2 load-bearing lineweight tier) — mark every exterior wall and every wall on a structural grid axis this way (rule 74 C.1); an explicit centerlineLayer/faceLayer always overrides bearing's own default.",
         "architecture",
         Intent = new[]
         {
@@ -96,12 +96,22 @@ public static class ArchitectureTools
         if (len < 1e-6)
             throw new ArgumentException("wall start and end coincide");
 
+        // args.Bearing only picks the DEFAULT layer pair - an explicit centerlineLayer/faceLayer
+        // always wins, same precedence as every other typology-specific wall layer this bank
+        // already supports (rule 74 C.1).
+        string centerlineLayer = args.CenterlineLayer ??
+            (args.Bearing ? ArchitecturePalette.LayerWallBearingCtrl : ArchitecturePalette.LayerWallCtrl);
+        string faceLayer = args.FaceLayer ??
+            (args.Bearing ? ArchitecturePalette.LayerWallBearing : ArchitecturePalette.LayerWall);
+
         var existing = await ArchitectureProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
         var created = new List<string>();
-        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.CenterlineLayer, 8, "CENTER", ct).ConfigureAwait(false))
-            created.Add(args.CenterlineLayer);
-        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.FaceLayer, 7, "Continuous", ct).ConfigureAwait(false))
-            created.Add(args.FaceLayer);
+        var (ctrlColor, ctrlLinetype) = LayerStyleFor(centerlineLayer);
+        var (faceColor, faceLinetype) = LayerStyleFor(faceLayer);
+        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, centerlineLayer, ctrlColor, ctrlLinetype, ct).ConfigureAwait(false))
+            created.Add(centerlineLayer);
+        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, faceLayer, faceColor, faceLinetype, ct).ConfigureAwait(false))
+            created.Add(faceLayer);
 
         // unit normal perpendicular to the wall direction
         double nx = -dy / len;
@@ -112,15 +122,24 @@ public static class ArchitectureTools
         var rightStart = new Point2dDto(args.Start.X - nx * half, args.Start.Y - ny * half);
         var rightEnd   = new Point2dDto(args.End.X   - nx * half, args.End.Y   - ny * half);
 
-        var centreline = await ArchitectureProxy.DrawLineAsync(gw, args.Start, args.End, args.CenterlineLayer, ct).ConfigureAwait(false);
-        var leftFace   = await ArchitectureProxy.DrawLineAsync(gw, leftStart,  leftEnd,  args.FaceLayer, ct).ConfigureAwait(false);
-        var rightFace  = await ArchitectureProxy.DrawLineAsync(gw, rightStart, rightEnd, args.FaceLayer, ct).ConfigureAwait(false);
+        var centreline = await ArchitectureProxy.DrawLineAsync(gw, args.Start, args.End, centerlineLayer, ct).ConfigureAwait(false);
+        var leftFace   = await ArchitectureProxy.DrawLineAsync(gw, leftStart,  leftEnd,  faceLayer, ct).ConfigureAwait(false);
+        var rightFace  = await ArchitectureProxy.DrawLineAsync(gw, rightStart, rightEnd, faceLayer, ct).ConfigureAwait(false);
 
         return new DrawWallResult(centreline, leftFace, rightFace, len, args.ThicknessMm, created);
     }
 
+    /// <summary>Looks up a layer's colour/linetype from the palette; falls back to the
+    /// long-standing A-WALL-face default (7/Continuous) for a caller-supplied name this
+    /// bank doesn't know about, matching the old hardcoded behaviour exactly.</summary>
+    private static (int Color, string Linetype) LayerStyleFor(string layerName)
+    {
+        var spec = ArchitecturePalette.All.FirstOrDefault(s => s.Name == layerName);
+        return spec is not null ? (spec.AciColor, spec.Linetype) : (7, "Continuous");
+    }
+
     [McpTool("draw_walls_chain",
-        "Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex — joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall × N because it issues 3 polyline calls instead of 3·N line calls.",
+        "Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex — joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall × N because it issues 3 polyline calls instead of 3·N line calls. Set bearing=true for a load-bearing chain (e.g. the whole exterior perimeter) to draw on A-WALL-BEAR/A-WALL-BEAR-CTRL instead — same precedence rule as draw_wall: an explicit centerlineLayer/faceLayer always wins.",
         "architecture",
         Intent = new[]
         {
@@ -139,18 +158,25 @@ public static class ArchitectureTools
         if (args.ThicknessMm <= 0)
             throw new ArgumentException("thicknessMm must be > 0");
 
+        string centerlineLayer = args.CenterlineLayer ??
+            (args.Bearing ? ArchitecturePalette.LayerWallBearingCtrl : ArchitecturePalette.LayerWallCtrl);
+        string faceLayer = args.FaceLayer ??
+            (args.Bearing ? ArchitecturePalette.LayerWallBearing : ArchitecturePalette.LayerWall);
+
         var existing = await ArchitectureProxy.ListLayerNamesAsync(gw, ct).ConfigureAwait(false);
         var created = new List<string>();
-        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.CenterlineLayer, 8, "CENTER", ct).ConfigureAwait(false))
-            created.Add(args.CenterlineLayer);
-        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, args.FaceLayer, 7, "Continuous", ct).ConfigureAwait(false))
-            created.Add(args.FaceLayer);
+        var (ctrlColor, ctrlLinetype) = LayerStyleFor(centerlineLayer);
+        var (faceColor, faceLinetype) = LayerStyleFor(faceLayer);
+        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, centerlineLayer, ctrlColor, ctrlLinetype, ct).ConfigureAwait(false))
+            created.Add(centerlineLayer);
+        if (await ArchitectureProxy.EnsureLayerAsync(gw, existing, faceLayer, faceColor, faceLinetype, ct).ConfigureAwait(false))
+            created.Add(faceLayer);
 
         var (leftFaceVerts, rightFaceVerts, totalLen) = ComputeOffsetFaces(args.Vertices, args.ThicknessMm, args.Closed);
 
-        var centerline = await ArchitectureProxy.DrawPolylineAsync(gw, args.Vertices, args.Closed, args.CenterlineLayer, ct).ConfigureAwait(false);
-        var leftFace   = await ArchitectureProxy.DrawPolylineAsync(gw, leftFaceVerts,  args.Closed, args.FaceLayer, ct).ConfigureAwait(false);
-        var rightFace  = await ArchitectureProxy.DrawPolylineAsync(gw, rightFaceVerts, args.Closed, args.FaceLayer, ct).ConfigureAwait(false);
+        var centerline = await ArchitectureProxy.DrawPolylineAsync(gw, args.Vertices, args.Closed, centerlineLayer, ct).ConfigureAwait(false);
+        var leftFace   = await ArchitectureProxy.DrawPolylineAsync(gw, leftFaceVerts,  args.Closed, faceLayer, ct).ConfigureAwait(false);
+        var rightFace  = await ArchitectureProxy.DrawPolylineAsync(gw, rightFaceVerts, args.Closed, faceLayer, ct).ConfigureAwait(false);
 
         var segCount = args.Closed ? args.Vertices.Count : args.Vertices.Count - 1;
         return new DrawWallsChainResult(centerline, leftFace, rightFace, segCount, totalLen, args.ThicknessMm, created);

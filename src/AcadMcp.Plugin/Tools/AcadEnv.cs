@@ -40,15 +40,43 @@ internal static class AcadEnv
         return id;
     }
 
-    public static EntityHandle Persist(Database db, Transaction tr, Entity ent, string? layer)
+    /// <summary>
+    /// Append an entity to a block table record and return its handle.
+    /// </summary>
+    /// <param name="layoutName">
+    /// Omitted/null/"Model" (default): the entity goes to *Model_Space, exactly as before this
+    /// parameter existed - every one of this bank's ~100 existing callers keeps drawing into
+    /// model space with zero behaviour change. Any other value must name an existing paper-space
+    /// layout (rule 74 item 8's viewport work): the entity is appended to THAT layout's own
+    /// BlockTableRecord instead, the same lookup ViewportsPluginTools.CreateRect already uses for
+    /// viewports. Without this, every geometry2d/annotations primitive silently drew into model
+    /// space regardless of which layout was "current" - insert_title_block/generate_*_schedule
+    /// calls made after switching to a paperspace layout landed their entities in the BUILDING's
+    /// own coordinate system instead of the sheet's, invisible at plot scale (confirmed live:
+    /// bbox_intersect against A-WALL found the "paperspace" title block overlapping model-space
+    /// walls near the building's own origin).
+    /// </param>
+    public static EntityHandle Persist(Database db, Transaction tr, Entity ent, string? layer, string? layoutName = null)
     {
-        var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
-        var ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+        BlockTableRecord space;
+        if (!string.IsNullOrWhiteSpace(layoutName) && !string.Equals(layoutName, "Model", StringComparison.OrdinalIgnoreCase))
+        {
+            var lm = LayoutManager.Current;
+            if (!lm.LayoutExists(layoutName))
+                throw new ArgumentException($"Layout '{layoutName}' does not exist.");
+            var layout = (Layout)tr.GetObject(lm.GetLayoutId(layoutName), OpenMode.ForRead);
+            space = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForWrite);
+        }
+        else
+        {
+            var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+            space = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+        }
         if (!string.IsNullOrWhiteSpace(layer))
         {
             ent.LayerId = EnsureLayer(db, tr, layer);
         }
-        ms.AppendEntity(ent);
+        space.AppendEntity(ent);
         tr.AddNewlyCreatedDBObject(ent, true);
         return ToHandle(ent);
     }

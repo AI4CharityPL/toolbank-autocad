@@ -492,7 +492,7 @@ public static class CalloutsTools
                 new Point2dDto(x0 + w,     y0),
                 new Point2dDto(x0 + w,     y0 + h),
                 new Point2dDto(x0,         y0 + h),
-            }, closed: true, args.BorderLayer, ct).ConfigureAwait(false);
+            }, closed: true, args.BorderLayer, ct, args.LayoutName).ConfigureAwait(false);
             handles.Add(outer.Handle);
 
             // 2. drawing area border (ISO 7200: left margin 25, edges 5-10)
@@ -502,7 +502,7 @@ public static class CalloutsTools
                 new Point2dDto(x0 + w - marginE, y0 + marginE),
                 new Point2dDto(x0 + w - marginE, y0 + h - marginE),
                 new Point2dDto(x0 + marginL,    y0 + h - marginE),
-            }, closed: true, args.BorderLayer, ct).ConfigureAwait(false);
+            }, closed: true, args.BorderLayer, ct, args.LayoutName).ConfigureAwait(false);
             handles.Add(inner.Handle);
         }
 
@@ -522,7 +522,7 @@ public static class CalloutsTools
             new Point2dDto(tbX1, tbY0),
             new Point2dDto(tbX1, tbY1),
             new Point2dDto(tbX0, tbY1),
-        }, closed: true, args.Layer, ct).ConfigureAwait(false);
+        }, closed: true, args.Layer, ct, args.LayoutName).ConfigureAwait(false);
         handles.Add(tbOuter.Handle);
 
         // row separators + key / value columns
@@ -533,7 +533,7 @@ public static class CalloutsTools
         var sep = await ArchitectureProxy.DrawLineAsync(gw,
             new Point2dDto(keyX, tbY0),
             new Point2dDto(keyX, tbY1),
-            args.Layer, ct).ConfigureAwait(false);
+            args.Layer, ct, args.LayoutName).ConfigureAwait(false);
         handles.Add(sep.Handle);
 
         // Build field values map. Supplied args.Fields wins; fall back on shorthand fields.
@@ -558,7 +558,7 @@ public static class CalloutsTools
                 var hor = await ArchitectureProxy.DrawLineAsync(gw,
                     new Point2dDto(tbX0, rowY),
                     new Point2dDto(tbX1, rowY),
-                    args.Layer, ct).ConfigureAwait(false);
+                    args.Layer, ct, args.LayoutName).ConfigureAwait(false);
                 handles.Add(hor.Handle);
             }
 
@@ -566,7 +566,7 @@ public static class CalloutsTools
             double textY = rowY + tbRowH * 0.25;
             var keyText = await ArchitectureProxy.AddDBTextAsync(gw,
                 new Point2dDto(tbX0 + fieldH * 0.4, textY),
-                rows[i], fieldH, args.Layer, 0.0, ct).ConfigureAwait(false);
+                rows[i], fieldH, args.Layer, 0.0, ct, layoutName: args.LayoutName).ConfigureAwait(false);
             handles.Add(keyText.Handle);
 
             // value text
@@ -576,7 +576,7 @@ public static class CalloutsTools
                 double valueTextH = rows[i].Equals("RYSUNEK", StringComparison.OrdinalIgnoreCase) ? titleH : fieldH;
                 var valText = await ArchitectureProxy.AddDBTextAsync(gw,
                     new Point2dDto(keyX + fieldH * 0.4, textY),
-                    val!, valueTextH, args.Layer, 0.0, ct).ConfigureAwait(false);
+                    val!, valueTextH, args.Layer, 0.0, ct, layoutName: args.LayoutName).ConfigureAwait(false);
                 handles.Add(valText.Handle);
             }
         }

@@ -127,7 +127,7 @@ internal static class Geometry2dPluginTools
         {
             var a = Read<DrawLineArgsDto>(args);
             var ent = new Line(AcadEnv.ToPoint3d(a.Start), AcadEnv.ToPoint3d(a.End));
-            return Wrap(new { entity = AcadEnv.Persist(db, tr, ent, a.Layer) });
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, ent, a.Layer, a.LayoutName) });
         });
 
     private static Task<ToolDispatchResult> DrawPolyline(JsonObject args, CancellationToken ct) =>
@@ -139,7 +139,7 @@ internal static class Geometry2dPluginTools
             var pl = new Polyline { Closed = a.Closed };
             for (int i = 0; i < a.Vertices.Count; i++)
                 pl.AddVertexAt(i, AcadEnv.ToPoint2d(a.Vertices[i]), 0, a.GlobalWidth ?? 0, a.GlobalWidth ?? 0);
-            return Wrap(new { entity = AcadEnv.Persist(db, tr, pl, a.Layer) });
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, pl, a.Layer, a.LayoutName) });
         });
 
     private static Task<ToolDispatchResult> DrawMline(JsonObject args, CancellationToken ct) =>

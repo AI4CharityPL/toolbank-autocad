@@ -50,7 +50,8 @@ REPO = r"C:\Users\DELL\Dev\autocad-mcp"
 sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
-CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators"]
+CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators",
+        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -139,7 +140,7 @@ perim_names = ["south_pub", "east_step_a", "north_step_a", "east_treat", "north_
                "east_step_b", "north_staff", "west"]
 for i, name in enumerate(perim_names):
     a, b = PERIMETER[i], PERIMETER[(i + 1) % len(PERIMETER)]
-    walls[name] = call("architecture", "draw_wall", {"start": a, "end": b, "thicknessMm": WALL_T},
+    walls[name] = call("architecture", "draw_wall", {"start": a, "end": b, "thicknessMm": WALL_T, "bearing": True},
                         label=f"perimeter segment {name} ({a['x']:.0f},{a['y']:.0f})-({b['x']:.0f},{b['y']:.0f})")["centerline"]["handle"]
 
 print("\n-- interior partitions --")
@@ -293,6 +294,158 @@ call("plumbing", "populate_bathroom", {
     "bboxMin": bbox_of(rooms["STF.WC"])[0], "bboxMax": bbox_of(rooms["STF.WC"])[1],
     "preset": "wc-public", "roomName": "STF.WC",
 }, label="populate_bathroom STF.WC WC personelu (preset=wc-public)")
+
+print("\n" + "=" * 70)
+print("STEP 9a: CONSTRUCTION-DOCUMENT PIPELINE (rule 74) - hatching, dimensions, schedules,")
+print("callouts, section, zone entities, layout - applying every lesson learned live on")
+print("apartment-120-test's own rule-74 retrofit to this second, differently-shaped typology.")
+print("=" * 70)
+
+print("\n-- zone entities (rule 73 step 3a, now mandatory) --")
+# 4 zones matching this project's own docstring rows (PUBLIC/CORRIDOR-H/TREATMENT/STAFF) -
+# TREATMENT's own bounding rect includes the COR.V spine, matching how the docstring itself
+# describes CORRIDOR-V as part of the treatment row, not a 5th zone. tagPosition explicit near
+# each zone's own outer corner, same fix apartment-120-test needed for its own zone tags.
+call("architecture", "define_room", {
+    "vertices": [P(0, 0), P(9500, 0), P(9500, 4000), P(0, 4000)],
+    "number": "ZONE-PUBLIC", "name": "Strefa publiczna", "tagPosition": P(200, 200),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: PUBLIC")
+call("architecture", "define_room", {
+    "vertices": [P(0, 4000), P(14000, 4000), P(14000, 5500), P(0, 5500)],
+    "number": "ZONE-COR-H", "name": "Korytarz zabiegowy", "tagPosition": P(200, 4200),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: CORRIDOR-H")
+call("architecture", "define_room", {
+    "vertices": [P(0, 5500), P(14000, 5500), P(14000, 9500), P(0, 9500)],
+    "number": "ZONE-TREATMENT", "name": "Strefa zabiegowa", "tagPosition": P(200, 5700),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: TREATMENT")
+call("architecture", "define_room", {
+    "vertices": [P(0, 9500), P(7750, 9500), P(7750, 11500), P(0, 11500)],
+    "number": "ZONE-STAFF", "name": "Strefa personelu", "tagPosition": P(200, 9700),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: STAFF")
+
+print("\n-- material hatching on every bearing (exterior) wall (rule 62) --")
+print("(handle-based apply_material_preset, not the point-based TraceBoundary sibling - same")
+print(" fix apartment-120-test needed, for the same reason: un-mitred corners/T-junctions plus")
+print(" door cuts leave enough coincident/fragmented edges nearby that point-based flood tracing")
+print(" isn't reliable. All 8 L/Z perimeter segments hatched, not a representative subset.)")
+
+
+def wall_hatch_rect(x0, y0, x1, y1, t):
+    half = t / 2.0
+    if abs(y1 - y0) < 1:  # horizontal segment
+        y = y0
+        return [P(min(x0, x1), y - half), P(max(x0, x1), y - half),
+                P(max(x0, x1), y + half), P(min(x0, x1), y + half)]
+    else:  # vertical segment
+        x = x0
+        return [P(x - half, min(y0, y1)), P(x + half, min(y0, y1)),
+                P(x + half, max(y0, y1)), P(x - half, max(y0, y1))]
+
+
+for i, name in enumerate(perim_names):
+    a, b = PERIMETER[i], PERIMETER[(i + 1) % len(PERIMETER)]
+    rect = wall_hatch_rect(a["x"], a["y"], b["x"], b["y"], WALL_T)
+    rHb = call("geometry-2d", "draw_polyline", {"vertices": rect, "closed": True, "layer": "A-WALL-BEAR"},
+               label=f"hatch-boundary rectangle: {name}")
+    hb_handle = rHb.get("entity", rHb).get("handle") or rHb.get("handle")
+    call("hatches", "apply_material_preset", {"boundaryHandles": [hb_handle], "material": "concrete"},
+         label=f"hatch {name} exterior wall (concrete)")
+
+print("\n-- dimension chains (rule 66) --")
+call("dimensions", "ensure_architectural_dimstyle", {}, label="ensure_architectural_dimstyle")
+# layer explicit on every call (found live on apartment-120-test: omitting it lands dimensions
+# on layer "0", not A-ANNO-DIMS, despite that layer already existing).
+call("dimensions", "auto_dim_walls", {
+    "wallHandles": [walls["south_pub"], walls["x2000"], walls["x7000"]],
+    "origin": P(0, 0), "baselineDeg": 0, "dimLineOffsetMm": -800, "layer": "A-ANNO-DIMS",
+}, label="auto_dim_walls: south (public row) facade run")
+call("dimensions", "dimension_linear", {
+    "p1": P(0, 0), "p2": P(0, 11500), "dimLinePoint": P(-800, 5750), "layer": "A-ANNO-DIMS",
+}, label="dimension_linear: west elevation overall height")
+call("dimensions", "dimension_linear", {
+    "p1": P(0, 4000), "p2": P(14000, 4000), "dimLinePoint": P(7000, 3200), "layer": "A-ANNO-DIMS",
+}, label="dimension_linear: treatment-band overall width")
+call("dimensions", "dimension_linear", {
+    "p1": P(0, 11500), "p2": P(7750, 11500), "dimLinePoint": P(3875, 12300), "layer": "A-ANNO-DIMS",
+}, label="dimension_linear: staff-row width")
+
+print("\n-- section line (rule 70) --")
+call("sections", "insert_section_line", {
+    "startPoint": P(4500, -1000), "endPoint": P(4500, 12500),
+    "label": "A-A", "scale": "1:100", "viewDirection": "right",
+}, label="section line A-A through public/corridor/treatment")
+
+print("\n-- north arrow + scale bar, in MODEL SPACE next to the building (rule 69) --")
+call("callouts", "insert_north_arrow", {"position": P(14700, 11200), "scale": "1:100"},
+     label="insert_north_arrow")
+call("callouts", "insert_scale_bar", {"position": P(14700, 10600), "scale": "1:100"},
+     label="insert_scale_bar")
+
+print("\n-- paperspace layout + VIEWPORT (rule 61/74 item 8) --")
+print("(A1 sheet from the first attempt, not A3/A2 - apartment-120-test's own retrofit found")
+print(" both too small once title block + schedules + a locked viewport all need to coexist,")
+print(" and AutoCAD's Table.GenerateLayout clamps row heights well above what SchedulesTools'")
+print(" own row-count math predicts, so schedule stacks need real measured headroom.)")
+SHEET = "A1"
+call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
+call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": SHEET},
+     label=f"configure_plot A-101 ({SHEET}) - no CTB applied, none supplied under assets/plotstyles/")
+rVp = call("viewports", "create_viewport", {
+    "layoutName": "A-101", "center": P(300, 270), "width": 550, "height": 450, "scale": 0.01,
+}, label="create_viewport (1:100, left portion of the A1 sheet)")
+myVpHandle = rVp["viewport"]["handle"]
+call("viewports", "set_viewport_lock", {"handle": myVpHandle, "locked": True},
+     label="lock viewport (rule: a locked viewport can't silently drift off its issued scale)")
+
+# create_layout auto-generates its own default viewport(s) (AutoCAD's own behaviour) - confirmed
+# live on apartment-120-test, and just as true here: only the viewport just created/locked above
+# should survive.
+rAllVp = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports A-101 (find AutoCAD's auto-created defaults)")
+phantoms = [vp["handle"] for vp in rAllVp["viewports"] if vp["handle"] != myVpHandle]
+for h in phantoms:
+    call("viewports", "delete_viewport", {"handle": h}, label=f"delete phantom auto-created viewport {h}")
+print(f"  ({len(phantoms)} phantom viewport(s) removed, 1 intentional 1:100 viewport remains)")
+
+rTtlb = call("callouts", "insert_title_block", {
+    "bottomLeft": P(0, 0), "sheetSize": SHEET, "scale": "1:1",
+    "projectName": "Dental Clinic Test", "sheetNumber": "A-101",
+    "author": "ToolBank AutoCAD", "date": "2026-08-13", "titleText": "RZUT GABINETU STOMATOLOGICZNEGO",
+    "layoutName": "A-101",
+    "fields": [{"key": "SKALA", "value": "1:100"}],
+}, label=f"insert_title_block (paperspace, scale 1:1 = literal sheet mm, {SHEET})")
+
+# Schedule stack, right-hand column - measured live, not precomputed from nominal row-count math
+# (same real defect apartment-120-test's own retrofit found: AutoCAD clamps every row to a
+# TableStyle-driven minimum well above the requested rowHeight, unrelated to column width/wrap).
+# No window schedule - this typology declares no windows at all (see module docstring).
+# SCHED_X=590: viewport right edge is at x=575 (center 300, width 550) so this clears it by
+# 15mm, and the door schedule's own 228mm column width (widened per the same rule-74 C.4 fix
+# apartment-120-test's schedules needed) stays within the sheet's own 841mm width (590+228=818,
+# 13mm short of the 831mm usable right margin) - checked BEFORE picking this x, not after a
+# run showed a table running off the page.
+SCHED_X = 590
+GAP = 20.0
+
+
+def measured_bottom(tool_result):
+    handle = tool_result["summary"]["tableHandle"]
+    bbox = call("geometry-2d", "get_entity", {"handle": handle}, label=f"get_entity {handle} (measure real table height)")["bbox"]
+    return bbox["min"]["y"]
+
+
+sched_y = 574.0  # first (topmost) table's TOP edge, 20mm below the A1 sheet's own top edge (594)
+r = call("schedules", "generate_door_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
+         label="generate_door_schedule (paperspace)")
+sched_y = measured_bottom(r) - GAP
+r = call("schedules", "generate_room_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
+         label="generate_room_schedule (paperspace)")
+sched_bottom = measured_bottom(r)
+print(f"  (schedule stack real bottom at y={sched_bottom}mm - must stay above title block top y=82mm)")
+call("layouts", "set_current_layout", {"name": "Model"}, label="switch back to Model space")
 
 os.makedirs(os.path.join(REPO, "projects", "dental-clinic-test"), exist_ok=True)
 save_path = os.path.join(REPO, "projects", "dental-clinic-test", "DentalClinicTest.dwg")

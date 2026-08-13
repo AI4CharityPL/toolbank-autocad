@@ -77,8 +77,81 @@ assumed clean after the first one.
 - Criterion 20 (built adjacency graph matches this project's own declared table): **PASS** —
   the 9 built door edges match the declared table exactly, no missing or unexpected edges.
 
+## Rule 74 retrofit — construction-document pipeline (2026-08-13)
+
+Extended to the full `docs/engineering-rules/74-construction-document-readiness.md` checklist:
+material hatching (4 exterior walls, concrete), dimension chains (`auto_dim_walls` ×2 +
+`dimension_linear` ×2, all explicitly on `A-ANNO-DIMS`), 1 section line, zone entities (DAY/NIGHT,
+now mandatory per rule 73 step 3a), and a real paperspace sheet (layout `A-101`) with a locked
+1:100 viewport, title block, and 3 schedule tables (room/door/window).
+
+**Real defects found live and fixed, not caught by the first-pass build:**
+
+1. **Duplicate/phantom viewports.** `layouts.create_layout` auto-generates its own default
+   viewport(s) the first time a layout is activated (AutoCAD's own behaviour) — a fresh `A-101`
+   carried 2 phantom viewports (scale 1:1 "fit" + a second stray one) in addition to the one this
+   script explicitly created and locked. Left alone, the plotted sheet showed the floor plan
+   through 3 overlapping viewports at 3 different scales/pans — this is what the disconnected,
+   oversized "frame" the user first flagged from a screenshot actually was. Fixed: `list_viewports`
+   right after creating the intentional one, `delete_viewport` on every other handle found.
+2. **`AcadEnv.Persist` (the plugin's single "append entity" choke point, used by every
+   `acad.geometry2d.*`/`acad.annotations.*` primitive) was hardcoded to `*Model_Space`, regardless
+   of which layout was current.** `insert_title_block`/`generate_*_schedule` calls made after
+   switching to the paperspace layout still silently landed their entities in the BUILDING's own
+   model-space coordinate system — invisible at 1:100 plot scale (confirmed live via
+   `check_overlaps` between `A-ANNO-TTLB` and `A-WALL-BEAR`: real, non-zero bbox overlap near the
+   building's own origin). This was a real, previously-undiscovered capability gap, not a script
+   bug — this bank had never drawn anything into paperspace before this session. Fixed properly:
+   added an optional `layoutName` parameter threaded through `AcadEnv.Persist` →
+   `draw_line`/`draw_polyline`/`add_dbtext`/`add_table` plugin handlers → `ArchitectureProxy` →
+   `insert_title_block`/`generate_room_schedule`/`generate_door_schedule`/`generate_window_schedule`
+   backend args, defaulting to the old model-space behaviour everywhere so no other caller's
+   behaviour changed. `verify_construction_readiness.py`'s own `select_by_layer` check inherited
+   the same model-space-only scope (`acad-selection`'s long-standing, otherwise-correct design) —
+   given a matching opt-in `anySpace` parameter, same additive pattern, not yet redeployed to the
+   AutoCAD session this was verified in (see Known limitations).
+3. **Schedule tables silently 46-92% taller than `SchedulesTools`' own row-count × row-height
+   math predicts.** AutoCAD's `Table.GenerateLayout` clamps every row to a TableStyle-driven
+   minimum regardless of the requested `RowHeight` — confirmed live: window schedule (8 rows,
+   80mm requested) measured 123.5mm actual, door (11 rows, 110mm) measured 161mm, room (11 rows,
+   88mm) measured 153.5mm. Widening the tightest columns changed nothing (ruled out wrapping as
+   the cause). A first attempt stacking 3 schedules by the nominal formula on an A3 sheet, then an
+   A2 sheet, both produced overlapping tables — fixed by measuring each table's real bbox via
+   `get_entity` immediately after creation and positioning the next one from that real bottom
+   edge, on an A1 sheet (the nominal-vs-real gap needs ~478mm of stacked height, more than A2's
+   own 420mm total height can hold after the title block).
+4. **`insert_title_block`'s `scale` argument does double duty** — it sizes the sheet (correctly
+   `"1:1"` for literal paperspace mm) AND auto-fills the title block's own `SKALA` field via
+   `values.TryAdd`, so left alone the sheet printed "SKALA 1:1" instead of the actual plan scale.
+   Fixed with an explicit `fields: [{"key": "SKALA", "value": "1:100"}]` override (an explicit
+   field wins over the auto-fill since `TryAdd`'s first write sticks).
+
+## Known limitations (documented honestly, not hidden)
+
+- `verify_construction_readiness.py`'s title-block/schedule checks (item 3 above) require the
+  AutoCAD plugin's new `select_by_layer(..., anySpace=true)` parameter, which is built and
+  compiles clean but was not redeployed to the AutoCAD session this project was last verified in
+  (deploying requires killing and relaunching AutoCAD, which proved unreliable to automate this
+  session — see rule 74 update). Title block and all 3 schedules were confirmed present, correctly
+  positioned, and non-overlapping by direct `get_entity`/bbox inspection and a rendered PNG export
+  of the `A-101` layout, not by the orchestrated script. Re-run `verify_construction_readiness.py`
+  after the next plugin redeploy to get a clean automated PASS on this item.
+- `configure_plot(layoutName="A-101", paperSize="A1")` silently resolved to
+  `psk:NorthAmericaNumber10Envelope` instead of an ISO A1 media name (unlike `"A2"`/`"A3"`, which
+  both resolved correctly) — the actual title block/border/viewport geometry is unaffected (sized
+  from this bank's own `CalloutsPalette.Sheets["A1"]` constant, not from the plotter's media
+  table), so nothing about the drawing itself is wrong, but a real print/PDF plot from this layout
+  would need the paper size corrected first (`list_paper_sizes` + the correct locale string).
+- Vision review (rule 74 item 9): sidecar port file present but the sidecar itself was not
+  running this session — health-check skipped, scored `/v1/architect-review` call not attempted.
+  Per the user's standing instruction this session, the API key configuration is left alone.
+- Plot-style CTB (rule 74 item 8): no `.ctb` file supplied under `assets/plotstyles/` — best-effort
+  step skipped, matching rule 61 §3's own opt-in design.
+
 ## Files
 
 - `Apartment120Test.dwg` — the built drawing.
 - `../../scripts/build_apartment_120_test.py` — the build script (re-runnable; starts from
   `new_document`).
+- `apartment-120-test-A101.png` (not tracked here — see `artifacts/architect-review/`) — the
+  rendered A-101 sheet export used for the visual verification above.

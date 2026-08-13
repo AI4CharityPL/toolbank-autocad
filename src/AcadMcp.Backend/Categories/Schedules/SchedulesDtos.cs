@@ -26,7 +26,8 @@ public sealed record GenerateDoorScheduleArgs(
     [property: JsonPropertyName("textStyle")]       string TextStyle = "Standard",
     [property: JsonPropertyName("layerFilter")]     string? LayerFilter = null,
     [property: JsonPropertyName("ensureStyle")]     bool EnsureStyle = true,
-    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—");
+    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—",
+    [property: JsonPropertyName("layoutName")]      string? LayoutName = null);
 
 public sealed record GenerateDoorScheduleResult(
     [property: JsonPropertyName("summary")]       ScheduleGenerationSummary Summary,
@@ -42,7 +43,8 @@ public sealed record GenerateWindowScheduleArgs(
     [property: JsonPropertyName("textStyle")]       string TextStyle = "Standard",
     [property: JsonPropertyName("layerFilter")]     string? LayerFilter = null,
     [property: JsonPropertyName("ensureStyle")]     bool EnsureStyle = true,
-    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—");
+    [property: JsonPropertyName("emptyPlaceholder")] string EmptyPlaceholder = "—",
+    [property: JsonPropertyName("layoutName")]      string? LayoutName = null);
 
 public sealed record GenerateWindowScheduleResult(
     [property: JsonPropertyName("summary")]       ScheduleGenerationSummary Summary,
@@ -65,7 +67,10 @@ public sealed record GenerateRoomScheduleArgs(
     // of EVERY wall in the model, not the room being measured - on a large, multi-floor drawing
     // this can silently lose 5-10%+ accuracy on an individual room. Pass a small explicit value
     // (e.g. 50-100mm) for tighter accuracy on a big model; null (default) keeps automatic sizing.
-    [property: JsonPropertyName("cellMm")]          double? CellMm = null);
+    [property: JsonPropertyName("cellMm")]          double? CellMm = null,
+    // Omitted/null/"Model" (default): the table is drawn in model space, unchanged from before
+    // this field existed. Name a paper-space layout (rule 74 item 4/8) to draw it THERE instead.
+    [property: JsonPropertyName("layoutName")]      string? LayoutName = null);
 
 public sealed record GenerateRoomScheduleResult(
     [property: JsonPropertyName("summary")]   ScheduleGenerationSummary Summary,
@@ -236,7 +241,8 @@ public sealed record GenerateFinishLegendArgs(
     [property: JsonPropertyName("layer")]        string Layer = SchedulesPalette.LayerLegend,
     [property: JsonPropertyName("textStyle")]    string TextStyle = "Standard",
     [property: JsonPropertyName("extraRows")]    IReadOnlyList<IReadOnlyList<string>>? ExtraRows = null,
-    [property: JsonPropertyName("ensureStyle")]  bool EnsureStyle = true);
+    [property: JsonPropertyName("ensureStyle")]  bool EnsureStyle = true,
+    [property: JsonPropertyName("layoutName")]   string? LayoutName = null);
 
 public sealed record GenerateFinishLegendResult(
     [property: JsonPropertyName("summary")]   ScheduleGenerationSummary Summary,

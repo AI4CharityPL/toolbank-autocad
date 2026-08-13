@@ -71,6 +71,15 @@ The step this bank has always skipped, collapsing straight to a single row. For 
 This is the step that turns "11 rooms in a row" into an actual plan — a day cluster, a night
 cluster, a real corridor topology, not a hallway with doors on one side.
 
+**Step 3a — draw the zone as an entity, MANDATORY, not optional (rule 74 C.3).** Every zone
+footprint fixed in step 3 gets a real `define_room` call using `boundaryLayer="A-ZONE-BNDY"` /
+`tagLayer="A-ZONE-IDEN"` (see "Zone as an entity" below for the exact pattern) — this is no
+longer a nice-to-have "you COULD do this" note, it is a required deliverable of step 3. A build
+that has zone footprints only on paper (in the agent's own working numbers) and never draws them
+as a queryable entity has not actually finished step 3, even if step 6's walls end up in the
+right place — a future `check_overlaps`/audit pass, or a different agent picking up the project
+later, has nothing to query for "which zone is this room in" without it.
+
 ### 4. Structural grid fitted to zone boundaries
 
 `acad-grids.draw_grid` with `xSpacingsMm`/`ySpacingsMm` arrays matched to the zone footprints from
@@ -143,7 +152,13 @@ battery after EVERY fix, not just the one pair that was failing — both proof b
 three iterations of fix-then-recheck before every pair came back clean, exactly the pattern this
 whole rule is built around: check before declaring done, not after being asked to.
 
-## Zone as an entity — no new tool (see also rule 72 §3 for the boundary)
+## Zone as an entity — MANDATORY (step 3a), no new tool needed (see also rule 72 §3 for the boundary)
+
+**Updated 2026-08-13 (rule 74 C.3): this is a required deliverable of step 3, not an optional
+pattern a build may or may not use.** The apartment-120-test and dental-clinic-test proof builds
+(this rule's own §"Real defects found live" history) skipped it entirely — every zone existed
+only as coordinates in the build script, never as a drawing entity — and nothing caught that,
+because until now this section only said a zone COULD be represented this way.
 
 A "zone" is not a new concept for the tool bank to implement — reuse `define_room` with
 `boundaryLayer="A-ZONE-BNDY"` and `tagLayer="A-ZONE-IDEN"` to draw a zone's own boundary/label,

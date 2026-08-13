@@ -104,7 +104,7 @@ public static class SchedulesTools
         }
 
         var table = await InsertTableAsync(gw, args.Position, data, SchedulesPalette.DoorCols, SchedulesPalette.DoorScheduleRowHeight,
-            args.TextStyle, args.Layer, args.StyleName, ct).ConfigureAwait(false);
+            args.TextStyle, args.Layer, args.StyleName, ct, args.LayoutName).ConfigureAwait(false);
         return new GenerateDoorScheduleResult(table, openings.Count, notes);
     }
 
@@ -162,7 +162,7 @@ public static class SchedulesTools
         }
 
         var table = await InsertTableAsync(gw, args.Position, data, SchedulesPalette.WindowCols, SchedulesPalette.WindowScheduleRowHeight,
-            args.TextStyle, args.Layer, args.StyleName, ct).ConfigureAwait(false);
+            args.TextStyle, args.Layer, args.StyleName, ct, args.LayoutName).ConfigureAwait(false);
         return new GenerateWindowScheduleResult(table, openings.Count, notes);
     }
 
@@ -222,7 +222,7 @@ public static class SchedulesTools
         }
 
         var table = await InsertTableAsync(gw, args.Position, data, SchedulesPalette.RoomCols, SchedulesPalette.RoomScheduleRowHeight,
-            args.TextStyle, args.Layer, args.StyleName, ct).ConfigureAwait(false);
+            args.TextStyle, args.Layer, args.StyleName, ct, args.LayoutName).ConfigureAwait(false);
         return new GenerateRoomScheduleResult(table, rooms.Count, totalArea);
     }
 
@@ -863,7 +863,7 @@ public static class SchedulesTools
         if (args.ExtraRows is { Count: > 0 }) rows.AddRange(args.ExtraRows);
 
         var table = await InsertTableAsync(gw, args.Position, rows, SchedulesPalette.FinishCols, SchedulesPalette.FinishLegendRowHeight,
-            args.TextStyle, args.Layer, args.StyleName, ct).ConfigureAwait(false);
+            args.TextStyle, args.Layer, args.StyleName, ct, args.LayoutName).ConfigureAwait(false);
         // Subtract the title + header rows from rowCount so callers get the real entry count.
         int dataRowCount = rows.Count - 2;
         return new GenerateFinishLegendResult(table, dataRowCount);
@@ -1209,7 +1209,8 @@ public static class SchedulesTools
         string textStyle,
         string layer,
         string styleName,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? layoutName = null)
     {
         // 'position' is optional from the wire; missing/null means "anchor at origin" rather than NRE.
         var pos = position ?? new Point2dDto(0.0, 0.0);
@@ -1234,6 +1235,7 @@ public static class SchedulesTools
             ["textStyle"] = textStyle,
             ["layer"]     = layer,
         };
+        if (!string.IsNullOrWhiteSpace(layoutName)) args["layoutName"] = layoutName;
         var resp = await gw.InvokeAsync("acad.annotations.add_table", args, T_SLOW, ct).ConfigureAwait(false)
                    ?? throw new InvalidPluginShapeException("add_table returned null");
         var entityNode = resp["entity"] ?? throw new InvalidPluginShapeException("add_table missing 'entity'");

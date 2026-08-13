@@ -48,10 +48,19 @@ internal static class SchedulesPalette
     public const double HeaderRowHeight        = 10.0;
 
     // Column widths (mm) — order MUST match the header rows emitted by SchedulesTools.
+    // SZER./WYS./PARAPET/OGNIOOCH. columns widened from their original 18-20mm (rule 74
+    // retrofit): at HOSPITAL-DEF's 3.5mm HeaderTextHeight, a 12-character header like
+    // "PARAPET [mm]" needs ~27mm to stay on one line - 18mm forced a wrap, and AutoCAD's Table
+    // auto-grows the WHOLE row past its requested RowHeight to fit the wrapped text, which
+    // silently made every schedule 40-50% taller than SchedulesTools' own row-count x rowHeight
+    // math predicted (confirmed live: a fresh Position=(500,200) test table measured 123.5mm
+    // tall against an 80mm hand calculation). Any code that stacks these tables by that formula
+    // - as this bank's own construction-document build scripts now do - needs the real row
+    // height to match the nominal one, not a surprise multiplier discovered per sheet.
     public static readonly IReadOnlyList<double> DoorCols =
-        new[] { 18.0, 22.0, 18.0, 18.0, 18.0, 20.0, 16.0, 20.0, 30.0, 30.0 };
+        new[] { 18.0, 22.0, 24.0, 24.0, 18.0, 26.0, 16.0, 20.0, 30.0, 30.0 };
     public static readonly IReadOnlyList<double> WindowCols =
-        new[] { 18.0, 22.0, 18.0, 18.0, 18.0, 20.0, 16.0, 20.0, 30.0 };
+        new[] { 18.0, 22.0, 24.0, 24.0, 32.0, 20.0, 16.0, 20.0, 30.0 };
     public static readonly IReadOnlyList<double> RoomCols =
         new[] { 22.0, 80.0, 22.0, 30.0 };
     public static readonly IReadOnlyList<double> FinishCols =

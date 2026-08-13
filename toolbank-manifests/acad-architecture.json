@@ -204,7 +204,7 @@
     },
     {
       "name": "draw_wall",
-      "description": "Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset \u00B1thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default \u2014 connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs.",
+      "description": "Draw one straight wall segment as a centreline on A-WALL-CTRL plus two parallel face polylines (offset \u00B1thickness/2) on A-WALL. Returns all three entity handles plus the segment length and the list of layers auto-created on demand. Wall ends are square (perpendicular cap) by default \u2014 connect mitres with acad-geometry2d.fillet_corner or use draw_walls_chain for connected runs. Set bearing=true for a load-bearing wall to draw on A-WALL-BEAR/A-WALL-BEAR-CTRL instead (colour 4/CYAN, the rule 61 \u00A72 load-bearing lineweight tier) \u2014 mark every exterior wall and every wall on a structural grid axis this way (rule 74 C.1); an explicit centerlineLayer/faceLayer always overrides bearing\u0027s own default.",
       "tags": [
         "draw",
         "wall"
@@ -219,7 +219,7 @@
     },
     {
       "name": "draw_walls_chain",
-      "description": "Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex \u2014 joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall \u00D7 N because it issues 3 polyline calls instead of 3\u00B7N line calls.",
+      "description": "Draw a continuous run of walls from a list of vertices in one call. Generates a single centreline polyline on A-WALL-CTRL and two offset face polylines on A-WALL (built by stitching together the perpendicular offsets at each vertex \u2014 joints are mitred at the angle bisector). Set closed=true to close the run back to the first vertex (e.g. for a room outline). MUCH cheaper than draw_wall \u00D7 N because it issues 3 polyline calls instead of 3\u00B7N line calls. Set bearing=true for a load-bearing chain (e.g. the whole exterior perimeter) to draw on A-WALL-BEAR/A-WALL-BEAR-CTRL instead \u2014 same precedence rule as draw_wall: an explicit centerlineLayer/faceLayer always wins.",
       "tags": [
         "draw",
         "walls",
@@ -402,6 +402,6 @@
       "draw_walls_chain mitres at vertices but does not auto-clean wall T-junctions.",
       "Block library under blocks/architectural/ ships with Phase 7; v1 tools synthesise geometry inline."
     ],
-    "last_regenerated_utc": "2026-08-11T16:59:52.0324188Z"
+    "last_regenerated_utc": "2026-08-13T12:01:11.9979303Z"
   }
 }

@@ -137,7 +137,7 @@ internal static class AnnotationsPluginTools
                 // For non-default alignment, AlignmentPoint controls placement (trap #1 rule 27).
                 t.AlignmentPoint = AcadEnv.ToPoint3d(a.Position);
             }
-            return Wrap(new { entity = AcadEnv.Persist(db, tr, t, a.Layer) });
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, t, a.Layer, a.LayoutName) });
         });
 
     private static Task<ToolDispatchResult> UpdateDBText(JsonObject args, CancellationToken ct) =>
@@ -266,7 +266,7 @@ internal static class AnnotationsPluginTools
             }
             // Trap #8 (rule 27): GenerateLayout finalises geometry. Must be called BEFORE Append.
             table.GenerateLayout();
-            return Wrap(new { entity = AcadEnv.Persist(db, tr, table, a.Layer) });
+            return Wrap(new { entity = AcadEnv.Persist(db, tr, table, a.Layer, a.LayoutName) });
         });
 
     private static Task<ToolDispatchResult> SetTableCell(JsonObject args, CancellationToken ct) =>

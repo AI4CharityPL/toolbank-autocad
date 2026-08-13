@@ -39,7 +39,8 @@ REPO = r"C:\Users\DELL\Dev\autocad-mcp"
 sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
-CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators"]
+CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators",
+        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -98,14 +99,16 @@ print("\n" + "=" * 70)
 print("STEP 6: DETAILED WALLS - exterior + partitions, from the zone/grid decision above")
 print("=" * 70)
 walls = {}
-walls["south"] = call("architecture", "draw_wall", {"start": P(0, 0), "end": P(X1, 0), "thicknessMm": WALL_T},
-                       label="south exterior wall")["centerline"]["handle"]
-walls["north"] = call("architecture", "draw_wall", {"start": P(0, NIGHT_Y1), "end": P(X1, NIGHT_Y1), "thicknessMm": WALL_T},
-                       label="north exterior wall")["centerline"]["handle"]
-walls["west"] = call("architecture", "draw_wall", {"start": P(0, 0), "end": P(0, NIGHT_Y1), "thicknessMm": WALL_T},
-                      label="west exterior wall")["centerline"]["handle"]
-walls["east"] = call("architecture", "draw_wall", {"start": P(X1, 0), "end": P(X1, NIGHT_Y1), "thicknessMm": WALL_T},
-                      label="east exterior wall")["centerline"]["handle"]
+# bearing=True (rule 74 C.1): every exterior wall is load-bearing -> A-WALL-BEAR/-CTRL
+# (colour 4/CYAN, rule 61 §2), not the default A-WALL used for non-structural interior infill.
+walls["south"] = call("architecture", "draw_wall", {"start": P(0, 0), "end": P(X1, 0), "thicknessMm": WALL_T, "bearing": True},
+                       label="south exterior wall (bearing)")["centerline"]["handle"]
+walls["north"] = call("architecture", "draw_wall", {"start": P(0, NIGHT_Y1), "end": P(X1, NIGHT_Y1), "thicknessMm": WALL_T, "bearing": True},
+                       label="north exterior wall (bearing)")["centerline"]["handle"]
+walls["west"] = call("architecture", "draw_wall", {"start": P(0, 0), "end": P(0, NIGHT_Y1), "thicknessMm": WALL_T, "bearing": True},
+                      label="west exterior wall (bearing)")["centerline"]["handle"]
+walls["east"] = call("architecture", "draw_wall", {"start": P(X1, 0), "end": P(X1, NIGHT_Y1), "thicknessMm": WALL_T, "bearing": True},
+                      label="east exterior wall (bearing)")["centerline"]["handle"]
 
 walls["x2200"] = call("architecture", "draw_wall", {"start": P(2200, 0), "end": P(2200, DAY_Y1), "thicknessMm": WALL_T},
                        label="DAY partition x=2200 (Przedpokoj | Kuchnia)")["centerline"]["handle"]
@@ -270,6 +273,169 @@ call("plumbing", "populate_bathroom", {
     "bboxMin": bbox_of(rooms["0.9"])[0], "bboxMax": bbox_of(rooms["0.9"])[1],
     "preset": "bathroom-residential", "roomName": "0.9",
 }, label="populate_bathroom 0.9 Lazienka 2")
+
+print("\n" + "=" * 70)
+print("STEP 9a: CONSTRUCTION-DOCUMENT PIPELINE (rule 74) - hatching, dimensions, schedules,")
+print("callouts, section, zone entities, layout. The gap a live comparison against a real")
+print("reference drawing found: every tool below already existed and was never called.")
+print("=" * 70)
+
+print("\n-- zone entities (rule 73 step 3a, now mandatory) --")
+# tagPosition explicit, near each zone's own outer edge: the default auto-centroid landed the
+# ZONE-DAY/ZONE-NIGHT tags right on top of room 0.3's and 0.7's own tags (both also near their
+# zone's centroid) - found live in the vision-review export image, illegible overlapping text.
+call("architecture", "define_room", {
+    "vertices": [P(0, 0), P(X1, 0), P(X1, DAY_Y1), P(0, DAY_Y1)],
+    "number": "ZONE-DAY", "name": "Strefa dzienna", "tagPosition": P(300, 300),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: DAY")
+call("architecture", "define_room", {
+    "vertices": [P(0, BUF_Y1), P(X1, BUF_Y1), P(X1, NIGHT_Y1), P(0, NIGHT_Y1)],
+    "number": "ZONE-NIGHT", "name": "Strefa nocna", "tagPosition": P(300, NIGHT_Y1 - 300),
+    "boundaryLayer": "A-ZONE-BNDY", "tagLayer": "A-ZONE-IDEN",
+}, label="zone entity: NIGHT")
+
+print("\n-- material hatching on every bearing (exterior) wall (rule 62) --")
+print("(found live: apply_material_preset_by_point's TraceBoundary kept failing even against a")
+print(" freshly-drawn, unambiguously-closed rectangle at the seed point - draw_wall's un-mitred")
+print(" corners/T-junctions (rule 36 §11) plus the door/window cuts already made in this same")
+print(" wall run leave enough coincident/fragmented edges nearby that point-based flood tracing")
+print(" isn't reliable here. apply_material_preset's HANDLE-based sibling sidesteps flood-tracing")
+print(" entirely - hand it the boundary rectangle's own handle directly, no ambiguity possible.)")
+half = WALL_T / 2.0
+for label, x0, y0, x1_, y1_ in [
+    ("south", 0, -half, X1, half),
+    ("north", 0, NIGHT_Y1 - half, X1, NIGHT_Y1 + half),
+    ("west", -half, 0, half, NIGHT_Y1),
+    ("east", X1 - half, 0, X1 + half, NIGHT_Y1),
+]:
+    rect = [P(x0, y0), P(x1_, y0), P(x1_, y1_), P(x0, y1_)]
+    rHb = call("geometry-2d", "draw_polyline", {"vertices": rect, "closed": True, "layer": "A-WALL-BEAR"},
+               label=f"hatch-boundary rectangle: {label}")
+    hb_handle = rHb.get("entity", rHb).get("handle") or rHb.get("handle")
+    call("hatches", "apply_material_preset", {"boundaryHandles": [hb_handle], "material": "concrete"},
+         label=f"hatch {label} exterior wall (concrete)")
+
+print("\n-- dimension chains (rule 66) --")
+call("dimensions", "ensure_architectural_dimstyle", {}, label="ensure_architectural_dimstyle")
+# layer explicit on every call: found live that omitting it lands dimensions on layer "0"
+# (AutoCAD's default), not A-ANNO-DIMS - neither tool's own default resolves to the
+# architectural annotation layer despite it already existing (ensure_architectural_layers
+# creates it) - a real drafting-hygiene gap, not just this build's oversight.
+call("dimensions", "auto_dim_walls", {
+    "wallHandles": [walls["south"], walls["x2200"], walls["x5200"]],
+    "origin": P(0, 0), "baselineDeg": 0, "dimLineOffsetMm": -800, "layer": "A-ANNO-DIMS",
+}, label="auto_dim_walls: south facade run")
+call("dimensions", "auto_dim_walls", {
+    "wallHandles": [walls["north"], walls["x3100"], walls["x5000"], walls["x8050"], walls["x11100"]],
+    "origin": P(0, NIGHT_Y1), "baselineDeg": 0, "dimLineOffsetMm": 800, "layer": "A-ANNO-DIMS",
+}, label="auto_dim_walls: north facade run")
+call("dimensions", "dimension_linear", {
+    "p1": P(0, 0), "p2": P(0, NIGHT_Y1), "dimLinePoint": P(-800, NIGHT_Y1 / 2), "layer": "A-ANNO-DIMS",
+}, label="dimension_linear: west elevation overall height")
+call("dimensions", "dimension_linear", {
+    "p1": P(X1, 0), "p2": P(X1, NIGHT_Y1), "dimLinePoint": P(X1 + 800, NIGHT_Y1 / 2), "layer": "A-ANNO-DIMS",
+}, label="dimension_linear: east elevation overall height")
+
+print("\n-- section line (rule 70) --")
+call("sections", "insert_section_line", {
+    "startPoint": P(X1 / 2, -1000), "endPoint": P(X1 / 2, NIGHT_Y1 + 1000),
+    "label": "A-A", "scale": "1:100", "viewDirection": "right",
+}, label="section line A-A through day/buffer/night")
+
+print("\n-- north arrow + scale bar, in MODEL SPACE next to the building (rule 69) --")
+call("callouts", "insert_north_arrow", {"position": P(X1 + 700, NIGHT_Y1 - 300), "scale": "1:100"},
+     label="insert_north_arrow")
+call("callouts", "insert_scale_bar", {"position": P(X1 + 700, NIGHT_Y1 - 900), "scale": "1:100"},
+     label="insert_scale_bar")
+
+print("\n-- paperspace layout + VIEWPORT (rule 61/74 item 8) --")
+print("(first pass put the title block directly in model space at its own 1:100-scaled size")
+print(" - 42000x29700mm for an A3 sheet, ~3x the whole apartment - producing a huge, disconnected")
+print(" -looking frame next to a tiny plan, caught live from the exported review image. The real")
+print(" fix is what viewports exist for: title block + schedules live in PAPERSPACE at their true")
+print(" plotted mm size, the building is shown through a VIEWPORT at 1:100 - not faked side by")
+print(" side in one flat model space.)")
+# A3 (420x297mm), then A2 (594x420mm), were both tried and don't fit. The real constraint isn't
+# column wrapping (widening SchedulesPalette's tightest columns changed nothing - measured live:
+# still 123.5mm) - it's that AutoCAD's Table.GenerateLayout clamps every row to a STYLE-driven
+# minimum well above the requested rowHeight regardless of content (measured live, HOSPITAL-DEF
+# style: window schedule 8 rows -> 123.5mm actual vs 80mm requested, door 11 rows -> 161mm vs
+# 110mm, room 11 rows -> 153.5mm vs 88mm - all ~1.5x inflated). Combined real stack height is
+# ~438mm plus 2x20mm gaps = ~478mm, which needs A1 (841x594mm).
+SHEET = "A1"
+call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
+call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": SHEET},
+     label=f"configure_plot A-101 ({SHEET}) - no CTB applied, none supplied under assets/plotstyles/")
+rVp = call("viewports", "create_viewport", {
+    "layoutName": "A-101", "center": P(300, 300), "width": 550, "height": 400, "scale": 0.01,
+}, label="create_viewport (1:100, left portion of the A1 sheet)")
+myVpHandle = rVp["viewport"]["handle"]
+call("viewports", "set_viewport_lock", {"handle": myVpHandle, "locked": True},
+     label="lock viewport (rule: a locked viewport can't silently drift off its issued scale)")
+
+# create_layout auto-generates its own default viewport(s) (AutoCAD's own behaviour, not this
+# bank's) - confirmed live: a fresh A-101 layout carried its own scale-1:1 "fit" viewport PLUS a
+# second stray one, both centred on the same point as the one just created above, before this
+# cleanup existed. Left alone, the plotted sheet shows the building through THREE overlapping
+# viewports at three different scales/pans - the "duplicated floor plan" defect the user caught
+# from a screenshot. Only the viewport this script just created and locked should survive.
+rAllVp = call("viewports", "list_viewports", {"layoutName": "A-101"}, label="list_viewports A-101 (find AutoCAD's auto-created defaults)")
+phantoms = [vp["handle"] for vp in rAllVp["viewports"] if vp["handle"] != myVpHandle]
+for h in phantoms:
+    call("viewports", "delete_viewport", {"handle": h}, label=f"delete phantom auto-created viewport {h}")
+print(f"  ({len(phantoms)} phantom viewport(s) removed, 1 intentional 1:100 viewport remains)")
+
+# layoutName="A-101" is the rule-74 C.4 fix: every geometry2d/annotations primitive used to be
+# hardcoded to *Model_Space regardless of which layout was current (AcadEnv.Persist, confirmed
+# live via bbox_intersect - a "paperspace" title block was found overlapping model-space walls
+# near the building's own origin, tiny and invisible at 1:100 plot scale). Without this argument
+# these 4 calls would silently draw into model space again, exactly as they did before the fix.
+rTtlb = call("callouts", "insert_title_block", {
+    "bottomLeft": P(0, 0), "sheetSize": SHEET, "scale": "1:1",
+    "projectName": "Apartment 120 Test", "sheetNumber": "A-101",
+    "author": "ToolBank AutoCAD", "date": "2026-08-13", "titleText": "RZUT MIESZKANIA - PARTER",
+    "layoutName": "A-101",
+    # scale="1:1" above is the SHEET math (literal plotted mm - what makes the sheet the right
+    # physical size), not the PLAN scale a reader cares about. insert_title_block auto-fills the
+    # SKALA field from that same "scale" arg via values.TryAdd, so left alone it would print the
+    # wrong, meaningless "1:1" in the title block (caught live in the first A2 export). An
+    # explicit field wins over the auto-fill (TryAdd - first write sticks) - so state the real
+    # plan scale here instead.
+    "fields": [{"key": "SKALA", "value": "1:100"}],
+}, label=f"insert_title_block (paperspace, scale 1:1 = literal sheet mm, {SHEET})")
+
+# Schedule stack, right-hand column, x=590 (well clear of the viewport's right edge at x=575) to
+# ~831 (door schedule's own 228mm column width is the widest of the 3, fits the 241mm budget to
+# the sheet's right margin). Table.Position is the TOP-LEFT corner (confirmed live via get_entity
+# on a throwaway test table: Position=(500,200) produced bbox min=(500,76.5) max=(680,200) -
+# Position IS the top). Real table height can NOT be precomputed from
+# SchedulesPalette's rowHeight*rowCount - it is STYLE-clamped well above the requested rowHeight
+# regardless of content (see the SHEET-selection comment above). Each table below is measured with
+# get_entity immediately after creation and the NEXT one is positioned from that real bottom edge -
+# a fixed-height guess is exactly what produced the first two overlapping attempts at this sheet.
+SCHED_X = 590
+GAP = 20.0
+
+
+def measured_bottom(tool_result):
+    handle = tool_result["summary"]["tableHandle"]
+    bbox = call("geometry-2d", "get_entity", {"handle": handle}, label=f"get_entity {handle} (measure real table height)")["bbox"]
+    return bbox["min"]["y"]
+
+
+sched_y = 574.0  # first (topmost) table's TOP edge, 20mm below the A1 sheet's own top edge (594)
+r = call("schedules", "generate_window_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
+         label="generate_window_schedule (paperspace)")
+sched_y = measured_bottom(r) - GAP  # next table's TOP = this table's real bottom, minus the gap
+r = call("schedules", "generate_door_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
+         label="generate_door_schedule (paperspace)")
+sched_y = measured_bottom(r) - GAP
+r = call("schedules", "generate_room_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
+         label="generate_room_schedule (paperspace)")
+sched_bottom = measured_bottom(r)
+print(f"  (schedule stack real bottom at y={sched_bottom}mm - must stay above title block top y=82mm)")
+call("layouts", "set_current_layout", {"name": "Model"}, label="switch back to Model space")
 
 os.makedirs(os.path.join(REPO, "projects", "apartment-120-test"), exist_ok=True)
 # save_document takes NO path (FilesEmptyArgs - saves to the doc's existing path only); a

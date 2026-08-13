@@ -6,6 +6,42 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **`AcadEnv.Persist` (the plugin's single "append entity" choke point, used by every
+  `acad.geometry2d.*`/`acad.annotations.*` primitive) was hardcoded to `*Model_Space` regardless
+  of which layout was current — a real, previously-undiscovered capability gap, not a script bug,
+  since this bank had never legitimately drawn into paperspace before this session's rule-74
+  viewport work.** Calling `insert_title_block`/`generate_*_schedule` after switching to a
+  paperspace layout silently drew those entities into the BUILDING's own model-space coordinate
+  system instead — invisible at 1:100 plot scale, confirmed live via `check_overlaps` finding a
+  real bbox overlap between `A-ANNO-TTLB` and `A-WALL-BEAR` near the building's own origin. Fixed
+  with an additive, backward-compatible `layoutName` parameter threaded through `AcadEnv.Persist`
+  → the `draw_line`/`draw_polyline`/`add_dbtext`/`add_table` plugin handlers → `ArchitectureProxy`
+  → `insert_title_block`/`generate_room_schedule`/`generate_door_schedule`/`generate_window_schedule`
+  backend args — every other caller's behaviour is unchanged (defaults to the old model-space
+  routing). `acad-selection`'s `select_by_layer` inherited the same model-space-only scope
+  (a long-standing, otherwise-correct design for a bank that had no paperspace content) and would
+  false-FAIL `verify_construction_readiness.py`'s title-block/schedule checks against correctly
+  paperspace-routed content; given the same additive pattern, a new opt-in `anySpace` parameter
+  (default `false`, unchanged behaviour) also scans every non-Model layout's own block.
+- **AutoCAD's `Table.GenerateLayout` clamps every row to a TableStyle-driven minimum well above
+  the requested `RowHeight`, independent of column width/wrapping** — confirmed live (widening the
+  tightest `SchedulesPalette` columns changed a table's real height not at all): an 8-row window
+  schedule (80mm requested) measured 123.5mm actual, an 11-row door schedule (110mm requested)
+  measured 161mm, an 11-row room schedule (88mm requested) measured 153.5mm. Neither
+  `apartment-120-test` nor `dental-clinic-test`'s own schedule stacks could be positioned from
+  `SchedulesTools`' own row-count × row-height formula — both build scripts now measure each
+  table's real bbox via `get_entity` immediately after creation and position the next one from
+  that real bottom edge, on an A1 sheet (A3 and A2 were both tried first and don't hold the real,
+  inflated combined height next to a legible viewport and title block).
+- A freshly-created paper-space layout auto-generates its own default viewport(s) — confirmed
+  live, a fresh layout carried 2 phantom viewports (a scale-1:1 "fit" one plus a second stray one)
+  in addition to the one each build script explicitly creates and locks, rendering the floor plan
+  through 3 overlapping viewports at 3 different scales. Both build scripts now `list_viewports`
+  immediately after creating their own and `delete_viewport` every other handle found.
+- `insert_title_block`'s `scale` argument does double duty — it sizes the sheet AND auto-fills
+  the title block's own `SKALA` field via `values.TryAdd`, so a paperspace sheet correctly sized
+  with `scale="1:1"` printed the wrong, meaningless "SKALA 1:1" instead of the actual plan scale.
+  Both build scripts now pass an explicit `fields: [{"key": "SKALA", "value": "1:100"}]` override.
 - **Real geometric collisions in both rule-73 proof builds, found only after adding
   `acad.validators.check_overlaps` cross-category checks to their own verification step — the
   user's own follow-up review ("czy pamiętałeś o oknach") was right that the first pass was not
@@ -29,6 +65,22 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **Both rule-73 proof builds (`apartment-120-test`, `dental-clinic-test`) retrofitted to the
+  full rule 74 (construction-document readiness) checklist**, not just the geometry/zoning level
+  rule 73 already covered: material hatching on every exterior wall (handle-based
+  `apply_material_preset`, not the point-based `TraceBoundary` sibling, which kept failing against
+  draw_wall's own un-mitred corners), dimension chains on `A-ANNO-DIMS`, zone entities (now
+  mandatory per rule 73 step 3a), a section line, and a real paperspace sheet (A1, locked 1:100
+  viewport, title block with real project metadata, room/door(/window) schedules) for each — see
+  the "Fixed" entries above for the real capability gaps this surfaced and closed along the way,
+  and each project's own README for the full defect writeup.
+- `select_by_layer`'s new `anySpace` parameter (acad-selection) — see "Fixed" above.
+- `insert_title_block`/`generate_room_schedule`/`generate_door_schedule`/`generate_window_schedule`/
+  `generate_finish_legend`'s new `layoutName` parameter (acad-callouts/acad-schedules) — see
+  "Fixed" above.
+- `draw_wall`/`draw_walls_chain`'s `bearing` parameter now used live in both proof builds'
+  exterior walls, exercising the `A-WALL-BEAR`/`A-WALL-BEAR-CTRL` layer pair added earlier this
+  session for the first time on real geometry, not just a unit test.
 - **New rule 73 (space-planning method) + rule 60 §1a spatial-quality gate — a general 9-step
   zone-first process, proven live on two typologies, closing the "kulfon" gap the user called
   out directly: a build can pass every existing drafting-standard check and still be a crude

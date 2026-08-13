@@ -77,7 +77,7 @@ public static class ArchitectureProxy
     // ---------- geometry primitives ----------
 
     public static async Task<EntityHandle> DrawLineAsync(
-        IPluginGateway gw, Point2dDto start, Point2dDto end, string layer, CancellationToken ct)
+        IPluginGateway gw, Point2dDto start, Point2dDto end, string layer, CancellationToken ct, string? layoutName = null)
     {
         var args = new JsonObject
         {
@@ -85,11 +85,12 @@ public static class ArchitectureProxy
             ["end"]   = JsonSerializer.SerializeToNode(end,   Opts),
             ["layer"] = layer,
         };
+        if (!string.IsNullOrWhiteSpace(layoutName)) args["layoutName"] = layoutName;
         return await CallEntityAsync(gw, "acad.geometry2d.draw_line", args, T_NORMAL, ct).ConfigureAwait(false);
     }
 
     public static async Task<EntityHandle> DrawPolylineAsync(
-        IPluginGateway gw, IReadOnlyList<Point2dDto> vertices, bool closed, string layer, CancellationToken ct)
+        IPluginGateway gw, IReadOnlyList<Point2dDto> vertices, bool closed, string layer, CancellationToken ct, string? layoutName = null)
     {
         var args = new JsonObject
         {
@@ -97,6 +98,7 @@ public static class ArchitectureProxy
             ["closed"]   = closed,
             ["layer"]    = layer,
         };
+        if (!string.IsNullOrWhiteSpace(layoutName)) args["layoutName"] = layoutName;
         return await CallEntityAsync(gw, "acad.geometry2d.draw_polyline", args, T_NORMAL, ct).ConfigureAwait(false);
     }
 
@@ -140,7 +142,8 @@ public static class ArchitectureProxy
         string layer,
         double rotationDeg,
         CancellationToken ct,
-        string? textStyle = null)
+        string? textStyle = null,
+        string? layoutName = null)
     {
         var args = new JsonObject
         {
@@ -151,6 +154,7 @@ public static class ArchitectureProxy
             ["rotationDeg"] = rotationDeg,
         };
         if (!string.IsNullOrWhiteSpace(textStyle)) args["textStyle"] = textStyle;
+        if (!string.IsNullOrWhiteSpace(layoutName)) args["layoutName"] = layoutName;
         return await CallEntityAsync(gw, "acad.annotations.add_dbtext", args, T_NORMAL, ct).ConfigureAwait(false);
     }
 

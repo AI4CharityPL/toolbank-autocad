@@ -1,0 +1,32 @@
+id: arch.lintels.on-s-lintel-layer
+name: Lintel plan-projection symbols belong on S-LINTEL
+discipline: architectural
+severity: error
+description: |
+  Closes the gap rule 72 §10 flagged when acad-structural shipped (rule
+  72-structural-domain-traps.md, 2026-08-12): "there is currently no
+  structural.* validator rule... nothing in this pass produced a checkable
+  numeric requirement." A lintel's HEURISTIC depth (insert_lintel's own
+  computedDepthMm) genuinely isn't checkable this way - it varies per span
+  and the check-primitive vocabulary (rule 33 §5) has no "recompute this
+  span-dependent formula and compare" primitive. Layer discipline IS
+  checkable, and is the same real gap class arch.columns.on-s-cols-layer
+  already closes for columns: a lintel plan symbol left on a generic
+  annotation/structural layer instead of 'S-LINTEL' breaks coordination
+  with the structural set on model exchange, exactly like a stray column
+  would.
+
+  Pairs with acad-structural.insert_lintel, which places the dashed plan
+  symbol on S-LINTEL by default (ArchitecturePalette.LayerLintel).
+references:
+  - docs/engineering-rules/72-structural-domain-traps.md#10-cross-reference-with-validators
+  - docs/engineering-rules/36-architecture-domain-traps.md#11-layer-key
+scope:
+  entity_types: [Polyline]
+  layer_pattern: "^(A[-_]?LINTEL|LINTEL|LINTELS?|NADPROZE|S[-_]?LINTELS?)$"
+checks:
+  - { type: layer_equals, value: S-LINTEL }
+fix:
+  type: move_to_layer
+  layer: S-LINTEL
+  create_if_missing: true

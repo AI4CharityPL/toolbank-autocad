@@ -70,6 +70,24 @@ internal static class SelectionPluginTools
         }
     }
 
+    /// <summary>Model space plus every paper-space layout's own block (rule 74 C.4).</summary>
+    private static IEnumerable<Entity> EnumerateAllSpaces(Database db, Transaction tr)
+    {
+        foreach (var e in EnumerateModelSpace(db, tr)) yield return e;
+        var dict = (DBDictionary)tr.GetObject(db.LayoutDictionaryId, OpenMode.ForRead);
+        foreach (DBDictionaryEntry entry in dict)
+        {
+            var layout = (Layout)tr.GetObject(entry.Value, OpenMode.ForRead);
+            if (string.Equals(layout.LayoutName, "Model", StringComparison.OrdinalIgnoreCase)) continue;
+            var btr = (BlockTableRecord)tr.GetObject(layout.BlockTableRecordId, OpenMode.ForRead);
+            foreach (ObjectId id in btr)
+            {
+                if (id.IsErased) continue;
+                yield return (Entity)tr.GetObject(id, OpenMode.ForRead);
+            }
+        }
+    }
+
     private static JsonObject WrapSelection(IEnumerable<Entity> ents)
     {
         var handles = ents.Where(e => !e.IsErased).Select(e => e.Handle.ToString()).ToList();
@@ -92,7 +110,8 @@ internal static class SelectionPluginTools
             var ltr = (LayerTableRecord)tr.GetObject(lt[a.Layer], OpenMode.ForRead);
             if (a.Frozen.HasValue && a.Frozen.Value != ltr.IsFrozen)
                 return Wrap(new { count = 0, handles = Array.Empty<string>() });
-            return WrapSelection(EnumerateModelSpace(db, tr).Where(e => string.Equals(e.Layer, a.Layer, StringComparison.OrdinalIgnoreCase)));
+            var pool = a.AnySpace ? EnumerateAllSpaces(db, tr) : EnumerateModelSpace(db, tr);
+            return WrapSelection(pool.Where(e => string.Equals(e.Layer, a.Layer, StringComparison.OrdinalIgnoreCase)));
         });
 
     private static Task<ToolDispatchResult> SelectByColor(JsonObject args, CancellationToken ct) =>

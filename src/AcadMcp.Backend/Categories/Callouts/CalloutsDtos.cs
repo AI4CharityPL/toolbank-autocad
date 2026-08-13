@@ -112,7 +112,12 @@ public sealed record InsertTitleBlockArgs(
     [property: JsonPropertyName("author")]       string? Author = null,
     [property: JsonPropertyName("date")]         string? Date = null,
     [property: JsonPropertyName("titleHeightPlotMm")] double TitleHeightPlotMm = CalloutsPalette.PlotBigTextMm,
-    [property: JsonPropertyName("fieldHeightPlotMm")] double FieldHeightPlotMm = CalloutsPalette.PlotSmallTextMm);
+    [property: JsonPropertyName("fieldHeightPlotMm")] double FieldHeightPlotMm = CalloutsPalette.PlotSmallTextMm,
+    // Omitted/null/"Model" (default): drawn in model space, exactly as before this field existed.
+    // Name a paper-space layout (rule 74 item 8) to draw the title block THERE instead - the
+    // literal sheet-size mm from bottomLeft/sheetSize/scale then means what it says, decoupled
+    // from the building's own model-space coordinates. Must be created first (layouts.create_layout).
+    [property: JsonPropertyName("layoutName")]        string? LayoutName = null);
 
 public sealed record InsertTitleBlockResult(
     [property: JsonPropertyName("summary")]       CalloutResultSummary Summary,

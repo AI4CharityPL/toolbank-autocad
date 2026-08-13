@@ -101,8 +101,43 @@ doors-vs-plumbing/furniture — **0 overlaps in every category**, re-verified af
 - Criterion 20 (built adjacency graph matches this project's own declared table): **PASS** — all
   12 built door edges match the declared table exactly, no missing or unexpected edges.
 
+## Rule 74 retrofit — construction-document pipeline (2026-08-13)
+
+Extended to the full `docs/engineering-rules/74-construction-document-readiness.md` checklist,
+applying every lesson learned live on `apartment-120-test`'s own retrofit (see that project's
+README for the full defect writeups — `AcadEnv.Persist`'s model-space-only routing,
+`Table.GenerateLayout`'s row-height clamping, the phantom-viewport auto-creation, the `SKALA`
+field double-duty — every one of those fixes applied here too, not rediscovered): 8-segment
+material hatching (every L/Z perimeter wall, not a representative subset — this footprint has 8
+exterior segments where the apartment had 4), dimension chains, 1 section line, 4 zone entities
+(PUBLIC / CORRIDOR-H / TREATMENT / STAFF — TREATMENT's own bounding rect includes the COR.V
+spine, matching how this project's own design docstring already described it), and a paperspace
+sheet (`A-101`, A1, learned directly from the apartment retrofit rather than re-discovering the
+A3→A2→A1 sizing problem) with a locked 1:100 viewport, title block, and 2 schedule tables
+(room + door — no window schedule, this typology has no windows by design).
+
+No new defect classes beyond what apartment-120-test's own retrofit already found and fixed —
+confirms those were real, general capability gaps (not apartment-specific), not something to
+re-diagnose per project.
+
+## Known limitations (documented honestly, not hidden — same items as apartment-120-test)
+
+- `verify_construction_readiness.py`'s title-block/schedule checks need the plugin's
+  `select_by_layer(..., anySpace=true)` parameter, built and compiling clean but not yet
+  redeployed to the AutoCAD session this project was verified in. Title block and both schedules
+  confirmed present and correctly composed by a rendered PNG export of the `A-101` layout, not by
+  the orchestrated script — re-run after the next plugin redeploy for a clean automated PASS.
+- `configure_plot(paperSize="A1")` resolves to `psk:NorthAmericaNumber10Envelope` instead of an
+  ISO A1 media name (same as apartment-120-test) — cosmetic to the plotter's own media table only,
+  the drawn geometry is sized from this bank's own `CalloutsPalette.Sheets["A1"]` constant and is
+  unaffected.
+- Vision review and plot-style CTB: same best-effort/skipped state as apartment-120-test, same
+  reasons (sidecar not running this session; no `.ctb` file supplied).
+
 ## Files
 
 - `DentalClinicTest.dwg` — the built drawing.
 - `../../scripts/build_dental_clinic_test.py` — the build script (re-runnable; starts from
   `new_document`).
+- `dental-clinic-test-A101.png` (not tracked here — see `artifacts/architect-review/`) — the
+  rendered A-101 sheet export used for the visual verification above.

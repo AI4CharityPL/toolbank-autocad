@@ -129,11 +129,20 @@ an actual mill certificate or the primary EN 10365 text.**
 
 ## 10. Cross-reference with validators
 
-There is currently **no** `structural.*` validator rule — this category shipped tools before a
-matching `validators/architectural/structural-*.yaml` because nothing in this pass produced a
-checkable numeric requirement the way `hospital.rooms.or-min-area` did (a lintel's heuristic
-depth is explicitly not a code minimum to validate against). If a future change adds a real,
-citable structural requirement (e.g. a minimum bearing length per a specific standard), add the
-rule under `validators/architectural/` following rule 33's format, same as every other typology
-rule in this bank — do not skip that step just because this category's own tools already return
-a disclaimer.
+Closed 2026-08-13 (rule 74 C.2), partially: `validators/architectural/
+structural-lintels-on-s-lintel-layer.yaml` (`arch.lintels.on-s-lintel-layer`) checks lintel plan
+symbols stay on `S-LINTEL`, the same layer-discipline pattern `arch.columns.on-s-cols-layer`
+already uses for columns — verified live, both directions: a correctly-placed `insert_lintel`
+symbol is NOT flagged, a deliberately mislabelled `LINTEL`-layer polyline IS.
+
+What this does NOT close, and could not with the current check-primitive vocabulary (rule 33
+§5): a rule that recomputes `insert_lintel`'s own `computedDepthMm` heuristic
+(`max(120, ceil(spanMm/100)*10)`) and checks a specific instance against it. The formula is
+span-dependent and the engine has no "recompute this formula from the entity's own dimensions and
+compare" primitive — only fixed per-rule numeric thresholds (`length_at_least`, `area_at_least`,
+...). A **fixed** floor (the heuristic's own `max(120, ...)` lower bound, independent of span)
+would in principle be checkable if the drawn rectangle's SHORT side were isolatable from a closed
+Polyline's total length/area — it currently is not, with the primitives that exist. If a future
+change adds a real, citable structural requirement with a truly fixed numeric floor (not
+span-dependent), or extends the check-primitive vocabulary with a bbox-dimension check, revisit
+this — do not skip the step just because this category's own tools already return a disclaimer.

@@ -9,8 +9,15 @@ namespace AcadMcp.Plugin.Tools;
 internal sealed record EmptyArgsDto();
 
 internal sealed record ByLayerArgsDto(
-    [property: JsonPropertyName("layer")]   string Layer,
-    [property: JsonPropertyName("frozen")]  bool? Frozen = null);
+    [property: JsonPropertyName("layer")]     string Layer,
+    [property: JsonPropertyName("frozen")]    bool? Frozen = null,
+    // Default false: model-space only, unchanged from before this field existed. true also scans
+    // every paper-space layout's own block (rule 74 C.4 - acad-selection was, like AcadEnv.Persist
+    // before its own fix, hardcoded to *Model_Space; a title block or schedule table correctly
+    // routed into paperspace via layoutName was invisible to select_by_layer, which made
+    // verify_construction_readiness.py report a false FAIL for content confirmed present by
+    // direct get_entity/bbox inspection).
+    [property: JsonPropertyName("anySpace")]  bool AnySpace = false);
 
 internal sealed record ByColorArgsDto(
     [property: JsonPropertyName("color")]    ColorDto Color,

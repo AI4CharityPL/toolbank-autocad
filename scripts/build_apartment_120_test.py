@@ -208,12 +208,14 @@ print("STEP 6 cont'd: define_room, net-internal inset vertices (rule 71 step 3)"
 print("=" * 70)
 
 
-def room(number, name, x0, x1, y0, y1, boundary_layer=None):
+def room(number, name, x0, x1, y0, y1, boundary_layer=None, tag_position=None):
     v = [P(x0 + INSET, y0 + INSET), P(x1 - INSET, y0 + INSET),
          P(x1 - INSET, y1 - INSET), P(x0 + INSET, y1 - INSET)]
     kwargs = {"vertices": v, "number": number, "name": name}
     if boundary_layer:
         kwargs["boundaryLayer"] = boundary_layer
+    if tag_position:
+        kwargs["tagPosition"] = tag_position
     r = call("architecture", "define_room", kwargs, label=f"define_room {number} {name}")
     net_w, net_h = (x1 - x0 - 2 * INSET), (y1 - y0 - 2 * INSET)
     print(f"      net footprint: {net_w:.0f} x {net_h:.0f}mm = {net_w * net_h / 1e6:.2f} m2")
@@ -338,15 +340,32 @@ call("dimensions", "dimension_linear", {
 }, label="dimension_linear: east elevation overall height")
 
 print("\n-- section line (rule 70) --")
+# x=5900, not X1/2=6500: a systematic bbox sweep across every annotation layer (not just one
+# eyeballed export) found the corridor's own 3-line tag (its auto-centroid lands at X1/2, since
+# the corridor spans the full building width) sitting directly on top of a section line drawn
+# through the exact geometric centre. Every room's own tag text is wide enough (up to ~2900mm
+# for a name line) that almost no single x avoids all of them - x=5900 is the one gap clear on
+# BOTH the day row (rooms 0.1-0.3 tags span 1100-2847, 3700-5078, 9100-11565 - clear 5078-9100)
+# and the night row (0.5-0.9 tags span 1550-4442, 4050-5739, 6525-9514, ... - clear 5739-6525) at
+# once, AND clear of the corridor's own tag (6500-7878) - checked against real bbox data before
+# picking this number, not re-guessed after another collision.
 call("sections", "insert_section_line", {
-    "startPoint": P(X1 / 2, -1000), "endPoint": P(X1 / 2, NIGHT_Y1 + 1000),
+    "startPoint": P(5900, -1000), "endPoint": P(5900, NIGHT_Y1 + 1000),
     "label": "A-A", "scale": "1:100", "viewDirection": "right",
 }, label="section line A-A through day/buffer/night")
 
 print("\n-- north arrow + scale bar, in MODEL SPACE next to the building (rule 69) --")
-call("callouts", "insert_north_arrow", {"position": P(X1 + 700, NIGHT_Y1 - 300), "scale": "1:100"},
+# Both repositioned from a first attempt at (X1+700, ...) that a systematic bbox sweep (every
+# annotation layer checked pairwise, not just eyeballing one export) found genuinely overlapping:
+# insert_north_arrow's "position" is the CENTER of a 3000mm-diameter circle (1500mm radius), not
+# a corner - a detail invisible from the tool's own args and only found by measuring the placed
+# entity's real bbox live. At +700 from the building's own edge, the circle's own left edge
+# landed 800mm INSIDE the building, overlapping room 0.8/0.9's tags, and the scale bar placed
+# only 600mm below it sat well within the same circle. Both now placed with real clearance
+# computed from the MEASURED 1500mm radius, not guessed.
+call("callouts", "insert_north_arrow", {"position": P(X1 + 2700, NIGHT_Y1 - 300), "scale": "1:100"},
      label="insert_north_arrow")
-call("callouts", "insert_scale_bar", {"position": P(X1 + 700, NIGHT_Y1 - 900), "scale": "1:100"},
+call("callouts", "insert_scale_bar", {"position": P(X1 + 4700, NIGHT_Y1 - 900), "scale": "1:100"},
      label="insert_scale_bar")
 
 print("\n-- paperspace layout + VIEWPORT (rule 61/74 item 8) --")

@@ -137,6 +137,22 @@ project, and fixed the same way (root-caused, not patched):
 Investigating the Print Preview screenshot further also surfaced a THIRD, deeper, still-open
 issue — see "Known limitations."
 
+**Fourth pass (2026-08-13)**: since eyeballing one export had already missed real problems twice,
+switched to a **systematic bbox sweep** — every annotation-bearing layer checked pairwise against
+every other, cross-space pairs filtered (paperspace/model-space coordinates only relate through
+the viewport's own transform, not raw equality). Found, and fixed the same way as
+apartment-120-test's own third pass: `insert_north_arrow`'s `position` is the CENTER of a
+3000mm-diameter circle, not a corner — the scale bar sat inside it, and the circle's own left
+edge extended past the building's `x=14000` edge into `TRT.RTG`'s own wide name-tag text
+(`x` up to 16107). Both repositioned with real clearance. Separately, the section line
+(originally `x=4500`) crossed 3 unrelated rooms' own tags (`PUB.1`, `TRT.1`, `STF.SOC`) — computed
+coverage on a 100mm grid across the full 0-14000 width and found **zero fully clear gaps exist**
+(this typology's long descriptive Polish room names, e.g. "Korytarz zabiegowy (trzon pionowy)",
+make text spans wide enough to blanket the whole width between them). Moved to `x=7500`, through
+the corridor spine itself — the section line now only crosses `COR.H`'s and `COR.V`'s own labels,
+architecturally defensible since the cut is literally through the corridor, not a scattered set
+of unrelated rooms. 0 real overlaps remain outside that one accepted, single-source case.
+
 ## Vision review — rule 60 §1 17-criterion scorecard (2026-08-13, Path B)
 
 Scored directly by the driving Claude Code session against the rendered `A-101` export (rule 74

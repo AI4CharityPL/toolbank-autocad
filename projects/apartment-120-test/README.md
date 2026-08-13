@@ -133,6 +133,24 @@ now mandatory per rule 73 step 3a), and a real paperspace sheet (layout `A-101`)
    `values.TryAdd`, so left alone the sheet printed "SKALA 1:1" instead of the actual plan scale.
    Fixed with an explicit `fields: [{"key": "SKALA", "value": "1:100"}]` override (an explicit
    field wins over the auto-fill since `TryAdd`'s first write sticks).
+5. **A systematic bbox sweep (2026-08-13, third pass) — every annotation-bearing layer checked
+   pairwise against every other, not one export eyeballed for "does it look right"** — found two
+   more real collisions the earlier visual-only passes missed: `insert_north_arrow`'s `position`
+   is the CENTER of a 3000mm-diameter circle (1500mm radius), not a corner, a detail invisible
+   from the tool's own args and only found by measuring the placed entity's real bbox — at the
+   original spacing the circle's own left edge landed 800mm INSIDE the building, overlapping
+   room 0.8/0.9's tags, and the scale bar placed only 600mm below sat well within the same
+   circle. Both repositioned with real clearance computed from the measured radius. Separately,
+   the section line (originally routed through the building's exact geometric centre, `X1/2`)
+   sat directly under the corridor's own 3-line tag, which shares that same centre by construction
+   (the corridor spans the full width) — fixed by moving the section line to `x=5900`, the one
+   gap clear of every room's tag on both the day and night rows at once (checked against real
+   bbox data, not re-guessed after another collision).
+
+This is now checked with a **generic script** (any two annotation layers, pairwise, cross-space
+pairs filtered out since paperspace and model-space coordinates only relate through the
+viewport's own transform, not raw coordinate equality) rather than by eye — 0 real overlaps
+remain across `A-ANNO-NORT`/`A-ANNO-SBAR`/`A-ROOM-IDEN`/`A-ZONE-IDEN`/`A-DETL-SECT`.
 
 ## Vision review — rule 60 §1 17-criterion scorecard (2026-08-13, Path B)
 

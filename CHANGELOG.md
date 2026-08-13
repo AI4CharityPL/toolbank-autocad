@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **Replaced one-eyeballed-export verification with a systematic bbox sweep** (every annotation
+  layer checked pairwise against every other, cross-space pairs filtered out) after a user's live
+  AutoCAD screenshot caught a north-arrow/scale-bar overlap the earlier spot-checks had missed.
+  Run on both proof projects, this found real collisions beyond what either screenshot alone
+  showed: `insert_north_arrow`'s `position` is the CENTER of a 3000mm-diameter circle (1500mm
+  radius), not a corner — at the original spacing in both projects the circle's own edge landed
+  inside the building, overlapping room tags (`apartment-120-test`) and a treatment room's own
+  wide name-tag text (`dental-clinic-test`, extending past the building's own edge), while the
+  scale bar placed only 600mm below sat well within the same circle either way. Separately, both
+  projects' section lines had been routed through a room's own tag: `apartment-120-test`'s sat
+  exactly on the corridor's auto-centroid (both share the building's geometric centre by
+  construction); `dental-clinic-test`'s crossed 3 unrelated rooms, and a full-width coverage
+  check found zero gaps exist anywhere given this typology's long descriptive room names, so it
+  was moved to cross only the corridor's own label instead of a scattered set of unrelated rooms.
+  All fixes verified by re-running the same sweep, not by another single re-export.
 - **A user's own live screenshots caught two more real defects in `dental-clinic-test`'s rule-74
   sheet that this bank's own verification (bbox-only checks, one export per rebuild) had missed**:
   (1) a zone tag's text genuinely overlapped a room tag's own bbox — the corner-offset placement

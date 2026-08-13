@@ -386,15 +386,27 @@ call("dimensions", "dimension_linear", {
 }, label="dimension_linear: staff-row width")
 
 print("\n-- section line (rule 70) --")
+# x=7500, not 4500: a systematic bbox sweep across every annotation layer (not just one eyeballed
+# export) found the original x crossing 3 unrelated rooms' own tags (PUB.1, TRT.1, STF.SOC) -
+# this typology's long descriptive Polish room names (e.g. "Korytarz zabiegowy (trzon pionowy)")
+# make text spans wide enough that NO x-coordinate across the whole 0-14000 width is clear of
+# every room tag (confirmed by computing coverage on a 100mm grid - zero gaps found end to end).
+# x=7500 crosses only COR.H's and COR.V's OWN labels - architecturally defensible, since the
+# section is cutting through the corridor spine itself - not a scattered set of unrelated rooms.
 call("sections", "insert_section_line", {
-    "startPoint": P(4500, -1000), "endPoint": P(4500, 12500),
+    "startPoint": P(7500, -1000), "endPoint": P(7500, 12500),
     "label": "A-A", "scale": "1:100", "viewDirection": "right",
 }, label="section line A-A through public/corridor/treatment")
 
 print("\n-- north arrow + scale bar, in MODEL SPACE next to the building (rule 69) --")
-call("callouts", "insert_north_arrow", {"position": P(14700, 11200), "scale": "1:100"},
+# Both repositioned - a systematic bbox sweep found the original positions overlapping each
+# other (insert_north_arrow's "position" is the CENTER of a 3000mm-diameter circle, 1500mm
+# radius, not a corner - only found by measuring the placed entity's real bbox) AND overlapping
+# TRT.RTG's own wide name-tag text, which extends to x=16107 - well past the building's own
+# x=14000 edge. Both now placed with real clearance computed from measured sizes.
+call("callouts", "insert_north_arrow", {"position": P(18200, 11200), "scale": "1:100"},
      label="insert_north_arrow")
-call("callouts", "insert_scale_bar", {"position": P(14700, 10600), "scale": "1:100"},
+call("callouts", "insert_scale_bar", {"position": P(20200, 10600), "scale": "1:100"},
      label="insert_scale_bar")
 
 print("\n-- paperspace layout + VIEWPORT (rule 61/74 item 8) --")

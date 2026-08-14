@@ -228,6 +228,42 @@ fixes: 0 room-tag overlaps, 0 pairs under the 150mm floor, 14 rooms — and conf
 by exporting and cropping the two previously-affected sheet regions, not by trusting the
 measurement alone.
 
+## A fourth tool bug — the layout's own on-screen view, root-caused and fixed at the source
+
+A user's own screenshot of AutoCAD itself (not an export) showed A-101 opening to a badly-fitted
+view: lots of wasted grey space above the sheet, more to the right, the plan looking "small" for
+a reason unrelated to the viewport-centring fix earlier in this README. Root cause, found through
+live testing rather than guessed: **`Editor.SetCurrentView` throws a native `eNullObjectPointer`
+whenever a paperspace layout is the active tab** — confirmed by isolating the variable (the
+identical call succeeds fine in Model space) across all four `acad.view.zoom_*` tools
+(`zoom_extents`, `zoom_window`, `zoom_center`, `zoom_scale`), all of which share this bug.
+
+The first fix attempt (re-syncing `CVPORT`, the current-viewport system variable, on the theory
+that `LayoutManager.CurrentLayout`'s own programmatic switch leaves it stale) was a reasoned
+attempt, not a guess — and it did **not** work; tested live, same error. Rather than keep
+permuting C# changes against a live AutoCAD session, a web search of the Autodesk Community
+forums (cross-checked across 2 independent threads) identified the actual missing piece: a
+freshly constructed `ViewTableRecord` defaults `IsPaperspaceView` to `false`, and
+`SetCurrentView` needs it explicitly `true` when the current viewport is the paperspace
+background. Fixed in `ViewPluginTools.cs` (`ConfigureViewForCurrentSpace`, called from all four
+zoom tools) — confirmed live: `zoom_extents`/`zoom_window`/`zoom_center`/`zoom_scale` all now
+succeed in paperspace with no exception.
+
+One caveat found along the way, left as-is rather than over-fixed: `zoom_extents` itself now
+*runs* in paperspace but frames the wrong thing — it reads `Database.Extmin`/`Extmax`, which are
+always **model-space** extents, not the paperspace-specific `Pextmin`/`Pextmax`, so calling it
+on a layout still produces a nonsensical, oversized window. Not needed for this project (the
+sheet's own bounds are known exactly, 841×594mm for A1), so `zoom_window` with those explicit
+corners was used instead and added as a permanent build step (right before switching back to
+Model space and saving) rather than the buggier `zoom_extents`. The `Extmin`/`Extmax`-vs-space
+issue is real but narrower in scope than the crash itself; not spawned as its own follow-up since
+`zoom_window` is a complete, correct substitute for any caller who knows what to frame.
+
+Confirmed live end-to-end after a plugin redeploy + AutoCAD restart: `get_current_view` on A-101
+reports `centerX=420.5, centerY=297` — exactly the sheet's own true centre (841/2, 594/2) — both
+immediately after the build and after a fresh reopen, so the fitted view persists in the saved
+file, not just in the live session that created it.
+
 ## Verification results
 
 - `audit_all_rooms(cellMm=50, marginMm=700, tolerancePct=10)`: **14/14 rooms**, correct count

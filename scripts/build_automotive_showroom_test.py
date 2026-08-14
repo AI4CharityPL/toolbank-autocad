@@ -104,7 +104,7 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
 CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators",
-        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports", "selection"]
+        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports", "selection", "view"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -641,6 +641,22 @@ print(f"  column 1 (door+window) real bottom y={col1_bottom:.1f}mm; "
 if col1_bottom < 82.0 or col2_bottom < 82.0:
     raise SystemExit(f"schedule column still overflows the sheet (col1={col1_bottom:.1f}, "
                       f"col2={col2_bottom:.1f}, sheet floor=82mm) - widen the sheet or split further")
+
+print("\n-- frame the whole A1 sheet as A-101's own remembered on-screen view --")
+print("A user's own screenshot caught AutoCAD showing a poorly-fitted view the first time this")
+print("layout tab is clicked - lots of wasted grey space above and to the right of the actual")
+print("sheet - because nothing in this build ever set a sensible 'current view' before saving,")
+print("so the layout inherited whatever arbitrary zoom state was last active. Root-caused live:")
+print("every acad.view.zoom_* tool threw a native eNullObjectPointer specifically in paperspace")
+print("(confirmed: the identical calls succeed in Model space) - a freshly constructed")
+print("ViewTableRecord defaults IsPaperspaceView=false, and SetCurrentView needs it explicitly")
+print("true there. Fixed at the source (ViewPluginTools.cs); zoom_window with the sheet's own")
+print("known paper bounds (not zoom_extents, which frames MODEL-space extents even when called")
+print("in paperspace - a separate, narrower issue, not needed here since the sheet bounds are")
+print("already known exactly) now leaves A-101 correctly centred and fitted when saved.")
+call("view", "zoom_window", {"corner1": P(-20, -20), "corner2": P(861, 614)},
+     label="zoom_window: frame the A1 sheet (841x594mm) with a small margin")
+
 call("layouts", "set_current_layout", {"name": "Model"}, label="switch back to Model space")
 
 os.makedirs(os.path.join(REPO, "projects", "automotive-showroom-test"), exist_ok=True)

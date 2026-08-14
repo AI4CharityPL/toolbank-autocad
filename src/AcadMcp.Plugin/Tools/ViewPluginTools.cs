@@ -100,10 +100,48 @@ internal static class ViewPluginTools
                 Width       = xMax - xMin,
                 Height      = yMax - yMin,
             };
+            ConfigureViewForCurrentSpace(doc, db, vtr);
             doc.Editor.SetCurrentView(vtr);
 
             return Wrap(new { affected = 1 });
         });
+
+    /// <summary>
+    /// Editor.SetCurrentView throws a native eNullObjectPointer whenever a paperspace layout
+    /// is the active tab and the caller is not "inside" a floating viewport - confirmed live
+    /// (2026-08-14): every zoom_* tool fails this way in paperspace, the identical calls
+    /// succeed fine in model space.
+    ///
+    /// First hypothesis (CVPORT left stale by LayoutManager.CurrentLayout's own programmatic
+    /// switch) was tested live and did NOT fix it alone. Cross-checked against 2 independent
+    /// Autodesk Community threads: a freshly constructed ViewTableRecord defaults
+    /// IsPaperspaceView to false, and SetCurrentView needs it explicitly true whenever the
+    /// current viewport IS the paperspace background - without it, it tries to resolve
+    /// model-space-only internal state that does not exist there and null-pointers. CVPORT is
+    /// still synced first (harmless, addresses the same underlying "which viewport is this"
+    /// ambiguity from a different angle), then IsPaperspaceView is computed properly from
+    /// Editor.CurrentViewportObjectId matching Database.PaperSpaceVportId - true whenever on
+    /// the paperspace background, false if a caller had somehow entered a floating viewport
+    /// first (this bank's own tools never do, but the check holds correctly either way).
+    /// </summary>
+    private static void ConfigureViewForCurrentSpace(Document doc, Database db, ViewTableRecord vtr)
+    {
+        if (db.TileMode)
+        {
+            vtr.IsPaperspaceView = false;
+            return;
+        }
+        try { Autodesk.AutoCAD.ApplicationServices.Application.SetSystemVariable("CVPORT", 1); }
+        catch (Autodesk.AutoCAD.Runtime.Exception) { /* best-effort */ }
+        try
+        {
+            vtr.IsPaperspaceView = db.PaperSpaceVportId == doc.Editor.CurrentViewportObjectId;
+        }
+        catch (Autodesk.AutoCAD.Runtime.Exception)
+        {
+            vtr.IsPaperspaceView = true; // on the paperspace background is this bank's only real usage pattern
+        }
+    }
 
     /// <summary>
     /// Frame a model-space rectangle, with a small margin so geometry is not flush against
@@ -128,6 +166,7 @@ internal static class ViewPluginTools
             Width = w * margin,
             Height = h * margin,
         };
+        ConfigureViewForCurrentSpace(doc, doc.Database, vtr);
         doc.Editor.SetCurrentView(vtr);
         return Wrap(new
         {
@@ -208,6 +247,7 @@ internal static class ViewPluginTools
                 Height      = a.Height,
                 Width       = a.Height, // will be rescaled by viewport aspect on set
             };
+            ConfigureViewForCurrentSpace(doc, db, vtr);
             doc.Editor.SetCurrentView(vtr);
             return Wrap(new { affected = 1 });
         });
@@ -225,6 +265,7 @@ internal static class ViewPluginTools
                 Width       = current.Width  / a.Scale,
                 Height      = current.Height / a.Scale,
             };
+            ConfigureViewForCurrentSpace(doc, db, vtr);
             doc.Editor.SetCurrentView(vtr);
             return Wrap(new { affected = 1 });
         });

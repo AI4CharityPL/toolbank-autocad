@@ -158,7 +158,7 @@
     },
     {
       "name": "generate_finish_legend",
-      "description": "Emit a finish legend (LEGENDA WYKO\u0143CZE\u0143) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes. Layer A-ANNO-LEGN by default.",
+      "description": "Emit a finish legend (LEGENDA WYKO\u0143CZE\u0143) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes, or includeDefaultRows=false to drop the hospital-specific defaults entirely (they are wrong content for a non-hospital typology and add ~11 rows to the table\u0027s height). Layer A-ANNO-LEGN by default.",
       "tags": [
         "generate",
         "finish",
@@ -253,6 +253,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-12T10:15:05.9019209Z"
+    "last_regenerated_utc": "2026-08-14T07:35:02.5523205Z"
   }
 }

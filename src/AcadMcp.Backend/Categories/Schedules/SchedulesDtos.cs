@@ -242,7 +242,14 @@ public sealed record GenerateFinishLegendArgs(
     [property: JsonPropertyName("textStyle")]    string TextStyle = "Standard",
     [property: JsonPropertyName("extraRows")]    IReadOnlyList<IReadOnlyList<string>>? ExtraRows = null,
     [property: JsonPropertyName("ensureStyle")]  bool EnsureStyle = true,
-    [property: JsonPropertyName("layoutName")]   string? LayoutName = null);
+    [property: JsonPropertyName("layoutName")]   string? LayoutName = null,
+    // The 11 built-in DefaultFinishRows are hospital-specific ("Sale operacyjne", "SOR"...) -
+    // fine for a hospital project, actively wrong content for anything else. Confirmed live on
+    // automotive-showroom-test: they also account for most of a 643mm-tall table, a real
+    // contributor to the schedule stack overflowing the sheet. Default true keeps existing
+    // callers' behaviour; a non-hospital project should pass false and supply its own
+    // extraRows for a legend that's both the right size and actually true.
+    [property: JsonPropertyName("includeDefaultRows")] bool IncludeDefaultRows = true);
 
 public sealed record GenerateFinishLegendResult(
     [property: JsonPropertyName("summary")]   ScheduleGenerationSummary Summary,

@@ -43,12 +43,19 @@ internal sealed record VpClearArgsDto(
     [property: JsonPropertyName("layer")]  string? Layer = null);
 
 internal sealed record CreateRectViewportArgsDto(
-    [property: JsonPropertyName("layoutName")] string LayoutName,
-    [property: JsonPropertyName("center")]     Point3dDto Center,
-    [property: JsonPropertyName("width")]      double Width,
-    [property: JsonPropertyName("height")]     double Height,
-    [property: JsonPropertyName("scale")]      double? Scale = null,
-    [property: JsonPropertyName("layer")]      string? Layer = null);
+    [property: JsonPropertyName("layoutName")]   string LayoutName,
+    [property: JsonPropertyName("center")]       Point3dDto Center,
+    [property: JsonPropertyName("width")]        double Width,
+    [property: JsonPropertyName("height")]       double Height,
+    [property: JsonPropertyName("scale")]        double? Scale = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null,
+    // Model-space point to pan to (Viewport.ViewCenter). Without this, a freshly created
+    // Viewport defaults ViewCenter near the origin regardless of where the drawing actually
+    // is - confirmed live: a viewport created over a building at x0-21500/y0-21500 showed a
+    // 55000x45000mm model window centred near (148,105), leaving most of the paper blank and
+    // the building crowded into one corner. Optional so existing callers keep today's
+    // behaviour; pass the drawing's own extents centre to actually frame it.
+    [property: JsonPropertyName("modelCenter")]  Point2dDto? ModelCenter = null);
 
 internal sealed record VpScaleArgsDto(
     [property: JsonPropertyName("handle")] string Handle,

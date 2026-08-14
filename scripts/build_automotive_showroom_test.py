@@ -517,14 +517,39 @@ call("callouts", "insert_scale_bar", {"position": P(25000, 15500), "scale": "1:1
      label="insert_scale_bar")
 
 print("\n-- paperspace layout + VIEWPORT (rule 61/74 item 8) --")
+print("Viewport size/position and modelCenter computed from this project's own real content")
+print("bbox (building + zone tags in the west margin + north arrow/scale bar to the east +")
+print("the section line's own extent), not copy-pasted from apartment/dental's own numbers -")
+print("a user's own Print Preview screenshot caught the plan rendering tiny and off-centre when")
+print("that WAS done (a fixed viewport size/position reused across projects of different real")
+print("size). See CHANGELOG/README for the root cause: create_viewport never set the viewport's")
+print("model-space pan target (Viewport.ViewCenter) at all, so it defaulted near the world")
+print("origin regardless of where the drawing actually is - fixed by adding create_viewport's")
+print("new modelCenter parameter (see ViewportsDtos.cs) and using it here.")
 SHEET = "A1"
 PLOT_MEDIA = "ISOA1"
 call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
 call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": PLOT_MEDIA},
      label=f"configure_plot A-101 ({PLOT_MEDIA}) - no CTB applied, none supplied under assets/plotstyles/")
+
+# Real content bbox (model space): building 0-21500/0-21500, zone tags at x=-4000 (allow their
+# own text width), north arrow/scale bar centred at x=25000 (r=1500 circle + label), section
+# line y -1000..22500. Padded a little beyond that on every side.
+CONTENT_XMIN, CONTENT_XMAX = -4700.0, 27200.0
+CONTENT_YMIN, CONTENT_YMAX = -1300.0, 22800.0
+MODEL_CX = (CONTENT_XMIN + CONTENT_XMAX) / 2.0
+MODEL_CY = (CONTENT_YMIN + CONTENT_YMAX) / 2.0
+VP_SCALE = 0.01  # 1:100, matches the title block's own SKALA field below
+VP_W = (CONTENT_XMAX - CONTENT_XMIN) * VP_SCALE + 30.0   # ~ 348mm, +30mm margin
+VP_H = (CONTENT_YMAX - CONTENT_YMIN) * VP_SCALE + 30.0   # ~ 271mm, +30mm margin
+VP_PAPER_CENTER = P(30.0 + VP_W / 2.0, 130.0 + VP_H / 2.0)  # left edge x=30, bottom edge y=130
+print(f"  content bbox {CONTENT_XMAX - CONTENT_XMIN:.0f}x{CONTENT_YMAX - CONTENT_YMIN:.0f}mm -> "
+      f"viewport {VP_W:.0f}x{VP_H:.0f}mm paper, centred on model ({MODEL_CX:.0f},{MODEL_CY:.0f})")
+
 rVp = call("viewports", "create_viewport", {
-    "layoutName": "A-101", "center": P(300, 270), "width": 550, "height": 450, "scale": 0.01,
-}, label="create_viewport (1:100, left portion of the A1 sheet)")
+    "layoutName": "A-101", "center": VP_PAPER_CENTER, "width": VP_W, "height": VP_H, "scale": VP_SCALE,
+    "modelCenter": P(MODEL_CX, MODEL_CY),
+}, label="create_viewport (1:100, sized+centred to this project's own real content)")
 myVpHandle = rVp["viewport"]["handle"]
 call("viewports", "set_viewport_lock", {"handle": myVpHandle, "locked": True},
      label="lock viewport (rule: a locked viewport can't silently drift off its issued scale)")
@@ -538,13 +563,24 @@ print(f"  ({len(phantoms)} phantom viewport(s) removed, 1 intentional 1:100 view
 call("callouts", "insert_title_block", {
     "bottomLeft": P(0, 0), "sheetSize": SHEET, "scale": "1:1",
     "projectName": "Automotive Showroom Test", "sheetNumber": "A-101",
-    "author": "ToolBank AutoCAD", "date": "2026-08-13", "titleText": "RZUT SALONU SAMOCHODOWEGO",
+    "author": "ToolBank AutoCAD", "date": "2026-08-14", "titleText": "RZUT SALONU SAMOCHODOWEGO",
     "layoutName": "A-101",
     "fields": [{"key": "SKALA", "value": "1:100"}],
 }, label=f"insert_title_block (paperspace, scale 1:1 = literal sheet mm, {SHEET})")
 
-SCHED_X = 590
+print("\n-- schedules, TWO COLUMNS (not one long stack) --")
+print("A user's own Print Preview screenshot caught the earlier single-column stack (4 tables:")
+print("door/window/room schedules + finish legend) running to y=-826.75mm, ~765mm past the A1")
+print("sheet's own y=0 bottom edge - AutoCAD's Table.GenerateLayout clamps every row well above")
+print("the requested rowHeight (the same defect apartment/dental's own retrofits already found),")
+print("and stacking all 4 tables in one column compounds it past any single sheet's height.")
+print("Two fixes, not one: split into 2 columns (door+window / room+finish-legend), AND drop")
+print("generate_finish_legend's 11 built-in HOSPITAL default rows (includeDefaultRows=False,")
+print("a new parameter - see CHANGELOG) which were both irrelevant content for a car showroom")
+print("and, at ~643mm for that one table alone, the single biggest contributor to the overflow.")
 GAP = 20.0
+COL1_X = VP_PAPER_CENTER["x"] + VP_W / 2.0 + 20.0
+COL2_X = COL1_X + 228.0 + 20.0  # 228mm = door schedule's own measured column width
 
 
 def measured_bottom(tool_result):
@@ -553,24 +589,31 @@ def measured_bottom(tool_result):
     return bbox["min"]["y"]
 
 
-sched_y = 574.0
-r = call("schedules", "generate_door_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
-         label="generate_door_schedule (paperspace)")
-sched_y = measured_bottom(r) - GAP
-r = call("schedules", "generate_window_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
-         label="generate_window_schedule (paperspace)")
-sched_y = measured_bottom(r) - GAP
-r = call("schedules", "generate_room_schedule", {"position": P(SCHED_X, sched_y), "layoutName": "A-101"},
-         label="generate_room_schedule (paperspace)")
-sched_y = measured_bottom(r) - GAP
+col1_y = 574.0
+r = call("schedules", "generate_door_schedule", {"position": P(COL1_X, col1_y), "layoutName": "A-101"},
+         label="generate_door_schedule (paperspace, column 1)")
+col1_y = measured_bottom(r) - GAP
+r = call("schedules", "generate_window_schedule", {"position": P(COL1_X, col1_y), "layoutName": "A-101"},
+         label="generate_window_schedule (paperspace, column 1)")
+col1_bottom = measured_bottom(r)
+
+col2_y = 574.0
+r = call("schedules", "generate_room_schedule", {"position": P(COL2_X, col2_y), "layoutName": "A-101"},
+         label="generate_room_schedule (paperspace, column 2)")
+col2_y = measured_bottom(r) - GAP
 r = call("schedules", "generate_finish_legend", {
-    "position": P(SCHED_X, sched_y), "layoutName": "A-101",
+    "position": P(COL2_X, col2_y), "layoutName": "A-101", "includeDefaultRows": False,
     "extraRows": [["F-10", "Posadzka betonowa polerowana", "RAL 7037", "Hala wystawowa"],
                   ["W-10", "Tynk malowany", "RAL 9003", "Biura / zaplecze"],
                   ["C-10", "Sufit podwieszany / stal widoczna", "RAL 9006", "Hala wystawowa"]],
-}, label="generate_finish_legend (paperspace)")
-sched_bottom = measured_bottom(r)
-print(f"  (schedule stack real bottom at y={sched_bottom}mm - must stay above title block top y=82mm)")
+}, label="generate_finish_legend (paperspace, column 2, no hospital defaults)")
+col2_bottom = measured_bottom(r)
+print(f"  column 1 (door+window) real bottom y={col1_bottom:.1f}mm; "
+      f"column 2 (room+finish) real bottom y={col2_bottom:.1f}mm - both must stay above "
+      f"the title block's own top edge (y=82mm) and neither may go negative")
+if col1_bottom < 82.0 or col2_bottom < 82.0:
+    raise SystemExit(f"schedule column still overflows the sheet (col1={col1_bottom:.1f}, "
+                      f"col2={col2_bottom:.1f}, sheet floor=82mm) - widen the sheet or split further")
 call("layouts", "set_current_layout", {"name": "Model"}, label="switch back to Model space")
 
 os.makedirs(os.path.join(REPO, "projects", "automotive-showroom-test"), exist_ok=True)

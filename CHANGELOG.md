@@ -6,6 +6,33 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **`create_viewport` never set the viewport's model-space pan target, root-caused from a user's
+  own Print Preview screenshot and fixed at the source.** `Viewport.ViewCenter` decides which
+  model-space point appears at the centre of a paperspace viewport; the plugin handler set
+  `CenterPoint` (paper position), `Width`/`Height` (paper size) and `CustomScale` but never
+  `ViewCenter`, so it defaulted near the world origin regardless of where the drawing actually
+  sits. Confirmed live via `get_viewport_extents_in_model` on `automotive-showroom-test`: a
+  viewport over a building spanning x0-21500/y0-21500 was showing a 55000×45000mm model window
+  centred near (148, 105) - crowding the real building into one corner of a mostly-empty frame,
+  exactly what the user's screenshot showed ("plan jest mały", "skala się nie zgadza"). Almost
+  certainly present in `apartment-120-test`/`dental-clinic-test` too (same reused `center`/
+  `width`/`height` values), just less visible on their smaller buildings. Fixed by adding an
+  optional `modelCenter` parameter to `create_viewport` (both the Backend `CreateViewportArgs`
+  and the plugin's own `CreateRectViewportArgsDto` - the two-hop DTO trap, rule 35 §11), which
+  sets `vp.ViewCenter` when supplied. Confirmed fixed end-to-end: rebuilt, redeployed the plugin,
+  restarted AutoCAD, re-exported - the plan now fills a proportionate share of the sheet,
+  correctly centred, with all grid-bubble axes visible.
+- **`generate_finish_legend` always included 11 hardcoded hospital-specific default rows with no
+  way to suppress them**, both wrong content for any non-hospital typology and, at ~643mm of
+  table height for that one table alone on `automotive-showroom-test`, the single biggest
+  contributor to a schedule stack overflowing ~765mm past the bottom of an A1 sheet (also caught
+  from the user's own Print Preview screenshot - `get_entity` confirmed the earlier "-826.75mm"
+  print in this bank's own build-script output was a genuine overflow, not the harmless reporting
+  quirk two earlier proof builds' own READMEs assumed it was). Fixed with a new
+  `includeDefaultRows` parameter (default `true`, preserving existing callers' behaviour) that
+  drops the built-in rows entirely when set `false`, leaving only the caller's own `extraRows`.
+  Backend-only change (the row list is built before anything crosses to the plugin) - no plugin
+  redeploy needed for this half of the fix.
 - **`HatchCatalog.cs`'s `insulation` material preset threw a native AutoCAD `eInvalidInput` on
   every use, root-caused and fixed at the source.** Found live while building
   `automotive-showroom-test`: `apply_material_preset(material="insulation")` always failed
@@ -159,10 +186,16 @@ All notable changes to this project will be documented in this file. Format: [Ke
   own room's doors/windows, a structural column sitting on a door and 3 windows, and moved the
   main entrance from a cramped reception room directly into the exhibition hall — architecturally
   the better call anyway, matching the typology's own "hall fronts the street" research finding.
-  Root-caused 2 real tool bugs along the way (see "Fixed" above) rather than working around them
-  silently. Scored 11.0/17 on the rule 60 §1 vision rubric (technical-study band, honestly below
-  apartment-120-test's 12.0 and dental-clinic-test's 10.5, reflecting a harder single-pass
-  typology plus the two tool bugs' own cost). Full writeup in the project's own README.
+  Root-caused 4 real tool bugs along the way (see "Fixed" above) rather than working around them
+  silently - 2 found by this session's own verification pass (hatch pattern, opening-seal), 2
+  more caught only from the user's own review of the actual exported sheet (viewport centring,
+  schedule overflow) after this session's automated checks had all passed clean, a reminder that
+  PASS/FAIL gates don't substitute for actually looking at the deliverable. Scored 11.5/17 on the
+  rule 60 §1 vision rubric (technical-study band, honestly below apartment-120-test's 12.0 and
+  dental-clinic-test's 10.5, reflecting a harder single-pass typology plus the tool bugs' own
+  cost). Full writeup in the project's own README, including the `create_viewport modelCenter`
+  and `generate_finish_legend includeDefaultRows` fixes (see "Fixed") this project's own retrofit
+  motivated.
 - **Both rule-73 proof builds (`apartment-120-test`, `dental-clinic-test`) retrofitted to the
   full rule 74 (construction-document readiness) checklist**, not just the geometry/zoning level
   rule 73 already covered: material hatching on every exterior wall (handle-based

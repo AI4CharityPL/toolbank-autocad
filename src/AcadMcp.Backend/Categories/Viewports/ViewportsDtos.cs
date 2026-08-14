@@ -9,12 +9,19 @@ namespace AcadMcp.Backend.Categories.Viewports;
 public sealed record EmptyViewportArgs();
 
 public sealed record CreateViewportArgs(
-    [property: JsonPropertyName("layoutName")] string LayoutName,
-    [property: JsonPropertyName("center")]     Point3dDto Center,
-    [property: JsonPropertyName("width")]      double Width,
-    [property: JsonPropertyName("height")]     double Height,
-    [property: JsonPropertyName("scale")]      double? Scale = null,
-    [property: JsonPropertyName("layer")]      string? Layer = null);
+    [property: JsonPropertyName("layoutName")]   string LayoutName,
+    [property: JsonPropertyName("center")]       Point3dDto Center,
+    [property: JsonPropertyName("width")]        double Width,
+    [property: JsonPropertyName("height")]       double Height,
+    [property: JsonPropertyName("scale")]        double? Scale = null,
+    [property: JsonPropertyName("layer")]        string? Layer = null,
+    // Model-space point to pan to (sets Viewport.ViewCenter). Without it, a freshly created
+    // viewport's pan target defaults near the origin regardless of where the drawing actually
+    // sits - see the plugin-side ViewportsDtos.cs note for the live-confirmed symptom. This is
+    // the Backend-side half of the same two-hop DTO (rule 35 §11): SelectionProxy-style proxies
+    // re-serialize THIS record before forwarding to the plugin, so a field added only on one
+    // side is silently dropped - both were updated together here.
+    [property: JsonPropertyName("modelCenter")]  Point2dDto? ModelCenter = null);
 
 public sealed record CreatePolygonalViewportArgs(
     [property: JsonPropertyName("layoutName")] string LayoutName,

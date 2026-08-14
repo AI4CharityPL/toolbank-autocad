@@ -201,7 +201,7 @@
     },
     {
       "name": "create_viewport",
-      "description": "Create a rectangular paperspace viewport on the named layout: a window width x height centred at \u0027center\u0027 in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50).",
+      "description": "Create a rectangular paperspace viewport on the named layout: a window width x height centred at \u0027center\u0027 in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50). Pass modelCenter (a model-space point) to pan the view to it - without it, the new viewport\u0027s pan target defaults near the world origin regardless of where the drawing actually is, which can leave the real geometry crowded in one corner of the sheet with mostly-blank space around it. Pass the drawing\u0027s own extents centre (or the building\u0027s own centroid) to actually frame it.",
       "tags": [
         "create",
         "viewport"
@@ -513,6 +513,6 @@
     "owner": "ToolBank AutoCAD",
     "version": "0.1.0",
     "phase": "scaffolded",
-    "last_regenerated_utc": "2026-08-05T13:09:34.8601559Z"
+    "last_regenerated_utc": "2026-08-14T07:32:17.6337288Z"
   }
 }

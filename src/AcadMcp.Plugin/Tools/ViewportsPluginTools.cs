@@ -216,6 +216,7 @@ internal static class ViewportsPluginTools
                 tr.AddNewlyCreatedDBObject(vp, true);
                 if (a.Scale is > 0) vp.CustomScale = a.Scale.Value;
                 try { vp.On = true; } catch { }
+                if (a.ModelCenter is { } mc) vp.ViewCenter = new Point2d(mc.X, mc.Y);
                 return Wrap(new { viewport = Info(db, tr, vp) });
             }
             finally { if (switched) { try { lm.CurrentLayout = prev; } catch { } } }

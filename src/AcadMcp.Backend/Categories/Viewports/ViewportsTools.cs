@@ -46,7 +46,7 @@ public static class ViewportsTools
 
     // ─────────────── creation ───────────────
 
-    [McpTool("create_viewport", "Create a rectangular paperspace viewport on the named layout: a window width x height centred at 'center' in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50).", "viewports",
+    [McpTool("create_viewport", "Create a rectangular paperspace viewport on the named layout: a window width x height centred at 'center' in paper-space coordinates. Switches to that layout and back on its own, so it works from model space. Optional scale is the model-to-paper factor (0.02 = 1:50). Pass modelCenter (a model-space point) to pan the view to it - without it, the new viewport's pan target defaults near the world origin regardless of where the drawing actually is, which can leave the real geometry crowded in one corner of the sheet with mostly-blank space around it. Pass the drawing's own extents centre (or the building's own centroid) to actually frame it.", "viewports",
         Intent = new[] { "utworz rzutnie", "dodaj okno widokowe na arkuszu", "create viewport",
                          "add paperspace viewport", "make a viewport on the layout", "wstaw rzutnie na uklad" },
         RequiresPlugin = true)]

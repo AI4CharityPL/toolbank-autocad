@@ -838,7 +838,7 @@ public static class SchedulesTools
     // ─────────────────────────────────────────────────────────────
 
     [McpTool("generate_finish_legend",
-        "Emit a finish legend (LEGENDA WYKOŃCZEŃ) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes. Layer A-ANNO-LEGN by default.",
+        "Emit a finish legend (LEGENDA WYKOŃCZEŃ) mapping finish codes (F-xx floor, W-xx walls, C-xx ceiling) to descriptions, RAL colors and locations. The default rows cover typical hospital PVC/epoxy/HPL finishes; pass extraRows to append project-specific codes, or includeDefaultRows=false to drop the hospital-specific defaults entirely (they are wrong content for a non-hospital typology and add ~11 rows to the table's height). Layer A-ANNO-LEGN by default.",
         "schedules",
         Intent = new[]
         {
@@ -859,7 +859,7 @@ public static class SchedulesTools
             new[] { SchedulesPalette.TitleFinish },
             SchedulesPalette.FinishHeaders,
         };
-        rows.AddRange(SchedulesPalette.DefaultFinishRows);
+        if (args.IncludeDefaultRows) rows.AddRange(SchedulesPalette.DefaultFinishRows);
         if (args.ExtraRows is { Count: > 0 }) rows.AddRange(args.ExtraRows);
 
         var table = await InsertTableAsync(gw, args.Position, rows, SchedulesPalette.FinishCols, SchedulesPalette.FinishLegendRowHeight,

@@ -147,6 +147,46 @@ tagPosition stayed inside its own room. **Reverted rather than ship a project wh
 is wrong.** The resulting narrow-room tag-text overlap is real and visible on the exported sheet —
 acknowledged here, not hidden, and not worth risking data integrity to paper over.
 
+## A third, more consequential tool bug — caught by the user's own Print Preview, fixed at the source
+
+The first exported sheet looked wrong in a way none of the checks above catch: the plan rendered
+tiny and off-centre, and the schedule stack ran hundreds of millimetres past the bottom of the
+physical A1 sheet. Root-caused, not patched around:
+
+**`create_viewport` never set the viewport's model-space pan target.** `Viewport.ViewCenter`
+determines which point in the drawing appears at the centre of the viewport; the plugin handler
+set `CenterPoint` (paper position), `Width`/`Height` (paper size) and `CustomScale`, but never
+`ViewCenter`. Confirmed live via `get_viewport_extents_in_model`: a viewport created over this
+project's own building (spanning x0-21500/y0-21500) was actually showing a 55000×45000mm model
+window centred near **(148, 105)** — essentially the world origin — leaving the real building
+crowded into one corner of a mostly-empty frame. This is not project-specific: `apartment-120-test`
+and `dental-clinic-test` reused the exact same `center`/`width`/`height` values, so the same defect
+is very likely present there too, just less visible on their smaller buildings. **Fixed at the
+source**: added an optional `modelCenter` parameter to `create_viewport` (both the Backend
+`CreateViewportArgs` and the plugin's own `CreateRectViewportArgsDto` — the two-hop DTO trap, rule
+35 §11), which sets `vp.ViewCenter` when supplied. This project now computes its own real content
+bounding box (building + zone tags in the west margin + north arrow/scale bar to the east +
+section line) and sizes/centres the viewport to it, rather than reusing a fixed number from an
+earlier, differently-sized project. Confirmed live end-to-end: rebuilt, redeployed the plugin,
+restarted AutoCAD, re-exported — the plan now fills a proportionate share of the sheet, correctly
+centred, with both grid-bubble axes visible (only the Y-axis showed before, since the X-axis
+bubbles sat outside the old, badly-centred viewport's own frame).
+
+**The schedule stack overflow was two separate causes, both fixed.** The single-column stack
+(door → window → room schedule → finish legend) measured a real bottom at **y=-826.75mm — about
+765mm past the A1 sheet's own y=0 edge**, confirmed by `get_entity` on each table (not just the
+tool's own printed note, which earlier passes in this bank had dismissed as a reporting quirk —
+it was not). Two real causes: (1) stacking 4 tables in one column when `Table.GenerateLayout`
+clamps every row well above its requested height (already known from apartment/dental) simply
+needs more vertical room than one column of an A1 sheet has; (2) `generate_finish_legend` always
+includes 11 hardcoded **hospital**-specific default rows ("Sale operacyjne", "SOR"...) with no way
+to suppress them — both wrong content for a car showroom and, at ~643mm for that one table alone,
+the single biggest contributor to the overflow. Fixed by splitting the 4 tables into 2 columns
+(door+window / room+finish-legend) and adding `generate_finish_legend`'s new `includeDefaultRows`
+parameter (default `true`, preserving existing callers), set `false` here so the legend carries
+only this project's own 3 automotive-specific rows. Confirmed live: both columns now bottom out
+at y≈150-177mm, comfortably above the title block's own top edge (y=82mm).
+
 ## Verification results
 
 - `audit_all_rooms(cellMm=50, marginMm=700, tolerancePct=10)`: **14/14 rooms**, correct count
@@ -179,9 +219,9 @@ item 9, Path B — the sidecar wasn't running this session).
 | 4 | Doors | 1.0 | 16 doors, jamb+leaf+swing+NUMBER+`LINTEL_TYPE`, visible in the door schedule |
 | 5 | Windows | 1.0 | 7 windows, frame+glass+jamb rendered, in the window schedule (new vs. dental-clinic-test, which had none) |
 | 6 | Vertical circulation | 1.0 (vacuous) | Single-story showroom, no stair/lift in scope, matches criterion 19 §1a's own vacuous-satisfaction logic |
-| 7 | Structural grid | 0.5 | Grid + dimensions present; only the Y-axis got bubble labels (1/2/3) in this export, not the X-axis — a real, visible gap, not assumed away |
+| 7 | Structural grid | 1.0 | Grid + dimensions present; both axes now show bubble labels (A-E and 1-3) after the viewport-centring fix below — the X-axis bubbles sat outside the frame of the earlier, badly-centred viewport, not actually missing from the drawing |
 | 8 | Dimensioning | 0.5 | Chain + 3 linear dimensions present and correct; not on all 4 sides |
-| 9 | Schedules | 0.5 | Door/window/room schedules present as real paperspace Tables — but the room schedule's own area column inherits the `RoomRegionSolver` under-measurement bug for 9 of 14 rows, a real visible defect in the deliverable |
+| 9 | Schedules | 0.5 | Door/window/room schedules present as real paperspace Tables, now correctly fitted within the sheet in 2 columns (see the viewport/schedule-overflow fix below) — but the room schedule's own area column still inherits the `RoomRegionSolver` under-measurement bug for 9 of 14 rows, a real visible defect in the deliverable |
 | 10 | Callouts | 0.5 | Title block (real project metadata) + north arrow + scale bar present; no separate profile/detail callout leaders |
 | 11 | Section lines | 1.0 | 1 section (A-A) through the hall/corridor/rear wing |
 | 12 | Lineweight/CTB | 0.0 | No `.ctb` supplied (rule 61 §3, opt-in, documented) |
@@ -191,13 +231,17 @@ item 9, Path B — the sidecar wasn't running this session).
 | 16 | Jamb/sill/lintel blow-ups | 0.0 | No `DET-XX` detail viewports |
 | 17 | Room program fidelity | 1.0 | All 14 declared rooms present, correctly labelled, areas within the typical ranges this typology's own `ROOM-PROGRAM.md` cites |
 
-**Score: 11.0 / 17 — "technical study" band (10-13/17): OK for internal review, NOT
-tender/pozwolenie-ready.** `fatal_gaps` (score 0): CTB/lineweight (12), RCP (15, optional),
-detail blow-ups (16). Scored honestly rather than rounded up — this is a single-pass build of a
-structurally more complex typology than apartment/dental (one big irregular hall instead of a
-grid of similar rooms), not a multi-round-polished result; the two real tool bugs found along the
-way (hatch pattern, opening-seal) cost real points here (criteria 1 and 9) that a bug-free tool
-chain would not have.
+**Score: 11.5 / 17 — "technical study" band (10-13/17): OK for internal review, NOT
+tender/pozwolenie-ready.** (Up from an initial 11.0 after the viewport-centring fix below made
+criterion 7's grid bubbles fully visible.) `fatal_gaps` (score 0): CTB/lineweight (12), RCP (15,
+optional), detail blow-ups (16). Scored honestly rather than rounded up — this is a single-pass
+build of a structurally more complex typology than apartment/dental (one big irregular hall
+instead of a grid of similar rooms), not a multi-round-polished result; the real tool bugs found
+along the way (hatch pattern, opening-seal, viewport centring, schedule overflow) cost real
+points here (criteria 1, 7, 9) that a bug-free tool chain would not have — and, unlike the first
+two, were caught not by this session's own checks but by the user's own review of the actual
+exported sheet, which is exactly the kind of defect an automated PASS/FAIL gate cannot catch on
+its own.
 
 ## Files
 

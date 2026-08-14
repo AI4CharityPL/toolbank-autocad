@@ -104,7 +104,7 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
 CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators",
-        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports"]
+        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports", "selection"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -204,7 +204,7 @@ wall("ib3", P(18000, 2000), P(18000, 7500), EXT_WALL_T, bearing=True)      # hal
 print("\n-- interior partitions (off-grid, plain A-WALL) --")
 wall("in0", P(0, 4500), P(9000, 4500), WALL_T)      # SW block north wall (Recepcja/Poczekalnia row | Hala)
 wall("in1", P(3000, 0), P(3000, 4500), WALL_T)      # Recepcja | Poczekalnia
-wall("in2", P(6500, 0), P(6500, 4500), WALL_T)      # Poczekalnia | WC klienci
+wall("in2", P(6300, 0), P(6300, 4500), WALL_T)      # Poczekalnia | WC klienci
 wall("in3", P(7700, 0), P(7700, 4500), WALL_T)      # WC klienci | WC dostosowana
 wall("in4", P(18000, 4750), P(21500, 4750), WALL_T)  # Biuro sprzedaży 1 | 2
 wall("in5", P(0, 17500), P(18000, 17500), WALL_T)   # Korytarz | rear-wing rooms row
@@ -285,7 +285,7 @@ cut("p1", "door", P(15000, 0), 0, 1800, EXT_WALL_T, "steel", roomFrom="EXT", roo
 # chair, placed by the "reception" preset's own formula (cx+600, minY+1400) - re-centred clear
 # of both that chair (ends y=1878) and Recepcja's sofa near the far wall (starts ~y=3625).
 cut("in1", "door", P(3000, 2750), 90, 900, WALL_T, "rc", roomFrom="REC", roomTo="WAIT", number="D-03")
-cut("in2", "door", P(6500, 2250), 90, 800, WALL_T, "rc", roomFrom="WAIT", roomTo="WC.C", number="D-04")
+cut("in2", "door", P(6300, 2250), 90, 800, WALL_T, "rc", roomFrom="WAIT", roomTo="WC.C", number="D-04")
 cut("in3", "door", P(7700, 2250), 90, 800, WALL_T, "rc", roomFrom="WC.C", roomTo="WC.A", number="D-05")
 
 # -- in0 (0-9000, horizontal): D-02, D-06 (increasing x) --
@@ -366,8 +366,23 @@ rooms = {}
 # resulting narrow-room tag-text overlap on the exported sheet is a real, acknowledged
 # legibility defect, documented honestly in the README instead of silently worked around.
 rooms["REC"] = room("REC", "Recepcja", rect2(0, 3000, 0, 4500, w=EXT_INSET, s=EXT_INSET, e=INSET, n=INSET))
-rooms["WAIT"] = room("WAIT", "Poczekalnia / Kawiarnia", rect2(3000, 6500, 0, 4500, w=INSET, s=EXT_INSET, e=INSET, n=INSET))
-rooms["WC.C"] = room("WC.C", "WC klienci", rect2(6500, 7700, 0, 4500, w=INSET, s=EXT_INSET, e=INSET, n=INSET),
+# Name shortened from "Poczekalnia / Kawiarnia" - a live bbox sweep (get_entity on every
+# A-ROOM-IDEN text handle) found the room-tag's NAME line is left-justified FROM THE ROOM'S
+# OWN CENTROID, not centred - so a long name always runs rightward into whatever room sits
+# next door, independent of that neighbour's own tag. Confirmed live: the original name's own
+# text bbox was 3708mm wide starting at x=4750 (WAIT's own centroid), reaching to x=8457 - 1958mm
+# past WC klienci's own wall, genuinely overlapping WC klienci's and WC dostosowana's own name
+# text (matches the user's own screenshot showing the three names run together). WAIT|WC.C
+# wall also moved from x=6500 to x=6300 (WAIT loses 200mm, WC.C gains it) - a live min-gap
+# sweep found WC.C's and WC.A's own NUMBER labels ("WC.C"/"WC.A", fixed-width, can't be
+# shortened) only 58.5mm apart even after both NAME lines were fixed; widening WC.C shifts its
+# own centroid - and therefore every one of its 3 text lines - further from WC.A's.
+rooms["WAIT"] = room("WAIT", "Poczekalnia", rect2(3000, 6300, 0, 4500, w=INSET, s=EXT_INSET, e=INSET, n=INSET))
+# Also shortened from "WC klienci" - a second live sweep (after fixing WAIT above) found IT
+# still reached 1649mm from its own centroid into WC dostosowana's own name text. The room
+# number ("WC.C") already says "WC", so the name itself only needs to disambiguate whom it
+# serves.
+rooms["WC.C"] = room("WC.C", "Klienci", rect2(6300, 7700, 0, 4500, w=INSET, s=EXT_INSET, e=INSET, n=INSET),
                       boundary_layer="A-ROOM-BNDY-BATH-RES")
 rooms["WC.A"] = room("WC.A", "WC dostosowana", rect2(7700, 9000, 0, 4500, w=INSET, s=EXT_INSET, e=EXT_INSET, n=INSET),
                       boundary_layer="A-ROOM-BNDY-BATH-RES")
@@ -385,10 +400,22 @@ rooms["OFF.2"] = room("OFF.2", "Biuro sprzedaży 2", rect2(18000, 21500, 4750, 7
 # Rear wing
 rooms["COR"] = room("COR", "Korytarz personelu", rect2(0, 18000, 16000, 17500, w=EXT_INSET, s=EXT_INSET, e=EXT_INSET, n=INSET))
 rooms["SRV"] = room("SRV", "Przyjęcie serwisowe", rect2(0, 3500, 17500, 21500, w=EXT_INSET, s=INSET, e=INSET, n=EXT_INSET))
-rooms["ADM.1"] = room("ADM.1", "Biuro administracji 1", rect2(3500, 7300, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
-rooms["ADM.2"] = room("ADM.2", "Biuro administracji 2", rect2(7300, 11100, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
-rooms["SOC"] = room("SOC", "Pomieszczenie socjalne", rect2(11100, 13600, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
-rooms["STF.WC"] = room("STF.WC", "WC personelu", rect2(13600, 15800, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET),
+# Shortened from "Biuro administracji 1/2" - the room NUMBER (ADM.1/ADM.2) already
+# disambiguates the two, so the digit in the name was pure repetition. Caught by a live
+# bbox measurement, not just the earlier pass/fail sweep: ADM.2's old name text ended only
+# 5.56mm before Socjalne's own name started - inside check_overlaps' bbox_intersect
+# tolerance (0 flagged), but at 1:100 that is 0.06mm on paper, visually indistinguishable
+# from touching. "0 flagged overlaps" alone wasn't a strong enough bar; re-measured the real
+# gap for every remaining pair after this fix too (see the sweep further down).
+rooms["ADM.1"] = room("ADM.1", "Administracja", rect2(3500, 7300, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
+rooms["ADM.2"] = room("ADM.2", "Administracja", rect2(7300, 11100, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
+# Same left-justified-from-centroid overlap as WAIT above - "Pomieszczenie socjalne" (22
+# characters) reached ~1377mm into WC personelu's own name text, confirmed live.
+rooms["SOC"] = room("SOC", "Socjalne", rect2(11100, 13600, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET))
+# Also shortened from "WC personelu" - a second live sweep (after fixing SOC above) found IT
+# still reached into Magazyn's own name text by 20mm; same "the number already says WC" logic
+# as WC.C above.
+rooms["STF.WC"] = room("STF.WC", "Personelu", rect2(13600, 15800, 17500, 21500, w=INSET, s=INSET, e=INSET, n=EXT_INSET),
                         boundary_layer="A-ROOM-BNDY-BATH-RES")
 rooms["MAG"] = room("MAG", "Magazyn", rect2(15800, 18000, 17500, 21500, w=INSET, s=INSET, e=EXT_INSET, n=EXT_INSET))
 
@@ -702,5 +729,74 @@ for a, b, label in overlap_pairs:
     total_overlaps += n
     print(f"  {label}: {n} overlap(s)" + (f"  -> {json.dumps(r['overlaps'], ensure_ascii=False)[:400]}" if n else ""))
 print(f"\n  TOTAL cross-category geometric overlaps found: {total_overlaps} (0 = clean)")
+
+print("\n" + "=" * 70)
+print("STEP 9 cont'd: TEXT LABEL overlap check - room tags specifically (A-ROOM-IDEN vs")
+print("A-ROOM-IDEN). A user's own screenshot caught 3 narrow neighbouring rooms' NAME text")
+print("running together illegibly; root-caused live (get_entity on each A-ROOM-IDEN text handle)")
+print("to the tag's NAME line being left-justified FROM THE ROOM'S OWN CENTROID rather than")
+print("centred, so a long name always reaches toward whichever room sits next door. Fixed by")
+print("shortening the two offending names (Poczekalnia, Socjalne) rather than by moving")
+print("tagPosition, which reproduced apartment-120-test's own phantom-room audit bug when tried")
+print("earlier on this project - re-verified below that this fix does not touch room count.")
+print("=" * 70)
+_, rti = S["validators"].call("check_overlaps", {"layersA": ["A-ROOM-IDEN"], "layersB": ["A-ROOM-IDEN"], "mode": "bbox_intersect"})
+real_tag_overlaps = [o for o in rti.get("overlaps", []) if o["handleA"] != o["handleB"]]
+seen_pairs = set()
+uniq_tag_overlaps = []
+for o in real_tag_overlaps:
+    key = tuple(sorted([o["handleA"], o["handleB"]]))
+    if key in seen_pairs:
+        continue
+    seen_pairs.add(key)
+    uniq_tag_overlaps.append(o)
+print(f"  room-tag-vs-room-tag text overlaps (bbox_intersect): {len(uniq_tag_overlaps)} (0 = clean)")
+for o in uniq_tag_overlaps:
+    print(f"    {o['handleA']} vs {o['handleB']}  area={o.get('overlapArea')}  bboxA={o.get('bboxA')}  bboxB={o.get('bboxB')}")
+if uniq_tag_overlaps:
+    raise SystemExit(f"{len(uniq_tag_overlaps)} room-tag text overlap(s) remain - shorten the "
+                      f"offending name(s) further and re-run, do not ship with overlapping text")
+
+# bbox_intersect alone is not a strong enough bar: it flagged 0 overlaps for
+# "Biuro administracji 2" vs "Socjalne" even though the real gap was 5.56mm - at 1:100 that's
+# 0.06mm on paper, visually indistinguishable from touching. Directly measure the horizontal
+# gap between every pair of DIFFERENT rooms' text on the same text row (same Y-band), and
+# require a real minimum clearance, not just "doesn't technically intersect".
+MIN_LABEL_GAP_MM = 150.0
+_, allTagsRes = S["selection"].call("select_by_layer", {"layer": "A-ROOM-IDEN", "anySpace": True})
+tag_boxes = []
+for h in (allTagsRes.get("handles") or []):
+    e = call("geometry-2d", "get_entity", {"handle": h}, label=f"get_entity {h} (room-tag min-gap sweep)")
+    b = e.get("bbox")
+    if b:
+        tag_boxes.append((h, b["min"]["x"], b["min"]["y"], b["max"]["x"], b["max"]["y"]))
+close_pairs = []
+for i in range(len(tag_boxes)):
+    h1, ax0, ay0, ax1, ay1 = tag_boxes[i]
+    for j in range(i + 1, len(tag_boxes)):
+        h2, bx0, by0, bx1, by1 = tag_boxes[j]
+        if ax0 == bx0:  # same room (every one of its 3 lines starts at the room's own centroid x)
+            continue
+        y_overlap = min(ay1, by1) - max(ay0, by0)
+        if y_overlap <= 0:  # different text rows entirely, not a horizontal-neighbour risk
+            continue
+        gap = (bx0 - ax1) if bx0 >= ax1 else (ax0 - bx1)
+        if gap < MIN_LABEL_GAP_MM:
+            close_pairs.append((h1, h2, gap))
+print(f"  room-tag pairs on the same text row with < {MIN_LABEL_GAP_MM:.0f}mm real clearance: {len(close_pairs)} (0 = clean)")
+for h1, h2, gap in close_pairs:
+    print(f"    {h1} vs {h2}: real gap = {gap:.2f}mm")
+if close_pairs:
+    raise SystemExit(f"{len(close_pairs)} room-tag pair(s) have less than {MIN_LABEL_GAP_MM:.0f}mm "
+                      f"real clearance - shorten the offending name(s) further and re-run")
+
+audit2 = call("schedules", "audit_all_rooms", {"cellMm": 50, "marginMm": 700, "tolerancePct": 10.0},
+              label="audit_all_rooms (re-check: room count must stay 14 after the name-shortening fix)")
+n_rooms2 = len(audit2.get("rows", []))
+print(f"  rooms audited: {n_rooms2} (expected 14 - a mismatch would mean the name-shortening fix")
+print("   itself somehow confused FetchGroupedRoomsAsync's grouping, the same way tagPosition did)")
+if n_rooms2 != 14:
+    raise SystemExit(f"room count changed to {n_rooms2} (expected 14) after the name-shortening "
+                      f"fix - investigate before shipping, this is exactly the phantom-room shape")
 
 print("\n==== automotive-showroom-test build complete ====")

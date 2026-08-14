@@ -177,6 +177,19 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`automotive-showroom-test`'s own build script gained a permanent, re-runnable room-tag
+  text-overlap gate** after a user's screenshot caught 3 pairs of neighbouring rooms' NAME
+  text running together illegibly and asked for it fixed for every label, visually confirmed.
+  Root-caused to the room tag's NAME line being left-justified from the room's own centroid
+  (not centred), so a long name always reaches into whichever room sits next door - and found
+  that `check_overlaps`' plain `bbox_intersect` was not a strong enough bar on its own (it
+  reported 0 overlaps on a pair whose real gap was 5.56mm, 0.06mm at 1:100 scale). The build
+  script now measures every same-row `A-ROOM-IDEN` pair's real gap directly and requires
+  ≥150mm, hard-failing the build otherwise, plus a room-count re-check after any name/geometry
+  change (guarding against the same phantom-room shape a `tagPosition`-based fix reproduced
+  earlier in the same project). No source/tool change this round - fixed entirely in the
+  project's own room names/widths, verified both by measurement and by exporting and cropping
+  the two previously-affected sheet regions.
 - **New third rule-73/74 proof build: `automotive-showroom-test`** (~495 m² gross car
   dealership showroom), the first typology in this bank built straight to rule-74
   construction-document level in one pass rather than a separate retrofit, and the first with

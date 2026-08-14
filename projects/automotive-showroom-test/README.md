@@ -187,6 +187,47 @@ parameter (default `true`, preserving existing callers), set `false` here so the
 only this project's own 3 automotive-specific rows. Confirmed live: both columns now bottom out
 at y≈150-177mm, comfortably above the title block's own top edge (y=82mm).
 
+## Room-tag text overlap, root-caused precisely and closed with a permanent, re-runnable gate
+
+A user's own screenshot of the corrected sheet still showed three narrow neighbouring rooms'
+NAME text running together illegibly (`Poczekalnia / KawiarniaWC klienciWC dostosowana`,
+`Pomieszczenie socjalneWC personeluMagazyn`), with an explicit instruction to fix this for
+**every** label in the project and confirm it visually, not just claim it fixed.
+
+**Root cause, confirmed by direct measurement, not guessed**: `get_entity` on every
+`A-ROOM-IDEN` text handle showed the room tag's NAME line is left-justified **from the room's
+own centroid**, not centred — so a sufficiently long name always reaches rightward into
+whichever room sits next door, independent of that neighbour's own tag. The first fix attempt
+(shortening only the two longest names, "Poczekalnia / Kawiarnia" → "Poczekalnia" and
+"Pomieszczenie socjalne" → "Socjalne") closed the two worst cases but a systematic re-sweep
+found the fix was incomplete: `check_overlaps`' `bbox_intersect` mode reported 0 remaining
+room-tag overlaps, yet a direct gap measurement found "Biuro administracji 2" ending only
+**5.56mm** before "Socjalne" began — 0.06mm on a 1:100-plotted page, visually indistinguishable
+from touching, and "WC.C" and "WC.A" (their fixed 4-character room codes, not shortenable) only
+**58.5mm** apart. **"Zero flagged overlaps" was not, on its own, a strong enough bar** — a
+same-order-of-magnitude lesson to the `RoomRegionSolver` opening-seal bug above: a validator
+that answers a narrower question than "is this actually fine" will pass things that aren't.
+
+Fixed properly, not by moving `tagPosition` (which had already reproduced
+apartment-120-test's own phantom-room audit bug earlier on this same project — see above):
+
+1. Shortened "Biuro administracji 1"/"2" → both "Administracja" (the room NUMBER, `ADM.1`/
+   `ADM.2`, already disambiguates them — the digit in the name was pure repetition), and
+   "WC klienci"/"WC personelu" → "Klienci"/"Personelu" (same reasoning: the number already
+   says "WC").
+2. Widened WC klienci by 200mm (stolen from Poczekalnia, which had slack), shifting its own
+   centroid — and therefore all three of its text lines — 100mm further from WC dostosowana's.
+
+**A permanent, re-runnable gate was added to the build script itself** (not just an ad-hoc
+check run once by hand): every `A-ROOM-IDEN` pair on the same text row must clear a **150mm
+real-world minimum gap** (not merely "does not bbox-intersect"), checked by direct
+`get_entity` measurement and enforced with `SystemExit` if violated, plus a re-run of
+`audit_all_rooms` confirming the room count is still exactly 14 (the same check that would
+catch a `tagPosition`-style regression). Confirmed live end-to-end after every one of these
+fixes: 0 room-tag overlaps, 0 pairs under the 150mm floor, 14 rooms — and confirmed **visually**
+by exporting and cropping the two previously-affected sheet regions, not by trusting the
+measurement alone.
+
 ## Verification results
 
 - `audit_all_rooms(cellMm=50, marginMm=700, tolerancePct=10)`: **14/14 rooms**, correct count

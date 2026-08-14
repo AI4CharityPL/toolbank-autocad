@@ -113,6 +113,15 @@ public sealed record InsertTitleBlockArgs(
     [property: JsonPropertyName("date")]         string? Date = null,
     [property: JsonPropertyName("titleHeightPlotMm")] double TitleHeightPlotMm = CalloutsPalette.PlotBigTextMm,
     [property: JsonPropertyName("fieldHeightPlotMm")] double FieldHeightPlotMm = CalloutsPalette.PlotSmallTextMm,
+    // Override the frame's plotted width/height instead of taking sheetSize's nominal paper
+    // dimensions verbatim. A plotter's real printable area is almost never the full nominal
+    // sheet (acad.publish.get_plot_area reports the true margins per plotter+media) - a border
+    // drawn at the literal 841x594 for A1 overflows that printable area on the far side(s) from
+    // paper-space (0,0), which by AutoCAD's own default is the printable area's OWN corner, not
+    // the physical sheet's corner. Pass the queried printable width/height here so the frame -
+    // and everything the caller positions relative to it - actually fits what will print.
+    [property: JsonPropertyName("widthMm")]  double? WidthMm = null,
+    [property: JsonPropertyName("heightMm")] double? HeightMm = null,
     // Omitted/null/"Model" (default): drawn in model space, exactly as before this field existed.
     // Name a paper-space layout (rule 74 item 8) to draw the title block THERE instead - the
     // literal sheet-size mm from bottomLeft/sheetSize/scale then means what it says, decoupled

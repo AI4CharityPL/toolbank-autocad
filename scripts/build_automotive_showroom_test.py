@@ -104,7 +104,8 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 from mcpcall import Session  # noqa: E402
 
 CATS = ["files", "architecture", "openings", "grids", "structural", "furniture", "plumbing", "schedules", "validators",
-        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports", "selection", "view"]
+        "hatches", "dimensions", "callouts", "sections", "layouts", "geometry-2d", "viewports", "selection", "view",
+        "publish"]
 S = {c: Session(c) for c in CATS}
 
 
@@ -554,10 +555,50 @@ print("model-space pan target (Viewport.ViewCenter) at all, so it defaulted near
 print("origin regardless of where the drawing actually is - fixed by adding create_viewport's")
 print("new modelCenter parameter (see ViewportsDtos.cs) and using it here.")
 SHEET = "A1"
-PLOT_MEDIA = "ISOA1"
+# "Microsoft Print to PDF" (used here in every earlier draft of this pipeline, inherited
+# unquestioned from apartment-120-test/dental-clinic-test) is a generic Windows virtual
+# printer, NOT a real engineering plotter - live list_paper_sizes confirms its own supported
+# sizes top out at ISOA2; "psk:ISOA1" is not in that list at all. configure_plot accepted the
+# call without error and list_layouts even echoed "paperSize": "psk:ISOA1" back, but the
+# plotter itself silently falls back to something far smaller when it can't actually service
+# that size - exactly what a user's own AutoCAD screenshot caught live: content (the schedule
+# tables) rendering outside the real white/printable page into the grey area beyond it, and a
+# block of unexplained blank white space elsewhere on the sheet. Root-caused by checking
+# list_paper_sizes PER PLOTTER rather than assuming the same media string works everywhere:
+# "DWG To PDF.pc3" (AutoCAD's own native PDF driver, arguably the more correct choice than a
+# generic Windows printer anyway) genuinely supports A1, with an explicit, unambiguous
+# landscape canonical name - no locale-dependent shorthand to get wrong a second time.
+PLOTTER = "DWG To PDF.pc3"
+PLOT_MEDIA = "ISO_A1_(841.00_x_594.00_MM)"  # landscape: 841mm wide x 594mm tall, matches this sheet's own layout
 call("layouts", "create_layout", {"name": "A-101", "setCurrent": True}, label="create_layout A-101 (current)")
-call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": "Microsoft Print to PDF", "paperSize": PLOT_MEDIA},
-     label=f"configure_plot A-101 ({PLOT_MEDIA}) - no CTB applied, none supplied under assets/plotstyles/")
+call("layouts", "configure_plot", {"layoutName": "A-101", "plotter": PLOTTER, "paperSize": PLOT_MEDIA},
+     label=f"configure_plot A-101 ({PLOTTER}, {PLOT_MEDIA}) - no CTB applied, none supplied under assets/plotstyles/")
+
+print("\n-- real printable area, not the nominal paper size --")
+print("A user's own AutoCAD screenshot caught the sheet border/title block/schedule tables NOT")
+print("lining up with the layout's own dashed printable-area boundary - gap on one side, overflow")
+print("on the other, exactly what you'd get from assuming the full 841x594mm nominal A1 sheet is")
+print("all usable. It isn't: every real plotter/media combo excludes a margin from each edge")
+print("(acad.publish.get_plot_area confirms it here: 5mm left/right, 17mm top/bottom for DWG To")
+print("PDF.pc3 + this A1 media) - and by AutoCAD's own documented default (Options > Plot and")
+print("Publish > 'Printable Area', not 'Edge of Paper'), paper-space (0,0) is the printable area's")
+print("OWN lower-left corner, not the physical sheet's - confirmed live: querying it here rather")
+print("than assuming either convention. So a border drawn to the literal nominal width/height")
+print("overflows the printable area on the far side from (0,0) by exactly the margin total, and")
+print("this build's own schedule tables (top edge y=574mm) and title block (right edge x=840mm)")
+print("were already past the real printable ceiling/wall (560mm/831mm) - real content loss on")
+print("plot, not a cosmetic border mismatch. Fixed by querying the real printable rect and sizing")
+print("EVERYTHING paperspace to it: insert_title_block's new widthMm/heightMm override (see")
+print("CalloutsDtos.cs/CalloutsTools.cs, CHANGELOG) replaces sheetSize's nominal dimensions, and")
+print("the schedule columns start below the real printable ceiling instead of the nominal one.")
+rPlotArea = call("publish", "get_plot_area", {"layoutName": "A-101"}, label="get_plot_area A-101 (real printable rect for this plotter+media)")
+_pm = rPlotArea["margins"]
+_paper = rPlotArea["paperSize"]
+PRINTABLE_W = _paper["width"] - _pm["xMin"] - _pm["xMax"]
+PRINTABLE_H = _paper["height"] - _pm["yMin"] - _pm["yMax"]
+print(f"  nominal sheet {_paper['width']:.0f}x{_paper['height']:.0f}mm, margins L{_pm['xMin']:.1f} "
+      f"R{_pm['xMax']:.1f} B{_pm['yMin']:.1f} T{_pm['yMax']:.1f}mm -> real printable area "
+      f"{PRINTABLE_W:.1f}x{PRINTABLE_H:.1f}mm, bottom-left at paper-space (0,0)")
 
 # Real content bbox (model space): building 0-21500/0-21500, zone tags at x=-4000 (allow their
 # own text width), north arrow/scale bar centred at x=25000 (r=1500 circle + label), section
@@ -589,11 +630,13 @@ print(f"  ({len(phantoms)} phantom viewport(s) removed, 1 intentional 1:100 view
 
 call("callouts", "insert_title_block", {
     "bottomLeft": P(0, 0), "sheetSize": SHEET, "scale": "1:1",
+    "widthMm": PRINTABLE_W, "heightMm": PRINTABLE_H,
     "projectName": "Automotive Showroom Test", "sheetNumber": "A-101",
     "author": "ToolBank AutoCAD", "date": "2026-08-14", "titleText": "RZUT SALONU SAMOCHODOWEGO",
     "layoutName": "A-101",
     "fields": [{"key": "SKALA", "value": "1:100"}],
-}, label=f"insert_title_block (paperspace, scale 1:1 = literal sheet mm, {SHEET})")
+}, label=f"insert_title_block (paperspace, scale 1:1 = literal sheet mm, {SHEET}, "
+         f"sized to the real printable area {PRINTABLE_W:.0f}x{PRINTABLE_H:.0f}mm not the nominal one)")
 
 print("\n-- schedules, TWO COLUMNS (not one long stack) --")
 print("A user's own Print Preview screenshot caught the earlier single-column stack (4 tables:")
@@ -608,6 +651,10 @@ print("and, at ~643mm for that one table alone, the single biggest contributor t
 GAP = 20.0
 COL1_X = VP_PAPER_CENTER["x"] + VP_W / 2.0 + 20.0
 COL2_X = COL1_X + 228.0 + 20.0  # 228mm = door schedule's own measured column width
+COL_TOP_Y = PRINTABLE_H - 20.0  # start below the REAL printable ceiling, not the nominal 594mm one
+                                 # (the earlier hardcoded 574mm start was only 20mm under the
+                                 # NOMINAL sheet top, i.e. 14mm INSIDE the real 17mm top margin -
+                                 # table content was already being clipped on plot)
 
 
 def measured_bottom(tool_result):
@@ -616,7 +663,7 @@ def measured_bottom(tool_result):
     return bbox["min"]["y"]
 
 
-col1_y = 574.0
+col1_y = COL_TOP_Y
 r = call("schedules", "generate_door_schedule", {"position": P(COL1_X, col1_y), "layoutName": "A-101"},
          label="generate_door_schedule (paperspace, column 1)")
 col1_y = measured_bottom(r) - GAP
@@ -624,7 +671,7 @@ r = call("schedules", "generate_window_schedule", {"position": P(COL1_X, col1_y)
          label="generate_window_schedule (paperspace, column 1)")
 col1_bottom = measured_bottom(r)
 
-col2_y = 574.0
+col2_y = COL_TOP_Y
 r = call("schedules", "generate_room_schedule", {"position": P(COL2_X, col2_y), "layoutName": "A-101"},
          label="generate_room_schedule (paperspace, column 2)")
 col2_y = measured_bottom(r) - GAP
@@ -641,6 +688,35 @@ print(f"  column 1 (door+window) real bottom y={col1_bottom:.1f}mm; "
 if col1_bottom < 82.0 or col2_bottom < 82.0:
     raise SystemExit(f"schedule column still overflows the sheet (col1={col1_bottom:.1f}, "
                       f"col2={col2_bottom:.1f}, sheet floor=82mm) - widen the sheet or split further")
+
+print("\n-- verify every paperspace entity actually sits inside the REAL printable rect --")
+print("Not the on-screen 'looks fine at this zoom level' check that missed this the first time -")
+print("a direct bbox sweep of every A-101 entity (border, title block, all 4 schedule tables)")
+print("against the same printable rect get_plot_area reported above, exactly what would actually")
+print("come out of File > Plot right now.")
+_swept = 0
+_violations = []
+for _layer in ("A-ANNO-BORD", "A-ANNO-TTLB", "A-ANNO-TBLS", "A-ANNO-LEGN"):
+    _ok, _sel = S["selection"].call("select_by_layer", {"layer": _layer, "anySpace": True})
+    if not _ok:
+        continue
+    for _h in (_sel.get("handles") or []):
+        _e = call("geometry-2d", "get_entity", {"handle": _h}, label=f"get_entity {_h} (printable-area sweep, {_layer})")
+        _b = _e.get("bbox")
+        if not _b:
+            continue
+        _swept += 1
+        if (_b["min"]["x"] < -0.01 or _b["min"]["y"] < -0.01
+                or _b["max"]["x"] > PRINTABLE_W + 0.01 or _b["max"]["y"] > PRINTABLE_H + 0.01):
+            _violations.append((_layer, _h, _b))
+print(f"  {_swept} entities swept across border/title-block/schedule layers, "
+      f"printable rect x[0,{PRINTABLE_W:.1f}] y[0,{PRINTABLE_H:.1f}]")
+if _violations:
+    for _layer, _h, _b in _violations:
+        print(f"    OUTSIDE printable area: {_layer} {_h} bbox x[{_b['min']['x']:.1f},{_b['max']['x']:.1f}] "
+              f"y[{_b['min']['y']:.1f},{_b['max']['y']:.1f}]")
+    raise SystemExit(f"{len(_violations)} entity(ies) fall outside the real printable area - "
+                      f"would be clipped on an actual plot, not just an on-screen quirk")
 
 print("\n-- frame the whole A1 sheet as A-101's own remembered on-screen view --")
 print("A user's own screenshot caught AutoCAD showing a poorly-fitted view the first time this")

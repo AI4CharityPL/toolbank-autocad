@@ -442,7 +442,7 @@ public static class CalloutsTools
     // ─────────────────────────────────────────────────────────────
 
     [McpTool("insert_title_block",
-        "Draw an ISO 7200 sheet border plus a 12-row project title block in the lower-right corner. sheetSize accepts A0/A1/A2/A3/A4; the block is scaled so that the plotted paper size matches. Pass fields=[{key, value}, ...] to fill the standard rows (PROJEKT, INWESTOR, ADRES, BRANŻA, FAZA, STADIUM, RYSUNEK, SKALA, NR RYS., DATA, PROJEKTANT, SPRAWDZAJĄCY); missing rows are left empty. Shorthand projectName/sheetNumber/author/date/titleText populate the most common rows if fields is not supplied.",
+        "Draw an ISO 7200 sheet border plus a 12-row project title block in the lower-right corner. sheetSize accepts A0/A1/A2/A3/A4; the block is scaled so that the plotted paper size matches. Pass fields=[{key, value}, ...] to fill the standard rows (PROJEKT, INWESTOR, ADRES, BRANŻA, FAZA, STADIUM, RYSUNEK, SKALA, NR RYS., DATA, PROJEKTANT, SPRAWDZAJĄCY); missing rows are left empty. Shorthand projectName/sheetNumber/author/date/titleText populate the most common rows if fields is not supplied. Optional widthMm/heightMm override sheetSize's nominal paper dimensions - pass the plotter's real printable width/height (from acad.publish.get_plot_area, called after configure_plot) so the frame matches what will actually print instead of the full nominal sheet, which almost every plotter/media combo has non-zero unprintable margins on.",
         "callouts",
         Intent = new[]
         {
@@ -465,9 +465,10 @@ public static class CalloutsTools
         int scale = CalloutsPalette.ResolveScaleFactor(args.Scale);
         var sheet = CalloutsPalette.ResolveSheet(args.SheetSize);
 
-        // Drawing-unit sheet size = paper size × scale factor.
-        double w = sheet.WidthMm * scale;
-        double h = sheet.HeightMm * scale;
+        // Drawing-unit sheet size = paper size × scale factor. widthMm/heightMm (when supplied)
+        // override the preset's nominal paper dimensions - see the args' own doc comment.
+        double w = (args.WidthMm ?? sheet.WidthMm) * scale;
+        double h = (args.HeightMm ?? sheet.HeightMm) * scale;
         double marginL = sheet.MarginLeftMm * scale;
         double marginE = sheet.MarginEdgeMm * scale;
         double titleH = args.TitleHeightPlotMm * scale;

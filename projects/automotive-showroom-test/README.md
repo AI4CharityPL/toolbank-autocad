@@ -264,6 +264,71 @@ reports `centerX=420.5, centerY=297` — exactly the sheet's own true centre (84
 immediately after the build and after a fresh reopen, so the fitted view persists in the saved
 file, not just in the live session that created it.
 
+## A fifth tool/config bug — the plotter didn't actually support the paper size it echoed back
+
+Even with the on-screen view correctly framed (previous section), a user's own AutoCAD
+screenshot still showed schedule tables spilling out of the white/printable page into the grey
+area beyond it, plus unexplained blank white space elsewhere. **Root cause: the configured
+plotter, "Microsoft Print to PDF" (a generic Windows virtual printer, not a real engineering
+plotter), does not actually support ISOA1** — live `acad.layouts.list_paper_sizes` against that
+specific plotter shows its own supported sizes top out at ISOA2. `configure_plot` accepted the
+`"ISOA1"` request without error and `list_layouts` even echoed `"paperSize": "psk:ISOA1"` back —
+but the plotter silently substitutes something much smaller when asked for a size it can't
+service, so the *actual* printable/white page AutoCAD renders (and would plot) was smaller than
+the 841×594mm this whole sheet's content was laid out for. Content near the sheet's own edges —
+exactly the schedule tables, which sit deliberately close to the right margin — spilled outside
+the real printable area into the grey "outside paper" zone.
+
+**This is a genuine, evidenced hole in the earlier established fix** ("`configure_plot`'s
+`paperSize` needs the locale string `'ISOA1'`, confirmed via `list_paper_sizes`" — a fix from
+`apartment-120-test`'s own history, reused unquestioned here and, very likely, still wrong on
+both earlier proof projects too, which used the identical plotter/size combination — flagged as
+its own follow-up task rather than assumed away). That earlier check only confirmed the string
+was *accepted*, not that it was actually *in* the plotter's own supported-sizes catalog for THIS
+specific plotter — a different, narrower question that turned out to matter.
+
+Fixed by switching to `"DWG To PDF.pc3"` (AutoCAD's own native PDF export driver — arguably the
+more correct choice architecturally too, not a generic Windows office printer) with the
+canonical size string `"ISO_A1_(841.00_x_594.00_MM)"` (landscape, unambiguous — no
+locale-dependent shorthand left to get wrong a second time). Confirmed live: `list_layouts` now
+reports `plotter: "DWG To PDF.pc3"`, `paperSize: "ISO_A1_(841.00_x_594.00_MM)"` for A-101, both
+immediately after the build and after a genuinely fresh reopen.
+
+## A sixth tool bug — the frame was sized to the nominal paper, not the real printable area
+
+Even with the right plotter/media (previous section), a user's own AutoCAD screenshot of the
+Layout tab still showed the sheet border/title block/schedule tables not lining up with the
+layout's own dashed printable-area boundary — uncovered on one side, overflowing on the other.
+**Root cause: `insert_title_block` drew the border at the literal nominal paper size (841×594mm
+for A1), but no real plotter/media combination is 100% printable edge-to-edge** —
+`acad.publish.get_plot_area` reports real, non-zero margins for `"DWG To PDF.pc3"` +
+`ISO_A1_(841.00×594.00mm)` here: 5mm left/right, 17mm top/bottom. By AutoCAD's own documented
+default (Options → Plot and Publish → "Printable Area", not "Edge of Paper" — confirmed via
+[Autodesk's own help page](https://help.autodesk.com/cloudhelp/2016/ENU/AutoCAD-Core/files/GUID-88080625-C6E0-4FC3-A8FD-226D10DA780D.htm)
+and independently re-confirmed live against this drawing's own geometry, not assumed), paper-space
+`(0,0)` is the printable area's **own** lower-left corner, not the physical sheet's — so a border
+drawn to the full nominal 841×594 necessarily overflowed the real printable area on the far side
+(top+right) by exactly the margin total. This was not cosmetic: the door/window schedule's own top
+edge (y=574mm) was already 14mm past the real printable ceiling (560mm), and the title block's own
+right edge (x=840mm) was already 9mm past the real printable wall (831mm) — real content that
+would have been clipped on an actual plot, matching precisely what the user's screenshot showed.
+
+Fixed at the source: `insert_title_block` gained optional `widthMm`/`heightMm` overrides
+(`CalloutsDtos.cs`/`CalloutsTools.cs`, Backend-only change) that replace `sheetSize`'s nominal
+paper dimensions when supplied. The build script now queries `acad.publish.get_plot_area` right
+after `configure_plot`, computes the real printable width/height from its reported margins, and
+uses that — not the nominal 841×594 — to size the border/title-block frame and to start the
+schedule columns. A new permanent build-script gate sweeps every entity on the border/title-block/
+schedule layers and asserts its bbox falls entirely inside the real printable rect, failing the
+build otherwise — the geometric, automatable form of "does this actually fit inside the frame",
+since eyeballing a screenshot at an arbitrary zoom level is exactly what missed this the first
+three times.
+
+Confirmed live after rebuilding: the border's own bbox is now `x[0.0,831.0] y[0.0,560.0]` —
+touching the real printable rect on all four sides exactly, not approximately (verified by direct
+`get_entity` measurement, independent of the build script's own gate). All 37 swept entities
+(border, title block, all 4 schedule tables) pass.
+
 ## Verification results
 
 - `audit_all_rooms(cellMm=50, marginMm=700, tolerancePct=10)`: **14/14 rooms**, correct count

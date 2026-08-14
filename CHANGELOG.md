@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **`insert_title_block` drew the sheet border/title block at the nominal paper size, not the
+  plotter's real printable area, root-caused from a user's own AutoCAD screenshot showing the
+  frame not lining up with the layout's own dashed printable-area boundary.** No plotter/media
+  combination is printable edge-to-edge - `acad.publish.get_plot_area` reports real margins for
+  `automotive-showroom-test`'s own `"DWG To PDF.pc3"` + A1 media (5mm left/right, 17mm
+  top/bottom) - and by AutoCAD's own documented default (Options → Plot and Publish →
+  "Printable Area"), paper-space `(0,0)` is the printable area's own corner, not the physical
+  sheet's, so a border drawn to the full nominal 841×594mm necessarily overflowed the real
+  printable area on the far side. Not cosmetic: the door/window schedule's own top edge was
+  already 14mm past the real printable ceiling and the title block's own right edge 9mm past the
+  real printable wall - real content that would be clipped on an actual plot, exactly what the
+  screenshot showed. Fixed by adding optional `widthMm`/`heightMm` overrides to
+  `insert_title_block` (`CalloutsDtos.cs`/`CalloutsTools.cs`, Backend-only, no plugin redeploy
+  needed) that replace `sheetSize`'s nominal dimensions when supplied; `automotive-showroom-test`'s
+  build script now queries `get_plot_area` right after `configure_plot` and sizes the frame and
+  schedule-column start position to the real printable rect instead. A new permanent build-script
+  gate sweeps every border/title-block/schedule entity and hard-fails if any bbox falls outside
+  that rect. Confirmed live: the border's own bbox is now `x[0,831] y[0,560]` - touching the real
+  printable rect on all four sides exactly.
 - **`create_viewport` never set the viewport's model-space pan target, root-caused from a user's
   own Print Preview screenshot and fixed at the source.** `Viewport.ViewCenter` decides which
   model-space point appears at the centre of a paperspace viewport; the plugin handler set
@@ -177,6 +196,22 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **`automotive-showroom-test`'s A-101 layout was configured with a plotter ("Microsoft Print
+  to PDF") that does not actually support the "ISOA1" paper size it was set to**, root-caused
+  from a user's own AutoCAD screenshot showing schedule tables spilling out of the white
+  printable page into the grey area beyond it. Live `list_paper_sizes` against that specific
+  plotter confirms its own supported sizes top out at ISOA2 - `configure_plot` accepted the
+  request without error and `list_layouts` even echoed the requested size back, but the plotter
+  silently substitutes something smaller when it can't actually service the requested size, so
+  the real printable page was smaller than the 841x594mm the sheet's content was laid out for.
+  This is a genuine hole in an earlier established fix from `apartment-120-test`'s own history
+  ("the locale string is 'ISOA1', confirmed via list_paper_sizes") - that check only confirmed
+  the string was *accepted*, not that it was in *this specific plotter's* own catalog, and both
+  earlier proof projects used the identical plotter/size combination, so they very likely have
+  the same defect - flagged as its own follow-up task rather than assumed away. Fixed on
+  automotive-showroom-test by switching to `"DWG To PDF.pc3"` (AutoCAD's own native PDF driver,
+  confirmed to genuinely support A1) with the canonical size string
+  `"ISO_A1_(841.00_x_594.00_MM)"`. Confirmed live on a fresh reopen.
 - **Every `acad.view.zoom_*` tool (`zoom_extents`, `zoom_window`, `zoom_center`, `zoom_scale`)
   threw a native `eNullObjectPointer` whenever a paperspace layout was the active tab, root-caused
   and fixed at the source.** Found from a user's own screenshot of AutoCAD itself showing A-101
@@ -217,12 +252,14 @@ All notable changes to this project will be documented in this file. Format: [Ke
   own room's doors/windows, a structural column sitting on a door and 3 windows, and moved the
   main entrance from a cramped reception room directly into the exhibition hall — architecturally
   the better call anyway, matching the typology's own "hall fronts the street" research finding.
-  Root-caused 5 real tool bugs along the way (see "Fixed" above) rather than working around them
-  silently - 2 found by this session's own verification pass (hatch pattern, opening-seal), 3
-  more caught only from the user's own review of the actual AutoCAD session and exported sheet
-  (viewport centring, schedule overflow, the paperspace zoom crash) after this session's
-  automated checks had all passed clean, a reminder that PASS/FAIL gates don't substitute for
-  actually looking at the deliverable. One of those three (the zoom crash) took a genuinely wrong
+  Root-caused 7 real tool/config bugs along the way (see "Fixed" above) rather than working
+  around them silently - 2 found by this session's own verification pass (hatch pattern,
+  opening-seal), 5 more caught only from the user's own review of the actual AutoCAD session and
+  exported sheet (viewport centring, schedule overflow, the paperspace zoom crash, the
+  plotter/paper-size mismatch, the frame-vs-real-printable-area mismatch) after this session's
+  automated checks had all passed clean, a
+  reminder that PASS/FAIL gates don't substitute for actually looking at the deliverable. One of
+  those five (the zoom crash) took a genuinely wrong
   first fix attempt, tested live and found insufficient, before a web search of documented
   Autodesk API guidance identified the real cause - a concrete example of "don't guess" meaning
   keep investigating with real evidence, not stop at the first plausible-looking fix. Scored

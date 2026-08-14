@@ -6,6 +6,32 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Fixed
 
+- **`HatchCatalog.cs`'s `insulation` material preset threw a native AutoCAD `eInvalidInput` on
+  every use, root-caused and fixed at the source.** Found live while building
+  `automotive-showroom-test`: `apply_material_preset(material="insulation")` always failed
+  `Hatch.EvaluateHatch`, isolated via a live A/B test on an identical boundary polyline where
+  `concrete`/`glass`/`plaster`/`steel` all succeeded and `insulation` alone always failed.
+  Root cause: the preset's pattern name, `"BATTING"`, is not a real predefined AutoCAD hatch
+  pattern — the correct stock name is `"INSUL"`, confirmed live via `draw_hatch_by_boundary`.
+  Fixed in `src/AcadMcp.Shared/Catalogs/HatchCatalog.cs`. Not yet exercised live by any project
+  (needs a plugin redeploy + AutoCAD restart to take effect) — `automotive-showroom-test` itself
+  uses `steel` for its opaque envelope instead, an equally defensible material for a
+  steel-portal-frame building, rather than block on a redeploy cycle for a cosmetic swap.
+- **Root-caused (not yet fixed) a real undermeasurement bug in `audit_all_rooms`'s flood-fill
+  area check, `RoomRegionSolver.SolveFlood`'s door/window opening-seal.** Each opening is sealed
+  with a full circular disc of radius `max(widthMm/2 + 1.5×cell, 2×cell)`, centred on the wall —
+  for a typical 900mm door at the usual `cellMm=50`, a 525mm-radius disc that reaches ~465mm past
+  the wall face into the room, eating real floor area. Confirmed the rooms/walls themselves are
+  geometrically correct (direct `get_entity` measurement on wall face lines matches the declared
+  net-internal inset to the millimetre) and the measurement bug is real, not a build defect:
+  rooms with several openings on their boundary (unavoidable in a fully-glazed, fully-doored
+  rule-74 build) measure 10-20% under their true area and get falsely flagged `labelMismatch`;
+  large rooms barely notice, which is why the two earlier proof builds (fewer openings per room,
+  or none at all) never surfaced this. Also affects `generate_room_schedule`'s own area column,
+  which pulls the same measured value — a real, visible defect on an exported sheet, not just the
+  audit report. A correct fix needs the seal to be an oriented shape aligned with the wall
+  (reaching only ~wall-thickness perpendicular to it), which needs a wall-direction angle added
+  to `OpeningSeed` — real design work, spawned as its own follow-up rather than rushed here.
 - **Root-caused and fixed the `export_file` blank-viewport bug flagged earlier as a follow-up
   task, instead of leaving it open.** `ViewportsPluginTools.AllViewports`'s own filter for
   excluding a layout's required "overall" paperspace viewport (AutoCAD's own reserved ID 1,
@@ -124,6 +150,19 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Added
 
+- **New third rule-73/74 proof build: `automotive-showroom-test`** (~495 m² gross car
+  dealership showroom), the first typology in this bank built straight to rule-74
+  construction-document level in one pass rather than a separate retrofit, and the first with
+  a structurally irregular footprint (one big column-free public hall, not a grid of
+  similar-sized rooms) and real windows (unlike dental-clinic-test's zero-by-design). Found and
+  fixed 10 real geometric collisions live (`check_overlaps`) between furniture presets and their
+  own room's doors/windows, a structural column sitting on a door and 3 windows, and moved the
+  main entrance from a cramped reception room directly into the exhibition hall — architecturally
+  the better call anyway, matching the typology's own "hall fronts the street" research finding.
+  Root-caused 2 real tool bugs along the way (see "Fixed" above) rather than working around them
+  silently. Scored 11.0/17 on the rule 60 §1 vision rubric (technical-study band, honestly below
+  apartment-120-test's 12.0 and dental-clinic-test's 10.5, reflecting a harder single-pass
+  typology plus the two tool bugs' own cost). Full writeup in the project's own README.
 - **Both rule-73 proof builds (`apartment-120-test`, `dental-clinic-test`) retrofitted to the
   full rule 74 (construction-document readiness) checklist**, not just the geometry/zoning level
   rule 73 already covered: material hatching on every exterior wall (handle-based

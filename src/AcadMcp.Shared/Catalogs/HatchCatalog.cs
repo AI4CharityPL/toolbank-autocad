@@ -67,7 +67,7 @@ public static class HatchCatalog
             { "AR-RSHKE", new("AR-RSHKE", "ARCH", "Roof shingles",                         1.0, 0.0) },
 
             // Material-specific
-            { "BATTING", new("BATTING", "MATERIAL", "Insulation (zigzag)",          1.0, 0.0) },
+            { "INSUL",   new("INSUL",   "MATERIAL", "Insulation (zigzag)",          1.0, 0.0) },
             { "EARTH",   new("EARTH",   "MATERIAL", "Earth / soil",                 1.0, 0.0) },
             { "CORK",    new("CORK",    "MATERIAL", "Cork",                         1.0, 0.0) },
             { "NET",     new("NET",     "MATERIAL", "Mesh / grid (Faraday)",        1.0, 0.0) },
@@ -99,7 +99,7 @@ public static class HatchCatalog
             { "concrete-block",      new("concrete-block",      "AR-B816",  50.0,  0.0,  8) },
             { "brick",               new("brick",               "AR-BRSTD", 50.0,  0.0,  1) },  // red
             { "brick-elm",           new("brick-elm",           "AR-BRELM", 50.0,  0.0,  1) },
-            { "insulation",          new("insulation",          "BATTING",  50.0,  0.0,  4) },  // cyan
+            { "insulation",          new("insulation",          "INSUL",    50.0,  0.0,  4) },  // cyan
             { "plaster",             new("plaster",             "ANSI31",    5.0, 45.0,  8) },
             { "stone",               new("stone",               "AR-RROOF", 50.0,  0.0, 42) },  // brown
             { "earth",               new("earth",               "EARTH",    50.0,  0.0, 42) },

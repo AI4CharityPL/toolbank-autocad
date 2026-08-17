@@ -131,7 +131,7 @@ if ($Mode -eq "Bundle") {
                     ProductType="Application"
                     AutodeskProduct="AutoCAD">
   <CompanyDetails Name="ToolBank AutoCAD contributors"
-                  Url="https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD"
+                  Url="https://github.com/AI4CharityPL/toolbank-autocad"
                   Email="" />
   <Components Description="MCP plugin assembly">
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25" />

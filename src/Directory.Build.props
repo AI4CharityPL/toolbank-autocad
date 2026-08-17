@@ -16,8 +16,8 @@
     <NeutralLanguage>en-US</NeutralLanguage>
 
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/AI4CharityPL/toolbank-autocad</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AI4CharityPL/toolbank-autocad</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

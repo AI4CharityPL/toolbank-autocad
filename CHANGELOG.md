@@ -194,6 +194,19 @@ All notable changes to this project will be documented in this file. Format: [Ke
   `projects/dental-clinic-test/` are updated in place; both project READMEs document every
   defect found and its fix.
 
+### Changed
+
+- **The project's home is now `AI4CharityPL/toolbank-autocad`, and every URL in the tree that
+  still pointed at the old personal repository was rewritten to it.** Twelve occurrences in seven
+  files - the issue-template links, `SECURITY.md`'s advisory link, `PATTERN.md`'s attribution,
+  the Inno Setup publisher/support/updates URLs, `PackageContents.companion.xml` and
+  `install-plugin.ps1`'s bundle URL, and `Directory.Build.props`'s `PackageProjectUrl` and
+  `RepositoryUrl`, which are baked into every NuGet package produced from this tree. The vision
+  sidecar's `pyproject.toml` gained the `[project.urls]` block it never had. Left deliberately
+  unchanged: author attribution in `AUTHORS.md` and the README credits, which names a person and
+  not a repository, and the two links to the separate **ToolBank** router project, which is not
+  being moved.
+
 ### Added
 
 - **`automotive-showroom-test`'s A-101 layout was configured with a plotter ("Microsoft Print

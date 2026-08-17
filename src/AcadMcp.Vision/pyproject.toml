@@ -26,6 +26,11 @@ dependencies = [
     # (_loaders.py also resolves pypdfium2 lazily, but that one IS a core dep above.)
 ]
 
+[project.urls]
+Homepage = "https://github.com/AI4CharityPL/toolbank-autocad"
+Source = "https://github.com/AI4CharityPL/toolbank-autocad"
+Issues = "https://github.com/AI4CharityPL/toolbank-autocad/issues"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3",

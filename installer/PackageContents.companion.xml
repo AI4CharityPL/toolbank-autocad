@@ -7,7 +7,7 @@
                     ProductType="Application"
                     AutodeskProduct="AutoCAD">
   <CompanyDetails Name="ToolBank AutoCAD contributors"
-                  Url="https://github.com/KrzysztofAugiewicz/ToolBank-AutoCAD"
+                  Url="https://github.com/AI4CharityPL/toolbank-autocad"
                   Email="" />
   <Components Description="In-app AI assistant + AutoCAD tool host">
     <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R25" />

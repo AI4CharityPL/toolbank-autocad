@@ -298,7 +298,7 @@ Write-Host ""
 Write-Host "  Next:" -ForegroundColor White
 if ($Client -ne "none") { Write-Host "    - restart $Client so it picks up acad-router" -ForegroundColor DarkGray }
 Write-Host "    - ToolBank must also be configured for the other 30 categories to be discoverable:" -ForegroundColor DarkGray
-Write-Host "      https://github.com/KrzysztofAugiewicz/ToolBank" -ForegroundColor DarkGray
+Write-Host "      https://github.com/AI4CharityPL/toolbank" -ForegroundColor DarkGray
 Write-Host "      then: powershell -ExecutionPolicy Bypass -File scripts\register-mcps.ps1" -ForegroundColor DarkGray
 Write-Host "    - ask your client to call acad_status" -ForegroundColor DarkGray
 Write-Host ""

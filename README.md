@@ -285,7 +285,7 @@ The script auto-detects your registry path from `~/.cursor/mcp.json`, checking f
 pwsh scripts/install-cursor-config.ps1
 ```
 
-Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through ToolBank. This assumes ToolBank itself is already configured in your client - see the [ToolBank repository](https://github.com/KrzysztofAugiewicz/ToolBank) if it isn't.
+Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through ToolBank. This assumes ToolBank itself is already configured in your client - see the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) if it isn't.
 
 ### 4. Verify
 

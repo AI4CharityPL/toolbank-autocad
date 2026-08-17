@@ -204,8 +204,21 @@ All notable changes to this project will be documented in this file. Format: [Ke
   `RepositoryUrl`, which are baked into every NuGet package produced from this tree. The vision
   sidecar's `pyproject.toml` gained the `[project.urls]` block it never had. Left deliberately
   unchanged: author attribution in `AUTHORS.md` and the README credits, which names a person and
-  not a repository, and the two links to the separate **ToolBank** router project, which is not
-  being moved.
+  not a repository. The two links to the separate **ToolBank** router project were repointed as
+  well, to `AI4CharityPL/toolbank`, since that project moved to the same account on the same day.
+- **`.github/CODEOWNERS` named an owner who is not a collaborator on the new repository, so every
+  rule in it was dead.** GitHub's own `/codeowners/errors` endpoint reported `Unknown owner` on
+  all eight lines: the file looked like review protection and provided none, and no review request
+  it describes would ever have fired. Rewritten to `@AI4CharityPL`. Worth stating plainly because
+  this is the repository's own recurring failure shape - a thing that reads as a control while
+  doing nothing - showing up in its configuration rather than in a tool.
+- **The pinned GitHub Actions were bumped to the versions Dependabot opened five pull requests
+  for**: `actions/checkout` 4→7, `actions/setup-dotnet` 4→6, `actions/setup-python` 5→7,
+  `actions/upload-artifact` 4→7 and `github/codeql-action` 3→4. Applied as one commit in this
+  tree's own authorship rather than merged as five, and CI had already run green on each of the
+  first four in its own pull request. The `codeql-action` bump is the one with no such evidence:
+  CodeQL cannot complete on a private repository without Advanced Security, so every CodeQL run
+  here fails at the upload step regardless of the action's version.
 
 ### Added
 

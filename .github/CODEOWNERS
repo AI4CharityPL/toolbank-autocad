@@ -1,16 +1,16 @@
 # Default owner for everything.
-*                                   @KrzysztofAugiewicz
+*                                   @AI4CharityPL
 
 # The contract surface. A change here changes what every MCP client sees, so it should
 # never merge unreviewed even when the diff looks mechanical.
-/src/AcadMcp.SourceGen/             @KrzysztofAugiewicz
-/src/AcadMcp.Backend/Mcp/           @KrzysztofAugiewicz
-/toolbank-manifests/                 @KrzysztofAugiewicz
+/src/AcadMcp.SourceGen/             @AI4CharityPL
+/src/AcadMcp.Backend/Mcp/           @AI4CharityPL
+/toolbank-manifests/                 @AI4CharityPL
 
 # The rules the code is held to.
-/docs/engineering-rules/            @KrzysztofAugiewicz
+/docs/engineering-rules/            @AI4CharityPL
 
 # Licensing and release plumbing.
-/LICENSE                            @KrzysztofAugiewicz
-/THIRD-PARTY-NOTICES.md             @KrzysztofAugiewicz
-/.github/                           @KrzysztofAugiewicz
+/LICENSE                            @AI4CharityPL
+/THIRD-PARTY-NOTICES.md             @AI4CharityPL
+/.github/                           @AI4CharityPL

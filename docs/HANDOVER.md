@@ -9,7 +9,7 @@ run on the machine it was written on; where something is untested elsewhere it s
 
 An MCP tool bank that drives AutoCAD 2025. A C# **plugin** loads inside AutoCAD and does the work;
 a **backend** process per category speaks MCP over stdio and forwards to the plugin over a named
-pipe. There are **687 tools in 50 categories**. The product language is **English**; every tool
+pipe. There are **692 tools in 51 categories**. The product language is **English**; every tool
 also carries Polish intent phrases so a Polish-speaking router can find it.
 
 The distinguishing thing about this project is not the tool count. It is that **every tool has
@@ -272,7 +272,7 @@ reason before resurrecting any of them.**
 * `pre-commit.ps1 -All` → **0 errors**, 115 items
 * `dotnet test` → **266 passed**
 * `audit-tool-descriptions.py` → **0 objective failures, 0 Polish gaps**
-* 50 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **687 tools**
+* 51 manifests in `toolbank-manifests/`, matching `docs/TOOLS-REFERENCE.md` — **692 tools**
 
 **Not done and deliberately left to the user:** the npm publish (needs their 2FA), and revoking
 the PyPI token at the end of the project. The token must never be written into either repository.

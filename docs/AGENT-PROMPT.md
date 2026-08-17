@@ -8,7 +8,7 @@ that before it starts typing.
 
 ```
 You are continuing work on ToolBank-AutoCAD, an MCP tool bank that drives AutoCAD 2025 from a
-C# plugin plus one backend process per category. 668 tools across 48 categories exist today.
+C# plugin plus one backend process per category. 692 tools across 51 categories exist today.
 
 BEFORE YOU DO ANYTHING ELSE, read these, in this order:
 

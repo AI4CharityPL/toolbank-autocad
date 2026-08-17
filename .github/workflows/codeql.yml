@@ -39,7 +39,7 @@ jobs:
         language: [csharp, python]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up .NET 8
         if: matrix.language == 'csharp'

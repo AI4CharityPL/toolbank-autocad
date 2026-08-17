@@ -1,7 +1,7 @@
 # Before anything else: please help an animal shelter in Wrocław 🐕
 
 **This software is free. If it saves you time or money, please consider giving
-that value to animals who have nothing.**
+that value to animals in Polish shelter.**
 
 ### 👉 [ratujemyzwierzaki.pl/schroniskowroclaw](https://www.ratujemyzwierzaki.pl/schroniskowroclaw)
 

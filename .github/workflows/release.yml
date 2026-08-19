@@ -1,0 +1,128 @@
+# Release packaging.
+#
+# WHAT THIS SHIPS, AND WHAT IT CANNOT — the same structural limit ci.yml documents,
+# repeated here because it decides what is actually in the download:
+#
+#   This ships the MCP server. It CANNOT ship the AutoCAD plugin.
+#
+# AcadMcp.Plugin and AcadMcp.Companion.Host reference acmgd.dll / acdbmgd.dll /
+# accoremgd.dll from a local AutoCAD install via $(AcadInstallPath). No GitHub runner has
+# AutoCAD, and Autodesk does not redistribute those assemblies — so the plugin cannot be
+# compiled here at all, by this workflow or any other. src/AcadMcp.NoAcad.slnf exists for
+# exactly that reason and is what gets built below.
+#
+# The consequence for whoever downloads this: the archive contains everything an agent
+# talks to (the Backend host, the per-category launchers, the ToolBank manifests), but the
+# plugin half has to be built locally against a real AutoCAD install — see CONTRIBUTING.md
+# and scripts/deploy-plugin.ps1. Packaging a "release" that silently omitted the plugin
+# without saying so would be worse than not having a release workflow.
+#
+# NOT published to PyPI, and this is not an oversight: PyPI is a registry for Python
+# packages. This repository is C#/.NET. The nearest real equivalent for a .NET AutoCAD
+# plugin — which nobody installs through a package manager anyway — is an archive attached
+# to a GitHub Release, which is what this does. (The Python vision sidecar under
+# src/AcadMcp.Vision is a component of this repository, not a separately released package.)
+
+name: Release
+
+on:
+  release:
+    types: [published]
+  # Dry run: builds and uploads the archive as a workflow artifact instead of attaching it
+  # to a release, so the packaging can be verified without cutting a tag first.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Build and package (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      # Needed only to attach the archive to the release. Everything else stays read-only.
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/AcadMcp.NoAcad.slnf
+
+      # Release configuration also runs the Backend's own CheckManifestSync target, so a
+      # release cannot be cut while the manifests and the code disagree.
+      - name: Build (Release)
+        run: dotnet build src/AcadMcp.NoAcad.slnf -c Release --no-restore --nologo
+
+      - name: Test
+        run: >
+          dotnet test tests/AcadMcp.Tests/AcadMcp.Tests.csproj
+          -c Release --no-build --nologo
+
+      - name: Publish Backend
+        run: >
+          dotnet publish src/AcadMcp.Backend/AcadMcp.Backend.csproj
+          -c Release --no-build --nologo
+          -o dist/toolbank-autocad/server
+
+      # The launchers and manifests are how an MCP client actually reaches the server:
+      # one .cmd per category, and the manifest the discovery layer reads. A server binary
+      # on its own is not a usable download.
+      - name: Assemble archive
+        shell: pwsh
+        run: |
+          $root = "dist/toolbank-autocad"
+          Copy-Item -Recurse bin-launchers      "$root/bin-launchers"
+          Copy-Item -Recurse toolbank-manifests "$root/toolbank-manifests"
+          Copy-Item -Recurse validators         "$root/validators"
+          Copy-Item LICENSE, README.md, THIRD-PARTY-NOTICES.md, CHANGELOG.md $root
+          Copy-Item installer/README-pierwsze-kroki.txt $root
+
+          # State the omission inside the archive itself, not only in the release notes -
+          # the archive outlives the page it was downloaded from.
+          @"
+          This archive contains the ToolBank-AutoCAD MCP SERVER only.
+
+          The AutoCAD plugin (AcadMcp.Plugin) is NOT included and was not built. It links
+          against acmgd.dll / acdbmgd.dll / accoremgd.dll, which ship with AutoCAD itself
+          and which Autodesk does not redistribute - so no CI runner can compile it. Build
+          it locally against your own AutoCAD install: see CONTRIBUTING.md and
+          scripts/deploy-plugin.ps1 in the repository.
+
+          Without the plugin, the tools in this server that require a live AutoCAD session
+          will report that the plugin is unavailable. The server, its category launchers
+          and its manifests are complete and usable as shipped.
+          "@ | Set-Content -Encoding utf8 "$root/README-WHAT-IS-IN-THIS-ARCHIVE.txt"
+
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_EVENT_NAME -eq 'release') { '${{ github.event.release.tag_name }}' } else { "dev-$($env:GITHUB_SHA.Substring(0,7))" }
+          $name = "toolbank-autocad-$tag-win-x64.zip"
+          Compress-Archive -Path dist/toolbank-autocad/* -DestinationPath $name
+          "ASSET=$name" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload '${{ github.event.release.tag_name }}' $env:ASSET --clobber
+
+      - name: Upload as artifact (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-package-dry-run
+          path: ${{ env.ASSET }}
+          if-no-files-found: error

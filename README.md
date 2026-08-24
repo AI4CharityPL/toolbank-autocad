@@ -78,12 +78,12 @@ see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
 
 ## Architecture in one sentence
 
-Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via `mcpd_find` → `mcpd_connect`. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
+Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via ToolBank 3.0 `find_tools` → `call_tool`. The category backends stay legacy MCP (`initialize` over stdio); ToolBank's dual-era client speaks that dialect so AutoCAD does not have to change. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
 ```
 AI Agent ── static ──> acad-router (10 meta-tools)
-         ── static ──> toolbank-server + toolbank-gateway (ToolBank discovery/dynamic modes)
-                            │ mcpd_find / mcpd_connect (lazy)
+         ── static ──> toolbank-server (Proxy Mode: find_tools / get_tool_schema / call_tool)
+                            │ call_tool → AcadMcp.Backend.exe (legacy stdio)
                             ▼
         ┌───────────────────┴────────────────────────┐
         │  acad-geometry-2d, -geometry-3d, -modify,   │
@@ -275,9 +275,9 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 39 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `mcpd_find` / `mcpd_connect` can discover and lazy-load them on demand instead of your client loading all 478 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 39 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `find_tools` / `call_tool` can discover and lazy-load them on demand instead of your client loading all 478 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
-The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `toolbank-gateway` or `toolbank-server` entry (current ToolBank CLI names) and falling back to the older `toolbank-dynamic` / `toolbank-discovery` names for configs that haven't been migrated yet. If none of those are found, it falls back to `%USERPROFILE%\toolbank\registry\mcpd-registry.json`. Verified against both a `toolbank-gateway`-style config and a from-scratch run (registry file didn't exist yet): correct detection, correct registry creation, all 30 categories registered, and a second run correctly reports all 30 as unchanged instead of re-adding them. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
+The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `toolbank-server` entry first, then the deprecated `toolbank-gateway` alias, then the retired `toolbank-dynamic` / `toolbank-discovery` names. If none of those are found, it falls back to `%USERPROFILE%\toolbank\registry\mcpd-registry.json`. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
 ### 3. Point your MCP client at `acad-router` only
 

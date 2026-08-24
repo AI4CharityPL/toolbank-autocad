@@ -13,8 +13,8 @@
 
 .PARAMETER Registry
     Full path to the ToolBank registry JSON. Auto-detected from the user's mcp.json if not provided
-    (looks for a "toolbank-gateway" or "toolbank-server" entry first; falls back to the older
-    "toolbank-dynamic" / "toolbank-discovery" names for configs that haven't been migrated yet).
+    (looks for a "toolbank-server" entry first, then the deprecated "toolbank-gateway" alias;
+    falls back to the retired "toolbank-dynamic" / "toolbank-discovery" names).
 
 .PARAMETER RepoRoot
     Repository root. Defaults to parent of script directory.
@@ -64,7 +64,7 @@ if ([string]::IsNullOrWhiteSpace($Registry)) {
             $cfg = Get-Content $cursorMcp -Raw | ConvertFrom-Json
             # Current ToolBank CLI names first; older "toolbank-*" names kept as a
             # fallback so configs that haven't been migrated yet still auto-detect.
-            $candidateKeys = @("toolbank-gateway", "toolbank-server", "toolbank-dynamic", "toolbank-discovery")
+            $candidateKeys = @("toolbank-server", "toolbank-gateway", "toolbank-dynamic", "toolbank-discovery")
             foreach ($key in $candidateKeys) {
                 $entry = $cfg.mcpServers.$key
                 if ($entry -and $entry.args) {

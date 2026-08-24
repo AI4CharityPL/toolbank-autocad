@@ -1,7 +1,7 @@
 {
   "id": "acad-router",
   "name": "acad-router",
-  "description": "AutoCAD MCP router - the single permanent entry point to ~30 specialist AutoCAD MCP categories (geometry-2d/3d, modify, layers, blocks, annotations, dimensions, layouts, files, parametric, architecture, mechanical, civil, electrical, vision, validators, workflows, livestream). Exposes 9 meta-tools: status, find_tools, load_category, recommend_categories, explain_capabilities, describe_drawing, undo_checkpoint, restore_checkpoint, design_iterate. The actual category MCPs are loaded on demand via ToolBank's mcpd_find / mcpd_connect flow. Backend talks to the AutoCAD .NET plugin (NETLOAD'ed) over a single named pipe.",
+  "description": "AutoCAD MCP router - the single permanent entry point to ~30 specialist AutoCAD MCP categories (geometry-2d/3d, modify, layers, blocks, annotations, dimensions, layouts, files, parametric, architecture, mechanical, civil, electrical, vision, validators, workflows, livestream). Exposes 9 meta-tools: status, find_tools, load_category, recommend_categories, explain_capabilities, describe_drawing, undo_checkpoint, restore_checkpoint, design_iterate. The actual category MCPs are loaded on demand via ToolBank 3.0 find_tools / call_tool. Backend talks to the AutoCAD .NET plugin (NETLOAD'ed) over a single named pipe.",
   "transport": {
     "type": "stdio",
     "command": "C:\\Users\\DELL\\Dev\\autocad-mcp\\bin-launchers\\acad-router.cmd",

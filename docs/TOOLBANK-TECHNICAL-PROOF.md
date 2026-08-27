@@ -1,39 +1,44 @@
-# ToolBank + MCP Discovery + acad-router — Dowód techniczny
+# ToolBank + MCP Discovery + acad-router — technical proof
 
-> **Status:** production-ready (v0.3.0 ToolBank / Phase 7 AutoCAD-MCP)
-> **Zakres:** architektoniczne uzasadnienie rozwiązania, pomiar oszczędności tokenów, integracja z silnikiem AutoCAD MCP
-> **Autorzy:** Mateusz Wiszniowski, Krzysztof Augiewicz (Talknbot), autor ToolBank AutoCAD
+> **Status:** production-ready (ToolBank v0.3.0 / AutoCAD-MCP Phase 7)
+> **Scope:** the architectural case for the design, the token-saving measurement, and how it integrates with the AutoCAD MCP engine
+> **Authors:** Mateusz Wiszniowski, Krzysztof Augiewicz (Talknbot), author of ToolBank AutoCAD
 
-> **To jest migawka, nie stan bieżący.**
-> Dokument opisuje bank narzędzi w chwili powstania — 19 kategorii i ~230 narzędzi —
-> i celowo nie jest aktualizowany, bo jego wartością jest pomiar wykonany wtedy, na
-> tamtej powierzchni. Bank ma dziś **692 narzędzia w 51 kategoriach**; liczby bieżące
-> bierz z [`docs/TOOLS-REFERENCE.md`](TOOLS-REFERENCE.md), generowanego z
-> `toolbank-manifests/`. Ścieżki w rodzaju `C:\Users\...` pochodzą z maszyny, na
-> której pomiar wykonano. Argumentacja architektoniczna i mechanizm oszczędności
-> tokenów obowiązują bez zmian.
+> **This is a snapshot, not the current state.**
+> The document describes the tool bank as it stood when the measurement was taken — 19
+> categories and ~230 tools — and is deliberately not updated, because its value is the
+> measurement made then, against that surface. The bank now holds **692 tools across 51
+> categories**; for current figures use [`docs/TOOLS-REFERENCE.md`](TOOLS-REFERENCE.md),
+> generated from `toolbank-manifests/`. Paths such as `C:\Users\...` are those of the machine
+> the measurement was run on. The architectural argument and the token-saving mechanism are
+> unaffected.
 
 ---
 
-## 1. Problem, który rozwiązujemy
+## 1. The problem this solves
 
-Model Context Protocol (MCP) zakłada, że klient (LLM) dostaje całą listę narzędzi każdego podłączonego serwera **w momencie startu**. To tworzy trzy twarde ograniczenia, które w produkcji szybko stają się blokerami:
+The Model Context Protocol (MCP) assumes the client (the LLM) receives the full tool list of
+every connected server **at startup**. That creates three hard limits which become blockers
+quickly in production:
 
-| Ograniczenie | Efekt praktyczny |
+| Limit | What it means in practice |
 |---|---|
-| **Skończone okno kontekstu LLM** | 6 serwerów × ~13 narzędzi = 78 toolów ≈ **4 778 tokenów zajętych zanim padnie pierwsze pytanie**. |
-| **Liniowy koszt tokenowy** | Każde kolejne MCP liniowo zjada okno; przy 30 kategoriach (nasz przypadek) agent nie ma już miejsca na rzeczywiste dane. |
-| **Degradacja jakości routingu** | Im dłuższa lista narzędzi, tym niżej LLM dopasowuje odpowiednie narzędzie do intencji. |
+| **The LLM's context window is finite** | 6 servers × ~13 tools = 78 tools ≈ **4,778 tokens spent before the first question is asked**. |
+| **Token cost grows linearly** | Every additional MCP server eats the window; at 30 categories (our case) the agent has no room left for the actual data. |
+| **Routing quality degrades** | The longer the tool list, the worse the LLM matches intent to the right tool. |
 
-**ToolBank** rozwiązuje to w jeden sposób: agent widzi minimalną powierzchnię (1 lub 4 meta‑toole), a pełne definicje narzędzi ładuje dopiero wtedy, kiedy faktycznie są potrzebne. `acad-router` stosuje ten sam wzorzec na najwyższym piętrze — agent ma w kliencie MCP cały czas tylko 9 narzędzi `acad_*`, a ~230 specjalistycznych toolów AutoCAD-a jest dociąganych lazy.
+**ToolBank** solves this one way: the agent sees a minimal surface (1 or 4 meta-tools) and
+loads full tool definitions only when they are actually needed. `acad-router` applies the same
+pattern one storey up — the agent's MCP client holds only 9 `acad_*` tools at any time, while
+~230 specialised AutoCAD tools are pulled in lazily.
 
 ---
 
-## 2. Architektura w jednym rzucie oka
+## 2. The architecture at a glance
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                              Klient MCP / LLM                                │
+│                              MCP client / LLM                                │
 └──────────────┬──────────────────────┬──────────────────────┬──────────────┘
                │ MCP stdio            │ MCP stdio            │ MCP stdio
                ▼                      ▼                      ▼
@@ -48,7 +53,7 @@ Model Context Protocol (MCP) zakłada, że klient (LLM) dostaje całą listę na
                          ▼                                    ▼
               ┌─────────────────────────┐         ┌────────────────────────┐
               │  mcpd-registry.json     │◀────────│ toolbank-manifests/*    │
-              │  53 serwerów / 527 tool │ register│ (19 acad-*.json)       │
+              │  53 servers / 527 tools │ register│ (19 acad-*.json)       │
               └───────────┬─────────────┘  script └────────────────────────┘
                           │ lazy start (stdio)
                           ▼
@@ -63,76 +68,98 @@ Model Context Protocol (MCP) zakłada, że klient (LLM) dostaje całą listę na
                          ▼
             ┌──────────────────────────────────────┐
             │  AcadMcp.Plugin.dll (NETLOAD)        │
-            │  w procesie AutoCAD 2020-2025        │
+            │  in-process, AutoCAD 2020-2025       │
             └──────────────────────────────────────┘
 ```
 
-Trzy warstwy — trzy odpowiedzialności:
+Three layers, three responsibilities:
 
-1. **ToolBank Discovery / Dynamic** (Python) — globalna wyszukiwarka serwerów i narzędzi MCP w ekosystemie użytkownika.
-2. **`acad-router`** (C# .NET 8) — branżowy gateway dla AutoCAD-a. Wewnątrz używa tej samej idei ToolBank, ale w wąskim namespace `acad-*`.
-3. **ToolBank AutoCAD** — 19 kategorii × ~12 narzędzi = 230 narzędzi dociąganych tylko na żądanie.
+1. **ToolBank Discovery / Dynamic** (Python) — the global search over MCP servers and tools in
+   the user's ecosystem.
+2. **`acad-router`** (C# .NET 8) — the domain gateway for AutoCAD. Internally it uses the same
+   idea as ToolBank, but inside the narrow `acad-*` namespace.
+3. **ToolBank AutoCAD** — 19 categories × ~12 tools = 230 tools, pulled in on demand only.
 
 ---
 
-## 3. Silnik ToolBank — co dokładnie w środku robi
+## 3. The ToolBank engine — what it actually does inside
 
-### 3.1 Rejestr (`mcpd-registry.json`)
+### 3.1 The registry (`mcpd-registry.json`)
 
-Rejestr jest **offline-first**. Zapisujemy w nim wyłącznie **summary** (nazwa, opis, tagi) każdego narzędzia, a pełne schematy `inputSchema` ładujemy dopiero przy `mcpd_connect`. Wnioski praktyczne (dane z działającej instalacji autora):
+The registry is **offline-first**. It stores only a **summary** per tool (name, description,
+tags); full `inputSchema` definitions are loaded at `mcpd_connect` time. Figures below come
+from the author's working installation:
 
-- **Łącznie w rejestrze:** 53 serwery (AutoCAD, N8N, Mendix, HuggingFace, ElevenLabs, Coolify, Fetch, Exa, …).
-- **Kategorie AutoCAD-a:** 19 (`acad-annotations`, `acad-architecture`, `acad-blocks`, `acad-boolean-ops`, `acad-civil`, `acad-dimensions`, `acad-electrical`, `acad-files`, `acad-geometry-2d`, `acad-geometry-3d`, `acad-layers`, `acad-layouts`, `acad-mechanical`, `acad-modify`, `acad-parametric`, `acad-router`, `acad-selection`, `acad-validators`, `acad-vision`).
-- **Liczba narzędzi w samym namespace AutoCAD:** 230 (największe: `acad-geometry-2d` = 32 toole, `acad-modify` = 18, `acad-geometry-3d` = 15).
+- **In the registry overall:** 53 servers (AutoCAD, N8N, Mendix, HuggingFace, ElevenLabs,
+  Coolify, Fetch, Exa, …).
+- **AutoCAD categories:** 19 (`acad-annotations`, `acad-architecture`, `acad-blocks`,
+  `acad-boolean-ops`, `acad-civil`, `acad-dimensions`, `acad-electrical`, `acad-files`,
+  `acad-geometry-2d`, `acad-geometry-3d`, `acad-layers`, `acad-layouts`, `acad-mechanical`,
+  `acad-modify`, `acad-parametric`, `acad-router`, `acad-selection`, `acad-validators`,
+  `acad-vision`).
+- **Tools in the AutoCAD namespace alone:** 230 (largest: `acad-geometry-2d` = 32 tools,
+  `acad-modify` = 18, `acad-geometry-3d` = 15).
 
-### 3.2 Dwa komplementarne tryby
+### 3.2 Two complementary modes
 
-#### Discovery Mode — wybór na poziomie **serwera**
+#### Discovery Mode — selection at the **server** level
 
-Cztery narzędzia (łącznie ≈ 305 tokenów na starcie):
+Four tools, ≈305 tokens at startup in total:
 
-| Tool | Rola |
+| Tool | Role |
 |---|---|
-| `mcpd_find(query)` | TF-IDF + opcjonalnie sentence‑transformers. Zwraca listę kandydatów `{id, relevance, tools}`. |
-| `mcpd_list()` | Pełny katalog rejestru. |
-| `mcpd_connect(id, lazy_mode=true)` | Startuje docelowy serwer, zwraca **stub list** (tylko nazwy, bez pełnych schematów). |
-| `mcpd_get_schema(id, tool_name)` | Ściąga pełny `inputSchema` dla jednego narzędzia — tuż przed wywołaniem. |
+| `mcpd_find(query)` | TF-IDF, optionally sentence-transformers. Returns candidates as `{id, relevance, tools}`. |
+| `mcpd_list()` | The full registry catalogue. |
+| `mcpd_connect(id, lazy_mode=true)` | Starts the target server and returns a **stub list** — names only, no full schemas. |
+| `mcpd_get_schema(id, tool_name)` | Fetches the full `inputSchema` for one tool, immediately before it is called. |
 
-Po `mcpd_connect` ToolBank **wychodzi ze ścieżki danych** — LLM rozmawia bezpośrednio z docelowym serwerem. ToolBank nie jest permanentnym proxy (to różni go np. od NCP Orchestratora).
+After `mcpd_connect`, ToolBank **leaves the data path** — the LLM talks to the target server
+directly. ToolBank is not a permanent proxy, which is what separates it from, for example, the
+NCP Orchestrator.
 
-#### Dynamic Mode — wybór na poziomie **narzędzia**
+#### Dynamic Mode — selection at the **tool** level
 
-Jeden tool startowy (`find_tools`) + tool‑level lazy connection pool:
+One startup tool (`find_tools`) plus a tool-level lazy connection pool:
 
-1. `find_tools("create issue, post slack message")` → index zwraca `create_issue (github)`, `send_message (slack)`.
-2. Znalezione narzędzia są **wstrzykiwane** do `tools/list` via `notifications/tools/list_changed`.
-3. Dopiero kiedy agent wywoła konkretny tool, `LazyPool` startuje proces źródłowego MCP, cache'uje go (TTL 300 s) i proxyuje wywołanie.
+1. `find_tools("create issue, post slack message")` → the index returns `create_issue (github)`
+   and `send_message (slack)`.
+2. The tools found are **injected** into `tools/list` via `notifications/tools/list_changed`.
+3. Only when the agent calls one of them does `LazyPool` start the source MCP process, cache it
+   (300 s TTL) and proxy the call.
 
-### 3.3 Pomiar oszczędności tokenów
+### 3.3 The token-saving measurement
 
-Liczby z `toolbank-benchmark` (wersja 0.3.0, ten sam rejestr dla 6 realistycznych serwerów):
+Figures from `toolbank-benchmark` (version 0.3.0, the same registry of 6 realistic servers):
 
-| Scenariusz | Tooli w kontekście | Tokeny | Oszczędność |
+| Scenario | Tools in context | Tokens | Saving |
 |---|---:|---:|---:|
-| Wszystkie 6 serwerów podpiętych bezpośrednio | 78 | ~4 778 | *baseline* |
-| Discovery — przed `mcpd_connect` | 4 | ~305 | **−94 %** |
-| Discovery — po `mcpd_connect` (1 serwer, lazy) | 4 + 20 | ~1 578 | −67 % |
-| Dynamic — przed `find_tools` | 1 | ~100 | **−98 %** |
-| Dynamic — 2 znalezione tools | 3 | ~300 | −94 % |
+| All 6 servers connected directly | 78 | ~4,778 | *baseline* |
+| Discovery — before `mcpd_connect` | 4 | ~305 | **−94%** |
+| Discovery — after `mcpd_connect` (1 server, lazy) | 4 + 20 | ~1,578 | −67% |
+| Dynamic — before `find_tools` | 1 | ~100 | **−98%** |
+| Dynamic — 2 tools found | 3 | ~300 | −94% |
 
-**Lazy Schema Loading** (v0.3.0) dorzuca dodatkowe 92 % na tym, co zostaje: typowe użycie dwóch narzędzi = 292 tokeny zamiast 2 064 pełnych definicji.
+**Lazy Schema Loading** (v0.3.0) adds a further 92% on top of whatever remains: a typical
+two-tool usage costs 292 tokens instead of 2,064 for the full definitions.
 
-### 3.4 Wyszukiwanie, które nie wymaga modelu
+### 3.4 Search that needs no model
 
-Domyślny `KeywordSearchEngine` to czyste TF‑IDF + **tablica synonimów PL↔EN** wbudowana w kod (`toolbank/search/keyword_search.py`, ~100 entries). Przykłady: `narysuj → draw/create/new`, `wyslij → send/post/message`, `warstwa → layer`, `blok → block/definition`. Dzięki temu fraza „narysuj linie 5 m” poprawnie trafia w `acad-geometry-2d`, mimo że w samym manifeście nie ma słowa „narysuj”.
+The default `KeywordSearchEngine` is plain TF-IDF plus a **PL↔EN synonym table** built into the
+code (`toolbank/search/keyword_search.py`, ~100 entries). Examples: `narysuj → draw/create/new`,
+`wyslij → send/post/message`, `warstwa → layer`, `blok → block/definition`. That is why the
+Polish phrase "narysuj linie 5 m" lands correctly on `acad-geometry-2d` even though the word
+"narysuj" appears nowhere in the manifest.
 
-Opcjonalnie (`pip install toolbank[embeddings]`) włącza się `HybridSearch` — sentence‑transformers + keyword. Klient instaluje to tylko, kiedy dostępność embeddings go nie boli.
+Optionally (`pip install toolbank[embeddings]`) `HybridSearch` is enabled — sentence-transformers
+blended with keyword search. A user installs that only if the embeddings dependency is
+acceptable to them.
 
 ---
 
-## 4. Kontrakt manifestu — dlaczego nasze 19 kategorii są znajdowalne
+## 4. The manifest contract — why our 19 categories are findable
 
-Każda kategoria AutoCAD-a ma plik `toolbank-manifests/acad-<name>.json`. Kontrakt (reguła workspace `30-toolbank-manifest.md`) wymusza:
+Every AutoCAD category has a `toolbank-manifests/acad-<name>.json` file. The contract (workspace
+rule `30-toolbank-manifest.md`) requires:
 
 ```jsonc
 {
@@ -146,8 +173,8 @@ Każda kategoria AutoCAD-a ma plik `toolbank-manifests/acad-<name>.json`. Kontra
   },
   "lazy_mode": true,
   "tags": ["autocad","cad","dwg","text","mtext","mleader","table",
-           "napis","tekst","wymiar","tabela","styl_tekstu", ...],   // ≥10, PL+EN
-  "intent_examples": [                                              // ≥5, PL+EN
+           "napis","tekst","wymiar","tabela","styl_tekstu", ...],   // >=10, PL+EN
+  "intent_examples": [                                              // >=5, PL+EN
     "dodaj opis do pomieszczenia",
     "wstaw tekst wieloliniowy",
     "add a leader with text balloon",
@@ -166,130 +193,160 @@ Każda kategoria AutoCAD-a ma plik `toolbank-manifests/acad-<name>.json`. Kontra
 }
 ```
 
-**Kluczowy szczegół inżynieryjny:** `tools_summary` **nie jest pisane ręcznie**. Plik generuje `BankAutoRegister.RegenerateManifest` (`src/AcadMcp.Backend/Mcp/BankAutoRegister.cs`) z atrybutów `[McpTool]` na metodach w `Categories/<X>/*Tools.cs`. Dzięki temu rejestr **nie rozjeżdża się** z kodem — każde dodanie/usunięcie narzędzia jest widoczne w manifeście po jednym poleceniu:
+The tags and intent examples are bilingual on purpose: the product language is English, and the
+Polish phrases exist so a Polish-speaking router can match a Polish request. They are routing
+data, not documentation.
+
+**The key engineering detail:** `tools_summary` is **never written by hand**. The file is
+generated by `BankAutoRegister.RegenerateManifest`
+(`src/AcadMcp.Backend/Mcp/BankAutoRegister.cs`) from the `[McpTool]` attributes on methods in
+`Categories/<X>/*Tools.cs`. That is what keeps the registry **from drifting** away from the
+code — adding or removing a tool shows up in the manifest after a single command:
 
 ```powershell
 dotnet run --project src/AcadMcp.Backend -- --category annotations --regenerate-manifest
 ```
 
-Potem `scripts/register-mcps.ps1` upsertuje 19 manifestów do `C:\Users\DELL\toolbank\registry\mcpd-registry.json` (match po `id`), zachowując ręcznie dodane pola (`description`, rozszerzone `tags`, `metadata`).
+`scripts/register-mcps.ps1` then upserts the 19 manifests into the local ToolBank registry,
+matching on `id` and preserving hand-added fields (`description`, extended `tags`, `metadata`).
 
-**Higiena wyszukiwania** (`31-toolbank-discovery-hygiene.md`) jest egzekwowana pre‑commitem: description < 30 słów, scaffoldowe `TODO`/`(seed)` w `intent_examples`, opisy narzędzi < 25 znaków — blokują commit. Dzięki temu `mcpd_find` nigdy nie rankuje po placeholderach.
+**Search hygiene** (`31-toolbank-discovery-hygiene.md`) is enforced by the pre-commit gate: a
+description under 30 words, scaffolding `TODO` / `(seed)` entries left in `intent_examples`, or
+tool descriptions under 25 characters all block the commit. That is what stops `mcpd_find` from
+ever ranking on placeholders.
 
 ---
 
-## 5. `acad-router` — branżowy ToolBank dla AutoCAD-a
+## 5. `acad-router` — a domain ToolBank for AutoCAD
 
-`acad-router` (C# .NET 8, `src/AcadMcp.Backend/Mcp/RouterServer.cs`) jest **jedynym** serwerem AutoCAD-a, który stale siedzi w `~/.cursor/mcp.json`. Patrz niezmiennik architektoniczny #5 i #6 w [`00-architecture-invariants.md`](../docs/engineering-rules/00-architecture-invariants.md).
+`acad-router` (C# .NET 8, `src/AcadMcp.Backend/Mcp/RouterServer.cs`) is the **only** AutoCAD
+server that lives permanently in `~/.cursor/mcp.json`. See architectural invariants #5 and #6 in
+[`00-architecture-invariants.md`](engineering-rules/00-architecture-invariants.md).
 
-### 5.1 9 meta‑narzędzi
+### 5.1 The 9 meta-tools
 
-| Tool | Rola |
+| Tool | Role |
 |---|---|
-| `acad_status` | Health‑check: AutoCAD alive?, wersja, vertical, aktywny dokument, licznik encji, banner trybu. Proxy do `AcadMcp.Plugin` przez named pipe. |
-| `acad_find_tools` | Wąskie `find_tools` — zawęża ToolBank do namespace `acad-*`. |
-| `acad_load_category` | Skrót na `mcpd_connect("acad-<cat>", lazy_mode=true)`. |
-| `acad_recommend_categories` | Deterministyczny ranker tekstowy: dla zadania PL/EN zwraca 1–3 najbardziej prawdopodobne kategorie (oszczędność tokenów nawet względem `mcpd_find`). |
-| `acad_explain_capabilities` | Kompaktowy katalog wszystkich 19 kategorii z liczbą toolów — do pokazania userowi. |
-| `acad_describe_drawing` | Shortcut do pipeline'u Vision (Phase 4). |
-| `acad_undo_checkpoint` | Phase 7.0 — checkpoint in‑memory (UNDO Mark) dla rollbacku. |
-| `acad_restore_checkpoint` | Rollback do nazwanego checkpointu. |
-| `acad_design_iterate` | Pętla auto‑design: checkpoint → wykonaj plan → waliduj → auto‑fix albo rollback → raport (Phase 7.0). |
+| `acad_status` | Health check: is AutoCAD alive, which version, which vertical, active document, entity count, mode banner. Proxies to `AcadMcp.Plugin` over the named pipe. |
+| `acad_find_tools` | A narrowed `find_tools` — restricts ToolBank to the `acad-*` namespace. |
+| `acad_load_category` | Shorthand for `mcpd_connect("acad-<cat>", lazy_mode=true)`. |
+| `acad_recommend_categories` | A deterministic text ranker: for a task in Polish or English it returns the 1–3 most likely categories, saving tokens even against `mcpd_find`. |
+| `acad_explain_capabilities` | A compact catalogue of all 19 categories with their tool counts — meant to be shown to the user. |
+| `acad_describe_drawing` | Shortcut into the Vision pipeline (Phase 4). |
+| `acad_undo_checkpoint` | Phase 7.0 — an in-memory checkpoint (UNDO Mark) for rollback. |
+| `acad_restore_checkpoint` | Rollback to a named checkpoint. |
+| `acad_design_iterate` | The auto-design loop: checkpoint → run the plan → validate → auto-fix or roll back → report (Phase 7.0). |
 
-### 5.2 Dwupoziomowa pętla tokenowa
+### 5.2 The two-level token loop
 
 ```
-Poziom 1 (klient MCP):   3 MCPs × ~9 toolów = ~27 toolów, ~1 600 tokenów
+Level 1 (MCP client):   3 MCPs x ~9 tools = ~27 tools, ~1,600 tokens
                      (toolbank-discovery + toolbank-dynamic + acad-router)
 
-Poziom 2 (lazy):     dopiero po acad_load_category('geometry-2d')
-                     dociąga się konkretny serwer acad-geometry-2d
-                     (+32 toole, +~2 100 tokenów)
+Level 2 (lazy):      only after acad_load_category('geometry-2d') does the
+                     acad-geometry-2d server get pulled in
+                     (+32 tools, +~2,100 tokens)
 
-Poziom 3 (exec):     wywołanie narzędzia → named pipe → plugin
+Level 3 (exec):      tool call -> named pipe -> plugin
 ```
 
-**Porównanie z trybem bez ToolBank:** gdyby wszystkie 19 kategorii były zaślepione w `mcp.json`, start sesji kosztuje **~15 000–17 000 tokenów** (230 toolów × średnio ~65 tokenów/schema). Z ToolBank + routerem startowy koszt = **~1 600 tokenów** (~91 % oszczędności), a agent nadal ma dostęp do 100 % powierzchni.
+**Compared with running without ToolBank:** if all 19 categories were wired directly into
+`mcp.json`, starting a session would cost **~15,000–17,000 tokens** (230 tools × ~65 tokens per
+schema on average). With ToolBank plus the router the startup cost is **~1,600 tokens** (~91%
+saved), and the agent still reaches 100% of the surface.
 
-### 5.3 `acad_design_iterate` — konsument ToolBank od środka
+### 5.3 `acad_design_iterate` — a ToolBank consumer from the inside
 
-To najlepsza ilustracja wzorca "router‑as‑composition". Sekwencja wywołania (Phase 7.0, `DesignIterator.RunAsync`):
+This is the clearest illustration of the "router-as-composition" pattern. The call sequence
+(Phase 7.0, `DesignIterator.RunAsync`):
 
-1. Agent mówi `acad_design_iterate({ task, plan: [{category, tool, args}, …], standardId, maxIterations })`.
-2. Router **tworzy checkpoint** (`acad.checkpoint.create` → plugin, named pipe).
-3. Dla każdego kroku `plan[i]` router wywołuje `IPluginGateway.InvokeAsync(step.Tool, step.Args)` — tool jest **nazwą kwalifikowaną**, której router _nie musiał wcześniej znać_, bo kategoria jest dociągana lazy.
-4. Po wykonaniu planu odpala `acad.validators.run({ standardId })` i decyduje: commit / auto‑fix / rollback.
-5. Pełny audit trail (każdy step z payloadem) zapisuje do `%LOCALAPPDATA%\AcadMcp\logs\iterate-*.json` dzięki `StepLog.Output: JsonNode?`.
+1. The agent calls `acad_design_iterate({ task, plan: [{category, tool, args}, …], standardId,
+   maxIterations })`.
+2. The router **creates a checkpoint** (`acad.checkpoint.create` → plugin, over the named pipe).
+3. For each `plan[i]` step the router calls `IPluginGateway.InvokeAsync(step.Tool, step.Args)` —
+   the tool is a **qualified name** the router did not need to know in advance, because the
+   category is pulled in lazily.
+4. Once the plan has run it fires `acad.validators.run({ standardId })` and decides: commit,
+   auto-fix, or roll back.
+5. The full audit trail — every step with its payload — is written to
+   `%LOCALAPPDATA%\AcadMcp\logs\iterate-*.json`, which works because `StepLog` carries
+   `Output: JsonNode?`.
 
-Dwie krytyczne konsekwencje inżynieryjne:
+Two critical engineering consequences:
 
-- `StdioJsonRpcHost` używa `StderrLoggerProvider` (wszystkie logi idą na `stderr`), bo stdout musi pozostać czystym strumieniem JSON‑RPC — inaczej klient MCP traci sync i raportuje `Not connected`.
-- `PluginToolRunner.RunWriteAsync` akwiruje `doc.LockDocument()` na **wątku backgroundowym** PRZED wrzuceniem roboty na UI thread — to omija deadlock wywoływany niewidocznym modalem licencji Educational (znaleziony i naprawiony w Phase 7.0 podczas live‑testu budowy domu jednorodzinnego).
+- `StdioJsonRpcHost` uses `StderrLoggerProvider` — all logging goes to `stderr` — because stdout
+  must stay a clean JSON-RPC stream. Otherwise the MCP client loses sync and reports
+  `Not connected`.
+- `PluginToolRunner.RunWriteAsync` acquires `doc.LockDocument()` on a **background thread**
+  BEFORE handing work to the UI thread. That sidesteps the deadlock caused by the invisible
+  Educational-licence modal, found and fixed in Phase 7.0 during the live house-plan build.
 
 ---
 
-## 6. Dlaczego ToolBank + `acad-router` to nie jest "jeszcze jedno proxy"
+## 6. Why ToolBank + `acad-router` is not "yet another proxy"
 
-| Wymiar | ToolBank / acad-router | NCP Orchestrator | Speakeasy MCP Registry | Bezpośrednia rejestracja w `mcp.json` |
+| Dimension | ToolBank / acad-router | NCP Orchestrator | Speakeasy MCP Registry | Direct registration in `mcp.json` |
 |---|---|---|---|---|
-| **Koszt tokenowy na starcie** | ~100–300 tok. | ~1 200 tok. (RAG warm-up) | ~800 tok. | liniowy; N serwerów × ~800 tok. |
-| **Ścieżka danych po discovery** | **bezpośrednia** LLM↔MCP | ciągłe proxy | ciągłe proxy | bezpośrednia |
-| **Wybór narzędzia** | server + tool level | tylko server level | tylko server level | brak (wszystko on) |
-| **Zero-install search** | TF‑IDF + synonimy PL/EN | wymaga modelu embeddings | wymaga bazy RAG | — |
-| **Offline-first registry** | tak (`mcpd-registry.json`) | nie | nie | — |
-| **Hot-swap toolów w runtime** | `notifications/tools/list_changed` | ograniczone | nie | nie |
-| **Failure-classification** | 6 klas (PACKAGE_NOT_FOUND, AUTH_EXPIRED, TIMEOUT, STARTUP_CRASH, CONNECTION_CLOSED, UNKNOWN) | ogólne | ogólne | — |
+| **Token cost at startup** | ~100–300 tok. | ~1,200 tok. (RAG warm-up) | ~800 tok. | linear; N servers × ~800 tok. |
+| **Data path after discovery** | **direct** LLM↔MCP | permanent proxy | permanent proxy | direct |
+| **Selection granularity** | server and tool level | server level only | server level only | none (everything on) |
+| **Zero-install search** | TF-IDF + PL/EN synonyms | needs an embeddings model | needs a RAG store | — |
+| **Offline-first registry** | yes (`mcpd-registry.json`) | no | no | — |
+| **Hot-swapping tools at runtime** | `notifications/tools/list_changed` | limited | no | no |
+| **Failure classification** | 6 classes (PACKAGE_NOT_FOUND, AUTH_EXPIRED, TIMEOUT, STARTUP_CRASH, CONNECTION_CLOSED, UNKNOWN) | generic | generic | — |
 
-Dodatkowo ToolBank jest MIT, zero‑dependency w trybie domyślnym i ma 491 testów przy 100 % pokryciu — to jedyny projekt w tej kategorii, który publikuje benchmark jako oficjalne CLI (`toolbank-benchmark`).
+ToolBank is also MIT, zero-dependency in its default mode, and carries 491 tests at 100%
+coverage — the only project in this category that publishes its benchmark as an official CLI
+(`toolbank-benchmark`).
 
 ---
 
-## 7. Dowód z działającej instalacji
+## 7. Evidence from a working installation
 
-### 7.1 Artefakty w repo (`C:\Users\DELL\Dev\autocad-mcp`)
+### 7.1 Artefacts in this repository
 
 ```
-toolbank-manifests/            ← 19 plików acad-*.json (kontrakt discovery)
+toolbank-manifests/            <- 19 acad-*.json files (the discovery contract)
 src/AcadMcp.Backend/Mcp/
-  ├── RouterServer.cs         ← 9 meta-tooli acad_*
-  ├── DesignIterator.cs       ← pętla auto-design (Phase 7.0)
-  ├── BankAutoRegister.cs     ← auto-gen tools_summary z [McpTool]
-  ├── ToolRegistry.cs         ← katalog kategorii
-  └── StdioJsonRpcHost.cs     ← czysty stdout, logi→stderr
+  ├── RouterServer.cs         <- the 9 acad_* meta-tools
+  ├── DesignIterator.cs       <- the auto-design loop (Phase 7.0)
+  ├── BankAutoRegister.cs     <- auto-generates tools_summary from [McpTool]
+  ├── ToolRegistry.cs         <- the category catalogue
+  └── StdioJsonRpcHost.cs     <- clean stdout, logs to stderr
 scripts/
-  ├── register-mcps.ps1       ← upsert 19 manifestów → mcpd-registry.json
-  ├── check-manifests.ps1     ← gate: MF1001-MF1004 (missing field / stale / dup)
-  └── audit-discovery.ps1     ← 20 zapytań × 19 kategorii → raport hit-rate
+  ├── register-mcps.ps1       <- upserts 19 manifests -> mcpd-registry.json
+  ├── check-manifests.ps1     <- gate: MF1001-MF1004 (missing field / stale / dup)
+  └── audit-discovery.ps1     <- 20 queries x 19 categories -> hit-rate report
 docs/engineering-rules/
-  ├── 00-architecture-invariants.md  ← 7 niezmienników (w tym #5: ToolBank = jedyny discovery)
+  ├── 00-architecture-invariants.md  <- 7 invariants (incl. #5: ToolBank is the only discovery)
   ├── 30-toolbank-manifest.md
   └── 31-toolbank-discovery-hygiene.md
 ```
 
-### 7.2 Artefakty w `C:\Users\DELL\toolbank`
+### 7.2 Artefacts in the ToolBank checkout (`C:\Users\DELL\toolbank` on the measurement machine)
 
 ```
 toolbank/
-  ├── registry.py             ← loader mcpd-registry.json
-  ├── connector.py            ← stdio / HTTP / SSE, 6 klas błędów, TTL pool
-  ├── base_server.py          ← BaseMCPServer (handshake JSON-RPC)
-  ├── discovery/server.py     ← DiscoveryServer (4 meta-tools)
+  ├── registry.py             <- mcpd-registry.json loader
+  ├── connector.py            <- stdio / HTTP / SSE, 6 error classes, TTL pool
+  ├── base_server.py          <- BaseMCPServer (JSON-RPC handshake)
+  ├── discovery/server.py     <- DiscoveryServer (4 meta-tools)
   ├── dynamic/
-  │   ├── server.py           ← DynamicServer (1 meta-tool + hot-inject)
-  │   ├── tool_index.py       ← O(1) lookup, grupowanie per-server
-  │   └── lazy_pool.py        ← lazy start + TTL 300 s reuse
+  │   ├── server.py           <- DynamicServer (1 meta-tool + hot-inject)
+  │   ├── tool_index.py       <- O(1) lookup, grouped per server
+  │   └── lazy_pool.py        <- lazy start + 300 s TTL reuse
   ├── search/
-  │   ├── keyword_search.py   ← TF-IDF + synonim mapa PL/EN
-  │   ├── tool_search.py      ← tool-level index
-  │   ├── embeddings.py       ← sentence-transformers (opcjonalne)
-  │   └── hybrid.py           ← keyword + semantic blend
-  └── safety.py               ← classify_query (RiskLevel dla write-tools)
+  │   ├── keyword_search.py   <- TF-IDF + PL/EN synonym map
+  │   ├── tool_search.py      <- tool-level index
+  │   ├── embeddings.py       <- sentence-transformers (optional)
+  │   └── hybrid.py           <- keyword + semantic blend
+  └── safety.py               <- classify_query (RiskLevel for write tools)
 registry/
-  ├── mcpd-registry.json      ← 53 serwery, 19 acad-*, 230 acad-tooli
-  └── schemas/mcpd-schema.json← JSON-Schema dla walidacji wpisów
+  ├── mcpd-registry.json      <- 53 servers, 19 acad-*, 230 acad tools
+  └── schemas/mcpd-schema.json<- JSON Schema for validating entries
 ```
 
-### 7.3 Wpis w `~/.cursor/mcp.json` (efekt: 3 MCP × ~9 meta-tooli)
+### 7.3 The `~/.cursor/mcp.json` entry (net effect: 3 MCPs × ~9 meta-tools)
 
 ```jsonc
 {
@@ -311,69 +368,105 @@ registry/
 }
 ```
 
-**To jest cały kontakt klient MCP ↔ AutoCAD MCP.** Wszystkie pozostałe 18 serwerów `acad-*` startują dopiero po `mcpd_connect("acad-<cat>", lazy_mode=true)` albo po `acad_load_category("<cat>")`.
+**That is the entire contact surface between the MCP client and AutoCAD MCP.** All 18 remaining
+`acad-*` servers start only after `mcpd_connect("acad-<cat>", lazy_mode=true)` or
+`acad_load_category("<cat>")`.
 
-### 7.4 E2E: projekt domu jednorodzinnego wykonany wyłącznie przez MCP
+### 7.4 End to end: a single-family house drawn entirely through MCP
 
-W pełnym teście live (Phase 7.0) agent — mając w kontekście tylko 3 ToolBank/router wpisy — zbudował:
+In the full live test (Phase 7.0) the agent — holding only the 3 ToolBank/router entries in
+context — built:
 
-- **Faza 1:** warstwy (`A-WALL-EXT`, `A-WALL-INT`, `A-DOOR`, `A-WINDOW`, `A-ANNO`) + ściany zewnętrzne (12 m × 10 m) + wewnętrzne (sypialnia, salon, łazienka, kuchnia).
-- **Faza 2:** drzwi (arki) + okna (symbole blokowe).
-- **Faza 3:** opisy pomieszczeń (`DBText`) + wymiary liniowe.
+- **Phase 1:** layers (`A-WALL-EXT`, `A-WALL-INT`, `A-DOOR`, `A-WINDOW`, `A-ANNO`), exterior
+  walls (12 m × 10 m) and interior walls (bedroom, living room, bathroom, kitchen).
+- **Phase 2:** doors (swing arcs) and windows (block symbols).
+- **Phase 3:** room labels (`DBText`) and linear dimensions.
 
-Przebieg: agent najpierw wołał `acad_recommend_categories("drawing a floor plan with walls and rooms")`, dostawał listę `acad-layers, acad-geometry-2d, acad-annotations, acad-dimensions`, następnie lazy‑podpinał kolejne kategorie przez `acad_load_category` i realizował plan w `acad_design_iterate`. Router _nigdy_ nie widział jednorazowo więcej niż 12 narzędzi naraz, a projekt powstał w jednym passie bez halucynacji nazw narzędzi.
+How it ran: the agent first called
+`acad_recommend_categories("drawing a floor plan with walls and rooms")`, received
+`acad-layers, acad-geometry-2d, acad-annotations, acad-dimensions`, then lazily attached each
+category through `acad_load_category` and executed the plan inside `acad_design_iterate`. The
+router _never_ held more than 12 tools at once, and the drawing was produced in a single pass
+with no hallucinated tool names.
 
-Audit loga (`%LOCALAPPDATA%\AcadMcp\logs\iterate-house-f1.json`, …-f2.json, …-f3.json) zawiera każdy krok planu z pełnym inputem i outputem dzięki temu, że `StepLog` niesie `JsonNode? Output` (`src/AcadMcp.Backend/Mcp/DesignIterator.cs`).
+The audit log (`%LOCALAPPDATA%\AcadMcp\logs\iterate-house-f1.json`, `…-f2.json`, `…-f3.json`)
+contains every plan step with its full input and output, because `StepLog` carries
+`JsonNode? Output` (`src/AcadMcp.Backend/Mcp/DesignIterator.cs`).
 
 ---
 
-## 8. Własności systemowe (invariants), które daje ToolBank
+## 8. The system properties ToolBank buys us
 
-Siedem niezmienników AutoCAD MCP (plik [`00-architecture-invariants.md`](../docs/engineering-rules/00-architecture-invariants.md)) opiera się o ToolBank w trzech miejscach:
+The seven AutoCAD MCP invariants
+([`00-architecture-invariants.md`](engineering-rules/00-architecture-invariants.md)) lean on
+ToolBank in three places:
 
-- **#1 „ONE Backend binary":** wszystkie 19 kategorii to ten sam `AcadMcp.Backend.exe` parametryzowany `--category`. Launcher `.cmd` w manifeście = jedyna indirekcja. Bez ToolBank wymagałoby to 19 wpisów w `mcp.json`.
-- **#5 „ToolBank is the ONLY discovery":** zakaz rejestrowania kategorii bezpośrednio w `mcp.json`. Egzekwowane przez `check-manifests.ps1` + testy NetArchTest w `tests/AcadMcp.Tests/ArchitectureTests`.
-- **#6 „Router stays connected permanently":** router jest jedynym toolowo‑ciężkim serwerem dopuszczonym w `mcp.json`. Dodawanie narzędzi AutoCAD-owych do routera = antypattern łapany w code review.
+- **#1 "ONE Backend binary":** all 19 categories are the same `AcadMcp.Backend.exe`
+  parameterised by `--category`. The `.cmd` launcher named in the manifest is the only
+  indirection. Without ToolBank this would need 19 entries in `mcp.json`.
+- **#5 "ToolBank is the ONLY discovery":** registering a category directly in `mcp.json` is
+  forbidden. Enforced by `check-manifests.ps1` and the NetArchTest suites in
+  `tests/AcadMcp.Tests/ArchitectureTests`.
+- **#6 "Router stays connected permanently":** the router is the only tool-heavy server allowed
+  in `mcp.json`. Adding AutoCAD tools to the router itself is an antipattern caught in code
+  review.
 
-Dzięki temu dodanie 20. kategorii (np. `acad-rendering`) to: nowy folder `Categories/Rendering`, nowe `[McpTool]` metody, `scripts/new-category.ps1`, auto‑gen manifestu, `register-mcps.ps1`. **Zero zmian w `mcp.json`, zero zmian w routerze, zero zmian w ToolBank.**
+The result: adding a 20th category (say `acad-rendering`) means a new `Categories/Rendering`
+folder, new `[McpTool]` methods, `scripts/new-category.ps1`, an auto-generated manifest and
+`register-mcps.ps1`. **No change to `mcp.json`, no change to the router, no change to ToolBank.**
 
 ---
 
-## 9. Dane pomiarowe (z aktualnej instalacji, 23.04.2026)
+## 9. Measurements (from the installation as it stood on 2026-04-23)
 
-| Metryka | Wartość | Źródło |
+| Metric | Value | Source |
 |---|---:|---|
-| Serwery w rejestrze | 53 | `mcpd-registry.json` |
-| Kategorie AutoCAD | 19 | `toolbank-manifests/` |
-| Narzędzia AutoCAD | 230 | suma `tools_summary[*].length` |
-| Meta‑narzędzia w kliencie MCP (ToolBank + router) | 9 + 4 + 1 = 14 | `mcp.json` |
-| Startowy koszt kontekstu (bez ToolBank, 19 × 12 narzędzi) | ~17 000 tok. | benchmark formuła 65 tok/schema |
-| Startowy koszt kontekstu (z ToolBank + router) | ~1 600 tok. | `toolbank-benchmark` |
-| **Oszczędność tokenowa** | **~91 %** | stosunek |
-| Best‑of‑N discovery hit‑rate (query PL/EN → kategoria) | > 92 % | `audit-discovery.ps1` (20 zapytań × 19 kat.) |
-| Testów jednostkowych (ToolBank) | 491 / 100 % coverage | CI badge |
-| Testów jednostkowych (AutoCAD‑MCP backend) | 78 / passing | `dotnet test` |
-| Czas od `mcpd_find` do pierwszego `tools/call` (lazy stdio) | ~120–450 ms | `PipeSession` logi per‑tool |
+| Servers in the registry | 53 | `mcpd-registry.json` |
+| AutoCAD categories | 19 | `toolbank-manifests/` |
+| AutoCAD tools | 230 | sum of `tools_summary[*].length` |
+| Meta-tools in the MCP client (ToolBank + router) | 9 + 4 + 1 = 14 | `mcp.json` |
+| Startup context cost, without ToolBank (19 × 12 tools) | ~17,000 tok. | benchmark formula, 65 tok/schema |
+| Startup context cost, with ToolBank + router | ~1,600 tok. | `toolbank-benchmark` |
+| **Token saving** | **~91%** | the ratio |
+| Best-of-N discovery hit rate (PL/EN query → category) | > 92% | `audit-discovery.ps1` (20 queries × 19 categories) |
+| Unit tests (ToolBank) | 491 / 100% coverage | CI badge |
+| Unit tests (AutoCAD MCP backend) | 78 / passing | `dotnet test` |
+| Time from `mcpd_find` to the first `tools/call` (lazy stdio) | ~120–450 ms | `PipeSession` per-tool logs |
 
 ---
 
-## 10. Konkluzja dla dowodu technicznego
+## 10. Conclusion
 
-ToolBank jest **jedynym dostępnym rozwiązaniem**, które jednocześnie:
+ToolBank is the only available design that does all of the following at once:
 
-1. Obcinaj̨e startowy koszt tokenowy do rzędu 1 % baseline (4 tools vs 78 tools na 6 serwerach, przeskalowanie do 0,1 % przy naszych 19 kategoriach AutoCAD).
-2. **Nie zostaje permanentnym proxy** — po `mcpd_connect` agent ma bezpośredni kontakt z serwerem, co eliminuje opóźnienie i SPOF.
-3. Działa offline, bez żadnego modelu ML w warstwie bazowej (TF‑IDF + tablica synonimów PL/EN pokrywa 92 % zapytań w naszym audycie).
-4. Ma **formalny kontrakt manifestu** pozwalający zewnętrznym zespołom wnosić swoje kategorie bez zmian w kodzie ToolBank ani klienta MCP.
-5. Integruje się z systemem branżowym (acad‑router) bez zmuszania go do używania Pythona — router jest w .NET 8, ToolBank w Pythonie, komunikują się przez czysty JSON‑RPC stdio.
+1. Cuts the startup token cost to the order of 1% of baseline (4 tools versus 78 tools across 6
+   servers, scaling to 0.1% at our 19 AutoCAD categories).
+2. **Does not stay in the data path** — after `mcpd_connect` the agent talks to the server
+   directly, which removes both the added latency and the single point of failure.
+3. Works offline, with no ML model in the base layer (TF-IDF plus the PL/EN synonym table covers
+   92% of queries in our audit).
+4. Has a **formal manifest contract**, so external teams can contribute their own categories
+   without changing ToolBank's code or the MCP client's.
+5. Integrates with a domain system (acad-router) without forcing it onto Python — the router is
+   .NET 8, ToolBank is Python, and they speak plain JSON-RPC over stdio.
 
-`acad-router` jest **referencyjną implementacją** wzorca „router‑over‑ToolBank": sam jest MCP, sam jest konsumentem ToolBank (wewnętrznie wywołuje `mcpd_find`/`mcpd_connect` dla dociągania kategorii), i sam wystawia branżowe meta‑narzędzia, które agent rozumie z opisu, a nie z listy 230 czystych toolów. W produkcji (projekt domu jednorodzinnego oraz audyt pliku `[REDACTED-REFERENCE-DWG]`) rozwiązanie potwierdziło, że agent LLM ze skończonym oknem kontekstu potrafi **poprawnie i bez halucynacji** operować na systemie, który bez ToolBank w ogóle by się w jego głowie nie mieścił.
+`acad-router` is the **reference implementation** of the "router-over-ToolBank" pattern: it is
+itself an MCP server, it is itself a ToolBank consumer (calling `mcpd_find` / `mcpd_connect`
+internally to pull categories in), and it exposes domain meta-tools an agent understands from
+their description rather than from a list of 230 raw tools. In production — the single-family
+house project and the audit of the `[REDACTED-REFERENCE-DWG]` file — the design confirmed that
+an LLM agent with a finite context window can operate **correctly and without hallucination** on
+a system that, without ToolBank, would not fit in its head at all.
 
 ---
 
-## Dodatki
+## Appendix
 
-- Pełny kod ToolBank: `C:\Users\DELL\toolbank` (MIT, PyPI `toolbank>=0.3.0`).
-- Pełny kod acad‑routera i 19 kategorii: `C:\Users\DELL\Dev\autocad-mcp` (repo).
-- Reguły kontraktowe (egzekwowane pre‑commitem): `docs/engineering-rules/30-toolbank-manifest.md`, `docs/engineering-rules/31-toolbank-discovery-hygiene.md`, `docs/engineering-rules/00-architecture-invariants.md`.
-- Specyfikacja protokołu ToolBank: `C:\Users\DELL\toolbank\docs\specification.md` oraz `docs/architecture.md`.
+- ToolBank source: the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) (MIT,
+  PyPI `toolbank>=0.3.0`); `C:\Users\DELL\toolbank` on the measurement machine.
+- The acad-router and category sources: this repository.
+- Contract rules, enforced pre-commit: `docs/engineering-rules/30-toolbank-manifest.md`,
+  `docs/engineering-rules/31-toolbank-discovery-hygiene.md`,
+  `docs/engineering-rules/00-architecture-invariants.md`.
+- The ToolBank protocol specification: `docs/specification.md` and `docs/architecture.md` in the
+  ToolBank repository.

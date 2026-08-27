@@ -358,7 +358,7 @@ Audit log: `iterate-20260423-225704352.json`.
 
 ## 4d. Phase C-Doors — every room now has a door (executed 2026-04-23 23:08)
 
-User: *„aby każde pomieszczenie miało drzwi aby było przemyślane aby było 12/10"*.
+User: *„aby każde pomieszczenie miało drzwi aby było przemyślane aby było 12/10"* — "every room is to have a door, it is to be thought through, it is to be 12/10".
 
 ### Pre-fix inventory (`scripts/room-door-inventory.py` + `room-door-inventory2.py`)
 

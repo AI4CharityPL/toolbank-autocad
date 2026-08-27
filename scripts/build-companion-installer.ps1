@@ -56,7 +56,7 @@ Get-ChildItem -Path $hostOut -File | Where-Object {
 Copy-Item (Join-Path $pluginOut "AcadMcp.Plugin.dll") -Destination $contents -Force
 Copy-Item (Join-Path $pluginOut "AcadMcp.Shared.dll") -Destination $contents -Force -ErrorAction SilentlyContinue
 Copy-Item -Path (Join-Path $backendOut '*') -Destination $contents -Recurse -Force
-Copy-Item (Join-Path $RepoRoot "installer\README-pierwsze-kroki.txt") -Destination $contents -Force
+Copy-Item (Join-Path $RepoRoot "installer\README-first-steps.txt") -Destination $contents -Force
 
 $version = (Get-Item (Join-Path $hostOut "AcadMcp.Companion.Host.dll")).VersionInfo.FileVersion
 if ([string]::IsNullOrWhiteSpace($version)) { $version = "0.1.0" }

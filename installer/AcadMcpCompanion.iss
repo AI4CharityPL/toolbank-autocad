@@ -42,4 +42,5 @@ Source: "{#StagingDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubd
 polish.WelcomeLabel2=Ten kreator zainstaluje wbudowanego asystenta AI dla AutoCAD.%n%nPo instalacji uruchom ponownie AutoCAD, wpisz polecenie ACADAI, a nastepnie w zakladce Ustawienia wprowadz swoj wlasny klucz API.
 
 [Run]
-Filename: "{app}\Contents\README-pierwsze-kroki.txt"; Description: "Otworz instrukcje pierwszego uruchomienia"; Flags: postinstall shellexec skipifsilent
+Filename: "{app}\Contents\README-first-steps.txt"; Description: "Open the first-steps guide"; Flags: postinstall shellexec skipifsilent; Languages: english
+Filename: "{app}\Contents\README-first-steps.txt"; Description: "Otworz instrukcje pierwszego uruchomienia (plik jest po angielsku)"; Flags: postinstall shellexec skipifsilent; Languages: polish

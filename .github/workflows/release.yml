@@ -86,7 +86,7 @@ jobs:
           Copy-Item -Recurse toolbank-manifests "$root/toolbank-manifests"
           Copy-Item -Recurse validators         "$root/validators"
           Copy-Item LICENSE, README.md, THIRD-PARTY-NOTICES.md, CHANGELOG.md $root
-          Copy-Item installer/README-pierwsze-kroki.txt $root
+          Copy-Item installer/README-first-steps.txt $root
 
           # State the omission inside the archive itself, not only in the release notes -
           # the archive outlives the page it was downloaded from.

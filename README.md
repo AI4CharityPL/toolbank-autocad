@@ -88,6 +88,12 @@ see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
 
 Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of 50 specialized MCP micro-servers - one per category, 51 manifests including `acad-router` itself - loaded on demand via ToolBank 3.0 `find_tools` → `call_tool`. The category backends stay legacy MCP (`initialize` over stdio); ToolBank's dual-era client speaks that dialect so AutoCAD does not have to change. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
+> **On ToolBank itself.** ToolBank is the protocol layer this tool bank is registered in, and
+> it is released separately in **early September 2026**. Until then its repository is not
+> public, so links to it here will not resolve yet. Nothing in *this* repository waits on that
+> release: the plugin, the backend, all 51 categories and their launchers build and run from
+> this tree.
+
 ```
 AI Agent ── static ──> acad-router (10 meta-tools)
          ── static ──> toolbank-server (Proxy Mode: find_tools / get_tool_schema / call_tool)
@@ -300,7 +306,7 @@ The script auto-detects your registry path from `~/.cursor/mcp.json`, checking f
 pwsh scripts/install-cursor-config.ps1
 ```
 
-Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through ToolBank. This assumes ToolBank itself is already configured in your client - see the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) if it isn't.
+Your client only ever sees `acad-router`'s meta-tools (`acad_status`, `acad_find_tools`, `acad_load_category`, ...). Everything else loads lazily through ToolBank. This assumes ToolBank itself is already configured in your client - see the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) if it isn't. *(ToolBank, the protocol layer itself, is released separately in early September 2026; until then that link is not yet public.)*
 
 ### 4. Verify
 

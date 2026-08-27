@@ -15,7 +15,7 @@ not from documentation. 134 types; `IAcSmSheetSetMgr`, `IAcSmSheetSet`, `IAcSmSh
 ## 1. A sheet set is a FILE, not drawing state
 
 A `.DST` file, edited through a COM object graph, entirely outside the DWG. Nothing about it lives
-in a `Database`, so none of the transaction discipline in [rule 11](11-transactions.md) applies
+in a `Database`, so none of the transaction discipline in [rule 11](11-acad-transactions.md) applies
 and none of its guarantees are available either: there is no `Transaction` to abort, so a
 half-finished edit stays half-finished.
 

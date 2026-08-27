@@ -1,6 +1,6 @@
 # Residential (multi-family apartment building) — legal & code standards
 
-> **Normy bazowe:** Rozp. MI z 12.04.2002 w sprawie warunków technicznych (tekst jednolity
+> **Reference standards:** Rozp. MI z 12.04.2002 w sprawie warunków technicznych (tekst jednolity
 > **Dz.U. 2022 poz. 1225**, "WT 2024") · PN-ISO 9836 (powierzchnie)
 
 Researched via web search this session against secondary legal-summary sources

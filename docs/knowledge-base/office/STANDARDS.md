@@ -1,6 +1,6 @@
 # Office — legal & code standards
 
-> **Normy bazowe:** Rozp. MPiPS z 26.09.1997 w sprawie ogólnych przepisów BHP (tekst jednolity
+> **Reference standards:** Rozp. MPiPS z 26.09.1997 w sprawie ogólnych przepisów BHP (tekst jednolity
 > **Dz.U. 2003 nr 169 poz. 1650**) · WT 2024 (Dz.U. 2022 poz. 1225) · Ustawa z 24.08.1991 o
 > ochronie ppoż. (kategoria ZL III)
 

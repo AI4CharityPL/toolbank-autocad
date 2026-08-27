@@ -168,6 +168,13 @@ to skip stages. It is idempotent - safe to re-run - and backs up any config it e
 Works on the Windows PowerShell 5.1 that ships with Windows; PowerShell 7 (`pwsh`) is
 optional.
 
+> **Prefer a prebuilt download?** [GitHub Releases](../../releases) carry the MCP server, the
+> per-category launchers, the manifests and the validators, built by
+> [`.github/workflows/release.yml`](.github/workflows/release.yml). They deliberately do **not**
+> contain the AutoCAD plugin: it links against `acmgd.dll` / `acdbmgd.dll` / `accoremgd.dll`,
+> which ship with AutoCAD and which Autodesk does not redistribute, so no CI runner can compile
+> it. The plugin half is always built locally, from this repository, against your own install.
+
 <details>
 <summary>The same thing step by step, if you would rather drive it yourself</summary>
 
@@ -283,7 +290,7 @@ pwsh scripts/package.ps1
 pwsh scripts/register-mcps.ps1
 ```
 
-This registers all 39 categories (see [`toolbank-manifests/`](../toolbank-manifests)) with your local ToolBank instance, so `find_tools` / `call_tool` can discover and lazy-load them on demand instead of your client loading all 478 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
+This registers all 51 categories (see [`toolbank-manifests/`](toolbank-manifests)) with your local ToolBank instance, so `find_tools` / `call_tool` can discover and lazy-load them on demand instead of your client loading all 692 tools ([full reference](docs/TOOLS-REFERENCE.md)) up front.
 
 The script auto-detects your registry path from `~/.cursor/mcp.json`, checking for a `toolbank-server` entry first, then the deprecated `toolbank-gateway` alias, then the retired `toolbank-dynamic` / `toolbank-discovery` names. If none of those are found, it falls back to `%USERPROFILE%\toolbank\registry\mcpd-registry.json`. Override with `-Registry "<path>"` if needed; `-DryRun` previews without writing anything, even when the registry file doesn't exist yet.
 
@@ -336,11 +343,11 @@ pwsh scripts/deploy-companion.ps1 -Uninstall
 
 ## Full tool reference
 
-**478 tools across 39 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`toolbank-manifests/`](toolbank-manifests) by [`scripts/generate-tools-reference.py`](scripts/generate-tools-reference.py), so it can't drift out of sync the way hand-written tool lists do - run that script after adding or renaming a tool, or `--check` it in CI.
+**692 tools across 51 categories**, generated directly from the manifests: [`docs/TOOLS-REFERENCE.md`](docs/TOOLS-REFERENCE.md). Every tool name and description there is pulled straight from [`toolbank-manifests/`](toolbank-manifests) by [`scripts/generate-tools-reference.py`](scripts/generate-tools-reference.py), so it can't drift out of sync the way hand-written tool lists do - run that script after adding or renaming a tool, or `--check` it in CI.
 
 ## Status
 
-The system is built and live-verified end to end against real AutoCAD 2025: backend, plugin, all 31 categories, validators, the design iteration loop with real checkpoint rollback, the `acad-livestream` event channel, and the architecture/mechanical/civil/electrical/parametric domain build-out. Full verification log, including the reasoning behind non-obvious implementation choices: [docs/PHASE-7-STATUS.md](docs/PHASE-7-STATUS.md). Version details and change history: [CHANGELOG.md](CHANGELOG.md).
+The system is built and live-verified end to end against real AutoCAD 2025: backend, plugin, all 51 categories, validators, the design iteration loop with real checkpoint rollback, the `acad-livestream` event channel, and the architecture/mechanical/civil/electrical/parametric domain build-out. Full verification log, including the reasoning behind non-obvious implementation choices: [docs/PHASE-7-STATUS.md](docs/PHASE-7-STATUS.md). Version details and change history: [CHANGELOG.md](CHANGELOG.md).
 
 ## Known Limitations
 

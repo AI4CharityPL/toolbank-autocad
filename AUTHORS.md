@@ -2,18 +2,20 @@
 
 **ToolBank AutoCAD (v2025)** — a large-scale MCP ecosystem for AutoCAD automation.
 
-## Creator — sole author
+## Lead — originator, architect and principal author
 
-### Krzysztof Augiewicz — "one man army"
+### Krzysztof Augiewicz
 
-- **Role:** Creator, architect and sole author of this system
+- **Role:** Originator of the idea, architect, and author of the large majority of the code
 - **Email:** krzysztof.augiewicz@gmail.com
 - **LinkedIn:** [krzysztof-a](https://www.linkedin.com/in/krzysztof-a-97a170185/)
 - **GitHub:** [KrzysztofAugiewicz](https://github.com/KrzysztofAugiewicz)
 
-Every layer of this repository was designed, written and verified by one person.
-That is unusual enough for a system of this size to be worth stating plainly rather
-than leaving to be inferred from the commit log. What that covered, end to end:
+The idea, the architecture and nearly all of the implementation are his. Every design
+decision below was made once, by one person, and then defended across the whole tree —
+which is what keeps a system of this size coherent. He was not, however, working alone:
+the people listed under *Contributors* below shaped parts of it, and the project is
+better for that.
 
 **Architecture.** The whole shape of the thing: the decision to expose only
 `acad-router` plus ToolBank to the AI client and load ~50 specialised MCP
@@ -61,13 +63,39 @@ defects it exposed in the tools themselves rather than presented as a clean demo
 lessons for anyone wrapping a thick desktop application in MCP),
 `docs/HANDOVER.md`, `docs/KNOWN-GAPS.md` and the phase status reports.
 
-## Advisory & QA Support
+## Contributors
+
+Smaller in volume than the work above, and load-bearing anyway. Each of these
+shaped something that would have been worse, or missing, without them.
+
+### Kacper Pisarczyk — verification and drawing review
+
+- **Role:** Live-AutoCAD verification and drawing review
+- **LinkedIn:** [kacper-pisarczyk](https://www.linkedin.com/in/kacper-pisarczyk-b165311aa/)
+
+This project's central working rule is that a tool returning a success code is not
+evidence — only reading the drawing back is. That rule costs someone real hours in front
+of a live AutoCAD, comparing what a tool claimed against what actually landed on the
+sheet. Several defects that every automated check had passed were caught exactly there,
+by looking.
+
+### Mateusz Wiszniowski — discovery layer and technical documentation
+
+- **Role:** ToolBank discovery-layer reasoning, integration review, technical documentation
+- **LinkedIn:** [mateusz-wiszniowski](https://www.linkedin.com/in/mateusz-wiszniowski-263049216/)
+
+Co-author of [`docs/TOOLBANK-TECHNICAL-PROOF.md`](docs/TOOLBANK-TECHNICAL-PROOF.md) — the
+document that measures what the discovery layer actually buys, rather than asserting it:
+the token cost of a naive registration against lazy discovery, and why `acad-router`
+consumes ToolBank instead of replacing it. The measurement, and the argument built on it,
+came out of that work.
+
+## Advisory & QA support
 
 ### Sebastian Pawłowski
 
-- **Role:** Advisory & QA Support — subject-matter guidance, testing, and hardware/software provisioning
+- **Role:** Advisory & QA support — subject-matter guidance, testing, and hardware/software provisioning
 - **LinkedIn:** [sebastianpawlowski](https://www.linkedin.com/in/sebastianpawlowski/)
 
 Support around the build — domain guidance, testing and provisioning — rather than
-authorship of the codebase, which is why the "sole author" note above and this
-section are both accurate.
+authorship of the codebase, which is why this section sits apart from the ones above.

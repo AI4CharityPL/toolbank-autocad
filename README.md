@@ -373,8 +373,10 @@ Per-discipline vision/YOLO detection is not part of this repository.
 
 ## Authors
 
-- **Krzysztof Augiewicz** - creator and **sole author** ("one man army") - architecture, the AutoCAD plugin, every backend component, the ~690-tool catalogue, the standards-validation engine, the engineering rulebook, CI and the proof projects - [LinkedIn](https://www.linkedin.com/in/krzysztof-a-97a170185/) · [GitHub](https://github.com/KrzysztofAugiewicz)
-- **Sebastian Pawłowski** - Advisory & QA Support (testing, hardware/software provisioning) - [LinkedIn](https://www.linkedin.com/in/sebastianpawlowski/)
+- **Krzysztof Augiewicz** - originator, architect and principal author - the architecture, the AutoCAD plugin, every backend component, the 692-tool catalogue, the standards-validation engine, the engineering rulebook, CI and the proof projects - [LinkedIn](https://www.linkedin.com/in/krzysztof-a-97a170185/) · [GitHub](https://github.com/KrzysztofAugiewicz)
+- **Kacper Pisarczyk** - live-AutoCAD verification and drawing review - [LinkedIn](https://www.linkedin.com/in/kacper-pisarczyk-b165311aa/)
+- **Mateusz Wiszniowski** - ToolBank discovery-layer reasoning, integration review, technical documentation - [LinkedIn](https://www.linkedin.com/in/mateusz-wiszniowski-263049216/)
+- **Sebastian Pawłowski** - advisory & QA support (testing, hardware/software provisioning) - [LinkedIn](https://www.linkedin.com/in/sebastianpawlowski/)
 
 Full details in [AUTHORS.md](AUTHORS.md).
 

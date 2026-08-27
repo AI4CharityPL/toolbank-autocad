@@ -4,6 +4,15 @@
 > **Zakres:** architektoniczne uzasadnienie rozwiązania, pomiar oszczędności tokenów, integracja z silnikiem AutoCAD MCP
 > **Autorzy:** Mateusz Wiszniowski, Krzysztof Augiewicz (Talknbot), autor ToolBank AutoCAD
 
+> **To jest migawka, nie stan bieżący.**
+> Dokument opisuje bank narzędzi w chwili powstania — 19 kategorii i ~230 narzędzi —
+> i celowo nie jest aktualizowany, bo jego wartością jest pomiar wykonany wtedy, na
+> tamtej powierzchni. Bank ma dziś **692 narzędzia w 51 kategoriach**; liczby bieżące
+> bierz z [`docs/TOOLS-REFERENCE.md`](TOOLS-REFERENCE.md), generowanego z
+> `toolbank-manifests/`. Ścieżki w rodzaju `C:\Users\...` pochodzą z maszyny, na
+> której pomiar wykonano. Argumentacja architektoniczna i mechanizm oszczędności
+> tokenów obowiązują bez zmian.
+
 ---
 
 ## 1. Problem, który rozwiązujemy

@@ -1,6 +1,6 @@
 # Hospital — legal & code standards
 
-> **Normy bazowe:** AIA CAD Layer Guidelines (2nd Ed.) · ISO 13567 · FGI Guidelines 2022 ·
+> **Reference standards:** AIA CAD Layer Guidelines (2nd Ed.) · ISO 13567 · FGI Guidelines 2022 ·
 > HTM 00-01 · Rozp. MZ Dz.U. 2019 poz. 595 · WT 2024 (Dz.U. 2022 poz. 1225) · EN 17210 ·
 > IFC 4.3 / ISO 19650
 

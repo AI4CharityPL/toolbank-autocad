@@ -1,6 +1,6 @@
 # Airport terminal — legal & code standards
 
-> **Normy bazowe:** Ustawa z 3.07.2002 Prawo lotnicze (**Dz.U. 2002 nr 130 poz. 1112**, t.j. Dz.U.
+> **Reference standards:** Ustawa z 3.07.2002 Prawo lotnicze (**Dz.U. 2002 nr 130 poz. 1112**, t.j. Dz.U.
 > 2024) · WT 2024 (Rozp. MI 12.04.2002, **Dz.U. 2022 poz. 1225**) · Ustawa z 24.08.1991 o ochronie
 > ppoż. (t.j. Dz.U. 2024) · Ustawa z 19.07.2019 o dostępności (Dz.U. 2019 poz. 1696, t.j. Dz.U.
 > 2024) · ICAO Annex 14 (aerodrome design) · ICAO Annex 9 (facilitation) · IATA ADRM (Level of

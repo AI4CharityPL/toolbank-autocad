@@ -1,6 +1,6 @@
 # Dental clinic (gabinet stomatologiczny) — legal & code standards
 
-> **Normy bazowe:** WT 2024 (Rozp. MI 12.04.2002, tj. **Dz.U. 2022 poz. 1225**) · Rozp. MZ
+> **Reference standards:** WT 2024 (Rozp. MI 12.04.2002, tj. **Dz.U. 2022 poz. 1225**) · Rozp. MZ
 > 26.03.2019 w sprawie pomieszczeń i urządzeń podmiotu leczniczego (tj. **Dz.U. 2022 poz. 402**)
 > · Rozp. MZ 21.08.2006 w sprawie pracy z urządzeniami radiologicznymi (**Dz.U. 2006 nr 180
 > poz. 1325**) · Ustawa 19.07.2019 o dostępności (**Dz.U. 2019 poz. 1696**)

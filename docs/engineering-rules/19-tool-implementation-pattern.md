@@ -2,7 +2,7 @@
 
 Backend↔Plugin tool split. Backend declares typed contract+gateway proxy. Plugin owns AutoCAD work.
 
-Every domain tool exists in TWO places. Don't fight the split — it's what lets us scale to 1000+ tools, swap the plugin transport, mock in tests, and survive AutoCAD crashes without losing the MCP host.
+Every domain tool exists in TWO places. Don't fight the split — it's what lets the bank keep growing (692 tools today), swap the plugin transport, mock in tests, and survive AutoCAD crashes without losing the MCP host.
 
 ## Backend side (`src/AcadMcp.Backend/Categories/<Folder>/...Tools.cs`)
 

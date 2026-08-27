@@ -1,6 +1,6 @@
 # Automotive showroom (salon samochodowy / salon sprzedaży samochodów) — legal & code standards
 
-> **Normy bazowe:** WT 2024 (Rozp. MI z 12.04.2002, tj. **Dz.U. 2022 poz. 1225**) · Ustawa z
+> **Reference standards:** WT 2024 (Rozp. MI z 12.04.2002, tj. **Dz.U. 2022 poz. 1225**) · Ustawa z
 > 24.08.1991 o ochronie ppoż. (t.j. Dz.U. 2024) — kategoria zagrożenia ludzi **ZL III** · Rozp.
 > MPiPS BHP (Dz.U. 2003 nr 169 poz. 1650) dla stałych stanowisk pracy w hali/biurach · Ustawa z
 > 19.07.2019 (Dz.U. 2019 poz. 1696) · PN-ISO 9836 (powierzchnie) · PN-EN 17210 (dostępność)

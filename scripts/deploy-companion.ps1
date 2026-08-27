@@ -95,7 +95,7 @@ if (-not $SkipPlugin) {
 } else {
     # Backend still needs AcadMcp.Shared.dll at runtime; ship it without the plugin module.
     Copy-Item (Join-Path $pluginOut "AcadMcp.Shared.dll") -Destination $contentsDir -Force -ErrorAction SilentlyContinue
-    Write-Host "  -SkipPlugin: pominięto AcadMcp.Plugin.dll (pipe z AcadMcp.bundle)" -ForegroundColor DarkYellow
+    Write-Host "  -SkipPlugin: AcadMcp.Plugin.dll skipped (the pipe comes from AcadMcp.bundle)" -ForegroundColor DarkYellow
 }
 
 # Backend tool-bank server (spawned as a child process by the palette). Copy the whole output.

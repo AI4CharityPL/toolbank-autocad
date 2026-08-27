@@ -33,7 +33,7 @@ All notable changes to this project will be documented in this file. Format: [Ke
   sits. Confirmed live via `get_viewport_extents_in_model` on `automotive-showroom-test`: a
   viewport over a building spanning x0-21500/y0-21500 was showing a 55000×45000mm model window
   centred near (148, 105) - crowding the real building into one corner of a mostly-empty frame,
-  exactly what the user's screenshot showed ("plan jest mały", "skala się nie zgadza"). Almost
+  exactly what the user's screenshot showed ("plan jest mały", "skala się nie zgadza" - "the plan is small", "the scale is wrong"). Almost
   certainly present in `apartment-120-test`/`dental-clinic-test` too (same reused `center`/
   `width`/`height` values), just less visible on their smaller buildings. Fixed by adding an
   optional `modelCenter` parameter to `create_viewport` (both the Backend `CreateViewportArgs`

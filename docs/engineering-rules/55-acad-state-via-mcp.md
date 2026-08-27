@@ -1,31 +1,31 @@
-# Stan AutoCADa weryfikujemy WYŁĄCZNIE przez MCP
+# AutoCAD state is verified through MCP, and nowhere else
 
 AutoCAD state (alive, version, active document, layer, entities) MUST be checked via MCP (acad_status). NEVER via Get-Process, tasklist, ps or terminal.
 
-Cały ten projekt istnieje po to, by agent nie musiał domyślać się stanu AutoCADa z systemu operacyjnego. Jeżeli w trakcie pracy potrzebujesz się dowiedzieć:
+This entire project exists so that an agent never has to infer AutoCAD's state from the operating system. Whenever you need to know:
 
-- czy AutoCAD jest uruchomiony,
-- jaka jest jego wersja / vertical (AutoCAD, Architecture, Mechanical, Civil 3D),
-- który dokument (`.dwg`) jest aktywny,
-- jaka jest aktywna warstwa,
-- ile jest encji w modelu,
-- czy plugin jest załadowany (pipe `\\.\pipe\acadmcp`),
+- whether AutoCAD is running,
+- which version / vertical it is (AutoCAD, Architecture, Mechanical, Civil 3D),
+- which document (`.dwg`) is active,
+- which layer is active,
+- how many entities the model holds,
+- whether the plugin is loaded (pipe `\\.\pipe\acadmcp`),
 
-**zawsze** wołasz `acad_status` z `user-acad-router` (Invariant #6 w `00-architecture-invariants.md`).
+you **always** call `acad_status` on `user-acad-router` (Invariant #6 in `00-architecture-invariants.md`).
 
-## Dlaczego nie Get-Process / tasklist / ps
+## Why not Get-Process / tasklist / ps
 
-1. `Get-Process -Name acad` pokazuje obecność procesu, ale NIE mówi: czy plugin `AcadMcp.Plugin.dll` jest NETLOAD'ed, czy pipe żyje, ani który dokument jest aktywny.
-2. Licencje Educational mają niewidoczne modale (`acad.exe` żyje, ale UI thread jest zablokowany) – proces widoczny, CAD w rzeczywistości martwy. Tylko `acad_status` (round-trip przez pipe) to wykrywa.
-3. Trzy użytkownicy w tej samej sesji Windows mogą mieć kilka `acad.exe` – terminalowy `Get-Process` nie powie, który jest naszym targetem; pipe mówi to jednoznacznie.
-4. MCP jest jedynym oficjalnym kontraktem systemu (`00-architecture-invariants.md` Invariant #3: Named Pipe = ONLY bridge) – każde inne źródło prawdy dryfuje.
+1. `Get-Process -Name acad` shows that a process exists. It does not say whether `AcadMcp.Plugin.dll` is NETLOAD'ed, whether the pipe is alive, or which document is active.
+2. Educational licences raise invisible modal dialogs: `acad.exe` is alive while the UI thread is blocked — a visible process over a CAD session that is effectively dead. Only `acad_status`, which round-trips through the pipe, detects that.
+3. Several `acad.exe` processes can run in one Windows session. `Get-Process` in a terminal cannot tell you which one is your target; the pipe answers that unambiguously.
+4. MCP is the system's only official contract (`00-architecture-invariants.md`, Invariant #3: Named Pipe = ONLY bridge). Every other source of truth drifts.
 
-## Poprawnie
+## Correct
 
 ```jsonc
-// wywołanie meta-toola
+// calling the meta-tool
 CallMcpTool server="user-acad-router" toolName="acad_status" arguments={}
-// zwraca:
+// returns:
 {
   "alive": true,
   "acadProductName": "AutoCAD",
@@ -39,35 +39,35 @@ CallMcpTool server="user-acad-router" toolName="acad_status" arguments={}
 }
 ```
 
-Dopiero to jest dowodem, że agent może zacząć jakąkolwiek operację rysunkową.
+Only this is evidence that the agent may begin any drawing operation at all.
 
-## Niepoprawnie (blokowane przez review)
+## Incorrect (rejected in review)
 
 ```powershell
-Get-Process -Name "acad","accoreconsole","AcadMcp.Backend"   # ❌ nie mówi nic o pipe
-tasklist | findstr acad                                       # ❌ to samo
-ps aux | grep acad                                            # ❌ + zła platforma
+Get-Process -Name "acad","accoreconsole","AcadMcp.Backend"   # ❌ says nothing about the pipe
+tasklist | findstr acad                                       # ❌ same
+ps aux | grep acad                                            # ❌ same, and the wrong platform
 ```
 
-Jeżeli agent uzyje jednego z powyzszych, traktuj to jako łamanie Invariant #3 i wymuś poprawkę na `acad_status`.
+If an agent reaches for any of the above, treat it as a breach of Invariant #3 and require the fix that replaces it with `acad_status`.
 
-## Kiedy `acad_status` zwraca `alive: false` / błąd
+## When `acad_status` returns `alive: false` or an error
 
-Dopiero wtedy wolno:
-1. Uruchomić `scripts/deploy-plugin.ps1 -Kill` (gdy podejrzewasz zawieszonego `acad.exe` z niewidocznym modalem).
-2. Poprosić użytkownika o ręczny restart AutoCADa.
-3. Sprawdzić logi `%LOCALAPPDATA%\AcadMcp\logs\pipe-*.log`.
+Only then may you:
+1. Run `scripts/deploy-plugin.ps1 -Kill` (when you suspect a hung `acad.exe` behind an invisible modal).
+2. Ask the user to restart AutoCAD by hand.
+3. Read the logs under `%LOCALAPPDATA%\AcadMcp\logs\pipe-*.log`.
 
-## Rozszerzenia tej zasady
+## Extensions of this rule
 
-Tak samo traktujemy inne stany rysunku — zawsze pierwszy krok to MCP, nie terminal:
+Every other piece of drawing state is treated the same way — the first step is always MCP, never the terminal:
 
-| Chcę wiedzieć... | Tool |
+| What you want to know | Tool |
 |---|---|
-| Czy rysunek ma jakieś encje? / ile? | `acad_status` lub `acad.validators.doc_summary` |
-| Jakie są warstwy / czy istnieje `A-WALL-EXT`? | `acad.layers.list_layers` |
-| Jakie są bloki / atrybuty / dynamic? | `acad.blocks.list_blocks` |
-| Jakie są layouty? | `acad.layouts.list_layouts` |
-| Czy konkretna encja istnieje po uchwycie? | `acad.selection.get_entity_info` |
+| Does the drawing hold any entities? How many? | `acad_status` or `acad.validators.doc_summary` |
+| What layers exist? Does `A-WALL-EXT`? | `acad.layers.list_layers` |
+| What blocks, attributes or dynamic blocks exist? | `acad.blocks.list_blocks` |
+| What layouts exist? | `acad.layouts.list_layouts` |
+| Does a specific entity still exist, by handle? | `acad.selection.get_entity_info` |
 
-Wszystko to jest w namespace `acad-*` dostępnym przez `acad_load_category` / ToolBank — NIGDY z poziomu shella.
+All of it lives in the `acad-*` namespace, reachable through `acad_load_category` / ToolBank — never from a shell.

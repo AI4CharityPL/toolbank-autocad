@@ -33,7 +33,7 @@ Files in `src/AcadMcp.Backend/Categories/<X>/` contain ONLY:
 
 ## 5. ToolBank is the ONLY discovery mechanism
 
-We do NOT register all 30 microservers in the user's `mcp.json`. Only `acad-router` lives there permanently (alongside `toolbank-discovery` and `toolbank-dynamic` which the user already has).
+We do NOT register all 50 category microservers in the user's `mcp.json`. Only `acad-router` lives there permanently (alongside `toolbank-discovery` and `toolbank-dynamic` which the user already has).
 
 Categories are discovered via `mcpd_find` (semantic) and connected via `mcpd_connect(lazy_mode=true)`. Every category MUST have a manifest in `toolbank-manifests/acad-<name>.json` with rich `intent_examples` PL+EN. Without this, the LLM cannot find your tools.
 

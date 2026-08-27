@@ -1,6 +1,6 @@
 # Wrapping a thick desktop application in MCP
 
-Notes from building an MCP server over AutoCAD — 478 tools across 39 categories, every one
+Notes from building an MCP server over AutoCAD — 692 tools across 51 categories, every one
 of them driven by hand against a live copy of the application at least once.
 
 This document is the part that has nothing to do with AutoCAD. If you are wrapping Excel,

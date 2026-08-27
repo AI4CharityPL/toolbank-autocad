@@ -1,7 +1,13 @@
 # Full tool audit — ToolBank AutoCAD (2026-04-23)
 
-**Scope:** literally every registered MCP tool across all 29 categories.
-**Request:** user instruction `dosłownie każdy tool przetestował wszystkie te kilkaset toolsów`.
+**Scope:** literally every registered MCP tool across all 29 categories that existed on the audit date.
+**Request:** the user's own instruction - *"test literally every tool, all those several hundred tools"*.
+
+> **A dated snapshot, not the current state.** Everything below measures the tool bank as it
+> stood on 2026-04-23: **322 tools across 29 categories**. The bank now holds **692 tools in
+> 51 categories** - see [`TOOLS-REFERENCE.md`](TOOLS-REFERENCE.md), generated from
+> `toolbank-manifests/`. The numbers here are deliberately left as measured; an audit whose
+> figures are edited after the fact stops being evidence of anything.
 
 ## 1. Headline numbers
 

@@ -168,7 +168,7 @@ to skip stages. It is idempotent - safe to re-run - and backs up any config it e
 Works on the Windows PowerShell 5.1 that ships with Windows; PowerShell 7 (`pwsh`) is
 optional.
 
-> **Prefer a prebuilt download?** [GitHub Releases](../../releases) carry the MCP server, the
+> **Prefer a prebuilt download?** [GitHub Releases](https://github.com/AI4CharityPL/toolbank-autocad/releases) carry the MCP server, the
 > per-category launchers, the manifests and the validators, built by
 > [`.github/workflows/release.yml`](.github/workflows/release.yml). They deliberately do **not**
 > contain the AutoCAD plugin: it links against `acmgd.dll` / `acdbmgd.dll` / `accoremgd.dll`,

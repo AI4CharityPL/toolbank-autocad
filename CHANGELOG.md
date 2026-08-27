@@ -196,6 +196,20 @@ All notable changes to this project will be documented in this file. Format: [Ke
 
 ### Changed
 
+- **Three stale counts in the README were corrected against the manifests, and one relative link
+  fixed.** The *Full tool reference* section and the ToolBank registration step both still said
+  "478 tools across 39 categories", and *Status* said "all 31 categories", while
+  `toolbank-manifests/` holds 51 manifests and `docs/TOOLS-REFERENCE.md` - generated from those
+  manifests and passing its own `--check` - reports **692 tools across 51 categories**, the same
+  figure the README's own header and `docs/HANDOVER.md` carry. A README that contradicts itself
+  by 214 tools within one page is a reader's first impression of how carefully the rest is kept.
+  `docs/HANDOVER.md` §9 already prescribes the rule applied here: count the manifests, do not
+  trust a written-down total. The registration step also linked `../toolbank-manifests`, which
+  resolves outside the repository from a root-level README; it now points at `toolbank-manifests`.
+- **`scripts/_tmp_inspect.py` removed.** A scratch file, named as one, hardcoded to a path under
+  `~/.cursor/projects/.../agent-tools/` on the author's own machine - it cannot run anywhere else
+  and nothing in the tree references it.
+
 - **The project's home is now `AI4CharityPL/toolbank-autocad`, and every URL in the tree that
   still pointed at the old personal repository was rewritten to it.** Twelve occurrences in seven
   files - the issue-template links, `SECURITY.md`'s advisory link, `PATTERN.md`'s attribution,
@@ -221,6 +235,26 @@ All notable changes to this project will be documented in this file. Format: [Ke
   here fails at the upload step regardless of the action's version.
 
 ### Added
+
+- **A `Release` workflow, so the MCP server can be downloaded instead of built.**
+  `.github/workflows/release.yml` builds `src/AcadMcp.NoAcad.slnf` on `release: published`,
+  runs the full test suite plus the Backend's own `CheckManifestSync` target, and attaches a
+  `toolbank-autocad-<tag>-win-x64.zip` holding the Backend host, `bin-launchers/`,
+  `toolbank-manifests/`, `validators/` and the root docs. `workflow_dispatch` performs the same
+  build as a dry run, publishing to a workflow artifact instead of a release, so packaging can
+  be proven before a tag exists. What it cannot ship is stated inside the archive itself, in
+  `README-WHAT-IS-IN-THIS-ARCHIVE.txt`, not only in the release notes: `AcadMcp.Plugin` and
+  `AcadMcp.Companion.Host` link against `acmgd.dll` / `acdbmgd.dll` / `accoremgd.dll`, which
+  Autodesk does not redistribute, so no runner can compile the plugin - the same structural
+  limit `ci.yml` documents. An archive that silently omitted the plugin would be worse than no
+  release workflow at all. Not published to PyPI, deliberately: this is a C#/.NET tree, and the
+  Python vision sidecar is a component of it rather than a separately released package.
+- **Status badges in the README header** - CI, CodeQL, MIT licence, .NET 8, Python 3.11+,
+  AutoCAD 2025+ and the ToolBank 3.0 integration - each linked to the file or section that
+  substantiates it (`.csproj`, `pyproject.toml`, the *Verified* section, `toolbank-manifests/`)
+  rather than to a generic shield. The CodeQL badge reads as failing for as long as this
+  repository stays private: code scanning requires Advanced Security, so the analysis runs and
+  the upload step fails, exactly as recorded above for the `codeql-action` bump.
 
 - **`automotive-showroom-test`'s A-101 layout was configured with a plotter ("Microsoft Print
   to PDF") that does not actually support the "ISOA1" paper size it was set to**, root-caused

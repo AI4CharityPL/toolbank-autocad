@@ -148,6 +148,23 @@ foreach ($mf in $manifestFiles) {
         $invalid++; continue
     }
 
+    # The manifest is generated with an ABSOLUTE launcher path, taken from whatever checkout
+    # generated it (BankAutoRegister writes $repoRoot/bin-launchers/acad-<cat>.cmd). On any
+    # other machine that path does not exist, so registering the manifest verbatim would
+    # register a command that cannot start. Rewrite it to this checkout before upserting.
+    if ($entry.transport -and $entry.transport.type -eq "stdio") {
+        $launcher = Join-Path $RepoRoot (Join-Path "bin-launchers" ("{0}.cmd" -f $entry.id))
+        if (-not (Test-Path $launcher)) {
+            Write-Host ("  [INVALID] Launcher not found: {0}" -f $launcher) -ForegroundColor Red
+            Write-Host "            Run scripts/package.ps1 to generate the missing launcher." -ForegroundColor DarkGray
+            $invalid++; continue
+        }
+        if ($entry.transport.command -ne $launcher) {
+            Write-Host ("  [launcher] {0}" -f $launcher) -ForegroundColor DarkGray
+            $entry.transport.command = $launcher
+        }
+    }
+
     $entryId = $entry.id
     $existingIdx = -1
     for ($i = 0; $i -lt $serverList.Count; $i++) {

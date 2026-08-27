@@ -14,7 +14,7 @@ Each `[McpTool]` lives in `src/AcadMcp.Backend/Categories/<Folder>/`. The folder
 
 ## Why no cross-refs
 
-The system grows to 30 categories. Letting them couple = a refactor in `geometry-2d` breaks `architecture` six categories away. Architecture tests turn into archaeology.
+The system has grown to 51 categories. Letting them couple = a refactor in `geometry-2d` breaks `architecture` six categories away. Architecture tests turn into archaeology.
 
 ## File layout pattern
 

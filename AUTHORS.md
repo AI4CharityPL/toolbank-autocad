@@ -34,7 +34,7 @@ rather than a convention), `AcadMcp.ComBridge` (COM/ActiveX fallback for AutoCAD
 and recovery), `AcadMcp.Lisp`, the `AcadMcp.Vision` Python sidecar (FastAPI/gRPC,
 vision-model and OCR engines), and the `Companion` in-app BYOK assistant.
 
-**The tool catalogue.** ~690 tools across the category tree — geometry 2D/3D,
+**The tool catalogue.** 692 tools across 51 categories — geometry 2D/3D,
 modification, annotation, blocks, layers, files, architecture, mechanical, civil,
 electrical, schedules, viewports, plotting and the rest — each with its own
 manifest under `toolbank-manifests/` and its own launcher.

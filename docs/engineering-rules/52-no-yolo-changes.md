@@ -29,7 +29,7 @@ Once a Phase is marked complete in CHANGELOG.md and tagged in git, its existing 
 
 ## Why this rule exists
 
-This system has 30 microservers, a plugin, COM bridge, LISP, source generator, Python sidecar, and 1000+ tools. Local-looking changes have global blast radius.
+This system has 50 category microservers plus the router, a plugin, COM bridge, LISP, source generator, Python sidecar, and 692 tools. Local-looking changes have global blast radius.
 
 A 5-minute "improvement" to `Categories/Geometry2D/LineTools.cs` can break:
 - The ToolBank manifest sync check

@@ -86,7 +86,7 @@ see [KNOWN-GAPS.md](docs/KNOWN-GAPS.md).</sub>
 
 ## Architecture in one sentence
 
-Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of ~30 specialized MCP micro-servers, loaded on demand via ToolBank 3.0 `find_tools` → `call_tool`. The category backends stay legacy MCP (`initialize` over stdio); ToolBank's dual-era client speaks that dialect so AutoCAD does not have to change. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
+Your AI client only ever sees `acad-router` (meta-tools) plus ToolBank. Everything else is one of 50 specialized MCP micro-servers - one per category, 51 manifests including `acad-router` itself - loaded on demand via ToolBank 3.0 `find_tools` → `call_tool`. The category backends stay legacy MCP (`initialize` over stdio); ToolBank's dual-era client speaks that dialect so AutoCAD does not have to change. All of them connect to a **single** .NET plugin injected into AutoCAD via NETLOAD.
 
 ```
 AI Agent ── static ──> acad-router (10 meta-tools)

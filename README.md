@@ -55,6 +55,14 @@ production-grade drawings without human interference :)
 
 # ToolBank AutoCAD (v2025)
 
+[![CI](https://github.com/AI4CharityPL/toolbank-autocad/actions/workflows/ci.yml/badge.svg)](https://github.com/AI4CharityPL/toolbank-autocad/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/AI4CharityPL/toolbank-autocad/actions/workflows/codeql.yml/badge.svg)](https://github.com/AI4CharityPL/toolbank-autocad/actions/workflows/codeql.yml)
+[![licence MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4.svg)](src/AcadMcp.Backend/AcadMcp.Backend.csproj)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](src/AcadMcp.Vision/pyproject.toml)
+[![AutoCAD 2025](https://img.shields.io/badge/AutoCAD-2025%2B-E51050.svg)](#verified)
+[![MCP](https://img.shields.io/badge/MCP-ToolBank%203.0-brightgreen.svg)](toolbank-manifests)
+
 > A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: **692 tools across 51 specialized categories**, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
 
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.

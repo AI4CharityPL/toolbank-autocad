@@ -462,7 +462,8 @@ a system that, without ToolBank, would not fit in its head at all.
 
 ## Appendix
 
-- ToolBank source: the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) (MIT,
+- ToolBank source: the [ToolBank repository](https://github.com/AI4CharityPL/toolbank) - released
+  separately in early September 2026, so the link is not yet public (MIT,
   PyPI `toolbank>=0.3.0`); `C:\Users\DELL\toolbank` on the measurement machine.
 - The acad-router and category sources: this repository.
 - Contract rules, enforced pre-commit: `docs/engineering-rules/30-toolbank-manifest.md`,

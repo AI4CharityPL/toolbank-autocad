@@ -65,6 +65,12 @@ production-grade drawings without human interference :)
 
 > A large-scale MCP (Model Context Protocol) ecosystem for AutoCAD: **692 tools across 51 specialized categories**, registered in ToolBank, sharing a single C# .NET backend (NETLOAD plugin + COM fallback + LISP), a Python vision/OCR sidecar, and a standards-validation engine (PL/EU/ISO norms).
 
+<p align="center">
+  <img src="assets/readme/largest-single-app-mcp.png"
+       alt="ToolBank MCP for AutoCAD 2025 - probably the largest single-application MCP in the world: 692 tools in one toolbank, every one proven against live AutoCAD"
+       width="900">
+</p>
+
 **Goal:** an AI agent that produces production-grade AutoCAD drawings without human intervention.
 
 ![Plan a small clinic, drawn by an agent through this MCP server](assets/readme/demo-clinic.png)
